@@ -240,37 +240,43 @@ export class BufferView {
     return '#FFFFFF'; // White for normal
   }
 
-  /**
-   * Render the buffer
-   */
-  render(): void {
-    // Clear previous rendered lines
-    for (const line of this.renderedLines.values()) {
-      this.renderer.root.remove(line.id);
-    }
-    this.renderedLines.clear();
+   /**
+    * Render the buffer
+    */
+   render(): void {
+     // Clear previous rendered lines
+     for (const line of this.renderedLines.values()) {
+       this.renderer.root.remove(line.id);
+     }
+     this.renderedLines.clear();
 
-    // Render each entry
-    let row = this.options.top!;
-    for (let i = 0; i < this.bufferState.entries.length; i++) {
-      const entry = this.bufferState.entries[i];
-      const isSelected = i === this.bufferState.selection.cursorIndex;
-      const text = this.formatEntry(entry, isSelected);
-      const color = this.getEntryColor(i, entry);
+     // Get page size based on available height
+     const pageSize = this.options.height ?? 20;
+     const visibleEntries = this.bufferState.getVisibleEntries(pageSize);
+     const scrollStart = this.bufferState.scrollOffset;
 
-      const line = new TextRenderable(this.renderer, {
-        id: `buffer-line-${i}`,
-        content: text,
-        fg: color,
-        position: 'absolute',
-        left: this.options.left,
-        top: row++,
-      });
+     // Render visible entries
+     let row = this.options.top!;
+     for (let visibleIndex = 0; visibleIndex < visibleEntries.length; visibleIndex++) {
+       const actualIndex = scrollStart + visibleIndex;
+       const entry = visibleEntries[visibleIndex];
+       const isSelected = actualIndex === this.bufferState.selection.cursorIndex;
+       const text = this.formatEntry(entry, isSelected);
+       const color = this.getEntryColor(actualIndex, entry);
 
-      this.renderer.root.add(line);
-      this.renderedLines.set(i, line);
-    }
-  }
+       const line = new TextRenderable(this.renderer, {
+         id: `buffer-line-${actualIndex}`,
+         content: text,
+         fg: color,
+         position: 'absolute',
+         left: this.options.left,
+         top: row++,
+       });
+
+       this.renderer.root.add(line);
+       this.renderedLines.set(actualIndex, line);
+     }
+   }
 
   /**
    * Update the buffer state

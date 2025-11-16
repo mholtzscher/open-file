@@ -159,6 +159,14 @@ class S3Explorer {
          // Paste before cursor
          this.handlePasteBefore();
          break;
+       case 'C-d':
+         // Page down
+         this.handlePageDown();
+         break;
+       case 'C-u':
+         // Page up
+         this.handlePageUp();
+         break;
      }
 
      this.render();
@@ -350,6 +358,24 @@ class S3Explorer {
      
      const pastedEntries = this.bufferState.pasteBeforeCursor();
      this.statusBar.showSuccess(`Pasted ${pastedEntries.length} entry/entries`);
+   }
+
+   /**
+    * Page down (Ctrl+D)
+    */
+   private handlePageDown(): void {
+     const pageSize = 10; // Entries per page
+     this.bufferState.pageDown(pageSize);
+     this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
+   }
+
+   /**
+    * Page up (Ctrl+U)
+    */
+   private handlePageUp(): void {
+     const pageSize = 10; // Entries per page
+     this.bufferState.pageUp(pageSize);
+     this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + 10, this.bufferState.entries.length)}`);
    }
 
    /**

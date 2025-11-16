@@ -71,6 +71,9 @@ export class BufferState {
   
   /** Copy register (clipboard) - stores entries to be pasted */
   copyRegister: Entry[] = [];
+  
+  /** Scroll offset for viewport (number of entries scrolled from top) */
+  scrollOffset = 0;
 
   constructor(entries: Entry[] = []) {
     this.entries = entries;
@@ -264,6 +267,7 @@ export class BufferState {
      cloned.isDirty = this.isDirty;
      cloned.currentPath = this.currentPath;
      cloned.copyRegister = JSON.parse(JSON.stringify(this.copyRegister));
+     cloned.scrollOffset = this.scrollOffset;
      return cloned;
    }
 
@@ -335,5 +339,53 @@ export class BufferState {
     */
    clearClipboard(): void {
      this.copyRegister = [];
+   }
+
+   /**
+    * Page down (Ctrl+D) - scroll down by page size
+    * @param pageSize - number of entries per page (default 10)
+    */
+   pageDown(pageSize: number = 10): void {
+     const maxScroll = Math.max(0, this.entries.length - pageSize);
+     this.scrollOffset = Math.min(this.scrollOffset + pageSize, maxScroll);
+     
+     // Keep cursor in visible area
+     if (this.selection.cursorIndex < this.scrollOffset) {
+       this.selection.cursorIndex = this.scrollOffset;
+     } else if (this.selection.cursorIndex >= this.scrollOffset + pageSize) {
+       this.selection.cursorIndex = Math.min(this.scrollOffset + pageSize - 1, this.entries.length - 1);
+     }
+   }
+
+   /**
+    * Page up (Ctrl+U) - scroll up by page size
+    * @param pageSize - number of entries per page (default 10)
+    */
+   pageUp(pageSize: number = 10): void {
+     this.scrollOffset = Math.max(0, this.scrollOffset - pageSize);
+     
+     // Keep cursor in visible area
+     if (this.selection.cursorIndex >= this.scrollOffset + pageSize) {
+       this.selection.cursorIndex = Math.max(0, this.scrollOffset + pageSize - 1);
+     } else if (this.selection.cursorIndex < this.scrollOffset) {
+       this.selection.cursorIndex = this.scrollOffset;
+     }
+   }
+
+   /**
+    * Get visible entries based on scroll offset
+    * @param pageSize - number of entries per page (default 10)
+    */
+   getVisibleEntries(pageSize: number = 10): Entry[] {
+     const start = this.scrollOffset;
+     const end = Math.min(start + pageSize, this.entries.length);
+     return this.entries.slice(start, end);
+   }
+
+   /**
+    * Get the index of the cursor relative to visible entries
+    */
+   getVisibleCursorIndex(pageSize: number = 10): number {
+     return Math.max(0, Math.min(this.selection.cursorIndex - this.scrollOffset, pageSize - 1));
    }
 }

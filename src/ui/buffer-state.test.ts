@@ -180,6 +180,120 @@ describe('BufferState', () => {
     });
   });
 
+  describe('Page Scrolling', () => {
+    it('should page down through entries', () => {
+      // Create 30 entries
+      const entries: Entry[] = Array.from({ length: 30 }, (_, i) => ({
+        id: generateEntryId(),
+        name: `file${i + 1}.txt`,
+        type: EntryType.File,
+        path: `file${i + 1}.txt`,
+      }));
+
+      const buffer = new BufferState(entries);
+      const pageSize = 10;
+      
+      expect(buffer.scrollOffset).toBe(0);
+      
+      buffer.pageDown(pageSize);
+      expect(buffer.scrollOffset).toBe(10);
+      
+      buffer.pageDown(pageSize);
+      expect(buffer.scrollOffset).toBe(20);
+      
+      // Should not scroll past end
+      buffer.pageDown(pageSize);
+      expect(buffer.scrollOffset).toBe(20);
+    });
+
+    it('should page up through entries', () => {
+      const entries: Entry[] = Array.from({ length: 30 }, (_, i) => ({
+        id: generateEntryId(),
+        name: `file${i + 1}.txt`,
+        type: EntryType.File,
+        path: `file${i + 1}.txt`,
+      }));
+
+      const buffer = new BufferState(entries);
+      const pageSize = 10;
+      
+      buffer.scrollOffset = 20;
+      
+      buffer.pageUp(pageSize);
+      expect(buffer.scrollOffset).toBe(10);
+      
+      buffer.pageUp(pageSize);
+      expect(buffer.scrollOffset).toBe(0);
+      
+      // Should not scroll past beginning
+      buffer.pageUp(pageSize);
+      expect(buffer.scrollOffset).toBe(0);
+    });
+
+    it('should get visible entries', () => {
+      const entries: Entry[] = Array.from({ length: 30 }, (_, i) => ({
+        id: generateEntryId(),
+        name: `file${i + 1}.txt`,
+        type: EntryType.File,
+        path: `file${i + 1}.txt`,
+      }));
+
+      const buffer = new BufferState(entries);
+      const pageSize = 10;
+      
+      const visibleEntries = buffer.getVisibleEntries(pageSize);
+      expect(visibleEntries.length).toBe(10);
+      expect(visibleEntries[0].name).toBe('file1.txt');
+      
+      buffer.scrollOffset = 10;
+      const visibleEntries2 = buffer.getVisibleEntries(pageSize);
+      expect(visibleEntries2[0].name).toBe('file11.txt');
+    });
+
+    it('should get visible cursor index', () => {
+      const entries: Entry[] = Array.from({ length: 30 }, (_, i) => ({
+        id: generateEntryId(),
+        name: `file${i + 1}.txt`,
+        type: EntryType.File,
+        path: `file${i + 1}.txt`,
+      }));
+
+      const buffer = new BufferState(entries);
+      const pageSize = 10;
+      
+      buffer.selection.cursorIndex = 0;
+      expect(buffer.getVisibleCursorIndex(pageSize)).toBe(0);
+      
+      buffer.selection.cursorIndex = 5;
+      expect(buffer.getVisibleCursorIndex(pageSize)).toBe(5);
+      
+      buffer.scrollOffset = 10;
+      expect(buffer.getVisibleCursorIndex(pageSize)).toBe(0);
+      
+      buffer.selection.cursorIndex = 15;
+      expect(buffer.getVisibleCursorIndex(pageSize)).toBe(5);
+    });
+
+    it('should keep cursor in visible area when paging', () => {
+      const entries: Entry[] = Array.from({ length: 30 }, (_, i) => ({
+        id: generateEntryId(),
+        name: `file${i + 1}.txt`,
+        type: EntryType.File,
+        path: `file${i + 1}.txt`,
+      }));
+
+      const buffer = new BufferState(entries);
+      const pageSize = 10;
+      
+      buffer.selection.cursorIndex = 5;
+      buffer.pageDown(pageSize);
+      
+      // Cursor should be in visible range [10, 20)
+      expect(buffer.selection.cursorIndex).toBeGreaterThanOrEqual(10);
+      expect(buffer.selection.cursorIndex).toBeLessThan(20);
+    });
+  });
+
   describe('Basic Operations', () => {
     it('should move cursor down', () => {
       const id1 = generateEntryId();
