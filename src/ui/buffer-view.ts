@@ -10,6 +10,22 @@ import { Entry, EntryType } from '../types/entry.js';
 import { BufferState, EditMode } from './buffer-state.js';
 
 /**
+ * Column interface for configurable display
+ */
+export interface Column {
+  /** Column ID for tracking */
+  id: string;
+  /** Column label/header */
+  label: string;
+  /** Width in characters */
+  width: number;
+  /** Render function for entry */
+  render(entry: Entry): string;
+  /** Color for this column */
+  color?: (entry: Entry, isSelected: boolean) => string;
+}
+
+/**
  * Options for buffer rendering
  */
 export interface BufferViewOptions {
@@ -27,6 +43,96 @@ export interface BufferViewOptions {
   showSizes?: boolean;
   /** Show modification dates */
   showDates?: boolean;
+  /** Custom columns */
+  columns?: Column[];
+}
+
+/**
+ * Standard columns
+ */
+export class Columns {
+  /**
+   * Icon column for directory/file type
+   */
+  static createIconColumn(): Column {
+    return {
+      id: 'icon',
+      label: '',
+      width: 4,
+      render: (entry) => {
+        return entry.type === EntryType.Directory ? '📁  ' : '📄  ';
+      },
+    };
+  }
+
+  /**
+   * Name column
+   */
+  static createNameColumn(width: number = 30): Column {
+    return {
+      id: 'name',
+      label: 'Name',
+      width,
+      render: (entry) => {
+        const suffix = entry.type === EntryType.Directory ? '/' : '';
+        return (entry.name + suffix).padEnd(width);
+      },
+      color: (entry, isSelected) => {
+        if (entry.type === EntryType.Directory) {
+          return isSelected ? '#0099FF' : '#0088DD';
+        }
+        return '#FFFFFF';
+      },
+    };
+  }
+
+  /**
+   * Size column
+   */
+  static createSizeColumn(width: number = 12): Column {
+    return {
+      id: 'size',
+      label: 'Size',
+      width,
+      render: (entry) => {
+        if (entry.type === EntryType.Directory) {
+          return '-'.padEnd(width);
+        }
+        const size = entry.size ?? 0;
+        const formatted = size > 1024 * 1024
+          ? `${(size / (1024 * 1024)).toFixed(1)}MB`
+          : size > 1024
+            ? `${(size / 1024).toFixed(1)}KB`
+            : `${size}B`;
+        return formatted.padEnd(width);
+      },
+      color: () => '#888888',
+    };
+  }
+
+  /**
+   * Modified date column
+   */
+  static createDateColumn(width: number = 12): Column {
+    return {
+      id: 'modified',
+      label: 'Modified',
+      width,
+      render: (entry) => {
+        if (!entry.modified) {
+          return '-'.padEnd(width);
+        }
+        const date = entry.modified instanceof Date ? entry.modified : new Date(entry.modified);
+        const str = date.toLocaleDateString('en-US', {
+          month: '2-digit',
+          day: '2-digit',
+          year: '2-digit',
+        });
+        return str.padEnd(width);
+      },
+      color: () => '#666666',
+    };
+  }
 }
 
 /**
@@ -39,6 +145,7 @@ export class BufferView {
   private bufferState: BufferState;
   private options: BufferViewOptions;
   private renderedLines: Map<number, TextRenderable> = new Map();
+  private columns: Column[] = [];
 
   constructor(
     renderer: CliRenderer,
@@ -55,33 +162,53 @@ export class BufferView {
       showIcons: options.showIcons ?? true,
       showSizes: options.showSizes ?? true,
       showDates: options.showDates ?? false,
+      columns: options.columns,
     };
+
+    // Set up default columns
+    this.setupColumns();
   }
 
   /**
-   * Format an entry for display
+   * Setup columns based on options
+   */
+  private setupColumns(): void {
+    if (this.options.columns) {
+      this.columns = this.options.columns;
+    } else {
+      // Default columns
+      if (this.options.showIcons) {
+        this.columns.push(Columns.createIconColumn());
+      }
+      this.columns.push(Columns.createNameColumn(30));
+      if (this.options.showSizes) {
+        this.columns.push(Columns.createSizeColumn(12));
+      }
+      if (this.options.showDates) {
+        this.columns.push(Columns.createDateColumn(12));
+      }
+    }
+  }
+
+  /**
+   * Format an entry for display with columns
    */
   private formatEntry(entry: Entry, isSelected: boolean): string {
-    const icon = this.options.showIcons
-      ? entry.type === EntryType.Directory
-        ? '📁 '
-        : '📄 '
-      : '';
-
-    const size =
-      this.options.showSizes && entry.size !== undefined
-        ? ` (${entry.size} bytes)`
-        : '';
-
+    const parts: string[] = [];
+    
+    for (const column of this.columns) {
+      parts.push(column.render(entry));
+    }
+    
+    const content = parts.join('');
     const prefix = isSelected ? '> ' : '  ';
-
-    return `${prefix}${icon}${entry.name}${size}`;
+    return `${prefix}${content}`;
   }
 
   /**
    * Get color for entry based on selection and mode
    */
-  private getEntryColor(index: number): string {
+  private getEntryColor(index: number, entry: Entry): string {
     const isSelected = index === this.bufferState.selection.cursorIndex;
     const isInSelection =
       this.bufferState.selection.isActive &&
@@ -104,6 +231,12 @@ export class BufferView {
       return '#FFFF00'; // Yellow for cursor
     }
 
+    // Check if entry has custom color
+    const nameColumn = this.columns.find(c => c.id === 'name');
+    if (nameColumn?.color) {
+      return nameColumn.color(entry, isSelected);
+    }
+
     return '#FFFFFF'; // White for normal
   }
 
@@ -123,7 +256,7 @@ export class BufferView {
       const entry = this.bufferState.entries[i];
       const isSelected = i === this.bufferState.selection.cursorIndex;
       const text = this.formatEntry(entry, isSelected);
-      const color = this.getEntryColor(i);
+      const color = this.getEntryColor(i, entry);
 
       const line = new TextRenderable(this.renderer, {
         id: `buffer-line-${i}`,
@@ -152,5 +285,20 @@ export class BufferView {
    */
   getState(): BufferState {
     return this.bufferState;
+  }
+
+  /**
+   * Get current columns
+   */
+  getColumns(): Column[] {
+    return this.columns;
+  }
+
+  /**
+   * Set columns
+   */
+  setColumns(columns: Column[]): void {
+    this.columns = columns;
+    this.render();
   }
 }

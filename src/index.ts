@@ -6,10 +6,12 @@ import { MockAdapter } from './adapters/mock-adapter.js';
 import { S3Adapter } from './adapters/s3-adapter.js';
 import { BufferState, EditMode } from './ui/buffer-state.js';
 import { BufferView } from './ui/buffer-view.js';
+import { StatusBar } from './ui/status-bar.js';
 import { ConfirmationDialog } from './ui/confirmation-dialog.js';
 import { detectChanges, buildOperationPlan } from './utils/change-detection.js';
 import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
+import { formatErrorForDisplay, parseAwsError } from './utils/errors.js';
 
 /**
  * Main application class
@@ -19,6 +21,7 @@ class S3Explorer {
   private adapter!: Adapter;
   private bufferState!: BufferState;
   private bufferView!: BufferView;
+  private statusBar!: StatusBar;
   private currentPath = 'test-bucket/';
   private configManager: ConfigManager;
   private bucket: string = 'test-bucket';
@@ -45,11 +48,20 @@ class S3Explorer {
       exitOnCtrlC: true,
     });
 
+    // Initialize status bar
+    this.statusBar = new StatusBar(this.renderer);
+
     // Setup event handlers
     this.setupEventHandlers();
 
     // Load initial buffer
-    await this.loadBuffer(this.currentPath);
+    try {
+      await this.loadBuffer(this.currentPath);
+      this.currentPath = this.bufferState.currentPath;
+    } catch (error) {
+      const err = parseAwsError(error, 'Loading buffer');
+      this.statusBar.showError(err.message);
+    }
 
     // Render initial UI
     await this.render();
@@ -184,8 +196,16 @@ class S3Explorer {
   private async handleNavigate(): Promise<void> {
     const selected = this.bufferState.getSelectedEntry();
     if (selected && selected.type.toString() === 'directory') {
-      await this.loadBuffer(selected.path);
-      this.render();
+      try {
+        await this.loadBuffer(selected.path);
+        this.currentPath = this.bufferState.currentPath;
+        this.statusBar.clearMessage();
+        this.render();
+      } catch (error) {
+        const err = parseAwsError(error, 'Navigate');
+        this.statusBar.showError(err.message);
+        this.render();
+      }
     }
   }
 
@@ -197,8 +217,16 @@ class S3Explorer {
     if (parts.length > 1) {
       parts.pop();
       const newPath = parts.join('/') + '/';
-      await this.loadBuffer(newPath);
-      this.render();
+      try {
+        await this.loadBuffer(newPath);
+        this.currentPath = this.bufferState.currentPath;
+        this.statusBar.clearMessage();
+        this.render();
+      } catch (error) {
+        const err = parseAwsError(error, 'Navigate up');
+        this.statusBar.showError(err.message);
+        this.render();
+      }
     }
   }
 
@@ -292,41 +320,31 @@ class S3Explorer {
       top: 1,
     });
 
-    // Current path and mode
-    const modeStr = this.bufferState.mode === EditMode.Normal ? 'NORMAL' :
-                    this.bufferState.mode === EditMode.Visual ? 'VISUAL' :
-                    'EDIT';
-    const pathText = new TextRenderable(this.renderer, {
-      id: 'path',
-      content: `Path: ${this.bufferState.currentPath} [${modeStr}]`,
-      fg: '#FFFF00',
+    // Render header info (path/bucket)
+    const bucketText = new TextRenderable(this.renderer, {
+      id: 'bucket',
+      content: `Bucket: ${this.bucket}`,
+      fg: '#00CCFF',
       position: 'absolute',
       left: 2,
       top: 2,
     });
 
-    // Status bar
-    const statusContent = this.bufferState.isDirty ? '* Unsaved changes' : 'Press q to quit, ? for help';
-    const status = new TextRenderable(this.renderer, {
-      id: 'status',
-      content: statusContent,
-      fg: this.bufferState.isDirty ? '#FF0000' : '#888888',
-      position: 'absolute',
-      left: 2,
-      bottom: 0,
-    });
-
-    // Create buffer view
+    // Create buffer view with improved styling
     this.bufferView = new BufferView(this.renderer, this.bufferState, {
       left: 4,
       top: 4,
     });
 
+    // Update status bar
+    this.statusBar.setPath(this.bufferState.currentPath);
+    this.statusBar.setMode(this.bufferState.mode);
+
     // Render components
     this.renderer.root.add(title);
-    this.renderer.root.add(pathText);
-    this.renderer.root.add(status);
+    this.renderer.root.add(bucketText);
     this.bufferView.render();
+    this.statusBar.render();
   }
 
   /**
