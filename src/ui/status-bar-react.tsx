@@ -5,7 +5,7 @@
  */
 
 import { EditMode } from './buffer-state.js';
-import { Theme, CatppuccinMocha } from './theme.js';
+import { CatppuccinMocha } from './theme.js';
 
 interface StatusBarProps {
   path: string;

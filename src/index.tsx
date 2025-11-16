@@ -9,6 +9,23 @@ import { S3Adapter } from './adapters/s3-adapter.js';
 import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 
+// Global keyboard event dispatcher - exported at module level
+export let globalKeyboardDispatcher: ((key: any) => void) | null = null;
+
+/**
+ * Set the global keyboard event dispatcher
+ */
+export function setGlobalKeyboardDispatcher(dispatcher: ((key: any) => void) | null) {
+  globalKeyboardDispatcher = dispatcher;
+}
+
+/**
+ * Get the global keyboard event dispatcher
+ */
+export function getGlobalKeyboardDispatcher() {
+  return globalKeyboardDispatcher;
+}
+
 /**
  * Main entry point for open-s3 application
  */
@@ -58,6 +75,13 @@ async function main() {
   // Create and start renderer
   const renderer = await createCliRenderer({
     exitOnCtrlC: true,
+  });
+
+  // Setup keyboard event handling
+  renderer.keyInput.on('keypress', (key) => {
+    if (globalKeyboardDispatcher) {
+      globalKeyboardDispatcher(key);
+    }
   });
 
   // Create and render app

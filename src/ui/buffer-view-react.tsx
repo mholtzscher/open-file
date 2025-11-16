@@ -6,11 +6,11 @@
  */
 
 import { Entry, EntryType } from '../types/entry.js';
-import { BufferState } from './buffer-state.js';
+import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { Theme, CatppuccinMocha } from './theme.js';
 
 export interface BufferViewProps {
-  bufferState: BufferState;
+  bufferState: UseBufferStateReturn;
   left?: number;
   top?: number;
   height?: number;
