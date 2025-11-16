@@ -88,22 +88,25 @@ class S3Explorer {
     });
   }
 
-  /**
-   * Handle keyboard input
-   */
-  private handleKeyPress(key: any): void {
-    switch (this.bufferState.mode) {
-      case EditMode.Normal:
-        this.handleNormalModeKey(key);
-        break;
-      case EditMode.Visual:
-        this.handleVisualModeKey(key);
-        break;
-      case EditMode.Edit:
-        this.handleEditModeKey(key);
-        break;
-    }
-  }
+   /**
+    * Handle keyboard input
+    */
+   private handleKeyPress(key: any): void {
+     switch (this.bufferState.mode) {
+       case EditMode.Normal:
+         this.handleNormalModeKey(key);
+         break;
+       case EditMode.Visual:
+         this.handleVisualModeKey(key);
+         break;
+       case EditMode.Edit:
+         this.handleEditModeKey(key);
+         break;
+       case EditMode.Search:
+         this.handleSearchModeKey(key);
+         break;
+     }
+   }
 
   /**
    * Handle keys in normal mode
@@ -167,6 +170,10 @@ class S3Explorer {
          // Page up
          this.handlePageUp();
          break;
+       case '/':
+         // Enter search mode
+         this.handleEnterSearch();
+         break;
      }
 
      this.render();
@@ -195,20 +202,47 @@ class S3Explorer {
     this.render();
   }
 
-  /**
-   * Handle keys in edit mode
-   */
-  private handleEditModeKey(key: any): void {
-    switch (key.name) {
-      case 'escape':
-        this.bufferState.exitEditMode();
-        break;
-      // Text editing would be handled by the renderer
-      // For now, just exit with ESC
-    }
+   /**
+    * Handle keys in edit mode
+    */
+   private handleEditModeKey(key: any): void {
+     switch (key.name) {
+       case 'escape':
+         this.bufferState.exitEditMode();
+         break;
+       // Text editing would be handled by the renderer
+       // For now, just exit with ESC
+     }
 
-    this.render();
-  }
+     this.render();
+   }
+
+   /**
+    * Handle keys in search mode
+    */
+   private handleSearchModeKey(key: any): void {
+     switch (key.name) {
+       case 'escape':
+         this.bufferState.exitSearchMode();
+         break;
+       case 'enter':
+         // Confirm search and stay in search mode for refinement
+         break;
+       case 'backspace':
+         // Delete last character from search query
+         this.bufferState.updateSearchQuery(this.bufferState.searchQuery.slice(0, -1));
+         break;
+       default:
+         // Add character to search query if it's a printable character
+         if (key.name && key.name.length === 1) {
+           const newQuery = this.bufferState.searchQuery + key.name;
+           this.bufferState.updateSearchQuery(newQuery);
+         }
+         break;
+     }
+
+     this.render();
+   }
 
   /**
    * Navigate into a directory
@@ -376,6 +410,15 @@ class S3Explorer {
      const pageSize = 10; // Entries per page
      this.bufferState.pageUp(pageSize);
      this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + 10, this.bufferState.entries.length)}`);
+   }
+
+   /**
+    * Enter search mode
+    */
+   private handleEnterSearch(): void {
+     this.bufferState.mode = EditMode.Search;
+     this.bufferState.enterSearchMode();
+     this.statusBar.showInfo('Type to search, ESC to exit');
    }
 
    /**

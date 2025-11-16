@@ -228,12 +228,26 @@ export function createDefaultKeybindings(): KeybindingRegistry {
     handler: () => {},
   });
 
-  // Edit mode
-  registry.register(EditMode.Edit, 'escape', {
-    key: 'escape',
-    description: 'Exit edit mode',
-    handler: () => {},
-  });
+   // Edit mode
+   registry.register(EditMode.Edit, 'escape', {
+     key: 'escape',
+     description: 'Exit edit mode',
+     handler: () => {},
+   });
 
-  return registry;
+   // Search mode
+   registry.register(EditMode.Search, 'escape', {
+     key: 'escape',
+     description: 'Exit search mode',
+     handler: () => {},
+   });
+
+   // Search keybinding in normal mode
+   registry.register(EditMode.Normal, '/', {
+     key: '/',
+     description: 'Enter search mode',
+     handler: () => {},
+   });
+
+   return registry;
 }

@@ -252,14 +252,17 @@ export class BufferView {
 
      // Get page size based on available height
      const pageSize = this.options.height ?? 20;
-     const visibleEntries = this.bufferState.getVisibleEntries(pageSize);
+     
+     // Get entries to display (filtered if searching)
+     const displayEntries = this.bufferState.getDisplayEntries(pageSize);
+     const filtered = this.bufferState.getFilteredEntries();
      const scrollStart = this.bufferState.scrollOffset;
 
      // Render visible entries
      let row = this.options.top!;
-     for (let visibleIndex = 0; visibleIndex < visibleEntries.length; visibleIndex++) {
-       const actualIndex = scrollStart + visibleIndex;
-       const entry = visibleEntries[visibleIndex];
+     for (let visibleIndex = 0; visibleIndex < displayEntries.length; visibleIndex++) {
+       const entry = displayEntries[visibleIndex];
+       const actualIndex = this.bufferState.entries.indexOf(entry);
        const isSelected = actualIndex === this.bufferState.selection.cursorIndex;
        const text = this.formatEntry(entry, isSelected);
        const color = this.getEntryColor(actualIndex, entry);
@@ -275,6 +278,20 @@ export class BufferView {
 
        this.renderer.root.add(line);
        this.renderedLines.set(actualIndex, line);
+     }
+     
+     // Show search query if in search mode
+     if (this.bufferState.isSearching) {
+       const searchRow = this.options.top! - 1;
+       const searchText = new TextRenderable(this.renderer, {
+         id: 'search-bar',
+         content: `/ ${this.bufferState.searchQuery}${this.bufferState.searchQuery ? ` (${filtered.length} matches)` : ''}`,
+         fg: '#FF6600',
+         position: 'absolute',
+         left: this.options.left,
+         top: searchRow,
+       });
+       this.renderer.root.add(searchText);
      }
    }
 

@@ -19,6 +19,7 @@ export enum EditMode {
   Visual = 'visual',
   Insert = 'insert',
   Edit = 'edit',
+  Search = 'search',
 }
 
 /**
@@ -74,6 +75,12 @@ export class BufferState {
   
   /** Scroll offset for viewport (number of entries scrolled from top) */
   scrollOffset = 0;
+  
+  /** Search/filter query */
+  searchQuery = '';
+  
+  /** Whether search mode is active */
+  isSearching = false;
 
   constructor(entries: Entry[] = []) {
     this.entries = entries;
@@ -268,6 +275,8 @@ export class BufferState {
      cloned.currentPath = this.currentPath;
      cloned.copyRegister = JSON.parse(JSON.stringify(this.copyRegister));
      cloned.scrollOffset = this.scrollOffset;
+     cloned.searchQuery = this.searchQuery;
+     cloned.isSearching = this.isSearching;
      return cloned;
    }
 
@@ -387,5 +396,88 @@ export class BufferState {
     */
    getVisibleCursorIndex(pageSize: number = 10): number {
      return Math.max(0, Math.min(this.selection.cursorIndex - this.scrollOffset, pageSize - 1));
+   }
+
+   /**
+    * Enter search mode
+    */
+   enterSearchMode(): void {
+     this.isSearching = true;
+     this.searchQuery = '';
+     this.scrollOffset = 0;
+   }
+
+   /**
+    * Exit search mode
+    */
+   exitSearchMode(): void {
+     this.isSearching = false;
+     this.searchQuery = '';
+     this.scrollOffset = 0;
+     this.selection.cursorIndex = 0;
+   }
+
+   /**
+    * Update search query (for live filtering)
+    */
+   updateSearchQuery(query: string): void {
+     this.searchQuery = query;
+     this.scrollOffset = 0;
+     
+     // Reset cursor to first filtered entry
+     const filtered = this.getFilteredEntries();
+     if (filtered.length > 0) {
+       this.selection.cursorIndex = this.entries.indexOf(filtered[0]);
+     } else {
+       this.selection.cursorIndex = 0;
+     }
+   }
+
+   /**
+    * Get filtered entries based on search query
+    * Case-insensitive substring matching on entry name
+    */
+   getFilteredEntries(): Entry[] {
+     if (!this.searchQuery) {
+       return this.entries;
+     }
+     
+     const query = this.searchQuery.toLowerCase();
+     return this.entries.filter(entry =>
+       entry.name.toLowerCase().includes(query)
+     );
+   }
+
+   /**
+    * Get currently displayed entries (respecting search filter and scroll)
+    */
+   getDisplayEntries(pageSize: number = 10): Entry[] {
+     const filtered = this.getFilteredEntries();
+     const start = this.scrollOffset;
+     const end = Math.min(start + pageSize, filtered.length);
+     return filtered.slice(start, end);
+   }
+
+   /**
+    * Get the actual index in all entries for a filtered entry
+    */
+   getActualIndex(filteredIndex: number): number {
+     const filtered = this.getFilteredEntries();
+     if (filteredIndex >= 0 && filteredIndex < filtered.length) {
+       return this.entries.indexOf(filtered[filteredIndex]);
+     }
+     return 0;
+   }
+
+   /**
+    * Check if entry matches current search query
+    */
+   isEntryMatching(entry: Entry): boolean {
+     if (!this.searchQuery) {
+       return true;
+     }
+     
+     const query = this.searchQuery.toLowerCase();
+     return entry.name.toLowerCase().includes(query);
    }
 }

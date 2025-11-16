@@ -294,6 +294,149 @@ describe('BufferState', () => {
     });
   });
 
+  describe('Search and Filter', () => {
+    it('should filter entries by search query', () => {
+      const entries: Entry[] = [
+        {
+          id: generateEntryId(),
+          name: 'document.txt',
+          type: EntryType.File,
+          path: 'document.txt',
+        },
+        {
+          id: generateEntryId(),
+          name: 'readme.md',
+          type: EntryType.File,
+          path: 'readme.md',
+        },
+        {
+          id: generateEntryId(),
+          name: 'document.pdf',
+          type: EntryType.File,
+          path: 'document.pdf',
+        },
+      ];
+
+      const buffer = new BufferState(entries);
+      buffer.updateSearchQuery('document');
+
+      const filtered = buffer.getFilteredEntries();
+      expect(filtered.length).toBe(2);
+      expect(filtered[0].name).toBe('document.txt');
+      expect(filtered[1].name).toBe('document.pdf');
+    });
+
+    it('should be case-insensitive in search', () => {
+      const entries: Entry[] = [
+        {
+          id: generateEntryId(),
+          name: 'Document.txt',
+          type: EntryType.File,
+          path: 'Document.txt',
+        },
+        {
+          id: generateEntryId(),
+          name: 'readme.md',
+          type: EntryType.File,
+          path: 'readme.md',
+        },
+      ];
+
+      const buffer = new BufferState(entries);
+      buffer.updateSearchQuery('DOCUMENT');
+
+      const filtered = buffer.getFilteredEntries();
+      expect(filtered.length).toBe(1);
+      expect(filtered[0].name).toBe('Document.txt');
+    });
+
+    it('should get display entries respecting search and scroll', () => {
+      const entries: Entry[] = Array.from({ length: 20 }, (_, i) => ({
+        id: generateEntryId(),
+        name: i < 10 ? `file${i + 1}.txt` : `doc${i - 9}.pdf`,
+        type: EntryType.File,
+        path: `file${i + 1}`,
+      }));
+
+      const buffer = new BufferState(entries);
+      buffer.updateSearchQuery('file');
+
+      const displayEntries = buffer.getDisplayEntries(10);
+      expect(displayEntries.length).toBe(10);
+      expect(displayEntries[0].name).toBe('file1.txt');
+    });
+
+    it('should enter and exit search mode', () => {
+      const entries: Entry[] = [
+        {
+          id: generateEntryId(),
+          name: 'file.txt',
+          type: EntryType.File,
+          path: 'file.txt',
+        },
+      ];
+
+      const buffer = new BufferState(entries);
+      expect(buffer.isSearching).toBe(false);
+
+      buffer.enterSearchMode();
+      expect(buffer.isSearching).toBe(true);
+      expect(buffer.searchQuery).toBe('');
+
+      buffer.updateSearchQuery('file');
+      expect(buffer.searchQuery).toBe('file');
+
+      buffer.exitSearchMode();
+      expect(buffer.isSearching).toBe(false);
+      expect(buffer.searchQuery).toBe('');
+    });
+
+    it('should check if entry matches search query', () => {
+      const entries: Entry[] = [
+        {
+          id: generateEntryId(),
+          name: 'document.txt',
+          type: EntryType.File,
+          path: 'document.txt',
+        },
+      ];
+
+      const buffer = new BufferState(entries);
+      const entry = entries[0];
+
+      expect(buffer.isEntryMatching(entry)).toBe(true);
+
+      buffer.updateSearchQuery('file');
+      expect(buffer.isEntryMatching(entry)).toBe(false);
+
+      buffer.updateSearchQuery('document');
+      expect(buffer.isEntryMatching(entry)).toBe(true);
+    });
+
+    it('should return all entries when no search query', () => {
+      const entries: Entry[] = [
+        {
+          id: generateEntryId(),
+          name: 'file1.txt',
+          type: EntryType.File,
+          path: 'file1.txt',
+        },
+        {
+          id: generateEntryId(),
+          name: 'file2.txt',
+          type: EntryType.File,
+          path: 'file2.txt',
+        },
+      ];
+
+      const buffer = new BufferState(entries);
+      const filtered = buffer.getFilteredEntries();
+      
+      expect(filtered.length).toBe(2);
+      expect(filtered).toEqual(entries);
+    });
+  });
+
   describe('Basic Operations', () => {
     it('should move cursor down', () => {
       const id1 = generateEntryId();

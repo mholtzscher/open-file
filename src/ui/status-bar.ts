@@ -51,41 +51,45 @@ export class StatusBar {
     this.message = '';
   }
 
-  /**
-   * Get mode string
-   */
-  private getModeString(): string {
-    switch (this.mode) {
-      case EditMode.Normal:
-        return 'NORMAL';
-      case EditMode.Visual:
-        return 'VISUAL';
-      case EditMode.Edit:
-        return 'EDIT';
-      case EditMode.Insert:
-        return 'INSERT';
-      default:
-        return 'UNKNOWN';
-    }
-  }
+   /**
+    * Get mode string
+    */
+   private getModeString(): string {
+     switch (this.mode) {
+       case EditMode.Normal:
+         return 'NORMAL';
+       case EditMode.Visual:
+         return 'VISUAL';
+       case EditMode.Edit:
+         return 'EDIT';
+       case EditMode.Insert:
+         return 'INSERT';
+       case EditMode.Search:
+         return 'SEARCH';
+       default:
+         return 'UNKNOWN';
+     }
+   }
 
-  /**
-   * Get mode color
-   */
-  private getModeColor(): string {
-    switch (this.mode) {
-      case EditMode.Normal:
-        return '#00AA00';
-      case EditMode.Visual:
-        return '#FFAA00';
-      case EditMode.Edit:
-        return '#FF0000';
-      case EditMode.Insert:
-        return '#0088FF';
-      default:
-        return '#888888';
-    }
-  }
+   /**
+    * Get mode color
+    */
+   private getModeColor(): string {
+     switch (this.mode) {
+       case EditMode.Normal:
+         return '#00AA00';
+       case EditMode.Visual:
+         return '#FFAA00';
+       case EditMode.Edit:
+         return '#FF0000';
+       case EditMode.Insert:
+         return '#0088FF';
+       case EditMode.Search:
+         return '#FF6600';
+       default:
+         return '#888888';
+     }
+   }
 
   /**
    * Render the status bar
