@@ -26,8 +26,8 @@ class S3Explorer {
   private configManager: ConfigManager;
   private bucket: string = 'test-bucket';
 
-  constructor(bucket?: string, adapter?: Adapter) {
-    this.configManager = new ConfigManager();
+  constructor(bucket?: string, adapter?: Adapter, configManager?: ConfigManager) {
+    this.configManager = configManager || new ConfigManager();
     if (bucket) {
       this.bucket = bucket;
       this.currentPath = bucket.endsWith('/') ? bucket : bucket + '/';
@@ -559,15 +559,19 @@ class S3Explorer {
 
       // Create buffer view with improved styling (only once, then reuse and update)
       if (!this.bufferView) {
-        this.bufferView = new BufferView(this.renderer, this.bufferState, {
-          left: 4,
-          top: 4,
-          height: 10, // Match the page size used in scrolling logic
-        });
-      } else {
-        // Update the existing buffer view with new state
-        this.bufferView.updateState(this.bufferState);
-      }
+         const displayConfig = this.configManager.getDisplayConfig();
+         this.bufferView = new BufferView(this.renderer, this.bufferState, {
+           left: 4,
+           top: 4,
+           height: 10, // Match the page size used in scrolling logic
+           showIcons: displayConfig.showIcons ?? true,
+           showSizes: displayConfig.showSizes ?? true,
+           showDates: displayConfig.showDates ?? false,
+         });
+       } else {
+         // Update the existing buffer view with new state
+         this.bufferView.updateState(this.bufferState);
+       }
 
      // Update status bar
      this.statusBar.setPath(this.bufferState.currentPath);
@@ -634,7 +638,7 @@ async function main() {
 
   // Create and start application
   const bucket = cliArgs.bucket || configManager.getS3Config().bucket || 'test-bucket';
-  const app = new S3Explorer(bucket, adapter);
+  const app = new S3Explorer(bucket, adapter, configManager);
   await app.start();
 }
 

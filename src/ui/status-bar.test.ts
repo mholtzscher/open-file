@@ -94,7 +94,7 @@ describe('StatusBar', () => {
       statusBar.showError('Something went wrong');
       
       expect(statusBar['message']).toBe('❌ Something went wrong');
-      expect(statusBar['messageColor']).toBe('#FF0000');
+      expect(statusBar['messageColor']).toBe('#fab387');
     });
 
     it('should show success message', () => {
@@ -108,35 +108,35 @@ describe('StatusBar', () => {
       statusBar.showInfo('Information');
       
       expect(statusBar['message']).toBe('ℹ Information');
-      expect(statusBar['messageColor']).toBe('#0088FF');
+      expect(statusBar['messageColor']).toBe('#fab387');
     });
   });
 
   describe('mode colors', () => {
     it('should use green for NORMAL mode', () => {
-      expect(statusBar['getModeColor']()).toBe('#00AA00');
+      expect(statusBar['getModeColor']()).toBe('#a6e3a1');
       statusBar.setMode(EditMode.Normal);
-      expect(statusBar['getModeColor']()).toBe('#00AA00');
+      expect(statusBar['getModeColor']()).toBe('#a6e3a1');
     });
 
     it('should use orange for VISUAL mode', () => {
       statusBar.setMode(EditMode.Visual);
-      expect(statusBar['getModeColor']()).toBe('#FFAA00');
+      expect(statusBar['getModeColor']()).toBe('#cba6f7');
     });
 
     it('should use red for EDIT mode', () => {
       statusBar.setMode(EditMode.Edit);
-      expect(statusBar['getModeColor']()).toBe('#FF0000');
+      expect(statusBar['getModeColor']()).toBe('#fab387');
     });
 
     it('should use blue for INSERT mode', () => {
       statusBar.setMode(EditMode.Insert);
-      expect(statusBar['getModeColor']()).toBe('#0088FF');
+      expect(statusBar['getModeColor']()).toBe('#fab387');
     });
 
     it('should use orange-red for SEARCH mode', () => {
       statusBar.setMode(EditMode.Search);
-      expect(statusBar['getModeColor']()).toBe('#FF6600');
+      expect(statusBar['getModeColor']()).toBe('#74c7ec');
     });
   });
 

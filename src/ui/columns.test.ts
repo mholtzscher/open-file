@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'bun:test';
 import { Column, Columns } from './buffer-view.js';
 import { Entry, EntryType } from '../types/entry.js';
+import { Theme, CatppuccinMocha } from './theme.js';
 
 describe('Column interface', () => {
   it('should have required properties', () => {
@@ -82,18 +83,44 @@ describe('NameColumn', () => {
     expect(column.width).toBe(30);
   });
 
-  it('should color directories blue', () => {
-    const column = Columns.createNameColumn();
-    const entry: Entry = {
-      id: '1',
-      name: 'test-dir',
-      type: EntryType.Directory,
-      path: 'test-dir/',
-    };
+   it('should color directories blue', () => {
+     const column = Columns.createNameColumn();
+     const entry: Entry = {
+       id: '1',
+       name: 'test-dir',
+       type: EntryType.Directory,
+       path: 'test-dir/',
+     };
 
-    const color = column.color!(entry, false);
-    expect(color).toBe('#0088DD');
-  });
+     const color = column.color!(entry, false);
+     expect(color).toBe('#89b4fa'); // CatppuccinMocha.blue
+   });
+
+   it('should color selected directories differently', () => {
+     const column = Columns.createNameColumn();
+     const entry: Entry = {
+       id: '1',
+       name: 'test-dir',
+       type: EntryType.Directory,
+       path: 'test-dir/',
+     };
+
+     const color = column.color!(entry, true);
+     expect(color).toBe('#74c7ec'); // CatppuccinMocha.sapphire
+   });
+
+   it('should color files white', () => {
+     const column = Columns.createNameColumn();
+     const entry: Entry = {
+       id: '1',
+       name: 'test.txt',
+       type: EntryType.File,
+       path: 'test.txt',
+     };
+
+     const color = column.color!(entry, false);
+     expect(color).toBe('#cdd6f4'); // CatppuccinMocha.text
+   });
 
   it('should color selected directories differently', () => {
     const column = Columns.createNameColumn();
@@ -105,7 +132,7 @@ describe('NameColumn', () => {
     };
 
     const color = column.color!(entry, true);
-    expect(color).toBe('#0099FF');
+    expect(color).toBe('#74c7ec');
   });
 
   it('should color files white', () => {
@@ -118,7 +145,7 @@ describe('NameColumn', () => {
     };
 
     const color = column.color!(entry, false);
-    expect(color).toBe('#FFFFFF');
+    expect(color).toBe('#cdd6f4');
   });
 });
 
@@ -207,7 +234,7 @@ describe('SizeColumn', () => {
     };
 
     const color = column.color!(entry, false);
-    expect(color).toBe('#888888');
+    expect(color).toBe('#9399b2');
   });
 });
 
@@ -246,7 +273,7 @@ describe('DateColumn', () => {
       name: 'test.txt',
       type: EntryType.File,
       path: 'test.txt',
-      modified: '2023-12-25T10:30:00Z',
+      modified: new Date('2023-12-25T10:30:00Z'),
     };
 
     const result = column.render(entry);
@@ -268,6 +295,6 @@ describe('DateColumn', () => {
     };
 
     const color = column.color!(entry, false);
-    expect(color).toBe('#666666');
+    expect(color).toBe('#6c7086');
   });
 });
