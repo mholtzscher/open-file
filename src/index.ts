@@ -294,7 +294,9 @@ class S3Explorer {
     private handleSearchModeKey(key: any): void {
       switch (key.name) {
         case 'escape':
+          // Exit search mode and return to normal mode
           this.bufferState.exitSearchMode();
+          this.bufferState.mode = EditMode.Normal;
           break;
         case 'enter':
           // Confirm search and stay in search mode for refinement
@@ -302,6 +304,14 @@ class S3Explorer {
         case 'backspace':
           // Delete last character from search query
           this.bufferState.updateSearchQuery(this.bufferState.searchQuery.slice(0, -1));
+          break;
+        case 'n':
+          // Find next match
+          this.bufferState.findNextMatch();
+          break;
+        case 'N':
+          // Find previous match
+          this.bufferState.findPreviousMatch();
           break;
         case 'C-c':
           // Toggle case-sensitive search
@@ -576,6 +586,7 @@ class S3Explorer {
      // Update status bar
      this.statusBar.setPath(this.bufferState.currentPath);
      this.statusBar.setMode(this.bufferState.mode);
+     this.statusBar.setSearchQuery(this.bufferState.searchQuery);
 
      // Render components
      this.renderer.root.add(title);

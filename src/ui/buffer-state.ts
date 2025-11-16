@@ -724,6 +724,48 @@ export class BufferState {
    }
 
    /**
+    * Find next match in search results
+    */
+   findNextMatch(): void {
+     const filtered = this.getFilteredEntries();
+     if (filtered.length === 0) {
+       return;
+     }
+
+     // Find the index of the current cursor entry in the filtered results
+     const currentEntry = this.entries[this.selection.cursorIndex];
+     const currentIndex = filtered.findIndex(e => e.id === currentEntry?.id);
+
+     // Move to next match, wrapping around if needed
+     const nextIndex = currentIndex < filtered.length - 1 ? currentIndex + 1 : 0;
+     const nextEntry = filtered[nextIndex];
+
+     // Update cursor to point to the next match
+     this.selection.cursorIndex = this.entries.findIndex(e => e.id === nextEntry.id);
+   }
+
+   /**
+    * Find previous match in search results
+    */
+   findPreviousMatch(): void {
+     const filtered = this.getFilteredEntries();
+     if (filtered.length === 0) {
+       return;
+     }
+
+     // Find the index of the current cursor entry in the filtered results
+     const currentEntry = this.entries[this.selection.cursorIndex];
+     const currentIndex = filtered.findIndex(e => e.id === currentEntry?.id);
+
+     // Move to previous match, wrapping around if needed
+     const prevIndex = currentIndex > 0 ? currentIndex - 1 : filtered.length - 1;
+     const prevEntry = filtered[prevIndex];
+
+     // Update cursor to point to the previous match
+     this.selection.cursorIndex = this.entries.findIndex(e => e.id === prevEntry.id);
+   }
+
+   /**
     * Handle key press for sequence detection
     */
     handleKeyPress(key: string): { handled: boolean; sequence: string[]; action?: 'moveToTop' | 'moveToBottom' | 'delete' } {

@@ -17,6 +17,7 @@ export class StatusBar {
    private mode: EditMode = EditMode.Normal;
    private message: string = '';
    private messageColor: string = CatppuccinMocha.overlay1;
+   private searchQuery: string = '';
    private renderedElements: TextRenderable[] = [];
 
   constructor(renderer: CliRenderer) {
@@ -50,6 +51,13 @@ export class StatusBar {
    */
   clearMessage(): void {
     this.message = '';
+  }
+
+  /**
+   * Set search query for display in search mode
+   */
+  setSearchQuery(query: string): void {
+    this.searchQuery = query;
   }
 
    /**
@@ -107,7 +115,8 @@ export class StatusBar {
     // Left side: path and mode
     const pathText = `📂 ${this.currentPath}`;
     const modeText = `[${this.getModeString()}]`;
-    const leftContent = `${pathText} ${modeText}`;
+    const searchText = this.mode === EditMode.Search ? ` /${this.searchQuery}` : '';
+    const leftContent = `${pathText} ${modeText}${searchText}`;
 
      const left = new TextRenderable(this.renderer, {
        id: 'status-left',
@@ -121,7 +130,10 @@ export class StatusBar {
      this.renderer.root.add(left);
 
      // Right side: message or help text
-      const rightContent = this.message || 'q:quit  j/k:nav  v:select  i:insert  dd:delete  w:save  P:paste  n/p:page  ?:help';
+      const helpText = this.mode === EditMode.Search 
+        ? 'n:next  N:prev  Ctrl+C:toggle-case  Ctrl+R:regex  ESC:exit'
+        : 'q:quit  j/k:nav  v:select  i:insert  dd:delete  w:save  P:paste  n/p:page  ?:help';
+      const rightContent = this.message || helpText;
      const right = new TextRenderable(this.renderer, {
        id: 'status-right',
        content: rightContent,
