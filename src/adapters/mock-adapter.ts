@@ -79,7 +79,7 @@ export class MockAdapter implements Adapter {
   private createSync(path: string, type: EntryType, content?: Buffer | string): void {
     const normalized = this.normalizePath(path, type === EntryType.Directory);
     const parts = normalized.split('/').filter(p => p);
-    const name = parts[parts.length - (type === EntryType.Directory ? 1 : 0)] || '';
+    const name = parts[parts.length - 1] || '';
 
     const entry: MockEntry = {
       id: this.generateId(),
@@ -195,7 +195,7 @@ export class MockAdapter implements Adapter {
     // Create at destination
     const destNormalized = this.normalizePath(destination, entry.type === EntryType.Directory);
     const parts = destNormalized.split('/').filter(p => p);
-    const name = parts[parts.length - (entry.type === EntryType.Directory ? 1 : 0)] || '';
+    const name = parts[parts.length - 1] || '';
 
     this.entries.set(destNormalized, {
       ...entry,
@@ -215,7 +215,7 @@ export class MockAdapter implements Adapter {
     // Create copy at destination
     const destNormalized = this.normalizePath(destination, entry.type === EntryType.Directory);
     const parts = destNormalized.split('/').filter(p => p);
-    const name = parts[parts.length - (entry.type === EntryType.Directory ? 1 : 0)] || '';
+    const name = parts[parts.length - 1] || '';
 
     this.entries.set(destNormalized, {
       ...entry,
