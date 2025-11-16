@@ -46,6 +46,14 @@ export class FloatingWindow {
   private isVisible = false;
   private content: string[] = [];
 
+  /**
+   * Calculate visible length of text, excluding ANSI color codes
+   */
+  private getVisibleLength(text: string): number {
+    // Remove ANSI escape sequences and count remaining characters
+    return text.replace(/\x1b\[[0-9;]*m/g, '').length;
+  }
+
   constructor(renderer: CliRenderer, config: FloatingWindowConfig = {}) {
     this.renderer = renderer;
     this.config = {
@@ -162,9 +170,25 @@ export class FloatingWindow {
     for (let i = 0; i < this.content.length && lineIndex < maxLines; i++) {
       let line = this.content[i];
       
-      // Handle long lines by truncating with ellipsis
-      if (line.length > contentWidth) {
-        line = line.substring(0, Math.max(1, contentWidth - 1)) + '…';
+      // Handle long lines by truncating with ellipsis (using visible length, not byte length)
+      const visibleLen = this.getVisibleLength(line);
+      if (visibleLen > contentWidth) {
+        // Truncate while accounting for ANSI codes
+        let truncated = '';
+        let visibleCount = 0;
+        for (const char of line) {
+          // Check if we're in an ANSI sequence
+          if (truncated.endsWith('\x1b') || (truncated.match(/\x1b\[[0-9;]*$/) !== null)) {
+            // Continue adding ANSI codes
+            truncated += char;
+          } else if (visibleCount < contentWidth - 1) {
+            truncated += char;
+            visibleCount++;
+          } else {
+            break;
+          }
+        }
+        line = truncated + '…';
       }
 
       const contentElement = new TextRenderable(this.renderer, {
