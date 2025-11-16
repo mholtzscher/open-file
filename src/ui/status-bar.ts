@@ -132,7 +132,7 @@ export class StatusBar {
      // Right side: message or help text
       const helpText = this.mode === EditMode.Search 
         ? 'n:next  N:prev  Ctrl+C:toggle-case  Ctrl+R:regex  ESC:exit'
-        : 'q:quit  j/k:nav  v:select  i:insert  dd:delete  w:save  P:paste  n/p:page  ?:help';
+        : 'q:quit  j/k:nav  v:select  i:insert  dd:delete  w:save  p:paste  Ctrl+N/P:page  g?:help';
       const rightContent = this.message || helpText;
      const right = new TextRenderable(this.renderer, {
        id: 'status-right',
