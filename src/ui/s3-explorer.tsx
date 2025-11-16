@@ -11,6 +11,7 @@ import { ConfigManager } from '../utils/config.js';
 import { useBufferState } from '../hooks/useBufferState.js';
 import { useKeyboardEvents } from '../hooks/useKeyboardEvents.js';
 import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
+import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
 import { BufferView } from './buffer-view-react.js';
 import { StatusBar } from './status-bar-react.js';
 import { ConfirmationDialog } from './confirmation-dialog-react.js';
@@ -35,6 +36,10 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [pendingOperations, setPendingOperations] = useState<any[]>([]);
   const keyboardHandlersRef = useRef<any>(null);
+
+  // Track terminal size for responsive layout
+  const terminalSize = useTerminalSize();
+  const layout = useLayoutDimensions(terminalSize.size);
 
   const currentPath = bucket.endsWith('/') ? bucket : bucket + '/';
 
@@ -120,10 +125,6 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
     );
   }
 
-  // Calculate layout
-  const headerHeight = 2;
-  const contentHeight = Math.max(24 - headerHeight - 1, 10);
-
   return (
     <>
       {/* Header */}
@@ -133,18 +134,18 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
         top={0}
         fg={CatppuccinMocha.blue}
       >
-        open-s3: {bucket}
+        open-s3: {bucket} ({terminalSize.width}x{terminalSize.height})
       </text>
 
-      {/* Buffer View */}
+      {/* Buffer View - responsive to terminal size */}
       <BufferView
         bufferState={bufferState}
         left={2}
-        top={headerHeight}
-        height={contentHeight}
-        showIcons={true}
-        showSizes={true}
-        showDates={false}
+        top={layout.headerHeight}
+        height={layout.contentHeight}
+        showIcons={!terminalSize.isSmall}
+        showSizes={!terminalSize.isSmall}
+        showDates={!terminalSize.isMedium}
       />
 
       {/* Status Bar */}
