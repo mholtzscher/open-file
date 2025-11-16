@@ -138,13 +138,13 @@ class S3Explorer {
          return;
        }
 
-     // Handle Ctrl+D and Ctrl+U (page navigation) - these should work regardless
-     if (key.name === 'C-d' || key.name === 'c-d') {
+     // Handle Ctrl+N and Ctrl+P (page navigation) - these should work regardless
+     if (key.name === 'C-n' || key.name === 'c-n') {
        this.handlePageDown();
        this.render();
        return;
      }
-     if (key.name === 'C-u' || key.name === 'c-u') {
+     if (key.name === 'C-p' || key.name === 'c-p') {
        this.handlePageUp();
        this.render();
        return;
@@ -520,20 +520,20 @@ class S3Explorer {
      this.statusBar.showSuccess(`Pasted ${pastedEntries.length} entry/entries`);
    }
 
-   /**
-     * Page down (Ctrl+D) - half page
-     */
-   private handlePageDown(): void {
+     /**
+      * Page down (Ctrl+N) - half page
+      */
+    private handlePageDown(): void {
      const pageSize = 10; // Entries per page
      const halfPage = Math.ceil(pageSize / 2); // Half page = 5 entries
      this.bufferState.pageDown(halfPage, pageSize);
      this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
    }
 
-   /**
-     * Page up (Ctrl+U) - half page
-     */
-   private handlePageUp(): void {
+     /**
+      * Page up (Ctrl+P) - half page
+      */
+    private handlePageUp(): void {
      const pageSize = 10; // Entries per page
      const halfPage = Math.ceil(pageSize / 2); // Half page = 5 entries
      this.bufferState.pageUp(halfPage, pageSize);
@@ -564,8 +564,8 @@ class S3Explorer {
         '  l/→      - Open directory/file',
         '  gg       - Go to top',
         '  G        - Go to bottom',
-        '  Ctrl+U   - Page up',
-        '  Ctrl+D   - Page down',
+        '  Ctrl+P   - Page up',
+        '  Ctrl+N   - Page down',
         '',
         'SELECTION & EDITING:',
         '  v        - Start visual selection',
