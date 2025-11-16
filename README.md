@@ -320,7 +320,7 @@ open-s3 looks for configuration in this order:
 
 ## Architecture
 
-The application follows a clean, modular architecture:
+The application follows a clean, modular architecture with a React-based UI:
 
 ### Adapters (`src/adapters/`)
 - **Adapter Interface** - Abstract interface for storage backends
@@ -328,10 +328,19 @@ The application follows a clean, modular architecture:
 - **S3Adapter** - AWS S3 implementation using SDK v3
 - **AdapterRegistry** - Registry for managing multiple adapters
 
-### UI Components (`src/ui/`)
-- **BufferState** - Manages editor state (entries, selection, mode)
-- **BufferView** - Renders entries as editable buffer
-- **ConfirmationDialog** - Confirmation for operations
+### React Components (`src/ui/`)
+- **S3Explorer** - Main React component with declarative rendering
+- **BufferView** - React component for rendering entries as editable buffer
+- **StatusBar** - React component for status bar display
+- **ConfirmationDialog** - React component for operation confirmations
+- **theme.ts** - Catppuccin color theme definitions
+
+### React Hooks (`src/hooks/`)
+- **useBufferState** - State management for buffer entries, cursor, selection, mode
+- **useKeyboardEvents** - Keyboard event handling with vim-style bindings
+- **useNavigationHandlers** - Directory navigation logic
+- **useBufferOperations** - Buffer operations (copy, paste, delete)
+- **useTerminalSize** - Terminal dimension tracking for responsive layout
 
 ### Utilities (`src/utils/`)
 - **Change Detection** - Detects creates, deletes, moves, renames
@@ -342,7 +351,7 @@ The application follows a clean, modular architecture:
 ### Types (`src/types/`)
 - **Entry** - Represents files/directories
 - **Operations** - Create, Delete, Move, Copy operations
-- **AdapterOperations** - Type definitions for adapter operations
+- **EditMode** - Editor modes (Normal, Visual, Insert, Edit, Search)
 
 ## Development
 
@@ -393,24 +402,71 @@ open-s3/
 │   │   ├── mock-adapter.ts
 │   │   ├── s3-adapter.ts
 │   │   └── registry.ts
-│   ├── ui/                # UI components
-│   │   ├── buffer-state.ts
-│   │   ├── buffer-view.ts
-│   │   └── confirmation-dialog.ts
+│   ├── hooks/             # React hooks for state & effects
+│   │   ├── useBufferState.ts
+│   │   ├── useKeyboardEvents.ts
+│   │   ├── useNavigationHandlers.ts
+│   │   ├── useBufferOperations.ts
+│   │   └── useTerminalSize.ts
+│   ├── ui/                # React components & UI utilities
+│   │   ├── s3-explorer.tsx         # Main React component
+│   │   ├── buffer-view-react.tsx   # Buffer rendering
+│   │   ├── status-bar-react.tsx    # Status bar
+│   │   ├── confirmation-dialog-react.tsx  # Dialog component
+│   │   ├── buffer-state.ts         # Editor state management
+│   │   ├── theme.ts                # Color theme definitions
+│   │   └── keybindings.ts          # Keybinding utilities
 │   ├── types/             # Type definitions
 │   │   ├── entry.ts
-│   │   └── operations.ts
+│   │   ├── operations.ts
+│   │   └── edit-mode.ts    # Editor mode enum
 │   ├── utils/             # Utilities
 │   │   ├── change-detection.ts
 │   │   ├── entry-id.ts
 │   │   ├── config.ts
-│   │   └── path-utils.ts
-│   └── index.ts           # Main application
+│   │   ├── path-utils.ts
+│   │   ├── errors.ts
+│   │   ├── sorting.ts
+│   │   └── cli.ts
+│   └── index.tsx          # Main application & keyboard dispatcher
 ├── justfile               # Development commands
 ├── package.json           # Dependencies
 ├── tsconfig.json          # TypeScript configuration
 └── README.md              # This file
 ```
+
+## React Architecture
+
+The application uses React with OpenTUI for terminal UI rendering. Key architectural decisions:
+
+### Component Structure
+- **S3Explorer** - Main React component that orchestrates the entire application
+- Renders declaratively using JSX with OpenTUI primitives (`<text>`, `<box>`)
+- Uses hooks for all state management and side effects
+
+### State Management via Hooks
+- **useBufferState** - Manages entries, cursor position, selection state, and edit modes
+- **useKeyboardEvents** - Handles all keyboard input with vim-style keybindings
+- **useNavigationHandlers** - Manages directory navigation logic
+- **useTerminalSize** - Tracks terminal dimensions for responsive layout
+
+### Event Handling
+- Keyboard events are captured at the top level (index.tsx)
+- Dispatched to React components via a global dispatcher
+- Components handle events through callback props and hooks
+- Vim-style key sequences (gg, dd, yy) are handled by useKeyboardEvents
+
+### Responsive Layout
+- Terminal size changes are detected via SIGWINCH signals
+- useTerminalSize hook provides reactive width/height values
+- Layout dimensions automatically recalculate on resize
+- UI hides/shows columns based on available space
+
+### No Imperative State Mutation
+- All state changes go through React hooks
+- BufferState and related logic are now hook-based
+- No manual DOM manipulation or rendering
+- Declarative JSX for all UI elements
 
 ## Key Concepts
 
