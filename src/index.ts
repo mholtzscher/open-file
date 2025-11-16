@@ -668,10 +668,8 @@ class S3Explorer {
       ];
       
        if (!this.helpWindow) {
-         // Calculate width based on terminal size, but ensure minimum of 70
-         const minWidth = Math.min(this.renderer.width - 4, 75);
          this.helpWindow = new FloatingWindow(this.renderer, {
-           width: minWidth,
+           width: Math.max(80, this.renderer.width - 8),
            height: 35,
            title: 'KEYBINDINGS',
            horizontalAlign: 'center',
