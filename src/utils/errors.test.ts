@@ -197,7 +197,7 @@ describe('parseAwsError', () => {
     const result = parseAwsError(genericError, 'test');
     
     expect(result).toBeInstanceOf(OperationFailedError);
-    expect(result.originalError).toBe(genericError);
+    expect((result as OperationFailedError).originalError).toBe(genericError);
   });
 });
 

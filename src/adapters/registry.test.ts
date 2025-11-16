@@ -45,6 +45,7 @@ describe('AdapterRegistry', () => {
     it('should register S3 adapter with config', () => {
       const config = {
         region: 'us-east-1',
+        bucket: 'test-bucket',
         credentials: {
           accessKeyId: 'test',
           secretAccessKey: 'test'
@@ -147,15 +148,14 @@ describe('Global registry functions', () => {
     });
   });
 
-  describe('registerS3', () => {
-    it('should register S3 adapter globally', () => {
-      const config = {
-        region: 'us-west-2',
-        credentials: {
-          accessKeyId: 'test',
-          secretAccessKey: 'test'
-        }
-      };
+   describe('registerS3', () => {
+     it('should register S3 adapter globally', () => {
+       const config = {
+         region: 'us-west-2',
+         bucket: 'test-bucket',
+         accessKeyId: 'test',
+         secretAccessKey: 'test'
+       };
       
       registerS3(config);
       
