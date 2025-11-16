@@ -4,7 +4,7 @@
  * Displays current path, mode, and status messages at the bottom of the screen
  */
 
-import { EditMode } from './buffer-state.js';
+import { EditMode } from '../types/edit-mode.js';
 import { CatppuccinMocha } from './theme.js';
 
 interface StatusBarProps {

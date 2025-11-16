@@ -11,17 +11,10 @@
 import { Entry, EntryType } from '../types/entry.js';
 import { EntryIdMap } from '../utils/entry-id.js';
 import { SortConfig, DEFAULT_SORT_CONFIG, sortEntries } from '../utils/sorting.js';
+import { EditMode } from '../types/edit-mode.js';
 
-/**
- * Edit mode for the buffer
- */
-export enum EditMode {
-  Normal = 'normal',
-  Visual = 'visual',
-  Insert = 'insert',
-  Edit = 'edit',
-  Search = 'search',
-}
+// Re-export EditMode for backward compatibility
+export { EditMode } from '../types/edit-mode.js';
 
 /**
  * Selection state

@@ -7,7 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import { Entry } from '../types/entry.js';
-import { EditMode } from '../ui/buffer-state.js';
+import { EditMode } from '../types/edit-mode.js';
 import { SortConfig, DEFAULT_SORT_CONFIG, sortEntries } from '../utils/sorting.js';
 
 export interface SelectionState {

@@ -8,7 +8,7 @@
  */
 
 import { useCallback, useRef, useEffect } from 'react';
-import { EditMode } from '../ui/buffer-state.js';
+import { EditMode } from '../types/edit-mode.js';
 
 export interface KeyEvent {
   name: string;
