@@ -768,7 +768,7 @@ export class BufferState {
    /**
     * Handle key press for sequence detection
     */
-    handleKeyPress(key: string): { handled: boolean; sequence: string[]; action?: 'moveToTop' | 'moveToBottom' | 'delete' } {
+    handleKeyPress(key: string): { handled: boolean; sequence: string[]; action?: 'moveToTop' | 'moveToBottom' | 'delete' | 'copy' } {
      // Clear existing timeout
      if (this.keySequenceTimeout) {
        clearTimeout(this.keySequenceTimeout);
@@ -793,13 +793,21 @@ export class BufferState {
         return { handled: true, sequence: ['g', 'g'], action: 'moveToTop' };
       }
 
-      // Check for dd sequence (delete line)
-      if (this.keySequence.length === 2 && 
-          this.keySequence[0] === 'd' && 
-          this.keySequence[1] === 'd') {
-        this.keySequence = [];
-        return { handled: true, sequence: ['d', 'd'], action: 'delete' };
-      }
+       // Check for yy sequence (copy/yank line)
+       if (this.keySequence.length === 2 && 
+           this.keySequence[0] === 'y' && 
+           this.keySequence[1] === 'y') {
+         this.keySequence = [];
+         return { handled: true, sequence: ['y', 'y'], action: 'copy' };
+       }
+
+       // Check for dd sequence (delete line)
+       if (this.keySequence.length === 2 && 
+           this.keySequence[0] === 'd' && 
+           this.keySequence[1] === 'd') {
+         this.keySequence = [];
+         return { handled: true, sequence: ['d', 'd'], action: 'delete' };
+       }
 
       // Check for G (single key)
       if (this.keySequence.length === 1 && this.keySequence[0] === 'G') {
@@ -813,12 +821,17 @@ export class BufferState {
         return { handled: false, sequence: ['g'] };
       }
 
-      // Single d without second d - not handled yet (could be part of dd)
-      if (this.keySequence.length === 1 && this.keySequence[0] === 'd') {
-        return { handled: false, sequence: ['d'] };
-      }
+       // Single d without second d - not handled yet (could be part of dd)
+       if (this.keySequence.length === 1 && this.keySequence[0] === 'd') {
+         return { handled: false, sequence: ['d'] };
+       }
 
-     // Other keys - clear sequence and not handled
+       // Single y without second y - not handled yet (could be part of yy)
+       if (this.keySequence.length === 1 && this.keySequence[0] === 'y') {
+         return { handled: false, sequence: ['y'] };
+       }
+
+      // Other keys - clear sequence and not handled
      if (this.keySequence.length > 0) {
        const sequence = [...this.keySequence];
        this.keySequence = [];

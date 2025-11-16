@@ -117,20 +117,23 @@ class S3Explorer {
    private handleNormalModeKey(key: any): void {
      const keyResult = this.bufferState.handleKeyPress(key.name);
     
-     // If key was handled as a sequence, execute the action
-     if (keyResult.handled) {
-       if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === 'g') {
-         // gg - move to top
-         this.bufferState.moveCursorToTop();
-       } else if (keyResult.sequence[0] === 'G') {
-         // G - move to bottom
-         this.bufferState.moveCursorToBottom();
-       } else if (keyResult.sequence[0] === 'd' && keyResult.sequence[1] === 'd') {
-         // dd - delete current line
-         this.handleDeleteLine();
-       }
-       return;
-     }
+      // If key was handled as a sequence, execute the action
+      if (keyResult.handled) {
+        if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === 'g') {
+          // gg - move to top
+          this.bufferState.moveCursorToTop();
+        } else if (keyResult.sequence[0] === 'G') {
+          // G - move to bottom
+          this.bufferState.moveCursorToBottom();
+        } else if (keyResult.sequence[0] === 'y' && keyResult.sequence[1] === 'y') {
+          // yy - copy/yank current line
+          this.handleCopy();
+        } else if (keyResult.sequence[0] === 'd' && keyResult.sequence[1] === 'd') {
+          // dd - delete current line
+          this.handleDeleteLine();
+        }
+        return;
+      }
 
     // Handle single keys that aren't part of a sequence
     if (keyResult.sequence.length === 0 || 
@@ -169,23 +172,22 @@ class S3Explorer {
           // Save buffer (commit changes)
           this.handleSave();
           break;
-         case 'c':
-          // Copy selected entry
-          this.handleCopy();
-          break;
-          // 'p' is now used for page up, paste moved to 'P'
-          case 'P':
-           // Paste after cursor (was 'p', now 'P')
-           this.handlePasteAfter();
-           break;
-           case 'n':
-           // Next page (page down)
-           this.handlePageDown();
+          case 'c':
+           // Copy selected entry (deprecated, use yy instead)
+           this.handleCopy();
            break;
            case 'p':
-           // Previous page (page up)
-           this.handlePageUp();
-           break;
+            // Paste after cursor (Vim-style)
+            this.handlePasteAfter();
+            break;
+            case 'C-d':
+            // Page down (half page)
+            this.handlePageDown();
+            break;
+            case 'C-u':
+            // Page up (half page)
+            this.handlePageUp();
+            break;
          case '/':
           // Enter search mode
           this.handleEnterSearch();
