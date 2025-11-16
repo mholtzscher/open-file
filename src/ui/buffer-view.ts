@@ -250,22 +250,29 @@ export class BufferView {
      }
      this.renderedLines.clear();
 
-     // Get page size based on available height
-     const pageSize = this.options.height ?? 20;
-     
-     // Get entries to display (filtered if searching)
-     const displayEntries = this.bufferState.getDisplayEntries(pageSize);
-     const filtered = this.bufferState.getFilteredEntries();
-     const scrollStart = this.bufferState.scrollOffset;
+      // Get page size based on available height
+      const pageSize = this.options.height ?? 20;
+      
+      // Get entries to display (filtered if searching)
+      const displayEntries = this.bufferState.getDisplayEntries(pageSize);
+      const filtered = this.bufferState.getFilteredEntries();
 
-     // Render visible entries
-     let row = this.options.top!;
-     for (let visibleIndex = 0; visibleIndex < displayEntries.length; visibleIndex++) {
-       const entry = displayEntries[visibleIndex];
-       const actualIndex = this.bufferState.entries.indexOf(entry);
-       const isSelected = actualIndex === this.bufferState.selection.cursorIndex;
-       const text = this.formatEntry(entry, isSelected);
-       const color = this.getEntryColor(actualIndex, entry);
+      // Render visible entries
+      let row = this.options.top!;
+      for (let visibleIndex = 0; visibleIndex < displayEntries.length; visibleIndex++) {
+        const entry = displayEntries[visibleIndex];
+        // Get the actual index in the full entries list
+        let actualIndex = -1;
+        if (this.bufferState.isSearching && this.bufferState.searchQuery) {
+          // When searching, we need to find the entry in the full list
+          actualIndex = this.bufferState.entries.findIndex(e => e.id === entry.id);
+        } else {
+          // When not searching, use direct index lookup
+          actualIndex = this.bufferState.entries.indexOf(entry);
+        }
+        const isSelected = actualIndex === this.bufferState.selection.cursorIndex;
+        const text = this.formatEntry(entry, isSelected);
+        const color = this.getEntryColor(actualIndex, entry);
 
        const line = new TextRenderable(this.renderer, {
          id: `buffer-line-${actualIndex}`,
