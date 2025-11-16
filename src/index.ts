@@ -457,46 +457,51 @@ class S3Explorer {
    /**
     * Render the UI
     */
-  private async render(): Promise<void> {
-    // Note: OpenTUI automatically handles updates, so we just update components
-    // No need to manually clear and re-add
+   private async render(): Promise<void> {
+     // Note: OpenTUI automatically handles updates, so we just update components
+     // No need to manually clear and re-add
 
-    // Title
-    const title = new TextRenderable(this.renderer, {
-      id: 'title',
-      content: '📦 open-s3 - S3 TUI Explorer',
-      fg: '#00FF00',
-      position: 'absolute',
-      left: 2,
-      top: 1,
-    });
+     // Title
+     const title = new TextRenderable(this.renderer, {
+       id: 'title',
+       content: '📦 open-s3 - S3 TUI Explorer',
+       fg: '#00FF00',
+       position: 'absolute',
+       left: 2,
+       top: 1,
+     });
 
-    // Render header info (path/bucket)
-    const bucketText = new TextRenderable(this.renderer, {
-      id: 'bucket',
-      content: `Bucket: ${this.bucket}`,
-      fg: '#00CCFF',
-      position: 'absolute',
-      left: 2,
-      top: 2,
-    });
+     // Render header info (path/bucket)
+     const bucketText = new TextRenderable(this.renderer, {
+       id: 'bucket',
+       content: `Bucket: ${this.bucket}`,
+       fg: '#00CCFF',
+       position: 'absolute',
+       left: 2,
+       top: 2,
+     });
 
-    // Create buffer view with improved styling
-    this.bufferView = new BufferView(this.renderer, this.bufferState, {
-      left: 4,
-      top: 4,
-    });
+     // Create buffer view with improved styling (only once, then reuse and update)
+     if (!this.bufferView) {
+       this.bufferView = new BufferView(this.renderer, this.bufferState, {
+         left: 4,
+         top: 4,
+       });
+     } else {
+       // Update the existing buffer view with new state
+       this.bufferView.updateState(this.bufferState);
+     }
 
-    // Update status bar
-    this.statusBar.setPath(this.bufferState.currentPath);
-    this.statusBar.setMode(this.bufferState.mode);
+     // Update status bar
+     this.statusBar.setPath(this.bufferState.currentPath);
+     this.statusBar.setMode(this.bufferState.mode);
 
-    // Render components
-    this.renderer.root.add(title);
-    this.renderer.root.add(bucketText);
-    this.bufferView.render();
-    this.statusBar.render();
-  }
+     // Render components
+     this.renderer.root.add(title);
+     this.renderer.root.add(bucketText);
+     this.bufferView.render();
+     this.statusBar.render();
+   }
 
   /**
    * Main application loop
