@@ -6,6 +6,7 @@
 
 import { CliRenderer, TextRenderable } from '@opentui/core';
 import { OperationPlan } from '../types/operations.js';
+import { Theme, CatppuccinMocha } from './theme.js';
 
 /**
  * Confirmation dialog result
@@ -37,81 +38,81 @@ export class ConfirmationDialog {
     const centerX = Math.floor(this.renderer.width / 2);
     const centerY = Math.floor(this.renderer.height / 2);
 
-    // Dialog box background (using borders)
-    const title = new TextRenderable(this.renderer, {
-      id: 'dialog-title',
-      content: '╔ Confirm Operations ╗',
-      fg: '#00FF00',
-      position: 'absolute',
-      left: centerX - 15,
-      top: centerY - 5,
-    });
-    this.renderedElements.push(title);
-    this.renderer.root.add(title);
+     // Dialog box background (using borders)
+     const title = new TextRenderable(this.renderer, {
+       id: 'dialog-title',
+       content: '╔ Confirm Operations ╗',
+       fg: Theme.getSuccessColor(),
+       position: 'absolute',
+       left: centerX - 15,
+       top: centerY - 5,
+     });
+     this.renderedElements.push(title);
+     this.renderer.root.add(title);
 
-    // Summary line
-    const summary = new TextRenderable(this.renderer, {
-      id: 'dialog-summary',
-      content: `Operations to execute: ${this.plan.summary.total}`,
-      fg: '#FFFFFF',
-      position: 'absolute',
-      left: centerX - 15,
-      top: centerY - 3,
-    });
-    this.renderedElements.push(summary);
-    this.renderer.root.add(summary);
+     // Summary line
+     const summary = new TextRenderable(this.renderer, {
+       id: 'dialog-summary',
+       content: `Operations to execute: ${this.plan.summary.total}`,
+       fg: CatppuccinMocha.text,
+       position: 'absolute',
+       left: centerX - 15,
+       top: centerY - 3,
+     });
+     this.renderedElements.push(summary);
+     this.renderer.root.add(summary);
 
-    // Operation details
-    let row = centerY - 1;
-    if (this.plan.summary.creates > 0) {
-      const creates = new TextRenderable(this.renderer, {
-        id: 'dialog-creates',
-        content: `  + Creates: ${this.plan.summary.creates}`,
-        fg: '#00FF00',
-        position: 'absolute',
-        left: centerX - 15,
-        top: row++,
-      });
-      this.renderedElements.push(creates);
-      this.renderer.root.add(creates);
-    }
+     // Operation details
+     let row = centerY - 1;
+     if (this.plan.summary.creates > 0) {
+       const creates = new TextRenderable(this.renderer, {
+         id: 'dialog-creates',
+         content: `  + Creates: ${this.plan.summary.creates}`,
+         fg: Theme.getSuccessColor(),
+         position: 'absolute',
+         left: centerX - 15,
+         top: row++,
+       });
+       this.renderedElements.push(creates);
+       this.renderer.root.add(creates);
+     }
 
-    if (this.plan.summary.moves > 0) {
-      const moves = new TextRenderable(this.renderer, {
-        id: 'dialog-moves',
-        content: `  → Moves: ${this.plan.summary.moves}`,
-        fg: '#FFFF00',
-        position: 'absolute',
-        left: centerX - 15,
-        top: row++,
-      });
-      this.renderedElements.push(moves);
-      this.renderer.root.add(moves);
-    }
+     if (this.plan.summary.moves > 0) {
+       const moves = new TextRenderable(this.renderer, {
+         id: 'dialog-moves',
+         content: `  → Moves: ${this.plan.summary.moves}`,
+         fg: CatppuccinMocha.yellow,
+         position: 'absolute',
+         left: centerX - 15,
+         top: row++,
+       });
+       this.renderedElements.push(moves);
+       this.renderer.root.add(moves);
+     }
 
-    if (this.plan.summary.deletes > 0) {
-      const deletes = new TextRenderable(this.renderer, {
-        id: 'dialog-deletes',
-        content: `  - Deletes: ${this.plan.summary.deletes}`,
-        fg: '#FF0000',
-        position: 'absolute',
-        left: centerX - 15,
-        top: row++,
-      });
-      this.renderedElements.push(deletes);
-      this.renderer.root.add(deletes);
-    }
+     if (this.plan.summary.deletes > 0) {
+       const deletes = new TextRenderable(this.renderer, {
+         id: 'dialog-deletes',
+         content: `  - Deletes: ${this.plan.summary.deletes}`,
+         fg: Theme.getErrorColor(),
+         position: 'absolute',
+         left: centerX - 15,
+         top: row++,
+       });
+       this.renderedElements.push(deletes);
+       this.renderer.root.add(deletes);
+     }
 
-    // Instructions
-    row++;
-    const instructions = new TextRenderable(this.renderer, {
-      id: 'dialog-instructions',
-      content: 'Press y to confirm, n to cancel',
-      fg: '#888888',
-      position: 'absolute',
-      left: centerX - 15,
-      top: row,
-    });
+     // Instructions
+     row++;
+     const instructions = new TextRenderable(this.renderer, {
+       id: 'dialog-instructions',
+       content: 'Press y to confirm, n to cancel',
+       fg: CatppuccinMocha.overlay1,
+       position: 'absolute',
+       left: centerX - 15,
+       top: row,
+     });
     this.renderedElements.push(instructions);
     this.renderer.root.add(instructions);
   }

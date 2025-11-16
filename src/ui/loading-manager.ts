@@ -5,6 +5,7 @@
  */
 
 import { CliRenderer, TextRenderable } from '@opentui/core';
+import { Theme, CatppuccinMocha } from './theme.js';
 
 /**
  * Loading state types
@@ -275,21 +276,21 @@ export class LoadingManager {
     }
   }
 
-  /**
-   * Get color for operation
-   */
-  private getOperationColor(operation: LoadingOperation): string {
-    switch (operation.state) {
-      case LoadingState.Loading:
-        return '#FFFF00'; // Yellow
-      case LoadingState.Success:
-        return '#00FF00'; // Green
-      case LoadingState.Error:
-        return operation.retryable ? '#FFAA00' : '#FF0000'; // Orange for retryable, red for permanent
-      default:
-        return '#FFFFFF'; // White
-    }
-  }
+   /**
+    * Get color for operation
+    */
+   private getOperationColor(operation: LoadingOperation): string {
+     switch (operation.state) {
+       case LoadingState.Loading:
+         return CatppuccinMocha.yellow;
+       case LoadingState.Success:
+         return Theme.getSuccessColor();
+       case LoadingState.Error:
+         return operation.retryable ? CatppuccinMocha.peach : Theme.getErrorColor();
+       default:
+         return CatppuccinMocha.text;
+     }
+   }
 
   /**
    * Handle key press for retry functionality

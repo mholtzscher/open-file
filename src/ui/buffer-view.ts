@@ -8,6 +8,7 @@
 import { CliRenderer, TextRenderable } from '@opentui/core';
 import { Entry, EntryType } from '../types/entry.js';
 import { BufferState, EditMode } from './buffer-state.js';
+import { Theme, CatppuccinMocha } from './theme.js';
 
 /**
  * Column interface for configurable display
@@ -77,12 +78,12 @@ export class Columns {
         const suffix = entry.type === EntryType.Directory ? '/' : '';
         return (entry.name + suffix).padEnd(width);
       },
-      color: (entry, isSelected) => {
-        if (entry.type === EntryType.Directory) {
-          return isSelected ? '#0099FF' : '#0088DD';
-        }
-        return '#FFFFFF';
-      },
+       color: (entry, isSelected) => {
+         if (entry.type === EntryType.Directory) {
+           return Theme.getDirectoryColor(isSelected);
+         }
+         return Theme.getFileColor(isSelected);
+       },
     };
   }
 
@@ -105,32 +106,32 @@ export class Columns {
             ? `${(size / 1024).toFixed(1)}KB`
             : `${size}B`;
         return formatted.padEnd(width);
-      },
-      color: () => '#888888',
-    };
-  }
+       },
+       color: () => CatppuccinMocha.overlay1,
+     };
+   }
 
-  /**
-   * Modified date column
-   */
-  static createDateColumn(width: number = 12): Column {
-    return {
-      id: 'modified',
-      label: 'Modified',
-      width,
-      render: (entry) => {
-        if (!entry.modified) {
-          return '-'.padEnd(width);
-        }
-        const date = entry.modified instanceof Date ? entry.modified : new Date(entry.modified);
-        const str = date.toLocaleDateString('en-US', {
-          month: '2-digit',
-          day: '2-digit',
-          year: '2-digit',
-        });
-        return str.padEnd(width);
-      },
-      color: () => '#666666',
+   /**
+    * Modified date column
+    */
+   static createDateColumn(width: number = 12): Column {
+     return {
+       id: 'modified',
+       label: 'Modified',
+       width,
+       render: (entry) => {
+         if (!entry.modified) {
+           return '-'.padEnd(width);
+         }
+         const date = entry.modified instanceof Date ? entry.modified : new Date(entry.modified);
+         const str = date.toLocaleDateString('en-US', {
+           month: '2-digit',
+           day: '2-digit',
+           year: '2-digit',
+         });
+         return str.padEnd(width);
+       },
+       color: () => CatppuccinMocha.overlay0,
     };
   }
 }
@@ -223,21 +224,21 @@ export class BufferView {
         this.bufferState.selection.selectionEnd
       );
 
-    if (isSelected && this.bufferState.mode === EditMode.Edit) {
-      return '#FF0000'; // Red for edit mode
-    } else if (isInSelection) {
-      return '#00FF00'; // Green for selection
-    } else if (isSelected) {
-      return '#FFFF00'; // Yellow for cursor
-    }
+     if (isSelected && this.bufferState.mode === EditMode.Edit) {
+       return Theme.getEditModeColor();
+     } else if (isInSelection) {
+       return Theme.getSelectionColor();
+     } else if (isSelected) {
+       return Theme.getCursorColor();
+     }
 
-    // Check if entry has custom color
-    const nameColumn = this.columns.find(c => c.id === 'name');
-    if (nameColumn?.color) {
-      return nameColumn.color(entry, isSelected);
-    }
+     // Check if entry has custom color
+     const nameColumn = this.columns.find(c => c.id === 'name');
+     if (nameColumn?.color) {
+       return nameColumn.color(entry, isSelected);
+     }
 
-    return '#FFFFFF'; // White for normal
+     return CatppuccinMocha.text;
   }
 
    /**
@@ -293,14 +294,14 @@ export class BufferView {
         const flags = this.bufferState.getSearchStatus();
         const matchInfo = this.bufferState.searchQuery ? ` (${filtered.length} matches)` : '';
         const content = `/ ${this.bufferState.searchQuery}${flags}${matchInfo}`;
-        const searchText = new TextRenderable(this.renderer, {
-          id: 'search-bar',
-          content: content,
-          fg: '#FF6600',
-          position: 'absolute',
-          left: this.options.left,
-          top: searchRow,
-        });
+         const searchText = new TextRenderable(this.renderer, {
+           id: 'search-bar',
+           content: content,
+           fg: Theme.getSearchModeColor(),
+           position: 'absolute',
+           left: this.options.left,
+           top: searchRow,
+         });
         this.renderer.root.add(searchText);
       }
    }

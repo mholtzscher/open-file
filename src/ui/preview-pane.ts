@@ -8,6 +8,7 @@
 import { CliRenderer, TextRenderable } from '@opentui/core';
 import { Entry, EntryType } from '../types/entry.js';
 import { Adapter } from '../adapters/adapter.js';
+import { Theme, CatppuccinMocha } from './theme.js';
 
 /**
  * Preview pane options
@@ -147,55 +148,55 @@ export class PreviewPane {
   render(): void {
     this.clearPreview();
 
-    // Draw border
-    const borderTop = new TextRenderable(this.renderer, {
-      id: 'preview-border-top',
-      content: '┌' + '─'.repeat(this.options.width! - 2) + '┐',
-      fg: '#666666',
-      position: 'absolute',
-      left: this.options.left,
-      top: this.options.top,
-    });
-    this.renderedElements.push(borderTop);
-    this.renderer.root.add(borderTop);
+     // Draw border
+     const borderTop = new TextRenderable(this.renderer, {
+       id: 'preview-border-top',
+       content: '┌' + '─'.repeat(this.options.width! - 2) + '┐',
+       fg: CatppuccinMocha.overlay0,
+       position: 'absolute',
+       left: this.options.left,
+       top: this.options.top,
+     });
+     this.renderedElements.push(borderTop);
+     this.renderer.root.add(borderTop);
 
-    // Show title
-    const title = new TextRenderable(this.renderer, {
-      id: 'preview-title',
-      content: `│ ${(this.currentEntry?.name || 'Preview').padEnd(this.options.width! - 4)} │`,
-      fg: '#CCCCCC',
-      position: 'absolute',
-      left: this.options.left,
-      top: this.options.top! + 1,
-    });
-    this.renderedElements.push(title);
-    this.renderer.root.add(title);
+     // Show title
+     const title = new TextRenderable(this.renderer, {
+       id: 'preview-title',
+       content: `│ ${(this.currentEntry?.name || 'Preview').padEnd(this.options.width! - 4)} │`,
+       fg: CatppuccinMocha.subtext1,
+       position: 'absolute',
+       left: this.options.left,
+       top: this.options.top! + 1,
+     });
+     this.renderedElements.push(title);
+     this.renderer.root.add(title);
 
-    // Show content
-    const lines = this.previewContent.split('\n');
-    for (let i = 0; i < Math.min(lines.length, this.options.height! - 3); i++) {
-      const line = lines[i].substring(0, this.options.width! - 4);
-      const content = new TextRenderable(this.renderer, {
-        id: `preview-line-${i}`,
-        content: `│ ${line.padEnd(this.options.width! - 4)} │`,
-        fg: '#AAAAAA',
-        position: 'absolute',
-        left: this.options.left,
-        top: this.options.top! + 2 + i,
-      });
-      this.renderedElements.push(content);
-      this.renderer.root.add(content);
-    }
+     // Show content
+     const lines = this.previewContent.split('\n');
+     for (let i = 0; i < Math.min(lines.length, this.options.height! - 3); i++) {
+       const line = lines[i].substring(0, this.options.width! - 4);
+       const content = new TextRenderable(this.renderer, {
+         id: `preview-line-${i}`,
+         content: `│ ${line.padEnd(this.options.width! - 4)} │`,
+         fg: CatppuccinMocha.overlay2,
+         position: 'absolute',
+         left: this.options.left,
+         top: this.options.top! + 2 + i,
+       });
+       this.renderedElements.push(content);
+       this.renderer.root.add(content);
+     }
 
-    // Draw border bottom
-    const borderBottom = new TextRenderable(this.renderer, {
-      id: 'preview-border-bottom',
-      content: '└' + '─'.repeat(this.options.width! - 2) + '┘',
-      fg: '#666666',
-      position: 'absolute',
-      left: this.options.left,
-      top: this.options.top! + Math.min(lines.length + 2, this.options.height! - 1),
-    });
+     // Draw border bottom
+     const borderBottom = new TextRenderable(this.renderer, {
+       id: 'preview-border-bottom',
+       content: '└' + '─'.repeat(this.options.width! - 2) + '┘',
+       fg: CatppuccinMocha.overlay0,
+       position: 'absolute',
+       left: this.options.left,
+       top: this.options.top! + Math.min(lines.length + 2, this.options.height! - 1),
+     });
     this.renderedElements.push(borderBottom);
     this.renderer.root.add(borderBottom);
   }
