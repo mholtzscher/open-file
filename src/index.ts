@@ -120,6 +120,10 @@ class S3Explorer {
     * Handle keys in normal mode
     */
     private handleNormalModeKey(key: any): void {
+      // Debug: log G and shift keys to understand what's happening
+      if (key.name === 'G' || key.name === 'g' || key.shift || key.name?.toLowerCase() === 'g') {
+        console.log('Key pressed:', key.name, 'shift:', key.shift, 'full:', key);
+      }
       const keyResult = this.bufferState.handleKeyPress(key.name);
     
        // If key was handled as a sequence, execute the action

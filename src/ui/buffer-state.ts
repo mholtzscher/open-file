@@ -809,8 +809,8 @@ export class BufferState {
          return { handled: true, sequence: ['d', 'd'], action: 'delete' };
        }
 
-      // Check for G (single key)
-      if (this.keySequence.length === 1 && this.keySequence[0] === 'G') {
+      // Check for G (single key) - can be 'G' or 'shift+g'
+      if (this.keySequence.length === 1 && (this.keySequence[0] === 'G' || this.keySequence[0] === 'shift+g')) {
         console.log('G detected, entries.length:', this.entries.length);
         this.moveCursorToBottom();
         return { handled: true, sequence: ['G'], action: 'moveToBottom' };
