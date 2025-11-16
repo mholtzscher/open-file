@@ -140,11 +140,9 @@ export function useKeyboardEvents(
       switch (key) {
         case 'j':
           bufferState.moveCursorDown(1);
-          if (handlers.onNavigateDown) handlers.onNavigateDown();
           break;
         case 'k':
           bufferState.moveCursorUp(1);
-          if (handlers.onNavigateUp) handlers.onNavigateUp();
           break;
         case 'h':
           if (handlers.onNavigateUp) handlers.onNavigateUp();

@@ -66,12 +66,9 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   });
 
   // Setup keyboard event handlers - memoized in ref for global dispatcher
+  // Note: j/k/v navigation is handled directly by useKeyboardEvents
   keyboardHandlersRef.current = {
-    onNavigateDown: () => bufferState.moveCursorDown(1),
-    onNavigateUp: () => bufferState.moveCursorUp(1),
     onNavigateInto: () => navigationHandlers.navigateInto(),
-    onStartVisualSelection: () => bufferState.startVisualSelection(),
-    onCopy: () => bufferState.copySelection(),
     onDelete: () => {
       const selected = bufferState.getSelectedEntries();
       if (selected.length > 0) {
