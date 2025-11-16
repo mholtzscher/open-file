@@ -317,7 +317,7 @@ export class BufferState {
      for (const entry of this.copyRegister) {
        const newEntry: Entry = {
          ...JSON.parse(JSON.stringify(entry)),
-         id: `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `entry_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
        };
        pastedEntries.push(newEntry);
        this.entries.splice(this.selection.cursorIndex + pastedEntries.length - 1, 0, newEntry);
@@ -341,7 +341,7 @@ export class BufferState {
      for (const entry of this.copyRegister) {
        const newEntry: Entry = {
          ...JSON.parse(JSON.stringify(entry)),
-         id: `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `entry_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
        };
        pastedEntries.push(newEntry);
        this.entries.splice(this.selection.cursorIndex + pastedEntries.length, 0, newEntry);

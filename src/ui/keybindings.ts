@@ -34,6 +34,7 @@ export class KeybindingRegistry {
     this.bindings.set(EditMode.Visual, new Map());
     this.bindings.set(EditMode.Edit, new Map());
     this.bindings.set(EditMode.Insert, new Map());
+    this.bindings.set(EditMode.Search, new Map());
   }
 
   /**
@@ -82,7 +83,7 @@ export class KeybindingRegistry {
    * Clear all bindings
    */
   clearAll(): void {
-    for (const mode of [EditMode.Normal, EditMode.Visual, EditMode.Edit, EditMode.Insert]) {
+    for (const mode of [EditMode.Normal, EditMode.Visual, EditMode.Edit, EditMode.Insert, EditMode.Search]) {
       this.clear(mode);
     }
   }
