@@ -667,18 +667,18 @@ class S3Explorer {
         'Press ESC to close this menu',
       ];
       
-      if (!this.helpWindow) {
-        this.helpWindow = new FloatingWindow(this.renderer, {
-          width: 45,
-          height: 35,
-          title: 'KEYBINDINGS',
-          horizontalAlign: 'center',
-          verticalAlign: 'center',
-          borderColor: Theme.getSuccessColor(), // Green border
-          backgroundColor: CatppuccinMocha.base, // Dark background
-          textColor: CatppuccinMocha.text, // Light text
-        });
-      }
+       if (!this.helpWindow) {
+         this.helpWindow = new FloatingWindow(this.renderer, {
+           width: 55,
+           height: 35,
+           title: 'KEYBINDINGS',
+           horizontalAlign: 'center',
+           verticalAlign: 'center',
+           borderColor: Theme.getSuccessColor(), // Green border
+           backgroundColor: CatppuccinMocha.base, // Dark background
+           textColor: CatppuccinMocha.text, // Light text
+         });
+       }
       
        this.helpWindow.setContent(helpLines);
        this.helpWindow.show();
@@ -724,7 +724,7 @@ class S3Explorer {
 
        if (!this.sortMenu) {
          this.sortMenu = new FloatingWindow(this.renderer, {
-           width: 40,
+           width: 45,
            height: 18,
            title: 'SORT OPTIONS',
            horizontalAlign: 'center',

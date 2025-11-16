@@ -158,24 +158,26 @@ export class FloatingWindow {
     const contentWidth = this.config.width - (this.config.showBorder ? 4 : 2);
     const maxLines = this.config.height - (this.config.showBorder ? 3 : 1);
 
-    for (let i = 0; i < Math.min(this.content.length, maxLines); i++) {
+    let lineIndex = 0;
+    for (let i = 0; i < this.content.length && lineIndex < maxLines; i++) {
       let line = this.content[i];
       
-      // Truncate if too long
+      // Handle long lines by truncating with ellipsis
       if (line.length > contentWidth) {
-        line = line.substring(0, contentWidth - 1) + '…';
+        line = line.substring(0, Math.max(1, contentWidth - 1)) + '…';
       }
 
       const contentElement = new TextRenderable(this.renderer, {
-        id: `floating-window-content-${pos.x}-${pos.y}-${i}`,
+        id: `floating-window-content-${pos.x}-${pos.y}-${lineIndex}`,
         content: line,
         fg: this.config.textColor,
         position: 'absolute',
         left: contentStartX,
-        top: contentStartY + i,
+        top: contentStartY + lineIndex,
       });
       this.contentElements.push(contentElement);
       this.renderer.root.add(contentElement);
+      lineIndex++;
     }
   }
 
