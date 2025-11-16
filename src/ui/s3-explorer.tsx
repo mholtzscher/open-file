@@ -5,7 +5,7 @@
  * Declarative React component that uses hooks for state management and rendering.
  */
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Adapter } from '../adapters/adapter.js';
 import { ConfigManager } from '../utils/config.js';
 import { useBufferState } from '../hooks/useBufferState.js';
@@ -77,25 +77,28 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
      },
    });
 
-  // Setup keyboard event handlers - memoized in ref for global dispatcher
+  // Setup keyboard event handlers - memoized to prevent stale closure
   // Note: j/k/v navigation is handled directly by useKeyboardEvents
-  keyboardHandlersRef.current = {
-    onNavigateInto: () => navigationHandlers.navigateInto(),
-    onDelete: () => {
-      const selected = bufferState.getSelectedEntries();
-      if (selected.length > 0) {
-        setPendingOperations(selected);
-        setShowConfirmDialog(true);
-      }
-    },
-    onPageDown: () => bufferState.moveCursorDown(10),
-    onPageUp: () => bufferState.moveCursorUp(10),
-    onQuit: () => process.exit(0),
-    onShowHelp: () => setShowHelpDialog(!showHelpDialog),
-  };
+  const keyboardHandlers = useMemo(
+    () => ({
+      onNavigateInto: () => navigationHandlers.navigateInto(),
+      onDelete: () => {
+        const selected = bufferState.getSelectedEntries();
+        if (selected.length > 0) {
+          setPendingOperations(selected);
+          setShowConfirmDialog(true);
+        }
+      },
+      onPageDown: () => bufferState.moveCursorDown(10),
+      onPageUp: () => bufferState.moveCursorUp(10),
+      onQuit: () => process.exit(0),
+      onShowHelp: () => setShowHelpDialog(!showHelpDialog),
+    }),
+    [navigationHandlers, bufferState]
+  );
 
   // Setup keyboard events
-  const { handleKeyDown } = useKeyboardEvents(bufferState, keyboardHandlersRef.current);
+  const { handleKeyDown } = useKeyboardEvents(bufferState, keyboardHandlers);
 
   // Register global keyboard dispatcher on mount
   useEffect(() => {
