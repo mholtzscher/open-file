@@ -68,6 +68,9 @@ export class BufferState {
   
   /** Current path being viewed */
   currentPath = '';
+  
+  /** Copy register (clipboard) - stores entries to be pasted */
+  copyRegister: Entry[] = [];
 
   constructor(entries: Entry[] = []) {
     this.entries = entries;
@@ -251,15 +254,86 @@ export class BufferState {
     this.isDirty = false;
   }
 
-  /**
-   * Clone the current state for undo/redo
-   */
-  clone(): BufferState {
-    const cloned = new BufferState(JSON.parse(JSON.stringify(this.entries)));
-    cloned.mode = this.mode;
-    cloned.selection = { ...this.selection };
-    cloned.isDirty = this.isDirty;
-    cloned.currentPath = this.currentPath;
-    return cloned;
-  }
+   /**
+    * Clone the current state for undo/redo
+    */
+   clone(): BufferState {
+     const cloned = new BufferState(JSON.parse(JSON.stringify(this.entries)));
+     cloned.mode = this.mode;
+     cloned.selection = { ...this.selection };
+     cloned.isDirty = this.isDirty;
+     cloned.currentPath = this.currentPath;
+     cloned.copyRegister = JSON.parse(JSON.stringify(this.copyRegister));
+     return cloned;
+   }
+
+   /**
+    * Copy selected entries to the clipboard
+    */
+   copySelection(): void {
+     const selected = this.getSelectedEntries();
+     this.copyRegister = JSON.parse(JSON.stringify(selected));
+   }
+
+   /**
+    * Paste entries before the cursor position
+    */
+   pasteBeforeCursor(): Entry[] {
+     if (this.copyRegister.length === 0) {
+       return [];
+     }
+     
+     // Create copies of the entries with new IDs and paths
+     const pastedEntries: Entry[] = [];
+     for (const entry of this.copyRegister) {
+       const newEntry: Entry = {
+         ...JSON.parse(JSON.stringify(entry)),
+         id: `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+       };
+       pastedEntries.push(newEntry);
+       this.entries.splice(this.selection.cursorIndex + pastedEntries.length - 1, 0, newEntry);
+       this.idMap.registerEntry(newEntry.path, newEntry.id);
+     }
+     
+     this.isDirty = true;
+     return pastedEntries;
+   }
+
+   /**
+    * Paste entries after the cursor position
+    */
+   pasteAfterCursor(): Entry[] {
+     if (this.copyRegister.length === 0) {
+       return [];
+     }
+     
+     // Create copies of the entries with new IDs and paths
+     const pastedEntries: Entry[] = [];
+     for (const entry of this.copyRegister) {
+       const newEntry: Entry = {
+         ...JSON.parse(JSON.stringify(entry)),
+         id: `entry_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+       };
+       pastedEntries.push(newEntry);
+       this.entries.splice(this.selection.cursorIndex + pastedEntries.length, 0, newEntry);
+       this.idMap.registerEntry(newEntry.path, newEntry.id);
+     }
+     
+     this.isDirty = true;
+     return pastedEntries;
+   }
+
+   /**
+    * Check if copy register has entries
+    */
+   hasClipboardContent(): boolean {
+     return this.copyRegister.length > 0;
+   }
+
+   /**
+    * Clear the copy register
+    */
+   clearClipboard(): void {
+     this.copyRegister = [];
+   }
 }

@@ -161,17 +161,35 @@ export function createDefaultKeybindings(): KeybindingRegistry {
     handler: () => {},
   });
 
-  registry.register(EditMode.Normal, 'w', {
-    key: 'w',
-    description: 'Save changes',
-    handler: () => {},
-  });
+   registry.register(EditMode.Normal, 'w', {
+     key: 'w',
+     description: 'Save changes',
+     handler: () => {},
+   });
 
-  registry.register(EditMode.Normal, 'q', {
-    key: 'q',
-    description: 'Quit application',
-    handler: () => {},
-  });
+   registry.register(EditMode.Normal, 'c', {
+     key: 'c',
+     description: 'Copy selected entry',
+     handler: () => {},
+   });
+
+   registry.register(EditMode.Normal, 'p', {
+     key: 'p',
+     description: 'Paste after cursor',
+     handler: () => {},
+   });
+
+   registry.register(EditMode.Normal, 'P', {
+     key: 'P',
+     description: 'Paste before cursor',
+     handler: () => {},
+   });
+
+   registry.register(EditMode.Normal, 'q', {
+     key: 'q',
+     description: 'Quit application',
+     handler: () => {},
+   });
 
   // Visual mode
   registry.register(EditMode.Visual, 'j', {

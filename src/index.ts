@@ -143,13 +143,25 @@ class S3Explorer {
       case 'a':
         this.bufferState.enterEditMode();
         break;
-      case 'w':
-        // Save buffer (commit changes)
-        this.handleSave();
-        break;
-    }
+       case 'w':
+         // Save buffer (commit changes)
+         this.handleSave();
+         break;
+       case 'c':
+         // Copy selected entry
+         this.handleCopy();
+         break;
+       case 'p':
+         // Paste after cursor
+         this.handlePasteAfter();
+         break;
+       case 'P':
+         // Paste before cursor
+         this.handlePasteBefore();
+         break;
+     }
 
-    this.render();
+     this.render();
   }
 
   /**
@@ -280,32 +292,69 @@ class S3Explorer {
     this.render();
   }
 
-  /**
-   * Execute an operation plan
-   */
-  private async executeOperationPlan(plan: any): Promise<void> {
-    for (const op of plan.operations) {
-      try {
-        switch (op.type) {
-          case 'create':
-            await this.adapter.create(op.path, op.entryType);
-            break;
-          case 'delete':
-            await this.adapter.delete(op.path, true);
-            break;
-          case 'move':
-            await this.adapter.move(op.source, op.destination);
-            break;
-        }
-      } catch (error) {
-        console.error(`Failed to execute operation ${op.id}:`, error);
-      }
-    }
-  }
+   /**
+    * Execute an operation plan
+    */
+   private async executeOperationPlan(plan: any): Promise<void> {
+     for (const op of plan.operations) {
+       try {
+         switch (op.type) {
+           case 'create':
+             await this.adapter.create(op.path, op.entryType);
+             break;
+           case 'delete':
+             await this.adapter.delete(op.path, true);
+             break;
+           case 'move':
+             await this.adapter.move(op.source, op.destination);
+             break;
+         }
+       } catch (error) {
+         console.error(`Failed to execute operation ${op.id}:`, error);
+       }
+     }
+   }
 
-  /**
-   * Render the UI
-   */
+   /**
+    * Copy selected entry to clipboard
+    */
+   private handleCopy(): void {
+     const selected = this.bufferState.getSelectedEntry();
+     if (selected) {
+       this.bufferState.copySelection();
+       this.statusBar.showInfo(`Copied: ${selected.name}`);
+     }
+   }
+
+   /**
+    * Paste after cursor
+    */
+   private handlePasteAfter(): void {
+     if (!this.bufferState.hasClipboardContent()) {
+       this.statusBar.setMessage('Nothing to paste');
+       return;
+     }
+     
+     const pastedEntries = this.bufferState.pasteAfterCursor();
+     this.statusBar.showSuccess(`Pasted ${pastedEntries.length} entry/entries`);
+   }
+
+   /**
+    * Paste before cursor
+    */
+   private handlePasteBefore(): void {
+     if (!this.bufferState.hasClipboardContent()) {
+       this.statusBar.setMessage('Nothing to paste');
+       return;
+     }
+     
+     const pastedEntries = this.bufferState.pasteBeforeCursor();
+     this.statusBar.showSuccess(`Pasted ${pastedEntries.length} entry/entries`);
+   }
+
+   /**
+    * Render the UI
+    */
   private async render(): Promise<void> {
     // Note: OpenTUI automatically handles updates, so we just update components
     // No need to manually clear and re-add
