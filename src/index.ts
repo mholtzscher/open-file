@@ -669,7 +669,7 @@ class S3Explorer {
       
        if (!this.helpWindow) {
          this.helpWindow = new FloatingWindow(this.renderer, {
-           width: Math.max(80, this.renderer.width - 8),
+           width: Math.max(40, Math.floor((this.renderer.width - 4) / 2)),
            height: 35,
            title: 'KEYBINDINGS',
            horizontalAlign: 'center',
