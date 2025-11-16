@@ -9,11 +9,13 @@ import { BufferView } from './ui/buffer-view.js';
 import { StatusBar } from './ui/status-bar.js';
 import { ConfirmationDialog } from './ui/confirmation-dialog.js';
 import { FloatingWindow } from './ui/floating-window.js';
+import { PreviewPane } from './ui/preview-pane.js';
 import { Theme, CatppuccinMocha } from './ui/theme.js';
 import { detectChanges, buildOperationPlan } from './utils/change-detection.js';
 import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 import { formatErrorForDisplay, parseAwsError } from './utils/errors.js';
+import { SortField, SortOrder, formatSortField, formatSortOrder } from './utils/sorting.js';
 
 /**
  * Main application class
@@ -24,7 +26,11 @@ class S3Explorer {
   private bufferState!: BufferState;
   private bufferView!: BufferView;
   private statusBar!: StatusBar;
+  private previewPane?: PreviewPane;
+  private previewPaneVisible = false;
   private helpWindow?: FloatingWindow;
+  private sortMenu?: FloatingWindow;
+  private sortMenuOpen = false;
   private titleRenderable?: TextRenderable;
   private bucketRenderable?: TextRenderable;
   private lastCalculatedHeight = 0;
@@ -76,14 +82,20 @@ class S3Explorer {
     await this.mainLoop();
   }
 
-  /**
-   * Load entries from adapter into buffer
-   */
-  private async loadBuffer(path: string): Promise<void> {
-    const result = await this.adapter.list(path);
-    this.bufferState = new BufferState(result.entries);
-    this.bufferState.currentPath = path;
-  }
+   /**
+    * Load entries from adapter into buffer
+    */
+   private async loadBuffer(path: string): Promise<void> {
+     const result = await this.adapter.list(path);
+     this.bufferState = new BufferState(result.entries);
+     this.bufferState.currentPath = path;
+     
+     // Load hidden files setting from config
+     const displayConfig = this.configManager.getDisplayConfig();
+     if (displayConfig.showHiddenFiles !== undefined) {
+       this.bufferState.showHiddenFiles = displayConfig.showHiddenFiles;
+     }
+   }
 
   /**
    * Setup keyboard event handlers
@@ -117,34 +129,57 @@ class S3Explorer {
       }
     }
 
-   /**
-    * Handle keys in normal mode
-    */
-    private handleNormalModeKey(key: any): void {
-      // Debug: log G and shift keys to understand what's happening
-      if (key.name === 'G' || key.name === 'g' || key.shift || key.name?.toLowerCase() === 'g') {
-        console.log('Key pressed:', key.name, 'shift:', key.shift, 'full:', key);
-      }
-      
-      // Convert shift+g to G if needed
-      let keyName = key.name;
-      if (key.shift && key.name === 'g') {
-        keyName = 'G';
-      }
-      
-      const keyResult = this.bufferState.handleKeyPress(keyName);
-    
-       // If key was handled as a sequence, execute the action
-       // Note: buffer-state already executed most sequence actions (gg, G, yy, dd)
-       // We only need to handle app-level actions here like showing the help menu
-       if (keyResult.handled) {
-         if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === '?') {
-           // g? - show help/actions menu (app-level action)
-           this.handleShowHelp();
-         }
-         // Other sequence actions (gg, G, yy, dd) are already handled by buffer-state
-         // Don't return early - let it fall through to render() at the end
+    /**
+     * Handle keys in normal mode
+     */
+     private handleNormalModeKey(key: any): void {
+       // Handle sort menu keys first if menu is open
+       if (this.sortMenuOpen) {
+         this.handleSortMenuKey(key);
+         this.render();
+         return;
        }
+
+       // Handle help menu keys
+       if (this.helpWindow?.getIsVisible()) {
+         if (key.name === 'escape') {
+           this.helpWindow.hide();
+           this.statusBar.clearMessage();
+           this.render();
+         }
+         return;
+       }
+
+       // Debug: log G and shift keys to understand what's happening
+       if (key.name === 'G' || key.name === 'g' || key.shift || key.name?.toLowerCase() === 'g') {
+         console.log('Key pressed:', key.name, 'shift:', key.shift, 'full:', key);
+       }
+       
+       // Convert shift+g to G if needed
+       let keyName = key.name;
+       if (key.shift && key.name === 'g') {
+         keyName = 'G';
+       }
+       
+       const keyResult = this.bufferState.handleKeyPress(keyName);
+    
+        // If key was handled as a sequence, execute the action
+        // Note: buffer-state already executed most sequence actions (gg, G, yy, dd)
+        // We only need to handle app-level actions here like showing the help menu
+        if (keyResult.handled) {
+          if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === '?') {
+            // g? - show help/actions menu (app-level action)
+            this.handleShowHelp();
+          } else if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === 'g') {
+            // gg - go to top (cursor moved, so update preview)
+            this.updatePreview();
+          } else if (keyResult.sequence[0] === 'G') {
+            // G - go to bottom (cursor moved, so update preview)
+            this.updatePreview();
+          }
+          // Other sequence actions (yy, dd) are already handled by buffer-state
+          // Don't return early - let it fall through to render() at the end
+        }
 
      // Handle Ctrl+N and Ctrl+P (page navigation) - these should work regardless
      // Try multiple key name formats since different systems report them differently
@@ -167,13 +202,15 @@ class S3Explorer {
            process.exit(0);
            break;
           case 'j':
-            const pageSize = Math.max(10, this.renderer.height - 7);
-            this.bufferState.moveCursorDown(pageSize); // Pass page size for scroll adjustment
-            break;
-          case 'k':
-            const pageSizeUp = Math.max(10, this.renderer.height - 7);
-            this.bufferState.moveCursorUp(pageSizeUp); // Pass page size for scroll adjustment
-            break;
+             const pageSize = Math.max(10, this.renderer.height - 7);
+             this.bufferState.moveCursorDown(pageSize); // Pass page size for scroll adjustment
+             this.updatePreview();
+             break;
+           case 'k':
+             const pageSizeUp = Math.max(10, this.renderer.height - 7);
+             this.bufferState.moveCursorUp(pageSizeUp); // Pass page size for scroll adjustment
+             this.updatePreview();
+             break;
          case 'v':
            this.bufferState.startVisualSelection();
            break;
@@ -198,18 +235,38 @@ class S3Explorer {
            // Save buffer (commit changes)
            this.handleSave();
            break;
-          case 'c':
-           // Copy selected entry (deprecated, use yy instead)
-           this.handleCopy();
-           break;
-           case 'p':
-            // Paste after cursor (Vim-style)
-            this.handlePasteAfter();
+           case 'c':
+            // Copy selected entry (deprecated, use yy instead)
+            this.handleCopy();
             break;
+            case 'p':
+             // Paste after cursor (Vim-style) or toggle preview pane
+             if (this.bufferState.hasClipboardContent()) {
+               this.handlePasteAfter();
+             } else {
+               // No clipboard content, so toggle preview pane instead
+               this.handleTogglePreview();
+             }
+             break;
           case '/':
-           // Enter search mode
-           this.handleEnterSearch();
-           break;
+            // Enter search mode
+            this.handleEnterSearch();
+            break;
+          case 'o':
+            // Open sort menu
+            this.handleOpenSortMenu();
+            break;
+          case 'H':
+            // Toggle hidden files visibility
+            this.bufferState.toggleHiddenFiles();
+            const showHidden = this.bufferState.getShowHiddenFiles();
+            // Save the setting to config
+            const displayConfig = this.configManager.getDisplayConfig();
+            displayConfig.showHiddenFiles = showHidden;
+            this.configManager.setDisplayConfig(displayConfig);
+            this.configManager.save();
+            this.statusBar.showInfo(showHidden ? 'Hidden files shown' : 'Hidden files hidden');
+            break;
           case 'u':
            // Undo (Vim-style)
            if (this.bufferState.undo()) {
@@ -541,22 +598,24 @@ class S3Explorer {
      /**
       * Page down (Ctrl+N) - half page
       */
-    private handlePageDown(): void {
-     const pageSize = Math.max(10, this.renderer.height - 7); // Dynamic page size based on terminal height
-     const halfPage = Math.ceil(pageSize / 2); // Half page scroll
-     this.bufferState.pageDown(halfPage, pageSize);
-     this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
-   }
+     private handlePageDown(): void {
+      const pageSize = Math.max(10, this.renderer.height - 7); // Dynamic page size based on terminal height
+      const halfPage = Math.ceil(pageSize / 2); // Half page scroll
+      this.bufferState.pageDown(halfPage, pageSize);
+      this.updatePreview();
+      this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
+    }
 
-     /**
-      * Page up (Ctrl+P) - half page
-      */
-    private handlePageUp(): void {
-     const pageSize = Math.max(10, this.renderer.height - 7); // Dynamic page size based on terminal height
-     const halfPage = Math.ceil(pageSize / 2); // Half page scroll
-     this.bufferState.pageUp(halfPage, pageSize);
-     this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
-   }
+      /**
+       * Page up (Ctrl+P) - half page
+       */
+     private handlePageUp(): void {
+      const pageSize = Math.max(10, this.renderer.height - 7); // Dynamic page size based on terminal height
+      const halfPage = Math.ceil(pageSize / 2); // Half page scroll
+      this.bufferState.pageUp(halfPage, pageSize);
+      this.updatePreview();
+      this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
+    }
 
     /**
      * Enter search mode
@@ -587,21 +646,23 @@ class S3Explorer {
         formatKeybind('Ctrl+P', 'Page up'),
         formatKeybind('Ctrl+N', 'Page down'),
         '',
-        '\x1b[35mSELECTION & EDITING:\x1b[0m',
-        formatKeybind('v', 'Start visual selection'),
-        formatKeybind('yy', 'Copy/yank current entry'),
-        formatKeybind('p', 'Paste after cursor'),
-        formatKeybind('dd', 'Delete current entry'),
-        formatKeybind('i', 'Insert new entry'),
-        formatKeybind('a', 'Edit current entry'),
-        formatKeybind('u', 'Undo'),
-        formatKeybind('Ctrl+R', 'Redo'),
+         '\x1b[35mSELECTION & EDITING:\x1b[0m',
+         formatKeybind('v', 'Start visual selection'),
+         formatKeybind('yy', 'Copy/yank current entry'),
+         formatKeybind('p', 'Toggle preview / Paste'),
+         formatKeybind('dd', 'Delete current entry'),
+         formatKeybind('i', 'Insert new entry'),
+         formatKeybind('a', 'Edit current entry'),
+         formatKeybind('u', 'Undo'),
+         formatKeybind('Ctrl+R', 'Redo'),
         '',
-        '\x1b[35mOPERATIONS:\x1b[0m',
-        formatKeybind('w', 'Save/write changes'),
-        formatKeybind('/', 'Search/filter'),
-        formatKeybind('g?', 'Show this help menu'),
-        formatKeybind('q', 'Quit'),
+         '\x1b[35mOPERATIONS:\x1b[0m',
+         formatKeybind('w', 'Save/write changes'),
+         formatKeybind('/', 'Search/filter'),
+         formatKeybind('o', 'Sort menu'),
+         formatKeybind('H', 'Toggle hidden files'),
+         formatKeybind('g?', 'Show this help menu'),
+         formatKeybind('q', 'Quit'),
         '',
         'Press ESC to close this menu',
       ];
@@ -619,14 +680,164 @@ class S3Explorer {
         });
       }
       
-      this.helpWindow.setContent(helpLines);
-      this.helpWindow.show();
-      this.statusBar.showInfo('Help menu - Press ESC to close');
-    }
+       this.helpWindow.setContent(helpLines);
+       this.helpWindow.show();
+       this.statusBar.showInfo('Help menu - Press ESC to close');
+     }
 
-    /**
-     * Render the UI
-     */
+     /**
+      * Update preview pane with current entry if visible
+      */
+     private updatePreview(): void {
+       if (this.previewPaneVisible && this.previewPane) {
+         const currentEntry = this.bufferState.getSelectedEntry();
+         if (currentEntry) {
+           this.previewPane.previewEntry(currentEntry).catch(() => {
+             // Silently fail on preview errors
+           });
+         }
+       }
+     }
+
+     /**
+      * Open the sort menu
+      */
+     private handleOpenSortMenu(): void {
+       const currentConfig = this.bufferState.getSortConfig();
+       const sortOptions = [
+         '\x1b[35mSORT BY:\x1b[0m',
+         '',
+         `  \x1b[36m1\x1b[0m Name`,
+         `  \x1b[36m2\x1b[0m Size`,
+         `  \x1b[36m3\x1b[0m Type`,
+         `  \x1b[36m4\x1b[0m Modified Date`,
+         '',
+         '\x1b[35mORDER:\x1b[0m',
+         `  \x1b[36m+\x1b[0m ${formatSortOrder(SortOrder.Ascending)}`,
+         `  \x1b[36m-\x1b[0m ${formatSortOrder(SortOrder.Descending)}`,
+         '',
+         `Current: ${formatSortField(currentConfig.field)}`,
+         `         ${formatSortOrder(currentConfig.order)}`,
+         '',
+         'Press ESC to close',
+       ];
+
+       if (!this.sortMenu) {
+         this.sortMenu = new FloatingWindow(this.renderer, {
+           width: 40,
+           height: 18,
+           title: 'SORT OPTIONS',
+           horizontalAlign: 'center',
+           verticalAlign: 'center',
+           borderColor: Theme.getInfoColor(),
+           backgroundColor: CatppuccinMocha.base,
+           textColor: CatppuccinMocha.text,
+         });
+       }
+
+       this.sortMenu.setContent(sortOptions);
+       this.sortMenu.show();
+       this.sortMenuOpen = true;
+       this.statusBar.showInfo('Sort menu: 1-4 field, +/- order, ESC to close');
+     }
+
+     /**
+      * Handle sort menu key presses
+      */
+     private handleSortMenuKey(key: any): void {
+       if (!this.sortMenuOpen || !this.sortMenu) return;
+
+       const currentConfig = this.bufferState.getSortConfig();
+
+       switch (key.name) {
+         case '1':
+           this.bufferState.setSortConfig({ ...currentConfig, field: SortField.Name });
+           this.statusBar.showSuccess(`Sorted by Name`);
+           this.sortMenuOpen = false;
+           this.sortMenu.hide();
+           break;
+         case '2':
+           this.bufferState.setSortConfig({ ...currentConfig, field: SortField.Size });
+           this.statusBar.showSuccess(`Sorted by Size`);
+           this.sortMenuOpen = false;
+           this.sortMenu.hide();
+           break;
+         case '3':
+           this.bufferState.setSortConfig({ ...currentConfig, field: SortField.Type });
+           this.statusBar.showSuccess(`Sorted by Type`);
+           this.sortMenuOpen = false;
+           this.sortMenu.hide();
+           break;
+         case '4':
+           this.bufferState.setSortConfig({ ...currentConfig, field: SortField.Modified });
+           this.statusBar.showSuccess(`Sorted by Modified Date`);
+           this.sortMenuOpen = false;
+           this.sortMenu.hide();
+           break;
+         case '+':
+         case '=':
+           this.bufferState.setSortConfig({ ...currentConfig, order: SortOrder.Ascending });
+           this.statusBar.showSuccess(`Ascending order`);
+           this.handleOpenSortMenu(); // Reopen to show updated state
+           break;
+         case '-':
+           this.bufferState.setSortConfig({ ...currentConfig, order: SortOrder.Descending });
+           this.statusBar.showSuccess(`Descending order`);
+           this.handleOpenSortMenu(); // Reopen to show updated state
+           break;
+         case 'escape':
+           this.sortMenuOpen = false;
+           this.sortMenu.hide();
+           this.statusBar.clearMessage();
+           break;
+       }
+     }
+
+     /**
+      * Toggle preview pane visibility
+      */
+     private handleTogglePreview(): void {
+       // Create preview pane if it doesn't exist
+       if (!this.previewPane) {
+         this.previewPane = new PreviewPane(this.renderer, this.adapter, {
+           left: Math.max(60, this.renderer.width - 25),
+           top: 4,
+           width: 25,
+           height: Math.max(10, this.renderer.height - 7),
+           maxFileSize: 100 * 1024,
+           showSyntaxHighlight: true,
+         });
+       }
+
+       // Toggle visibility
+       this.previewPaneVisible = !this.previewPaneVisible;
+       
+       if (this.previewPaneVisible) {
+         // Show preview of current entry
+         const currentEntry = this.bufferState.getSelectedEntry();
+         if (currentEntry) {
+           this.previewPane.previewEntry(currentEntry).catch(err => {
+             this.statusBar.showError('Failed to load preview');
+           });
+         } else {
+           this.statusBar.showInfo('No entry to preview');
+           this.previewPaneVisible = false;
+         }
+       } else {
+         this.previewPane.setPreviewContent('');
+         this.previewPane.render();
+       }
+
+       if (this.previewPaneVisible) {
+         this.statusBar.showInfo('Preview pane visible (p to toggle)');
+       } else {
+         this.statusBar.showInfo('Preview pane hidden (p to toggle)');
+       }
+     }
+
+     /**
+      * Render the UI
+      */
    private async render(): Promise<void> {
      // Create title renderable only once
      if (!this.titleRenderable) {
@@ -678,9 +889,15 @@ class S3Explorer {
      this.statusBar.setMode(this.bufferState.mode);
      this.statusBar.setSearchQuery(this.bufferState.searchQuery);
 
-     // Render components (reuse existing renderables, they update internally)
-     this.bufferView.render();
-     this.statusBar.render();
+      // Render components (reuse existing renderables, they update internally)
+      this.bufferView.render();
+      
+      // Render preview pane if visible
+      if (this.previewPaneVisible && this.previewPane) {
+        this.previewPane.render();
+      }
+      
+      this.statusBar.render();
    }
 
   /**

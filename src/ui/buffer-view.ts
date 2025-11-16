@@ -218,40 +218,46 @@ export class BufferView {
     * Get color for entry based on selection and mode
     */
    private getEntryColor(index: number, entry: Entry, visibleIndex?: number): string {
-     // For visible entries, use visible cursor index to handle scrolling
-     const isSelected = visibleIndex !== undefined 
-       ? visibleIndex === this.bufferState.getVisibleCursorIndex(this.options.height ?? 20)
-       : index === this.bufferState.selection.cursorIndex;
-     
-     const isInSelection =
-       this.bufferState.selection.isActive &&
-       this.bufferState.selection.selectionStart !== undefined &&
-       this.bufferState.selection.selectionEnd !== undefined &&
-       index >= Math.min(
-         this.bufferState.selection.selectionStart,
-         this.bufferState.selection.selectionEnd
-       ) &&
-       index <= Math.max(
-         this.bufferState.selection.selectionStart,
-         this.bufferState.selection.selectionEnd
-       );
+      // For visible entries, use visible cursor index to handle scrolling
+      const isSelected = visibleIndex !== undefined 
+        ? visibleIndex === this.bufferState.getVisibleCursorIndex(this.options.height ?? 20)
+        : index === this.bufferState.selection.cursorIndex;
+      
+      const isInSelection =
+        this.bufferState.selection.isActive &&
+        this.bufferState.selection.selectionStart !== undefined &&
+        this.bufferState.selection.selectionEnd !== undefined &&
+        index >= Math.min(
+          this.bufferState.selection.selectionStart,
+          this.bufferState.selection.selectionEnd
+        ) &&
+        index <= Math.max(
+          this.bufferState.selection.selectionStart,
+          this.bufferState.selection.selectionEnd
+        );
 
-     if (isSelected && this.bufferState.mode === EditMode.Edit) {
-       return Theme.getEditModeColor();
-     } else if (isInSelection) {
-       return Theme.getSelectionColor();
-     } else if (isSelected) {
-       return Theme.getCursorColor();
-     }
+      // Check if entry is hidden (dot-prefixed)
+      const isHidden = entry.name.split('/')[0].startsWith('.');
 
-     // Check if entry has custom color
-     const nameColumn = this.columns.find(c => c.id === 'name');
-     if (nameColumn?.color) {
-       return nameColumn.color(entry, isSelected);
-     }
+      if (isSelected && this.bufferState.mode === EditMode.Edit) {
+        return Theme.getEditModeColor();
+      } else if (isInSelection) {
+        return Theme.getSelectionColor();
+      } else if (isSelected) {
+        return Theme.getCursorColor();
+      } else if (isHidden) {
+        // Use dimmed color for hidden files
+        return CatppuccinMocha.overlay1;
+      }
 
-     return CatppuccinMocha.text;
-  }
+      // Check if entry has custom color
+      const nameColumn = this.columns.find(c => c.id === 'name');
+      if (nameColumn?.color) {
+        return nameColumn.color(entry, isSelected);
+      }
+
+      return CatppuccinMocha.text;
+   }
 
    /**
     * Render the buffer

@@ -69,6 +69,7 @@ export interface DisplayConfig {
   showDates?: boolean;
   dateFormat?: string;
   defaultSort?: 'name' | 'size' | 'date';
+  showHiddenFiles?: boolean;
 }
 
 /**
@@ -238,15 +239,16 @@ export class ConfigManager {
   /**
    * Get default display configuration
    */
-  private getDefaultDisplayConfig(): DisplayConfig {
-    return {
-      showIcons: true,
-      showSizes: true,
-      showDates: false,
-      dateFormat: 'YYYY-MM-DD HH:mm',
-      defaultSort: 'name',
-    };
-  }
+   private getDefaultDisplayConfig(): DisplayConfig {
+     return {
+       showIcons: true,
+       showSizes: true,
+       showDates: false,
+       dateFormat: 'YYYY-MM-DD HH:mm',
+       defaultSort: 'name',
+       showHiddenFiles: false,
+     };
+   }
 
   /**
    * Set display configuration

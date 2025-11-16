@@ -52,34 +52,58 @@ export class PreviewPane {
     };
   }
 
-  /**
-   * Preview a file
-   */
-  async previewEntry(entry: Entry): Promise<void> {
-    this.currentEntry = entry;
+   /**
+    * Preview a file or show metadata
+    */
+   async previewEntry(entry: Entry): Promise<void> {
+     this.currentEntry = entry;
 
-    // Clear previous preview
-    this.clearPreview();
+     // Clear previous preview
+     this.clearPreview();
 
-    // Don't preview directories
-    if (entry.type === EntryType.Directory) {
-      this.showMessage('[ Directory ]');
-      return;
-    }
+     // Build metadata display
+     const metadataLines: string[] = [];
+     metadataLines.push(entry.name);
+     metadataLines.push('─'.repeat(Math.min(18, entry.name.length)));
+     
+     // Type
+     const typeStr = entry.type === EntryType.Directory ? 'Folder' : 'File';
+     metadataLines.push(`Type: ${typeStr}`);
+     
+     // Size (for files)
+     if (entry.size !== undefined && entry.type !== EntryType.Directory) {
+       const sizeKb = Math.round(entry.size / 1024);
+       const sizeMb = (entry.size / (1024 * 1024)).toFixed(2);
+       if (entry.size < 1024 * 1024) {
+         metadataLines.push(`Size: ${sizeKb}KB`);
+       } else {
+         metadataLines.push(`Size: ${sizeMb}MB`);
+       }
+     }
+     
+     // Modified date
+     if (entry.modified) {
+       const date = new Date(entry.modified);
+       metadataLines.push(`Modified:`);
+       metadataLines.push(`  ${date.toLocaleDateString()}`);
+       metadataLines.push(`  ${date.toLocaleTimeString()}`);
+     }
+     
+     // Path
+     if (entry.path) {
+       metadataLines.push('');
+       metadataLines.push(`Path:`);
+       const pathLines = entry.path.split('/');
+       for (const line of pathLines) {
+         if (line) {
+           metadataLines.push(`  ${line}`);
+         }
+       }
+     }
 
-    // Check file size
-    if (entry.size && entry.size > this.options.maxFileSize!) {
-      this.showMessage(`[ File too large: ${Math.round(entry.size / 1024)}KB ]`);
-      return;
-    }
-
-    // Try to load and preview the file
-    try {
-      await this.loadAndPreview(entry);
-    } catch (error) {
-      this.showMessage(`[ Preview error ]`);
-    }
-  }
+     this.previewContent = metadataLines.join('\n');
+     this.render();
+   }
 
   /**
    * Load file and show appropriate preview

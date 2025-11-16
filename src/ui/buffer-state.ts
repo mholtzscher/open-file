@@ -10,6 +10,7 @@
 
 import { Entry, EntryType } from '../types/entry.js';
 import { EntryIdMap } from '../utils/entry-id.js';
+import { SortConfig, DEFAULT_SORT_CONFIG, sortEntries } from '../utils/sorting.js';
 
 /**
  * Edit mode for the buffer
@@ -100,6 +101,12 @@ export class BufferState {
 
     /** Set of entry IDs marked for deletion */
     deletedEntryIds: Set<string> = new Set();
+
+    /** Sort configuration */
+    sortConfig: SortConfig = DEFAULT_SORT_CONFIG;
+
+    /** Whether to show hidden files (dot-prefixed) */
+    showHiddenFiles = false;
 
   constructor(entries: Entry[] = []) {
     this.entries = entries;
@@ -646,38 +653,54 @@ export class BufferState {
      }
    }
 
-    /**
-     * Get filtered entries based on search query
-     * Supports case-sensitive and regex matching
-     */
-    getFilteredEntries(): Entry[] {
-      if (!this.searchQuery) {
-        return this.entries;
-      }
-      
-      try {
-        if (this.searchUseRegex) {
-          // Use regex matching
-          const flags = this.searchCaseSensitive ? 'g' : 'gi';
-          const regex = new RegExp(this.searchQuery, flags);
-          return this.entries.filter(entry => regex.test(entry.name));
-        } else {
-          // Use substring matching
-          const query = this.searchCaseSensitive ? this.searchQuery : this.searchQuery.toLowerCase();
-          return this.entries.filter(entry => {
-            const name = this.searchCaseSensitive ? entry.name : entry.name.toLowerCase();
-            return name.includes(query);
-          });
-        }
-      } catch (e) {
-        // If regex is invalid, fall back to substring matching
-        const query = this.searchCaseSensitive ? this.searchQuery : this.searchQuery.toLowerCase();
-        return this.entries.filter(entry => {
-          const name = this.searchCaseSensitive ? entry.name : entry.name.toLowerCase();
-          return name.includes(query);
-        });
-      }
-    }
+     /**
+      * Check if an entry is hidden (dot-prefixed)
+      */
+     private isHiddenEntry(entry: Entry): boolean {
+       const filename = entry.name.split('/')[0]; // Get just the filename, not the path
+       return filename.startsWith('.');
+     }
+
+     /**
+      * Get filtered entries based on search query AND hidden files setting
+      * Supports case-sensitive and regex matching
+      */
+     getFilteredEntries(): Entry[] {
+       let filtered = this.entries;
+
+       // Filter hidden files first
+       if (!this.showHiddenFiles) {
+         filtered = filtered.filter(entry => !this.isHiddenEntry(entry));
+       }
+
+       // Then apply search filter
+       if (!this.searchQuery) {
+         return filtered;
+       }
+       
+       try {
+         if (this.searchUseRegex) {
+           // Use regex matching
+           const flags = this.searchCaseSensitive ? 'g' : 'gi';
+           const regex = new RegExp(this.searchQuery, flags);
+           return filtered.filter(entry => regex.test(entry.name));
+         } else {
+           // Use substring matching
+           const query = this.searchCaseSensitive ? this.searchQuery : this.searchQuery.toLowerCase();
+           return filtered.filter(entry => {
+             const name = this.searchCaseSensitive ? entry.name : entry.name.toLowerCase();
+             return name.includes(query);
+           });
+         }
+       } catch (e) {
+         // If regex is invalid, fall back to substring matching
+         const query = this.searchCaseSensitive ? this.searchQuery : this.searchQuery.toLowerCase();
+         return filtered.filter(entry => {
+           const name = this.searchCaseSensitive ? entry.name : entry.name.toLowerCase();
+           return name.includes(query);
+         });
+       }
+     }
 
    /**
     * Get currently displayed entries (respecting search filter and scroll)
@@ -968,5 +991,46 @@ export class BufferState {
      */
     getHistoryStatus(): string {
       return `Undo: ${this.undoHistory.length}, Redo: ${this.redoHistory.length}`;
+    }
+
+    /**
+     * Set sort configuration and apply sorting
+     */
+    setSortConfig(config: SortConfig): void {
+      this.sortConfig = config;
+      this.entries = sortEntries(this.entries, config);
+      // Adjust cursor if it's out of bounds
+      if (this.selection.cursorIndex >= this.entries.length) {
+        this.selection.cursorIndex = Math.max(0, this.entries.length - 1);
+      }
+    }
+
+    /**
+     * Get current sort configuration
+     */
+    getSortConfig(): SortConfig {
+      return this.sortConfig;
+    }
+
+    /**
+     * Toggle hidden files visibility
+     */
+    toggleHiddenFiles(): void {
+      this.showHiddenFiles = !this.showHiddenFiles;
+      
+      // Adjust cursor if it's pointing to a now-hidden entry
+      const filteredEntries = this.getFilteredEntries();
+      if (this.selection.cursorIndex >= filteredEntries.length && filteredEntries.length > 0) {
+        this.selection.cursorIndex = filteredEntries.length - 1;
+      } else if (filteredEntries.length === 0) {
+        this.selection.cursorIndex = 0;
+      }
+    }
+
+    /**
+     * Get hidden files visibility state
+     */
+    getShowHiddenFiles(): boolean {
+      return this.showHiddenFiles;
     }
 }
