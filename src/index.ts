@@ -630,14 +630,25 @@ class S3Explorer {
      * Show help and available actions menu
      */
     private handleShowHelp(): void {
-      // Helper function to format keybinding lines with color codes
+      // Helper function to format keybinding lines with color codes and pad to width
       const formatKeybind = (key: string, desc: string) => {
         // Use ANSI color codes: key in cyan, rest in normal text
-        return `  \x1b[36m${key.padEnd(8)}\x1b[0m - ${desc}`;
+        const line = `  \x1b[36m${key.padEnd(8)}\x1b[0m - ${desc}`;
+        // Calculate visible length (excluding ANSI codes)
+        const visibleLength = 2 + 8 + 3 + desc.length;
+        const padding = Math.max(0, 72 - visibleLength); // 80 - 8 for borders and padding
+        return line + ' '.repeat(padding);
+      };
+
+      const formatHeader = (text: string) => {
+        const line = `\x1b[35m${text}\x1b[0m`;
+        const visibleLength = text.length;
+        const padding = Math.max(0, 72 - visibleLength);
+        return line + ' '.repeat(padding);
       };
 
       const helpLines = [
-        '\x1b[35mNAVIGATION:\x1b[0m',
+        formatHeader('NAVIGATION:'),
         formatKeybind('j/k', 'Move cursor up/down'),
         formatKeybind('h/←', 'Go to parent directory'),
         formatKeybind('l/→', 'Open directory/file'),
@@ -645,8 +656,8 @@ class S3Explorer {
         formatKeybind('G', 'Go to bottom'),
         formatKeybind('Ctrl+P', 'Page up'),
         formatKeybind('Ctrl+N', 'Page down'),
-        '',
-         '\x1b[35mSELECTION & EDITING:\x1b[0m',
+        ' '.repeat(72),
+         formatHeader('SELECTION & EDITING:'),
          formatKeybind('v', 'Start visual selection'),
          formatKeybind('yy', 'Copy/yank current entry'),
          formatKeybind('p', 'Toggle preview / Paste'),
@@ -655,21 +666,21 @@ class S3Explorer {
          formatKeybind('a', 'Edit current entry'),
          formatKeybind('u', 'Undo'),
          formatKeybind('Ctrl+R', 'Redo'),
-        '',
-         '\x1b[35mOPERATIONS:\x1b[0m',
+        ' '.repeat(72),
+         formatHeader('OPERATIONS:'),
          formatKeybind('w', 'Save/write changes'),
          formatKeybind('/', 'Search/filter'),
          formatKeybind('o', 'Sort menu'),
          formatKeybind('H', 'Toggle hidden files'),
          formatKeybind('g?', 'Show this help menu'),
          formatKeybind('q', 'Quit'),
-        '',
-        'Press ESC to close this menu',
+        ' '.repeat(72),
+        'Press ESC to close this menu'.padEnd(72),
       ];
       
        if (!this.helpWindow) {
          this.helpWindow = new FloatingWindow(this.renderer, {
-           width: Math.max(40, Math.floor((this.renderer.width - 4) / 2)),
+           width: 80,
            height: 35,
            title: 'KEYBINDINGS',
            horizontalAlign: 'center',

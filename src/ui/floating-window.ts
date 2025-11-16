@@ -152,6 +152,9 @@ export class FloatingWindow {
       this.renderer.root.add(this.box);
     }
 
+    // Don't use a background box - let the main BoxRenderable handle the background
+    // The border box already has backgroundColor set which should fill the interior
+
     // Render content lines inside the box
     const contentStartX = pos.x + (this.config.showBorder ? 2 : 1);
     const contentStartY = pos.y + (this.config.showBorder ? 1 : 0);
@@ -164,6 +167,7 @@ export class FloatingWindow {
         id: `floating-window-content-${pos.x}-${pos.y}-${i}`,
         content: line,
         fg: this.config.textColor,
+        bg: this.config.backgroundColor,
         position: 'absolute',
         left: contentStartX,
         top: contentStartY + i,
