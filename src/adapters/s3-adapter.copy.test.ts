@@ -45,8 +45,18 @@ class MockDeleteBucketCommand {
   constructor(public params: any) {}
 }
 
+// Track all commands sent
+let commandsSent: any[] = [];
+
 // Mock the AWS SDK
-const mockSend = mock(() => Promise.resolve({}));
+const mockSend = mock(async (command: any) => {
+  commandsSent.push(command);
+  if (command.constructor.name === 'MockListObjectsV2Command') {
+    return (mockSend as any).mockListResponse || { Contents: [], $metadata: {} };
+  }
+  return {};
+});
+
 const mockClient = {
   send: mockSend
 } as any;
@@ -75,95 +85,82 @@ describe('S3Adapter copy enhancements', () => {
 
   beforeEach(() => {
     adapter = new S3Adapter(config);
+    commandsSent = [];
     mockSend.mockClear();
   });
 
-  describe('copy single file', () => {
-    it('should copy file within same bucket', async () => {
-      await adapter.copy('source.txt', 'dest.txt');
+   describe('copy single file', () => {
+     it('should copy file within same bucket', async () => {
+       await adapter.copy('source.txt', 'dest.txt');
 
-      expect(mockSend).toHaveBeenCalledTimes(1);
-      const [command] = mockSend.mock.calls[0];
-      expect(command.constructor.name).toBe('CopyObjectCommand');
-      expect(command.params.Bucket).toBe('test-bucket');
-      expect(command.params.CopySource).toBe('test-bucket/source.txt');
-      expect(command.params.Key).toBe('dest.txt');
-      expect(command.params.MetadataDirective).toBe('COPY');
-    });
+       expect(commandsSent).toHaveLength(1);
+       const command = commandsSent[0];
+       expect(command.constructor.name).toBe('MockCopyObjectCommand');
+       expect(command.params.Bucket).toBe('test-bucket');
+       expect(command.params.CopySource).toBe('test-bucket/source.txt');
+       expect(command.params.Key).toBe('dest.txt');
+       expect(command.params.MetadataDirective).toBe('COPY');
+     });
 
-    it('should copy file to different bucket', async () => {
-      await adapter.copy('source.txt', 'dest.txt', 'target-bucket');
+     it('should copy file to different bucket', async () => {
+       await adapter.copy('source.txt', 'dest.txt', 'target-bucket');
 
-      expect(mockSend).toHaveBeenCalledTimes(1);
-      const [command] = mockSend.mock.calls[0];
-      expect(command.params.Bucket).toBe('target-bucket');
-      expect(command.params.CopySource).toBe('test-bucket/source.txt');
-      expect(command.params.Key).toBe('dest.txt');
-    });
-  });
+       expect(commandsSent).toHaveLength(1);
+       const command = commandsSent[0];
+       expect(command.params.Bucket).toBe('target-bucket');
+       expect(command.params.CopySource).toBe('test-bucket/source.txt');
+       expect(command.params.Key).toBe('dest.txt');
+     });
+   });
 
-  describe('copy directory', () => {
-    it('should copy directory recursively within same bucket', async () => {
-      // Mock list response
-      const mockListResponse: ListObjectsV2CommandOutput = {
-        Contents: [
-          { Key: 'source-dir/' },
-          { Key: 'source-dir/file1.txt' },
-          { Key: 'source-dir/file2.txt' },
-          { Key: 'source-dir/subdir/file3.txt' },
-        ],
-      };
+   describe('copy directory', () => {
+     it('should copy directory recursively within same bucket', async () => {
+       // Store the mock response on the mockSend function
+       (mockSend as any).mockListResponse = {
+         Contents: [
+           { Key: 'source-dir/' },
+           { Key: 'source-dir/file1.txt' },
+           { Key: 'source-dir/file2.txt' },
+           { Key: 'source-dir/subdir/file3.txt' },
+         ],
+       };
 
-      mockSend.mockImplementation((command) => {
-        if (command.constructor.name === 'ListObjectsV2Command') {
-          return Promise.resolve(mockListResponse);
-        }
-        return Promise.resolve({});
-      });
+       await adapter.copy('source-dir/', 'dest-dir/');
 
-      await adapter.copy('source-dir/', 'dest-dir/');
+       // Should have 1 list call + 3 copy calls (excluding directory marker)
+       expect(commandsSent).toHaveLength(4);
+       
+       // Check the copy calls
+       const copyCommands = commandsSent
+         .filter((cmd: any) => cmd.constructor.name === 'MockCopyObjectCommand')
+         .map((cmd: any) => cmd.params);
 
-      // Should have 1 list call + 3 copy calls (excluding directory marker)
-      expect(mockSend).toHaveBeenCalledTimes(4);
-      
-      // Check the copy calls
-      const copyCommands = mockSend.mock.calls
-        .filter(([cmd]) => cmd.constructor.name === 'CopyObjectCommand')
-        .map(([cmd]) => cmd.params);
+       expect(copyCommands).toHaveLength(3);
+       expect(copyCommands[0].CopySource).toBe('test-bucket/source-dir/file1.txt');
+       expect(copyCommands[0].Key).toBe('dest-dir/file1.txt');
+       expect(copyCommands[1].CopySource).toBe('test-bucket/source-dir/file2.txt');
+       expect(copyCommands[1].Key).toBe('dest-dir/file2.txt');
+       expect(copyCommands[2].CopySource).toBe('test-bucket/source-dir/subdir/file3.txt');
+       expect(copyCommands[2].Key).toBe('dest-dir/subdir/file3.txt');
+     });
 
-      expect(copyCommands).toHaveLength(3);
-      expect(copyCommands[0].CopySource).toBe('test-bucket/source-dir/file1.txt');
-      expect(copyCommands[0].Key).toBe('dest-dir/file1.txt');
-      expect(copyCommands[1].CopySource).toBe('test-bucket/source-dir/file2.txt');
-      expect(copyCommands[1].Key).toBe('dest-dir/file2.txt');
-      expect(copyCommands[2].CopySource).toBe('test-bucket/source-dir/subdir/file3.txt');
-      expect(copyCommands[2].Key).toBe('dest-dir/subdir/file3.txt');
-    });
+     it('should copy directory recursively to different bucket', async () => {
+       (mockSend as any).mockListResponse = {
+         Contents: [
+           { Key: 'source-dir/' },
+           { Key: 'source-dir/file1.txt' },
+         ],
+       };
 
-    it('should copy directory recursively to different bucket', async () => {
-      const mockListResponse: ListObjectsV2CommandOutput = {
-        Contents: [
-          { Key: 'source-dir/' },
-          { Key: 'source-dir/file1.txt' },
-        ],
-      };
+       await adapter.copy('source-dir/', 'dest-dir/', 'target-bucket');
 
-      mockSend.mockImplementation((command) => {
-        if (command.constructor.name === 'ListObjectsV2Command') {
-          return Promise.resolve(mockListResponse);
-        }
-        return Promise.resolve({});
-      });
+       const copyCommands = commandsSent
+         .filter((cmd: any) => cmd.constructor.name === 'MockCopyObjectCommand')
+         .map((cmd: any) => cmd.params);
 
-      await adapter.copy('source-dir/', 'dest-dir/', 'target-bucket');
-
-      const copyCommands = mockSend.mock.calls
-        .filter(([cmd]) => cmd.constructor.name === 'CopyObjectCommand')
-        .map(([cmd]) => cmd.params);
-
-      expect(copyCommands[0].Bucket).toBe('target-bucket');
-      expect(copyCommands[0].CopySource).toBe('test-bucket/source-dir/file1.txt');
-      expect(copyCommands[0].Key).toBe('dest-dir/file1.txt');
-    });
-  });
+       expect(copyCommands[0].Bucket).toBe('target-bucket');
+       expect(copyCommands[0].CopySource).toBe('test-bucket/source-dir/file1.txt');
+       expect(copyCommands[0].Key).toBe('dest-dir/file1.txt');
+     });
+   });
 });
