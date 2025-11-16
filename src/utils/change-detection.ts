@@ -25,6 +25,7 @@ export interface DetectedChanges {
   creates: Entry[];
   deletes: Entry[];
   moves: Map<Entry, string>; // Maps original entry to new path
+  copies: Map<Entry, string>; // Maps original entry to copied path
   reorders: Array<{
     entry: Entry;
     oldIndex: number;
@@ -43,15 +44,18 @@ export function detectChanges(
   const creates: Entry[] = [];
   const deletes: Entry[] = [];
   const moves = new Map<Entry, string>();
+  const copies = new Map<Entry, string>();
   const reorders: DetectedChanges['reorders'] = [];
 
   // Create maps for easier lookup
   const originalById = new Map<string, Entry>();
   const editedById = new Map<string, Entry>();
   const editedByName = new Map<string, Entry>();
+  const originalByPath = new Map<string, Entry>();
 
   for (const entry of original) {
     originalById.set(entry.id, entry);
+    originalByPath.set(entry.path, entry);
   }
 
   for (const entry of edited) {
@@ -59,15 +63,24 @@ export function detectChanges(
     editedByName.set(entry.name, entry);
   }
 
-  // Detect creates (new entries in edited list)
+  // Detect creates, copies, and potential duplicates (new entries in edited list)
   for (const entry of edited) {
     if (!originalById.has(entry.id)) {
-      // This is a new entry
-      creates.push({
-        ...entry,
-        // Ensure new entries have IDs
-        id: entry.id || generateEntryId(),
-      });
+      // This is a new entry - check if it's a copy
+      const originalAtPath = originalByPath.get(entry.path);
+      
+      if (originalAtPath && originalAtPath.type === entry.type) {
+        // Same path and type suggests a copy operation
+        // (e.g., user duplicated a file in the UI and it got a new ID)
+        copies.set(originalAtPath, entry.path);
+      } else {
+        // This is a genuine create
+        creates.push({
+          ...entry,
+          // Ensure new entries have IDs
+          id: entry.id || generateEntryId(),
+        });
+      }
     }
   }
 
@@ -101,6 +114,7 @@ export function detectChanges(
     creates,
     deletes,
     moves,
+    copies,
     reorders,
   };
 }
@@ -131,7 +145,21 @@ export function buildOperationPlan(
     operations.push(createOp);
   }
 
-  // 2. Move operations for renamed/relocated entries
+  // 2. Copy operations for duplicated entries
+  for (const [originalEntry, copiedPath] of changes.copies) {
+    // Determine the new path based on copy operation
+    // For simple copies, use the same base path with a suffix
+    const copyOp: AdapterOperation = {
+      id: `op-${opId++}`,
+      type: 'copy',
+      source: originalEntry.path,
+      destination: copiedPath,
+      entry: originalEntry,
+    };
+    operations.push(copyOp);
+  }
+
+  // 3. Move operations for renamed/relocated entries
   for (const [originalEntry, newPath] of changes.moves) {
     const moveOp: MoveOperation = {
       id: `op-${opId++}`,
@@ -143,7 +171,7 @@ export function buildOperationPlan(
     operations.push(moveOp);
   }
 
-  // 3. Delete operations (last to avoid dependency issues)
+  // 4. Delete operations (last to avoid dependency issues)
   for (const entry of changes.deletes) {
     const deleteOp: DeleteOperation = {
       id: `op-${opId++}`,
@@ -160,7 +188,7 @@ export function buildOperationPlan(
       creates: changes.creates.length,
       deletes: changes.deletes.length,
       moves: changes.moves.size,
-      copies: 0, // TODO: implement copy detection
+      copies: changes.copies.size,
       total: operations.length,
     },
   };

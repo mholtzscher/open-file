@@ -153,6 +153,47 @@ describe('Change Detection', () => {
       expect(changes.creates.length).toBe(0);
       expect(changes.deletes.length).toBe(0);
       expect(changes.moves.size).toBe(0);
+      expect(changes.copies.size).toBe(0);
+    });
+
+    it('should detect copied entries (duplicate with same path)', () => {
+      const id1 = generateEntryId();
+      const id2 = generateEntryId(); // New ID for the copy
+
+      const original: Entry[] = [
+        {
+          id: id1,
+          name: 'file1.txt',
+          type: EntryType.File,
+          path: 'file1.txt',
+        },
+      ];
+
+      const edited: Entry[] = [
+        {
+          id: id1,
+          name: 'file1.txt',
+          type: EntryType.File,
+          path: 'file1.txt',
+        },
+        {
+          id: id2,
+          name: 'file1.txt',
+          type: EntryType.File,
+          path: 'file1.txt', // Same path indicates a copy
+        },
+      ];
+
+      const idMap = new EntryIdMap();
+      const changes = detectChanges(original, edited, idMap);
+
+      // Should detect as a copy, not a create
+      expect(changes.creates.length).toBe(0);
+      expect(changes.copies.size).toBe(1);
+      
+      const copy = Array.from(changes.copies.entries())[0];
+      expect(copy[0].path).toBe('file1.txt');
+      expect(copy[1]).toBe('file1.txt');
     });
   });
 
