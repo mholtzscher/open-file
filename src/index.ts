@@ -138,43 +138,55 @@ class S3Explorer {
          return;
        }
 
-    // Handle single keys that aren't part of a sequence
-    if (keyResult.sequence.length === 0 || 
-        (keyResult.sequence.length === 1 && keyResult.sequence[0] !== 'g')) {
-      switch (key.name) {
-        case 'q':
-          process.exit(0);
-          break;
-         case 'j':
-           this.bufferState.moveCursorDown(10); // Pass page size for scroll adjustment
+     // Handle Ctrl+D and Ctrl+U (page navigation) - these should work regardless
+     if (key.name === 'C-d' || key.name === 'c-d') {
+       this.handlePageDown();
+       this.render();
+       return;
+     }
+     if (key.name === 'C-u' || key.name === 'c-u') {
+       this.handlePageUp();
+       this.render();
+       return;
+     }
+
+     // Handle single keys that aren't part of a sequence
+     if (keyResult.sequence.length === 0 || 
+         (keyResult.sequence.length === 1 && keyResult.sequence[0] !== 'g')) {
+       switch (key.name) {
+         case 'q':
+           process.exit(0);
            break;
-         case 'k':
-           this.bufferState.moveCursorUp(10); // Pass page size for scroll adjustment
+          case 'j':
+            this.bufferState.moveCursorDown(10); // Pass page size for scroll adjustment
+            break;
+          case 'k':
+            this.bufferState.moveCursorUp(10); // Pass page size for scroll adjustment
+            break;
+         case 'v':
+           this.bufferState.startVisualSelection();
            break;
-        case 'v':
-          this.bufferState.startVisualSelection();
-          break;
-        case 'enter':
-        case 'l':
-          // Navigate into directory or open file
-          this.handleNavigate();
-          break;
-        case 'h':
-        case 'backspace':
-          // Navigate to parent directory
-          this.handleNavigateUp();
-          break;
-         case 'i':
-           // Enter insert mode to create new entry
-           this.bufferState.enterInsertMode();
+         case 'enter':
+         case 'l':
+           // Navigate into directory or open file
+           this.handleNavigate();
            break;
-         case 'a':
-           this.bufferState.enterEditMode();
+         case 'h':
+         case 'backspace':
+           // Navigate to parent directory
+           this.handleNavigateUp();
            break;
-         case 'w':
-          // Save buffer (commit changes)
-          this.handleSave();
-          break;
+          case 'i':
+            // Enter insert mode to create new entry
+            this.bufferState.enterInsertMode();
+            break;
+          case 'a':
+            this.bufferState.enterEditMode();
+            break;
+          case 'w':
+           // Save buffer (commit changes)
+           this.handleSave();
+           break;
           case 'c':
            // Copy selected entry (deprecated, use yy instead)
            this.handleCopy();
@@ -183,36 +195,28 @@ class S3Explorer {
             // Paste after cursor (Vim-style)
             this.handlePasteAfter();
             break;
-            case 'C-d':
-            // Page down (half page)
-            this.handlePageDown();
-            break;
-            case 'C-u':
-            // Page up (half page)
-            this.handlePageUp();
-            break;
-         case '/':
-          // Enter search mode
-          this.handleEnterSearch();
-          break;
-         case 'u':
-          // Undo (Vim-style)
-          if (this.bufferState.undo()) {
-            this.statusBar.showSuccess('Undone');
-          } else {
-            this.statusBar.showInfo('Nothing to undo');
-          }
-          break;
-        case 'C-r':
-          // Redo (Vim-style, Ctrl+R)
-          if (this.bufferState.redo()) {
-            this.statusBar.showSuccess('Redone');
-          } else {
-            this.statusBar.showInfo('Nothing to redo');
-          }
-          break;
-       }
-     }
+          case '/':
+           // Enter search mode
+           this.handleEnterSearch();
+           break;
+          case 'u':
+           // Undo (Vim-style)
+           if (this.bufferState.undo()) {
+             this.statusBar.showSuccess('Undone');
+           } else {
+             this.statusBar.showInfo('Nothing to undo');
+           }
+           break;
+         case 'C-r':
+           // Redo (Vim-style, Ctrl+R)
+           if (this.bufferState.redo()) {
+             this.statusBar.showSuccess('Redone');
+           } else {
+             this.statusBar.showInfo('Nothing to redo');
+           }
+           break;
+        }
+      }
 
      this.render();
    }
