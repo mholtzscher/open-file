@@ -1,0 +1,71 @@
+#!/usr/bin/env bun
+
+import { createCliRenderer } from '@opentui/core';
+import { createRoot } from '@opentui/react';
+import { S3Explorer } from './ui/s3-explorer.jsx';
+import { Adapter } from './adapters/adapter.js';
+import { MockAdapter } from './adapters/mock-adapter.js';
+import { S3Adapter } from './adapters/s3-adapter.js';
+import { ConfigManager } from './utils/config.js';
+import { parseArgs, printHelp, printVersion } from './utils/cli.js';
+
+/**
+ * Main entry point for open-s3 application
+ */
+async function main() {
+  // Parse CLI arguments (skip 'bun' and script name)
+  const args = Bun.argv.slice(2);
+  const cliArgs = parseArgs(args);
+
+  // Handle help and version flags
+  if (cliArgs.help) {
+    printHelp();
+    process.exit(0);
+  }
+
+  if (cliArgs.version) {
+    printVersion();
+    process.exit(0);
+  }
+
+  // Create config manager
+  const configManager = new ConfigManager(cliArgs.config);
+
+  // Determine adapter
+  let adapter: Adapter;
+  const adapterType = cliArgs.adapter || configManager.getAdapter();
+
+  if (adapterType === 's3') {
+    // Get S3 config from CLI args or config file
+    const s3Config = configManager.getS3Config();
+    const finalS3Config = {
+      region: cliArgs.region || s3Config.region || 'us-east-1',
+      bucket: cliArgs.bucket || s3Config.bucket || 'my-bucket',
+      endpoint: cliArgs.endpoint || s3Config.endpoint,
+      accessKeyId: cliArgs.accessKey || s3Config.accessKeyId,
+      secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
+    };
+
+    adapter = new S3Adapter(finalS3Config);
+  } else {
+    // Use mock adapter
+    adapter = new MockAdapter();
+  }
+
+  // Get bucket name
+  const bucket = cliArgs.bucket || configManager.getS3Config().bucket || 'test-bucket';
+
+  // Create and start renderer
+  const renderer = await createCliRenderer({
+    exitOnCtrlC: true,
+  });
+
+  // Create and render app
+  const root = createRoot(renderer);
+  root.render(<S3Explorer bucket={bucket} adapter={adapter} configManager={configManager} />);
+}
+
+main().catch((error) => {
+  console.error('Fatal error:', error);
+  process.exit(1);
+});

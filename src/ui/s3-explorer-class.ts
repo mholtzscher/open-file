@@ -1,21 +1,18 @@
-#!/usr/bin/env bun
-
 import { createCliRenderer, CliRenderer, TextRenderable } from '@opentui/core';
-import { Adapter } from './adapters/adapter.js';
-import { MockAdapter } from './adapters/mock-adapter.js';
-import { S3Adapter } from './adapters/s3-adapter.js';
-import { BufferState, EditMode } from './ui/buffer-state.js';
-import { BufferView } from './ui/buffer-view.js';
-import { StatusBar } from './ui/status-bar.js';
-import { ConfirmationDialog } from './ui/confirmation-dialog.js';
-import { FloatingWindow } from './ui/floating-window.js';
-import { PreviewPane } from './ui/preview-pane.js';
-import { Theme, CatppuccinMocha } from './ui/theme.js';
-import { detectChanges, buildOperationPlan } from './utils/change-detection.js';
-import { ConfigManager } from './utils/config.js';
-import { parseArgs, printHelp, printVersion } from './utils/cli.js';
-import { formatErrorForDisplay, parseAwsError } from './utils/errors.js';
-import { SortField, SortOrder, formatSortField, formatSortOrder } from './utils/sorting.js';
+import { Adapter } from '../adapters/adapter.js';
+import { MockAdapter } from '../adapters/mock-adapter.js';
+import { S3Adapter } from '../adapters/s3-adapter.js';
+import { BufferState, EditMode } from './buffer-state.js';
+import { BufferView } from './buffer-view.js';
+import { StatusBar } from './status-bar.js';
+import { ConfirmationDialog } from './confirmation-dialog.js';
+import { FloatingWindow } from './floating-window.js';
+import { PreviewPane } from './preview-pane.js';
+import { Theme, CatppuccinMocha } from './theme.js';
+import { detectChanges, buildOperationPlan } from '../utils/change-detection.js';
+import { ConfigManager } from '../utils/config.js';
+import { parseAwsError } from '../utils/errors.js';
+import { SortField, SortOrder, formatSortField, formatSortOrder } from '../utils/sorting.js';
 
 /**
  * Main application class
@@ -922,54 +919,5 @@ class S3Explorer {
   }
 }
 
-// Main entry point
-async function main() {
-  // Parse CLI arguments (skip 'bun' and script name)
-  const args = Bun.argv.slice(2);
-  const cliArgs = parseArgs(args);
-
-  // Handle help and version flags
-  if (cliArgs.help) {
-    printHelp();
-    process.exit(0);
-  }
-
-  if (cliArgs.version) {
-    printVersion();
-    process.exit(0);
-  }
-
-  // Create config manager
-  const configManager = new ConfigManager(cliArgs.config);
-
-  // Determine adapter
-  let adapter: Adapter;
-  const adapterType = cliArgs.adapter || configManager.getAdapter();
-
-  if (adapterType === 's3') {
-    // Get S3 config from CLI args or config file
-    const s3Config = configManager.getS3Config();
-    const finalS3Config = {
-      region: cliArgs.region || s3Config.region || 'us-east-1',
-      bucket: cliArgs.bucket || s3Config.bucket || 'my-bucket',
-      endpoint: cliArgs.endpoint || s3Config.endpoint,
-      accessKeyId: cliArgs.accessKey || s3Config.accessKeyId,
-      secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
-    };
-
-    adapter = new S3Adapter(finalS3Config);
-  } else {
-    // Use mock adapter
-    adapter = new MockAdapter();
-  }
-
-  // Create and start application
-  const bucket = cliArgs.bucket || configManager.getS3Config().bucket || 'test-bucket';
-  const app = new S3Explorer(bucket, adapter, configManager);
-  await app.start();
-}
-
-main().catch((error) => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+// Export the class for use in the React entry point
+export { S3Explorer };
