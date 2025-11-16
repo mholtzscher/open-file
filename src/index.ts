@@ -439,21 +439,23 @@ class S3Explorer {
    }
 
    /**
-    * Page down (Ctrl+D)
-    */
+     * Page down (Ctrl+D) - half page
+     */
    private handlePageDown(): void {
      const pageSize = 10; // Entries per page
-     this.bufferState.pageDown(pageSize);
+     const halfPage = Math.ceil(pageSize / 2); // Half page = 5 entries
+     this.bufferState.pageDown(halfPage);
      this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
    }
 
    /**
-    * Page up (Ctrl+U)
-    */
+     * Page up (Ctrl+U) - half page
+     */
    private handlePageUp(): void {
      const pageSize = 10; // Entries per page
-     this.bufferState.pageUp(pageSize);
-     this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + 10, this.bufferState.entries.length)}`);
+     const halfPage = Math.ceil(pageSize / 2); // Half page = 5 entries
+     this.bufferState.pageUp(halfPage);
+     this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
    }
 
    /**
