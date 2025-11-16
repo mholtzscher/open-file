@@ -4,7 +4,7 @@
  * Reusable floating window for dialogs, menus, and other overlays
  */
 
-import { CliRenderer, TextRenderable } from '@opentui/core';
+import { CliRenderer, BoxRenderable, TextRenderable } from '@opentui/core';
 import { Theme, CatppuccinMocha } from './theme.js';
 
 /**
@@ -41,7 +41,8 @@ export interface FloatingWindowConfig {
 export class FloatingWindow {
   private renderer: CliRenderer;
   private config: Required<FloatingWindowConfig>;
-  private renderedElements: TextRenderable[] = [];
+  private box?: BoxRenderable;
+  private contentElements: TextRenderable[] = [];
   private isVisible = false;
   private content: string[] = [];
 
@@ -93,57 +94,13 @@ export class FloatingWindow {
   }
 
   /**
-   * Calculate visible length of text, excluding ANSI color codes
+   * Clear rendered content elements
    */
-  private getVisibleLength(text: string): number {
-    // Remove ANSI escape sequences and count remaining characters
-    return text.replace(/\x1b\[[0-9;]*m/g, '').length;
-  }
-
-  /**
-   * Get border characters for the style
-   */
-  private getBorderChars() {
-    switch (this.config.borderStyle) {
-      case 'double':
-        return {
-          topLeft: '╔',
-          topRight: '╗',
-          bottomLeft: '╚',
-          bottomRight: '╝',
-          horizontal: '═',
-          vertical: '║',
-        };
-      case 'rounded':
-        return {
-          topLeft: '╭',
-          topRight: '╮',
-          bottomLeft: '╰',
-          bottomRight: '╯',
-          horizontal: '─',
-          vertical: '│',
-        };
-      case 'single':
-      default:
-        return {
-          topLeft: '┌',
-          topRight: '┐',
-          bottomLeft: '└',
-          bottomRight: '┘',
-          horizontal: '─',
-          vertical: '│',
-        };
-    }
-  }
-
-  /**
-   * Clear rendered elements
-   */
-  private clearRendered(): void {
-    for (const element of this.renderedElements) {
+  private clearContent(): void {
+    for (const element of this.contentElements) {
       this.renderer.root.remove(element.id);
     }
-    this.renderedElements = [];
+    this.contentElements = [];
   }
 
   /**
@@ -164,128 +121,61 @@ export class FloatingWindow {
    * Render the floating window
    */
   render(): void {
-    this.clearRendered();
+    this.clearContent();
 
     if (!this.isVisible) {
+      if (this.box) {
+        this.renderer.root.remove(this.box.id);
+        this.box = undefined;
+      }
       return;
     }
 
     const pos = this.getPosition();
-    const chars = this.getBorderChars();
 
-    // Render top border with title
-     if (this.config.showBorder) {
-       let topBorder = chars.topLeft;
-       if (this.config.title) {
-         const padding = this.config.width - this.config.title.length - 4;
-         topBorder += ` ${this.config.title} `;
-         topBorder += chars.horizontal.repeat(Math.max(0, padding));
-       } else {
-         topBorder += chars.horizontal.repeat(this.config.width - 2);
-       }
-       topBorder += chars.topRight;
-
-      const topElement = new TextRenderable(this.renderer, {
-        id: `floating-window-top-${pos.x}-${pos.y}`,
-        content: topBorder,
-        fg: this.config.borderColor,
+    // Create box with border
+    if (!this.box) {
+      this.box = new BoxRenderable(this.renderer, {
+        id: `floating-window-box-${pos.x}-${pos.y}`,
         position: 'absolute',
         left: pos.x,
         top: pos.y,
+        width: this.config.width,
+        height: this.config.height,
+        border: this.config.showBorder,
+        borderStyle: this.config.borderStyle as any,
+        borderColor: this.config.borderColor,
+        backgroundColor: this.config.backgroundColor,
+        title: this.config.title || undefined,
+        titleAlignment: 'left',
       });
-      this.renderedElements.push(topElement);
-      this.renderer.root.add(topElement);
+      this.renderer.root.add(this.box);
     }
 
-    // Render content lines
-    let currentLine = pos.y + (this.config.showBorder ? 1 : 0);
-    const maxLines = this.config.height - (this.config.showBorder ? 2 : 0);
+    // Render content lines inside the box
+    const contentStartX = pos.x + (this.config.showBorder ? 2 : 1);
+    const contentStartY = pos.y + (this.config.showBorder ? 1 : 0);
+    const contentWidth = this.config.width - (this.config.showBorder ? 4 : 2);
+    const maxLines = this.config.height - (this.config.showBorder ? 3 : 1);
 
     for (let i = 0; i < Math.min(this.content.length, maxLines); i++) {
-      let contentLine = this.content[i];
-
-      // Calculate visible length (excluding ANSI codes)
-      const visibleLength = this.getVisibleLength(contentLine);
-
-      // Truncate or pad content based on visible length
-      if (visibleLength > this.config.width - (this.config.showBorder ? 4 : 2)) {
-        // Need to truncate, accounting for ANSI codes
-        let truncated = '';
-        let visibleCount = 0;
-        for (const char of contentLine) {
-          if (truncated.match(/\x1b\[[0-9;]*m$/)) {
-            // This is part of an ANSI code, always include it
-            truncated += char;
-          } else if (visibleCount < this.config.width - (this.config.showBorder ? 5 : 3)) {
-            truncated += char;
-            visibleCount++;
-          } else {
-            break;
-          }
-        }
-        contentLine = truncated + '…';
-      }
-
-      // Add border and padding based on visible length
-      if (this.config.showBorder) {
-        const visibleLen = this.getVisibleLength(contentLine);
-        const padding = this.config.width - visibleLen - 4;
-        contentLine = `│ ${contentLine}${' '.repeat(Math.max(0, padding))} │`;
-      } else {
-        const visibleLen = this.getVisibleLength(contentLine);
-        const padding = this.config.width - visibleLen - 2;
-        contentLine = ` ${contentLine}${' '.repeat(Math.max(0, padding))} `;
+      let line = this.content[i];
+      
+      // Truncate if too long
+      if (line.length > contentWidth) {
+        line = line.substring(0, contentWidth - 1) + '…';
       }
 
       const contentElement = new TextRenderable(this.renderer, {
         id: `floating-window-content-${pos.x}-${pos.y}-${i}`,
-        content: contentLine,
+        content: line,
         fg: this.config.textColor,
         position: 'absolute',
-        left: pos.x,
-        top: currentLine++,
+        left: contentStartX,
+        top: contentStartY + i,
       });
-      this.renderedElements.push(contentElement);
+      this.contentElements.push(contentElement);
       this.renderer.root.add(contentElement);
-    }
-
-    // Fill remaining lines with empty content
-    for (let i = this.content.length; i < maxLines; i++) {
-      let emptyLine = '';
-      if (this.config.showBorder) {
-        emptyLine = `│${' '.repeat(this.config.width - 2)}│`;
-      } else {
-        emptyLine = ' '.repeat(this.config.width);
-      }
-
-      const emptyElement = new TextRenderable(this.renderer, {
-        id: `floating-window-empty-${pos.x}-${pos.y}-${i}`,
-        content: emptyLine,
-        fg: this.config.textColor,
-        position: 'absolute',
-        left: pos.x,
-        top: currentLine++,
-      });
-      this.renderedElements.push(emptyElement);
-      this.renderer.root.add(emptyElement);
-    }
-
-    // Render bottom border
-    if (this.config.showBorder) {
-      let bottomBorder = chars.bottomLeft;
-      bottomBorder += chars.horizontal.repeat(this.config.width - 2);
-      bottomBorder += chars.bottomRight;
-
-      const bottomElement = new TextRenderable(this.renderer, {
-        id: `floating-window-bottom-${pos.x}-${pos.y}`,
-        content: bottomBorder,
-        fg: this.config.borderColor,
-        position: 'absolute',
-        left: pos.x,
-        top: currentLine,
-      });
-      this.renderedElements.push(bottomElement);
-      this.renderer.root.add(bottomElement);
     }
   }
 
@@ -302,7 +192,11 @@ export class FloatingWindow {
    */
   hide(): void {
     this.isVisible = false;
-    this.clearRendered();
+    this.clearContent();
+    if (this.box) {
+      this.renderer.root.remove(this.box.id);
+      this.box = undefined;
+    }
   }
 
   /**
