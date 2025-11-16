@@ -114,17 +114,20 @@ class S3Explorer {
    private handleNormalModeKey(key: any): void {
      const keyResult = this.bufferState.handleKeyPress(key.name);
     
-    // If key was handled as a sequence, execute the action
-    if (keyResult.handled) {
-      if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === 'g') {
-        // gg - move to top
-        this.bufferState.moveCursorToTop();
-      } else if (keyResult.sequence[0] === 'G') {
-        // G - move to bottom
-        this.bufferState.moveCursorToBottom();
-      }
-      return;
-    }
+     // If key was handled as a sequence, execute the action
+     if (keyResult.handled) {
+       if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === 'g') {
+         // gg - move to top
+         this.bufferState.moveCursorToTop();
+       } else if (keyResult.sequence[0] === 'G') {
+         // G - move to bottom
+         this.bufferState.moveCursorToBottom();
+       } else if (keyResult.sequence[0] === 'd' && keyResult.sequence[1] === 'd') {
+         // dd - delete current line
+         this.handleDeleteLine();
+       }
+       return;
+     }
 
     // Handle single keys that aren't part of a sequence
     if (keyResult.sequence.length === 0 || 
@@ -318,26 +321,47 @@ class S3Explorer {
     }
   }
 
-  /**
-   * Delete selected entries
-   */
-  private handleDeleteSelection(): void {
-    // Save state to undo history before making changes
-    this.bufferState.saveToHistory();
-    
-    const selected = this.bufferState.getSelectedEntries();
-    for (const entry of selected) {
-      const index = this.bufferState.entries.findIndex(e => e.id === entry.id);
-      if (index !== -1) {
-        this.bufferState.removeEntry(index);
-      }
-    }
-    this.bufferState.exitVisualSelection();
-  }
+   /**
+    * Delete selected entries
+    */
+   private handleDeleteSelection(): void {
+     // Save state to undo history before making changes
+     this.bufferState.saveToHistory();
+     
+     const selected = this.bufferState.getSelectedEntries();
+     for (const entry of selected) {
+       const index = this.bufferState.entries.findIndex(e => e.id === entry.id);
+       if (index !== -1) {
+         this.bufferState.removeEntry(index);
+       }
+     }
+     this.bufferState.exitVisualSelection();
+   }
 
-  /**
-   * Save buffer (detect changes and execute operations)
-   */
+   /**
+    * Delete the current line (entry at cursor)
+    */
+   private handleDeleteLine(): void {
+     // Save state to undo history before making changes
+     this.bufferState.saveToHistory();
+     
+     const cursorIndex = this.bufferState.selection.cursorIndex;
+     if (cursorIndex >= 0 && cursorIndex < this.bufferState.entries.length) {
+       this.bufferState.removeEntry(cursorIndex);
+       
+       // Adjust cursor if it's now out of bounds
+       if (this.bufferState.selection.cursorIndex >= this.bufferState.entries.length) {
+         this.bufferState.selection.cursorIndex = Math.max(0, this.bufferState.entries.length - 1);
+       }
+       
+       this.statusBar.showSuccess('Deleted entry');
+       this.render(); // Refresh the UI immediately
+     }
+   }
+
+   /**
+    * Save buffer (detect changes and execute operations)
+    */
   private async handleSave(): Promise<void> {
     // Detect changes
     const changes = detectChanges(

@@ -108,11 +108,17 @@ export function createDefaultKeybindings(): KeybindingRegistry {
     handler: () => {},
   });
 
-  registry.register(EditMode.Normal, 'g', {
-    key: 'g',
-    description: 'Move to top',
-    handler: () => {},
-  });
+   registry.register(EditMode.Normal, 'g', {
+     key: 'g',
+     description: 'Move to top (gg)',
+     handler: () => {},
+   });
+
+   registry.register(EditMode.Normal, 'd', {
+     key: 'd',
+     description: 'Delete entry (dd)',
+     handler: () => {},
+   });
 
   registry.register(EditMode.Normal, 'G', {
     key: 'G',
