@@ -93,6 +93,14 @@ export class FloatingWindow {
   }
 
   /**
+   * Calculate visible length of text, excluding ANSI color codes
+   */
+  private getVisibleLength(text: string): number {
+    // Remove ANSI escape sequences and count remaining characters
+    return text.replace(/\x1b\[[0-9;]*m/g, '').length;
+  }
+
+  /**
    * Get border characters for the style
    */
   private getBorderChars() {
@@ -196,17 +204,36 @@ export class FloatingWindow {
     for (let i = 0; i < Math.min(this.content.length, maxLines); i++) {
       let contentLine = this.content[i];
 
-      // Truncate or pad content
-      if (contentLine.length > this.config.width - (this.config.showBorder ? 4 : 2)) {
-        contentLine = contentLine.substring(0, this.config.width - (this.config.showBorder ? 5 : 2)) + '…';
+      // Calculate visible length (excluding ANSI codes)
+      const visibleLength = this.getVisibleLength(contentLine);
+
+      // Truncate or pad content based on visible length
+      if (visibleLength > this.config.width - (this.config.showBorder ? 4 : 2)) {
+        // Need to truncate, accounting for ANSI codes
+        let truncated = '';
+        let visibleCount = 0;
+        for (const char of contentLine) {
+          if (truncated.match(/\x1b\[[0-9;]*m$/)) {
+            // This is part of an ANSI code, always include it
+            truncated += char;
+          } else if (visibleCount < this.config.width - (this.config.showBorder ? 5 : 3)) {
+            truncated += char;
+            visibleCount++;
+          } else {
+            break;
+          }
+        }
+        contentLine = truncated + '…';
       }
 
-      // Add border and padding
+      // Add border and padding based on visible length
       if (this.config.showBorder) {
-        const padding = this.config.width - contentLine.length - 4;
+        const visibleLen = this.getVisibleLength(contentLine);
+        const padding = this.config.width - visibleLen - 4;
         contentLine = `│ ${contentLine}${' '.repeat(Math.max(0, padding))} │`;
       } else {
-        const padding = this.config.width - contentLine.length - 2;
+        const visibleLen = this.getVisibleLength(contentLine);
+        const padding = this.config.width - visibleLen - 2;
         contentLine = ` ${contentLine}${' '.repeat(Math.max(0, padding))} `;
       }
 
