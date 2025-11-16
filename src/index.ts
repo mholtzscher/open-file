@@ -8,6 +8,7 @@ import { BufferState, EditMode } from './ui/buffer-state.js';
 import { BufferView } from './ui/buffer-view.js';
 import { StatusBar } from './ui/status-bar.js';
 import { ConfirmationDialog } from './ui/confirmation-dialog.js';
+import { FloatingWindow } from './ui/floating-window.js';
 import { detectChanges, buildOperationPlan } from './utils/change-detection.js';
 import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
@@ -22,6 +23,7 @@ class S3Explorer {
   private bufferState!: BufferState;
   private bufferView!: BufferView;
   private statusBar!: StatusBar;
+  private helpWindow?: FloatingWindow;
   private currentPath = 'test-bucket/';
   private configManager: ConfigManager;
   private bucket: string = 'test-bucket';
@@ -214,6 +216,13 @@ class S3Explorer {
              this.statusBar.showSuccess('Redone');
            } else {
              this.statusBar.showInfo('Nothing to redo');
+           }
+           break;
+         case 'escape':
+           // Close help window if open
+           if (this.helpWindow?.getIsVisible()) {
+             this.helpWindow.hide();
+             this.statusBar.clearMessage();
            }
            break;
         }
@@ -587,6 +596,18 @@ class S3Explorer {
         'Press ESC to close this menu',
       ];
       
+      if (!this.helpWindow) {
+        this.helpWindow = new FloatingWindow(this.renderer, {
+          width: 45,
+          height: 35,
+          title: 'KEYBINDINGS',
+          horizontalAlign: 'center',
+          verticalAlign: 'center',
+        });
+      }
+      
+      this.helpWindow.setContent(helpLines);
+      this.helpWindow.show();
       this.statusBar.showInfo('Help menu - Press ESC to close');
     }
 
