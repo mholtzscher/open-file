@@ -768,7 +768,7 @@ export class BufferState {
    /**
     * Handle key press for sequence detection
     */
-    handleKeyPress(key: string): { handled: boolean; sequence: string[]; action?: 'moveToTop' | 'moveToBottom' | 'delete' | 'copy' } {
+    handleKeyPress(key: string): { handled: boolean; sequence: string[]; action?: 'moveToTop' | 'moveToBottom' | 'delete' | 'copy' | 'help' } {
      // Clear existing timeout
      if (this.keySequenceTimeout) {
        clearTimeout(this.keySequenceTimeout);
@@ -816,10 +816,18 @@ export class BufferState {
         return { handled: true, sequence: ['G'], action: 'moveToBottom' };
       }
 
-      // Single g without second g - not handled yet
-      if (this.keySequence.length === 1 && this.keySequence[0] === 'g') {
-        return { handled: false, sequence: ['g'] };
-      }
+       // Check for g? sequence (help/actions menu)
+       if (this.keySequence.length === 2 && 
+           this.keySequence[0] === 'g' && 
+           this.keySequence[1] === '?') {
+         this.keySequence = [];
+         return { handled: true, sequence: ['g', '?'], action: 'help' };
+       }
+
+       // Single g without second g - not handled yet
+       if (this.keySequence.length === 1 && this.keySequence[0] === 'g') {
+         return { handled: false, sequence: ['g'] };
+       }
 
        // Single d without second d - not handled yet (could be part of dd)
        if (this.keySequence.length === 1 && this.keySequence[0] === 'd') {

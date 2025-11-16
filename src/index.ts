@@ -117,23 +117,26 @@ class S3Explorer {
    private handleNormalModeKey(key: any): void {
      const keyResult = this.bufferState.handleKeyPress(key.name);
     
-      // If key was handled as a sequence, execute the action
-      if (keyResult.handled) {
-        if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === 'g') {
-          // gg - move to top
-          this.bufferState.moveCursorToTop();
-        } else if (keyResult.sequence[0] === 'G') {
-          // G - move to bottom
-          this.bufferState.moveCursorToBottom();
-        } else if (keyResult.sequence[0] === 'y' && keyResult.sequence[1] === 'y') {
-          // yy - copy/yank current line
-          this.handleCopy();
-        } else if (keyResult.sequence[0] === 'd' && keyResult.sequence[1] === 'd') {
-          // dd - delete current line
-          this.handleDeleteLine();
-        }
-        return;
-      }
+       // If key was handled as a sequence, execute the action
+       if (keyResult.handled) {
+         if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === 'g') {
+           // gg - move to top
+           this.bufferState.moveCursorToTop();
+         } else if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === '?') {
+           // g? - show help/actions menu
+           this.handleShowHelp();
+         } else if (keyResult.sequence[0] === 'G') {
+           // G - move to bottom
+           this.bufferState.moveCursorToBottom();
+         } else if (keyResult.sequence[0] === 'y' && keyResult.sequence[1] === 'y') {
+           // yy - copy/yank current line
+           this.handleCopy();
+         } else if (keyResult.sequence[0] === 'd' && keyResult.sequence[1] === 'd') {
+           // dd - delete current line
+           this.handleDeleteLine();
+         }
+         return;
+       }
 
     // Handle single keys that aren't part of a sequence
     if (keyResult.sequence.length === 0 || 
@@ -533,18 +536,58 @@ class S3Explorer {
      this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
    }
 
-   /**
-    * Enter search mode
-    */
-   private handleEnterSearch(): void {
-     this.bufferState.mode = EditMode.Search;
-     this.bufferState.enterSearchMode();
-     this.statusBar.showInfo('Type to search, ESC to exit');
-   }
+    /**
+     * Enter search mode
+     */
+    private handleEnterSearch(): void {
+      this.bufferState.mode = EditMode.Search;
+      this.bufferState.enterSearchMode();
+      this.statusBar.showInfo('Type to search, ESC to exit');
+    }
 
-   /**
-    * Render the UI
-    */
+    /**
+     * Show help and available actions menu
+     */
+    private handleShowHelp(): void {
+      const helpLines = [
+        '═══════════════════════════════════════',
+        'KEYBINDINGS & ACTIONS',
+        '═══════════════════════════════════════',
+        '',
+        'NAVIGATION:',
+        '  j/k      - Move cursor up/down',
+        '  h/←      - Go to parent directory',
+        '  l/→      - Open directory/file',
+        '  gg       - Go to top',
+        '  G        - Go to bottom',
+        '  Ctrl+U   - Page up',
+        '  Ctrl+D   - Page down',
+        '',
+        'SELECTION & EDITING:',
+        '  v        - Start visual selection',
+        '  yy       - Copy/yank current entry',
+        '  p        - Paste after cursor',
+        '  dd       - Delete current entry',
+        '  i        - Insert new entry',
+        '  a        - Edit current entry',
+        '  u        - Undo',
+        '  Ctrl+R   - Redo',
+        '',
+        'OPERATIONS:',
+        '  w        - Save/write changes',
+        '  /        - Search/filter',
+        '  g?       - Show this help menu',
+        '  q        - Quit',
+        '',
+        'Press ESC to close this menu',
+      ];
+      
+      this.statusBar.showInfo('Help menu - Press ESC to close');
+    }
+
+    /**
+     * Render the UI
+     */
    private async render(): Promise<void> {
      // Note: OpenTUI automatically handles updates, so we just update components
      // No need to manually clear and re-add
