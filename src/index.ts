@@ -9,6 +9,7 @@ import { BufferView } from './ui/buffer-view.js';
 import { StatusBar } from './ui/status-bar.js';
 import { ConfirmationDialog } from './ui/confirmation-dialog.js';
 import { FloatingWindow } from './ui/floating-window.js';
+import { Theme, CatppuccinMocha } from './ui/theme.js';
 import { detectChanges, buildOperationPlan } from './utils/change-detection.js';
 import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
@@ -606,6 +607,9 @@ class S3Explorer {
           title: 'KEYBINDINGS',
           horizontalAlign: 'center',
           verticalAlign: 'center',
+          borderColor: Theme.getSuccessColor(), // Green border
+          backgroundColor: CatppuccinMocha.base, // Dark background
+          textColor: CatppuccinMocha.text, // Light text
         });
       }
       
