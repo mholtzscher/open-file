@@ -571,10 +571,6 @@ class S3Explorer {
      */
     private handleShowHelp(): void {
       const helpLines = [
-        '═══════════════════════════════════════',
-        'KEYBINDINGS & ACTIONS',
-        '═══════════════════════════════════════',
-        '',
         'NAVIGATION:',
         '  j/k      - Move cursor up/down',
         '  h/←      - Go to parent directory',
