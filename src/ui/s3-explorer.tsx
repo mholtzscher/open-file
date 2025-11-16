@@ -99,23 +99,30 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
     };
   }, [handleKeyDown]);
 
-  // Initialize data from adapter
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        const result = await adapter.list(currentPath);
-        setStatusMessage(`Loaded ${result.entries.length} items`);
-        setStatusMessageColor(CatppuccinMocha.green);
-        setIsInitialized(true);
-      } catch (err) {
-        const parsedError = parseAwsError(err, 'Failed to load bucket');
-        setStatusMessage(parsedError.message);
-        setStatusMessageColor(CatppuccinMocha.red);
-      }
-    };
+   // Initialize data from adapter
+   useEffect(() => {
+     const initializeData = async () => {
+       try {
+         const result = await adapter.list(currentPath);
+         
+         // Load entries into buffer state
+         // Clear existing entries and add new ones
+         const currentEntries = bufferState.entries;
+         currentEntries.length = 0;
+         currentEntries.push(...result.entries);
+         
+         setStatusMessage(`Loaded ${result.entries.length} items`);
+         setStatusMessageColor(CatppuccinMocha.green);
+         setIsInitialized(true);
+       } catch (err) {
+         const parsedError = parseAwsError(err, 'Failed to load bucket');
+         setStatusMessage(parsedError.message);
+         setStatusMessageColor(CatppuccinMocha.red);
+       }
+     };
 
-    initializeData();
-  }, [bucket, adapter, currentPath]);
+     initializeData();
+   }, [bucket, adapter, currentPath, bufferState]);
 
   if (!isInitialized) {
     return (
