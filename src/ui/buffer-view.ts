@@ -191,20 +191,28 @@ export class BufferView {
     }
   }
 
-  /**
-   * Format an entry for display with columns
-   */
-  private formatEntry(entry: Entry, isSelected: boolean): string {
-    const parts: string[] = [];
-    
-    for (const column of this.columns) {
-      parts.push(column.render(entry));
-    }
-    
-    const content = parts.join('');
-    const prefix = isSelected ? '> ' : '  ';
-    return `${prefix}${content}`;
-  }
+   /**
+    * Format an entry for display with columns
+    */
+   private formatEntry(entry: Entry, isSelected: boolean): string {
+     const parts: string[] = [];
+     
+     for (const column of this.columns) {
+       parts.push(column.render(entry));
+     }
+     
+     const content = parts.join('');
+     const prefix = isSelected ? '> ' : '  ';
+     
+     // Check if entry is marked for deletion and prefix with indicator
+     const index = this.bufferState.entries.indexOf(entry);
+     if (index !== -1 && this.bufferState.isEntryDeleted(index)) {
+       // Use ~ prefix to show deleted entries
+       return `${prefix}~${content}`;
+     }
+     
+     return `${prefix}${content}`;
+   }
 
    /**
     * Get color for entry based on selection and mode
@@ -296,23 +304,40 @@ export class BufferView {
        this.renderedLines.set(actualIndex, line);
      }
      
-      // Show search query if in search mode
-      if (this.bufferState.isSearching) {
-        const searchRow = this.options.top! - 1;
-        const flags = this.bufferState.getSearchStatus();
-        const matchInfo = this.bufferState.searchQuery ? ` (${filtered.length} matches)` : '';
-        const content = `/ ${this.bufferState.searchQuery}${flags}${matchInfo}`;
-         const searchText = new TextRenderable(this.renderer, {
-           id: 'search-bar',
+       // Show search query if in search mode
+       if (this.bufferState.isSearching) {
+         const searchRow = this.options.top! - 1;
+         const flags = this.bufferState.getSearchStatus();
+         const matchInfo = this.bufferState.searchQuery ? ` (${filtered.length} matches)` : '';
+         const content = `/ ${this.bufferState.searchQuery}${flags}${matchInfo}`;
+          const searchText = new TextRenderable(this.renderer, {
+            id: 'search-bar',
+            content: content,
+            fg: Theme.getSearchModeColor(),
+            position: 'absolute',
+            left: this.options.left,
+            top: searchRow,
+          });
+         this.renderer.root.add(searchText);
+       }
+
+       // Show insert mode input if in insert mode
+       if (this.bufferState.mode === EditMode.Insert) {
+         const insertRow = this.options.top! - 1;
+         const suggestions = this.bufferState.getTabCompletions();
+         const suggestionText = suggestions.length > 0 ? ` [${suggestions.join(', ')}]` : '';
+         const content = `i ${this.bufferState.insertingEntryName}_${suggestionText}`;
+         const insertText = new TextRenderable(this.renderer, {
+           id: 'insert-bar',
            content: content,
-           fg: Theme.getSearchModeColor(),
+           fg: Theme.getEditModeColor(),
            position: 'absolute',
            left: this.options.left,
-           top: searchRow,
+           top: insertRow,
          });
-        this.renderer.root.add(searchText);
-      }
-   }
+         this.renderer.root.add(insertText);
+       }
+    }
 
   /**
    * Update the buffer state

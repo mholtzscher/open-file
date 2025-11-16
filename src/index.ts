@@ -91,22 +91,25 @@ class S3Explorer {
    /**
     * Handle keyboard input
     */
-   private handleKeyPress(key: any): void {
-     switch (this.bufferState.mode) {
-       case EditMode.Normal:
-         this.handleNormalModeKey(key);
-         break;
-       case EditMode.Visual:
-         this.handleVisualModeKey(key);
-         break;
-       case EditMode.Edit:
-         this.handleEditModeKey(key);
-         break;
-       case EditMode.Search:
-         this.handleSearchModeKey(key);
-         break;
-     }
-   }
+    private handleKeyPress(key: any): void {
+      switch (this.bufferState.mode) {
+        case EditMode.Normal:
+          this.handleNormalModeKey(key);
+          break;
+        case EditMode.Visual:
+          this.handleVisualModeKey(key);
+          break;
+        case EditMode.Insert:
+          this.handleInsertModeKey(key);
+          break;
+        case EditMode.Edit:
+          this.handleEditModeKey(key);
+          break;
+        case EditMode.Search:
+          this.handleSearchModeKey(key);
+          break;
+      }
+    }
 
    /**
     * Handle keys in normal mode
@@ -155,10 +158,13 @@ class S3Explorer {
           // Navigate to parent directory
           this.handleNavigateUp();
           break;
-        case 'i':
-        case 'a':
-          this.bufferState.enterEditMode();
-          break;
+         case 'i':
+           // Enter insert mode to create new entry
+           this.bufferState.enterInsertMode();
+           break;
+         case 'a':
+           this.bufferState.enterEditMode();
+           break;
          case 'w':
           // Save buffer (commit changes)
           this.handleSave();
@@ -226,13 +232,51 @@ class S3Explorer {
         break;
     }
 
-    this.render();
-  }
+     this.render();
+   }
 
    /**
-    * Handle keys in edit mode
+    * Handle keys in insert mode (creating new entries)
     */
-   private handleEditModeKey(key: any): void {
+   private handleInsertModeKey(key: any): void {
+     switch (key.name) {
+       case 'escape':
+         // Cancel entry creation
+         this.bufferState.exitInsertMode();
+         this.statusBar.showInfo('Entry creation cancelled');
+         break;
+       case 'enter':
+         // Confirm entry creation
+         const newEntry = this.bufferState.confirmInsertEntry();
+         if (newEntry) {
+           this.statusBar.showSuccess(`Created entry: ${newEntry.name}`);
+         } else {
+           this.statusBar.showInfo('Empty entry name - cancelled');
+         }
+         break;
+       case 'tab':
+         // Apply first tab completion
+         this.bufferState.applyFirstTabCompletion();
+         break;
+       case 'backspace':
+         // Remove last character from entry name
+         this.bufferState.removeCharFromInsertingName();
+         break;
+       default:
+         // Add character to entry name if it's a printable character
+         if (key.name && key.name.length === 1) {
+           this.bufferState.addCharToInsertingName(key.name);
+         }
+         break;
+     }
+
+     this.render();
+   }
+
+    /**
+     * Handle keys in edit mode
+     */
+    private handleEditModeKey(key: any): void {
      switch (key.name) {
        case 'escape':
          this.bufferState.exitEditMode();
@@ -324,40 +368,35 @@ class S3Explorer {
    /**
     * Delete selected entries
     */
-   private handleDeleteSelection(): void {
-     // Save state to undo history before making changes
-     this.bufferState.saveToHistory();
-     
-     const selected = this.bufferState.getSelectedEntries();
-     for (const entry of selected) {
-       const index = this.bufferState.entries.findIndex(e => e.id === entry.id);
-       if (index !== -1) {
-         this.bufferState.removeEntry(index);
-       }
-     }
-     this.bufferState.exitVisualSelection();
-   }
+    private handleDeleteSelection(): void {
+      // Save state to undo history before making changes
+      this.bufferState.saveToHistory();
+      
+      const selected = this.bufferState.getSelectedEntries();
+      for (const entry of selected) {
+        const index = this.bufferState.entries.findIndex(e => e.id === entry.id);
+        if (index !== -1) {
+          this.bufferState.deleteEntry(index);
+        }
+      }
+      this.statusBar.showSuccess(`${selected.length} entries marked for deletion (undo with u)`);
+      this.bufferState.exitVisualSelection();
+    }
 
-   /**
-    * Delete the current line (entry at cursor)
-    */
-   private handleDeleteLine(): void {
-     // Save state to undo history before making changes
-     this.bufferState.saveToHistory();
-     
-     const cursorIndex = this.bufferState.selection.cursorIndex;
-     if (cursorIndex >= 0 && cursorIndex < this.bufferState.entries.length) {
-       this.bufferState.removeEntry(cursorIndex);
-       
-       // Adjust cursor if it's now out of bounds
-       if (this.bufferState.selection.cursorIndex >= this.bufferState.entries.length) {
-         this.bufferState.selection.cursorIndex = Math.max(0, this.bufferState.entries.length - 1);
-       }
-       
-       this.statusBar.showSuccess('Deleted entry');
-       this.render(); // Refresh the UI immediately
-     }
-   }
+    /**
+     * Delete the current line (entry at cursor) - marks for deletion, not immediate removal
+     */
+    private handleDeleteLine(): void {
+      // Save state to undo history before making changes
+      this.bufferState.saveToHistory();
+      
+      const cursorIndex = this.bufferState.selection.cursorIndex;
+      if (cursorIndex >= 0 && cursorIndex < this.bufferState.entries.length) {
+        this.bufferState.deleteEntry(cursorIndex);
+        this.statusBar.showSuccess('Entry marked for deletion (undo with u)');
+        this.render(); // Refresh the UI immediately
+      }
+    }
 
    /**
     * Save buffer (detect changes and execute operations)
@@ -385,14 +424,17 @@ class S3Explorer {
     const result = await dialog.show();
 
     if (result.confirmed) {
-      // Execute operations
-      await this.executeOperationPlan(plan);
+       // Execute operations
+       await this.executeOperationPlan(plan);
 
-      // Reload buffer
-      await this.loadBuffer(this.currentPath);
-    }
+       // Commit the deletions to the buffer state
+       this.bufferState.commitDeletions();
 
-    this.render();
+       // Reload buffer
+       await this.loadBuffer(this.currentPath);
+     }
+
+     this.render();
   }
 
    /**

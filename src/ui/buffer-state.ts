@@ -8,7 +8,7 @@
  * - Undo/redo history
  */
 
-import { Entry } from '../types/entry.js';
+import { Entry, EntryType } from '../types/entry.js';
 import { EntryIdMap } from '../utils/entry-id.js';
 
 /**
@@ -89,8 +89,17 @@ export class BufferState {
    searchUseRegex = false;
 
    /** Key sequence state for multi-key commands */
-   private keySequence: string[] = [];
-   private keySequenceTimeout?: ReturnType<typeof setTimeout>;
+    private keySequence: string[] = [];
+    private keySequenceTimeout?: ReturnType<typeof setTimeout>;
+
+    /** Entry being created/edited in insert mode */
+    insertingEntryName = '';
+    
+    /** Position where new entry will be inserted */
+    insertPosition = 0;
+
+    /** Set of entry IDs marked for deletion */
+    deletedEntryIds: Set<string> = new Set();
 
   constructor(entries: Entry[] = []) {
     this.entries = entries;
@@ -219,12 +228,167 @@ export class BufferState {
     this.mode = EditMode.Edit;
   }
 
-  /**
-   * Exit edit mode
-   */
-  exitEditMode(): void {
-    this.mode = EditMode.Normal;
-  }
+   /**
+    * Exit edit mode
+    */
+   exitEditMode(): void {
+     this.mode = EditMode.Normal;
+   }
+
+   /**
+    * Enter insert mode to create a new entry
+    */
+   enterInsertMode(): void {
+     this.mode = EditMode.Insert;
+     this.insertingEntryName = '';
+     this.insertPosition = this.selection.cursorIndex + 1;
+   }
+
+   /**
+    * Exit insert mode without creating entry
+    */
+   exitInsertMode(): void {
+     this.mode = EditMode.Normal;
+     this.insertingEntryName = '';
+   }
+
+   /**
+    * Confirm entry creation and add it to the buffer
+    */
+   confirmInsertEntry(): Entry | null {
+     if (!this.insertingEntryName.trim()) {
+       this.exitInsertMode();
+       return null;
+     }
+
+     // Create new entry
+     const newEntry: Entry = {
+       id: `entry_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+       name: this.insertingEntryName.trim(),
+       path: `${this.currentPath}${this.insertingEntryName.trim()}`,
+       type: EntryType.File, // Default to file, can be changed later
+       size: undefined,
+       modified: new Date(),
+     };
+
+     // Insert at the determined position
+     this.entries.splice(this.insertPosition, 0, newEntry);
+     this.idMap.registerEntry(newEntry.path, newEntry.id);
+     this.isDirty = true;
+
+     this.exitInsertMode();
+     return newEntry;
+   }
+
+   /**
+    * Add character to the entry name being inserted
+    */
+   addCharToInsertingName(char: string): void {
+     this.insertingEntryName += char;
+   }
+
+   /**
+    * Remove last character from entry name being inserted
+    */
+   removeCharFromInsertingName(): void {
+     this.insertingEntryName = this.insertingEntryName.slice(0, -1);
+   }
+
+   /**
+    * Get tab completion suggestions for entry names
+    */
+   getTabCompletions(): string[] {
+     const prefix = this.insertingEntryName.toLowerCase();
+     const existingNames = this.entries.map(e => e.name.toLowerCase());
+     
+     // Return common file extensions as suggestions if prefix is empty
+     if (!prefix) {
+       return ['js', 'ts', 'json', 'md', 'txt', 'html', 'css'];
+     }
+
+     // Return existing entries that match the prefix
+     const matches = existingNames
+       .filter(name => name.startsWith(prefix) && name !== prefix)
+       .slice(0, 5);
+
+     return matches.length > 0 ? matches : ['js', 'ts', 'json', 'md'];
+   }
+
+   /**
+    * Apply first tab completion suggestion
+    */
+   applyFirstTabCompletion(): void {
+     const suggestions = this.getTabCompletions();
+     if (suggestions.length > 0) {
+       this.insertingEntryName = suggestions[0];
+     }
+   }
+
+   /**
+    * Mark an entry for deletion (can be undone with 'u')
+    */
+   deleteEntry(index: number): void {
+     const entry = this.entries[index];
+     if (entry) {
+       this.deletedEntryIds.add(entry.id);
+       this.isDirty = true;
+     }
+   }
+
+   /**
+    * Delete multiple entries (for visual selection)
+    */
+   deleteEntries(indices: number[]): void {
+     for (const index of indices) {
+       this.deleteEntry(index);
+     }
+   }
+
+   /**
+    * Check if an entry is marked for deletion
+    */
+   isEntryDeleted(index: number): boolean {
+     const entry = this.entries[index];
+     return entry ? this.deletedEntryIds.has(entry.id) : false;
+   }
+
+   /**
+    * Unmark an entry for deletion (undo)
+    */
+   undeleteEntry(index: number): void {
+     const entry = this.entries[index];
+     if (entry) {
+       this.deletedEntryIds.delete(entry.id);
+     }
+   }
+
+   /**
+    * Get list of deleted entries
+    */
+   getDeletedEntries(): Entry[] {
+     return this.entries.filter((e) => this.deletedEntryIds.has(e.id));
+   }
+
+   /**
+    * Permanently remove all deleted entries from the buffer
+    */
+   commitDeletions(): void {
+     this.entries = this.entries.filter((e) => !this.deletedEntryIds.has(e.id));
+     for (const id of this.deletedEntryIds) {
+       const entry = this.originalEntries.find((e) => e.id === id);
+       if (entry) {
+         this.idMap.removeEntry(entry.path);
+       }
+     }
+     this.deletedEntryIds.clear();
+   }
+
+   /**
+    * Clear deletion marks (undo all deletions)
+    */
+   undoAllDeletions(): void {
+     this.deletedEntryIds.clear();
+   }
 
    /**
     * Add an entry to the buffer
@@ -295,21 +459,24 @@ export class BufferState {
     this.isDirty = false;
   }
 
-   /**
-    * Clone the current state for undo/redo
-    */
-   clone(): BufferState {
-     const cloned = new BufferState(JSON.parse(JSON.stringify(this.entries)));
-     cloned.mode = this.mode;
-     cloned.selection = { ...this.selection };
-     cloned.isDirty = this.isDirty;
-     cloned.currentPath = this.currentPath;
-     cloned.copyRegister = JSON.parse(JSON.stringify(this.copyRegister));
-     cloned.scrollOffset = this.scrollOffset;
-     cloned.searchQuery = this.searchQuery;
-     cloned.isSearching = this.isSearching;
-     return cloned;
-   }
+    /**
+     * Clone the current state for undo/redo
+     */
+    clone(): BufferState {
+      const cloned = new BufferState(JSON.parse(JSON.stringify(this.entries)));
+      cloned.mode = this.mode;
+      cloned.selection = { ...this.selection };
+      cloned.isDirty = this.isDirty;
+      cloned.currentPath = this.currentPath;
+      cloned.copyRegister = JSON.parse(JSON.stringify(this.copyRegister));
+      cloned.scrollOffset = this.scrollOffset;
+      cloned.searchQuery = this.searchQuery;
+      cloned.isSearching = this.isSearching;
+      cloned.insertingEntryName = this.insertingEntryName;
+      cloned.insertPosition = this.insertPosition;
+      cloned.deletedEntryIds = new Set(this.deletedEntryIds);
+      return cloned;
+    }
 
    /**
     * Copy selected entries to the clipboard
@@ -658,21 +825,24 @@ export class BufferState {
       this.isDirty = previousState.isDirty;
       this.currentPath = previousState.currentPath;
       this.copyRegister = [...previousState.copyRegister];
-      this.scrollOffset = previousState.scrollOffset;
-      this.searchQuery = previousState.searchQuery;
-      this.isSearching = previousState.isSearching;
-      this.idMap = new EntryIdMap();
-      for (const entry of this.entries) {
-        this.idMap.registerEntry(entry.path, entry.id);
-      }
+       this.scrollOffset = previousState.scrollOffset;
+       this.searchQuery = previousState.searchQuery;
+       this.isSearching = previousState.isSearching;
+       this.insertingEntryName = previousState.insertingEntryName;
+       this.insertPosition = previousState.insertPosition;
+       this.deletedEntryIds = new Set(previousState.deletedEntryIds);
+       this.idMap = new EntryIdMap();
+       for (const entry of this.entries) {
+         this.idMap.registerEntry(entry.path, entry.id);
+       }
 
-      return true;
-    }
+       return true;
+     }
 
-    /**
-     * Redo last undone operation
-     */
-    redo(): boolean {
+     /**
+      * Redo last undone operation
+      */
+     redo(): boolean {
       if (this.redoHistory.length === 0) {
         return false;
       }
@@ -689,21 +859,24 @@ export class BufferState {
       this.isDirty = nextState.isDirty;
       this.currentPath = nextState.currentPath;
       this.copyRegister = [...nextState.copyRegister];
-      this.scrollOffset = nextState.scrollOffset;
-      this.searchQuery = nextState.searchQuery;
-      this.isSearching = nextState.isSearching;
-      this.idMap = new EntryIdMap();
-      for (const entry of this.entries) {
-        this.idMap.registerEntry(entry.path, entry.id);
-      }
+       this.scrollOffset = nextState.scrollOffset;
+       this.searchQuery = nextState.searchQuery;
+       this.isSearching = nextState.isSearching;
+       this.insertingEntryName = nextState.insertingEntryName;
+       this.insertPosition = nextState.insertPosition;
+       this.deletedEntryIds = new Set(nextState.deletedEntryIds);
+       this.idMap = new EntryIdMap();
+       for (const entry of this.entries) {
+         this.idMap.registerEntry(entry.path, entry.id);
+       }
 
-      return true;
-    }
+       return true;
+     }
 
-    /**
-     * Check if undo is available
-     */
-    canUndo(): boolean {
+     /**
+      * Check if undo is available
+      */
+     canUndo(): boolean {
       return this.undoHistory.length > 0;
     }
 
