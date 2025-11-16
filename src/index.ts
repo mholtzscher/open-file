@@ -571,31 +571,37 @@ class S3Explorer {
      * Show help and available actions menu
      */
     private handleShowHelp(): void {
+      // Helper function to format keybinding lines with color codes
+      const formatKeybind = (key: string, desc: string) => {
+        // Use ANSI color codes: key in cyan, rest in normal text
+        return `  \x1b[36m${key.padEnd(8)}\x1b[0m - ${desc}`;
+      };
+
       const helpLines = [
-        'NAVIGATION:',
-        '  j/k      - Move cursor up/down',
-        '  h/←      - Go to parent directory',
-        '  l/→      - Open directory/file',
-        '  gg       - Go to top',
-        '  G        - Go to bottom',
-        '  Ctrl+P   - Page up',
-        '  Ctrl+N   - Page down',
+        '\x1b[35mNAVIGATION:\x1b[0m',
+        formatKeybind('j/k', 'Move cursor up/down'),
+        formatKeybind('h/←', 'Go to parent directory'),
+        formatKeybind('l/→', 'Open directory/file'),
+        formatKeybind('gg', 'Go to top'),
+        formatKeybind('G', 'Go to bottom'),
+        formatKeybind('Ctrl+P', 'Page up'),
+        formatKeybind('Ctrl+N', 'Page down'),
         '',
-        'SELECTION & EDITING:',
-        '  v        - Start visual selection',
-        '  yy       - Copy/yank current entry',
-        '  p        - Paste after cursor',
-        '  dd       - Delete current entry',
-        '  i        - Insert new entry',
-        '  a        - Edit current entry',
-        '  u        - Undo',
-        '  Ctrl+R   - Redo',
+        '\x1b[35mSELECTION & EDITING:\x1b[0m',
+        formatKeybind('v', 'Start visual selection'),
+        formatKeybind('yy', 'Copy/yank current entry'),
+        formatKeybind('p', 'Paste after cursor'),
+        formatKeybind('dd', 'Delete current entry'),
+        formatKeybind('i', 'Insert new entry'),
+        formatKeybind('a', 'Edit current entry'),
+        formatKeybind('u', 'Undo'),
+        formatKeybind('Ctrl+R', 'Redo'),
         '',
-        'OPERATIONS:',
-        '  w        - Save/write changes',
-        '  /        - Search/filter',
-        '  g?       - Show this help menu',
-        '  q        - Quit',
+        '\x1b[35mOPERATIONS:\x1b[0m',
+        formatKeybind('w', 'Save/write changes'),
+        formatKeybind('/', 'Search/filter'),
+        formatKeybind('g?', 'Show this help menu'),
+        formatKeybind('q', 'Quit'),
         '',
         'Press ESC to close this menu',
       ];
