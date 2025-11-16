@@ -174,16 +174,16 @@ export class FloatingWindow {
     const chars = this.getBorderChars();
 
     // Render top border with title
-    if (this.config.showBorder) {
-      let topBorder = chars.topLeft;
-      if (this.config.title) {
-        const padding = this.config.width - this.config.title.length - 4;
-        topBorder += ` ${this.config.title} `;
-        topBorder += chars.horizontal.repeat(Math.max(0, padding - 1));
-      } else {
-        topBorder += chars.horizontal.repeat(this.config.width - 2);
-      }
-      topBorder += chars.topRight;
+     if (this.config.showBorder) {
+       let topBorder = chars.topLeft;
+       if (this.config.title) {
+         const padding = this.config.width - this.config.title.length - 4;
+         topBorder += ` ${this.config.title} `;
+         topBorder += chars.horizontal.repeat(Math.max(0, padding));
+       } else {
+         topBorder += chars.horizontal.repeat(this.config.width - 2);
+       }
+       topBorder += chars.topRight;
 
       const topElement = new TextRenderable(this.renderer, {
         id: `floating-window-top-${pos.x}-${pos.y}`,
