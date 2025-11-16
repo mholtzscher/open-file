@@ -186,15 +186,21 @@ export function createDefaultKeybindings(): KeybindingRegistry {
      handler: () => {},
    });
 
-   registry.register(EditMode.Normal, 'C-d', {
-     key: 'C-d',
-     description: 'Page down',
+    registry.register(EditMode.Normal, 'n', {
+      key: 'n',
+      description: 'Next page (page down)',
+      handler: () => {},
+    });
+
+   registry.register(EditMode.Normal, 'p', {
+     key: 'p',
+     description: 'Previous page (page up)',
      handler: () => {},
    });
 
-   registry.register(EditMode.Normal, 'C-u', {
-     key: 'C-u',
-     description: 'Page up',
+   registry.register(EditMode.Normal, 'P', {
+     key: 'P',
+     description: 'Paste after cursor',
      handler: () => {},
    });
 

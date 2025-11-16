@@ -121,7 +121,7 @@ export class StatusBar {
      this.renderer.root.add(left);
 
      // Right side: message or help text
-     const rightContent = this.message || 'q:quit  j/k:nav  v:select  i:insert  dd:delete  w:save  ?:help';
+      const rightContent = this.message || 'q:quit  j/k:nav  v:select  i:insert  dd:delete  w:save  P:paste  n/p:page  ?:help';
      const right = new TextRenderable(this.renderer, {
        id: 'status-right',
        content: rightContent,

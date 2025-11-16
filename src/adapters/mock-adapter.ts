@@ -44,6 +44,7 @@ export class MockAdapter implements Adapter {
     this.createSync('test-bucket/documents/', EntryType.Directory);
     this.createSync('test-bucket/images/', EntryType.Directory);
     this.createSync('test-bucket/videos/', EntryType.Directory);
+    this.createSync('test-bucket/scrollable/', EntryType.Directory);
     
     this.createSync('test-bucket/README.md', EntryType.File, 'Hello from mock S3!');
     this.createSync('test-bucket/config.json', EntryType.File, '{"version": "1.0"}');
@@ -53,6 +54,16 @@ export class MockAdapter implements Adapter {
     
     this.createSync('test-bucket/images/photo1.jpg', EntryType.File, 'JPEG binary data');
     this.createSync('test-bucket/images/photo2.png', EntryType.File, 'PNG binary data');
+    
+    // Add 100 fake files to scrollable directory for testing page scrolling
+    for (let i = 1; i <= 100; i++) {
+      const paddedNumber = i.toString().padStart(3, '0');
+      this.createSync(
+        `test-bucket/scrollable/file-${paddedNumber}.txt`, 
+        EntryType.File, 
+        `Content of file ${i}`
+      );
+    }
   }
 
   /**

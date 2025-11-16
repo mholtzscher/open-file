@@ -129,22 +129,37 @@ export class BufferState {
     return this.entries.slice(start, end + 1);
   }
 
-  /**
-   * Move cursor up
-   */
-  moveCursorUp(): void {
-    this.selection.cursorIndex = Math.max(0, this.selection.cursorIndex - 1);
-  }
+   /**
+    * Move cursor up
+    */
+   moveCursorUp(pageSize: number = 10): void {
+     this.selection.cursorIndex = Math.max(0, this.selection.cursorIndex - 1);
+     
+      // Adjust scroll offset to keep cursor visible
+      if (this.selection.cursorIndex < this.scrollOffset) {
+        // Scroll up to show cursor at the top of visible area
+        this.scrollOffset = Math.max(0, this.selection.cursorIndex);
+      }
+   }
 
-  /**
-   * Move cursor down
-   */
-  moveCursorDown(): void {
-    this.selection.cursorIndex = Math.min(
-      this.entries.length - 1,
-      this.selection.cursorIndex + 1
-    );
-  }
+   /**
+    * Move cursor down
+    */
+   moveCursorDown(pageSize: number = 10): void {
+     this.selection.cursorIndex = Math.min(
+       this.entries.length - 1,
+       this.selection.cursorIndex + 1
+     );
+     
+      // Adjust scroll offset to keep cursor visible
+      if (this.selection.cursorIndex >= this.scrollOffset + pageSize) {
+        // Scroll down to show cursor at near the bottom of visible area
+        this.scrollOffset = Math.min(
+          this.selection.cursorIndex - pageSize + 1,
+          Math.max(0, this.entries.length - pageSize)
+        );
+      }
+   }
 
   /**
    * Move cursor to top
@@ -366,36 +381,46 @@ export class BufferState {
      this.copyRegister = [];
    }
 
-   /**
-    * Page down (Ctrl+D) - scroll down by page size
-    * @param pageSize - number of entries per page (default 10)
-    */
-   pageDown(pageSize: number = 10): void {
-     const maxScroll = Math.max(0, this.entries.length - pageSize);
-     this.scrollOffset = Math.min(this.scrollOffset + pageSize, maxScroll);
-     
-     // Keep cursor in visible area
-     if (this.selection.cursorIndex < this.scrollOffset) {
-       this.selection.cursorIndex = this.scrollOffset;
-     } else if (this.selection.cursorIndex >= this.scrollOffset + pageSize) {
-       this.selection.cursorIndex = Math.min(this.scrollOffset + pageSize - 1, this.entries.length - 1);
-     }
-   }
+    /**
+     * Page down (Ctrl+D) - scroll down by specified amount
+     * @param scrollAmount - number of entries to scroll (default 10)
+     * @param pageSize - number of entries per page for cursor positioning (default 10)
+     */
+    pageDown(scrollAmount: number = 10, pageSize: number = 10): void {
+      const maxScroll = Math.max(0, this.entries.length - pageSize);
+      const oldScrollOffset = this.scrollOffset;
+      this.scrollOffset = Math.min(this.scrollOffset + scrollAmount, maxScroll);
+      
+      // Vim-style: position cursor at a reasonable position in the new view
+      // If cursor was at top, move it to middle. If cursor was in middle, keep it there.
+      const relativePos = this.selection.cursorIndex - oldScrollOffset;
+      const targetRelativePos = relativePos <= 2 ? Math.floor(pageSize / 2) : relativePos;
+      
+      // Ensure cursor stays within bounds and visible area
+      this.selection.cursorIndex = Math.min(
+        Math.max(this.scrollOffset + targetRelativePos, this.scrollOffset),
+        Math.min(this.scrollOffset + pageSize - 1, this.entries.length - 1)
+      );
+    }
 
-   /**
-    * Page up (Ctrl+U) - scroll up by page size
-    * @param pageSize - number of entries per page (default 10)
-    */
-   pageUp(pageSize: number = 10): void {
-     this.scrollOffset = Math.max(0, this.scrollOffset - pageSize);
-     
-     // Keep cursor in visible area
-     if (this.selection.cursorIndex >= this.scrollOffset + pageSize) {
-       this.selection.cursorIndex = Math.max(0, this.scrollOffset + pageSize - 1);
-     } else if (this.selection.cursorIndex < this.scrollOffset) {
-       this.selection.cursorIndex = this.scrollOffset;
-     }
-   }
+    /**
+     * Page up (Ctrl+U) - scroll up by specified amount
+     * @param scrollAmount - number of entries to scroll (default 10)
+     * @param pageSize - number of entries per page for cursor positioning (default 10)
+     */
+    pageUp(scrollAmount: number = 10, pageSize: number = 10): void {
+      const oldScrollOffset = this.scrollOffset;
+      this.scrollOffset = Math.max(0, this.scrollOffset - scrollAmount);
+      
+      // Vim-style: maintain cursor's relative position in the new view
+      const relativePos = this.selection.cursorIndex - oldScrollOffset;
+      
+      // Ensure cursor stays within bounds and visible area
+      this.selection.cursorIndex = Math.min(
+        this.scrollOffset + relativePos,
+        Math.min(this.scrollOffset + pageSize - 1, this.entries.length - 1)
+      );
+    }
 
    /**
     * Get visible entries based on scroll offset

@@ -206,23 +206,27 @@ export class BufferView {
     return `${prefix}${content}`;
   }
 
-  /**
-   * Get color for entry based on selection and mode
-   */
-  private getEntryColor(index: number, entry: Entry): string {
-    const isSelected = index === this.bufferState.selection.cursorIndex;
-    const isInSelection =
-      this.bufferState.selection.isActive &&
-      this.bufferState.selection.selectionStart !== undefined &&
-      this.bufferState.selection.selectionEnd !== undefined &&
-      index >= Math.min(
-        this.bufferState.selection.selectionStart,
-        this.bufferState.selection.selectionEnd
-      ) &&
-      index <= Math.max(
-        this.bufferState.selection.selectionStart,
-        this.bufferState.selection.selectionEnd
-      );
+   /**
+    * Get color for entry based on selection and mode
+    */
+   private getEntryColor(index: number, entry: Entry, visibleIndex?: number): string {
+     // For visible entries, use visible cursor index to handle scrolling
+     const isSelected = visibleIndex !== undefined 
+       ? visibleIndex === this.bufferState.getVisibleCursorIndex(this.options.height ?? 20)
+       : index === this.bufferState.selection.cursorIndex;
+     
+     const isInSelection =
+       this.bufferState.selection.isActive &&
+       this.bufferState.selection.selectionStart !== undefined &&
+       this.bufferState.selection.selectionEnd !== undefined &&
+       index >= Math.min(
+         this.bufferState.selection.selectionStart,
+         this.bufferState.selection.selectionEnd
+       ) &&
+       index <= Math.max(
+         this.bufferState.selection.selectionStart,
+         this.bufferState.selection.selectionEnd
+       );
 
      if (isSelected && this.bufferState.mode === EditMode.Edit) {
        return Theme.getEditModeColor();
@@ -258,22 +262,26 @@ export class BufferView {
       const displayEntries = this.bufferState.getDisplayEntries(pageSize);
       const filtered = this.bufferState.getFilteredEntries();
 
-      // Render visible entries
-      let row = this.options.top!;
-      for (let visibleIndex = 0; visibleIndex < displayEntries.length; visibleIndex++) {
-        const entry = displayEntries[visibleIndex];
-        // Get the actual index in the full entries list
-        let actualIndex = -1;
-        if (this.bufferState.isSearching && this.bufferState.searchQuery) {
-          // When searching, we need to find the entry in the full list
-          actualIndex = this.bufferState.entries.findIndex(e => e.id === entry.id);
-        } else {
-          // When not searching, use direct index lookup
-          actualIndex = this.bufferState.entries.indexOf(entry);
-        }
-        const isSelected = actualIndex === this.bufferState.selection.cursorIndex;
-        const text = this.formatEntry(entry, isSelected);
-        const color = this.getEntryColor(actualIndex, entry);
+       // Render visible entries
+       let row = this.options.top!;
+       for (let visibleIndex = 0; visibleIndex < displayEntries.length; visibleIndex++) {
+         const entry = displayEntries[visibleIndex];
+         // Get actual index in the full entries list
+         let actualIndex = -1;
+         if (this.bufferState.isSearching && this.bufferState.searchQuery) {
+           // When searching, we need to find the entry in the full list
+           actualIndex = this.bufferState.entries.findIndex(e => e.id === entry.id);
+         } else {
+           // When not searching, use direct index lookup
+           actualIndex = this.bufferState.entries.indexOf(entry);
+         }
+         
+         // Check if this entry is the cursor position
+         // Use visible cursor index to handle scrolling correctly
+         const visibleCursorIndex = this.bufferState.getVisibleCursorIndex(pageSize);
+         const isSelected = visibleIndex === visibleCursorIndex;
+         const text = this.formatEntry(entry, isSelected);
+         const color = this.getEntryColor(actualIndex, entry, visibleIndex);
 
        const line = new TextRenderable(this.renderer, {
          id: `buffer-line-${actualIndex}`,

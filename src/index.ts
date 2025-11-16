@@ -108,11 +108,11 @@ class S3Explorer {
      }
    }
 
-  /**
-   * Handle keys in normal mode
-   */
-  private handleNormalModeKey(key: any): void {
-    const keyResult = this.bufferState.handleKeyPress(key.name);
+   /**
+    * Handle keys in normal mode
+    */
+   private handleNormalModeKey(key: any): void {
+     const keyResult = this.bufferState.handleKeyPress(key.name);
     
     // If key was handled as a sequence, execute the action
     if (keyResult.handled) {
@@ -133,12 +133,12 @@ class S3Explorer {
         case 'q':
           process.exit(0);
           break;
-        case 'j':
-          this.bufferState.moveCursorDown();
-          break;
-        case 'k':
-          this.bufferState.moveCursorUp();
-          break;
+         case 'j':
+           this.bufferState.moveCursorDown(10); // Pass page size for scroll adjustment
+           break;
+         case 'k':
+           this.bufferState.moveCursorUp(10); // Pass page size for scroll adjustment
+           break;
         case 'v':
           this.bufferState.startVisualSelection();
           break;
@@ -164,22 +164,19 @@ class S3Explorer {
           // Copy selected entry
           this.handleCopy();
           break;
-         case 'p':
-          // Paste after cursor
-          this.handlePasteAfter();
-          break;
-         case 'P':
-          // Paste before cursor
-          this.handlePasteBefore();
-          break;
-         case 'C-d':
-          // Page down
-          this.handlePageDown();
-          break;
-         case 'C-u':
-          // Page up
-          this.handlePageUp();
-          break;
+          // 'p' is now used for page up, paste moved to 'P'
+          case 'P':
+           // Paste after cursor (was 'p', now 'P')
+           this.handlePasteAfter();
+           break;
+           case 'n':
+           // Next page (page down)
+           this.handlePageDown();
+           break;
+           case 'p':
+           // Previous page (page up)
+           this.handlePageUp();
+           break;
          case '/':
           // Enter search mode
           this.handleEnterSearch();
@@ -444,7 +441,7 @@ class S3Explorer {
    private handlePageDown(): void {
      const pageSize = 10; // Entries per page
      const halfPage = Math.ceil(pageSize / 2); // Half page = 5 entries
-     this.bufferState.pageDown(halfPage);
+     this.bufferState.pageDown(halfPage, pageSize);
      this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
    }
 
@@ -454,7 +451,7 @@ class S3Explorer {
    private handlePageUp(): void {
      const pageSize = 10; // Entries per page
      const halfPage = Math.ceil(pageSize / 2); // Half page = 5 entries
-     this.bufferState.pageUp(halfPage);
+     this.bufferState.pageUp(halfPage, pageSize);
      this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
    }
 
@@ -494,16 +491,17 @@ class S3Explorer {
        top: 2,
      });
 
-     // Create buffer view with improved styling (only once, then reuse and update)
-     if (!this.bufferView) {
-       this.bufferView = new BufferView(this.renderer, this.bufferState, {
-         left: 4,
-         top: 4,
-       });
-     } else {
-       // Update the existing buffer view with new state
-       this.bufferView.updateState(this.bufferState);
-     }
+      // Create buffer view with improved styling (only once, then reuse and update)
+      if (!this.bufferView) {
+        this.bufferView = new BufferView(this.renderer, this.bufferState, {
+          left: 4,
+          top: 4,
+          height: 10, // Match the page size used in scrolling logic
+        });
+      } else {
+        // Update the existing buffer view with new state
+        this.bufferView.updateState(this.bufferState);
+      }
 
      // Update status bar
      this.statusBar.setPath(this.bufferState.currentPath);
