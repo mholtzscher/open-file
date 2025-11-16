@@ -24,6 +24,9 @@ class S3Explorer {
   private bufferView!: BufferView;
   private statusBar!: StatusBar;
   private helpWindow?: FloatingWindow;
+  private titleRenderable?: TextRenderable;
+  private bucketRenderable?: TextRenderable;
+  private lastCalculatedHeight = 0;
   private currentPath = 'test-bucket/';
   private configManager: ConfigManager;
   private bucket: string = 'test-bucket';
@@ -617,55 +620,57 @@ class S3Explorer {
      * Render the UI
      */
    private async render(): Promise<void> {
-     // Note: OpenTUI automatically handles updates, so we just update components
-     // No need to manually clear and re-add
+     // Create title renderable only once
+     if (!this.titleRenderable) {
+       this.titleRenderable = new TextRenderable(this.renderer, {
+         id: 'title',
+         content: '📦 open-s3 - S3 TUI Explorer',
+         fg: '#00FF00',
+         position: 'absolute',
+         left: 2,
+         top: 1,
+       });
+       this.renderer.root.add(this.titleRenderable);
+     }
 
-     // Title
-     const title = new TextRenderable(this.renderer, {
-       id: 'title',
-       content: '📦 open-s3 - S3 TUI Explorer',
-       fg: '#00FF00',
-       position: 'absolute',
-       left: 2,
-       top: 1,
-     });
+     // Create bucket renderable only once
+     if (!this.bucketRenderable) {
+       this.bucketRenderable = new TextRenderable(this.renderer, {
+         id: 'bucket',
+         content: `Bucket: ${this.bucket}`,
+         fg: '#00CCFF',
+         position: 'absolute',
+         left: 2,
+         top: 2,
+       });
+       this.renderer.root.add(this.bucketRenderable);
+     }
 
-     // Render header info (path/bucket)
-     const bucketText = new TextRenderable(this.renderer, {
-       id: 'bucket',
-       content: `Bucket: ${this.bucket}`,
-       fg: '#00CCFF',
-       position: 'absolute',
-       left: 2,
-       top: 2,
-     });
-
-       // Create buffer view with improved styling (only once, then reuse and update)
-       if (!this.bufferView) {
-          const displayConfig = this.configManager.getDisplayConfig();
-          // Calculate height to use full terminal: total height - top padding - status bar - title - bucket line - margin
-          const calculatedHeight = Math.max(10, this.renderer.height - 7);
-          this.bufferView = new BufferView(this.renderer, this.bufferState, {
-            left: 4,
-            top: 4,
-            height: calculatedHeight,
-            showIcons: displayConfig.showIcons ?? true,
-            showSizes: displayConfig.showSizes ?? true,
-            showDates: displayConfig.showDates ?? false,
-          });
-        } else {
-          // Update the existing buffer view with new state
-          this.bufferView.updateState(this.bufferState);
-        }
+     // Create buffer view only once, but check if height changed
+     if (!this.bufferView) {
+       const displayConfig = this.configManager.getDisplayConfig();
+       // Calculate height to use full terminal: total height - top padding - status bar - title - bucket line - margin
+       const calculatedHeight = Math.max(10, this.renderer.height - 7);
+       this.lastCalculatedHeight = calculatedHeight;
+       this.bufferView = new BufferView(this.renderer, this.bufferState, {
+         left: 4,
+         top: 4,
+         height: calculatedHeight,
+         showIcons: displayConfig.showIcons ?? true,
+         showSizes: displayConfig.showSizes ?? true,
+         showDates: displayConfig.showDates ?? false,
+       });
+     } else {
+       // Update the existing buffer view with new state
+       this.bufferView.updateState(this.bufferState);
+     }
 
      // Update status bar
      this.statusBar.setPath(this.bufferState.currentPath);
      this.statusBar.setMode(this.bufferState.mode);
      this.statusBar.setSearchQuery(this.bufferState.searchQuery);
 
-     // Render components
-     this.renderer.root.add(title);
-     this.renderer.root.add(bucketText);
+     // Render components (reuse existing renderables, they update internally)
      this.bufferView.render();
      this.statusBar.render();
    }
