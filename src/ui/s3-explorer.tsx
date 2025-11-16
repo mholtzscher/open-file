@@ -35,6 +35,7 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [pendingOperations, setPendingOperations] = useState<any[]>([]);
+  const [, forceRender] = useState(0); // Force re-render trigger
   const keyboardHandlersRef = useRef<any>(null);
 
   // Track terminal size for responsive layout
@@ -48,29 +49,32 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
 
    // Setup navigation handlers
    const navigationHandlers = useNavigationHandlers(bufferState, {
-     onLoadBuffer: async (path: string) => {
-       try {
-         const result = await adapter.list(path);
-         
-         // Update buffer state with new entries and current path
-         const currentEntries = bufferState.entries;
-         currentEntries.length = 0;
-         currentEntries.push(...result.entries);
-         
-         // Update current path in buffer state
-         bufferState.currentPath = path;
-         
-         // Reset cursor to top of new directory
-         bufferState.cursorToTop();
-         
-         setStatusMessage(`Navigated to ${path}`);
-         setStatusMessageColor(CatppuccinMocha.green);
-       } catch (err) {
-         const parsedError = parseAwsError(err, 'Navigation failed');
-         setStatusMessage(parsedError.message);
-         setStatusMessageColor(CatppuccinMocha.red);
-       }
-     },
+      onLoadBuffer: async (path: string) => {
+        try {
+          const result = await adapter.list(path);
+          
+          // Update buffer state with new entries and current path
+          const currentEntries = bufferState.entries;
+          currentEntries.length = 0;
+          currentEntries.push(...result.entries);
+          
+          // Update current path in buffer state
+          bufferState.currentPath = path;
+          
+          // Reset cursor to top of new directory
+          bufferState.cursorToTop();
+          
+          setStatusMessage(`Navigated to ${path}`);
+          setStatusMessageColor(CatppuccinMocha.green);
+          
+          // Force re-render to show new entries
+          forceRender(prev => prev + 1);
+        } catch (err) {
+          const parsedError = parseAwsError(err, 'Navigation failed');
+          setStatusMessage(parsedError.message);
+          setStatusMessageColor(CatppuccinMocha.red);
+        }
+      },
      onErrorOccurred: (error: string) => {
        setStatusMessage(error);
        setStatusMessageColor(CatppuccinMocha.red);
