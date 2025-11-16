@@ -175,13 +175,18 @@ export class BufferState {
    */
   moveCursorToTop(): void {
     this.selection.cursorIndex = 0;
+    this.scrollOffset = 0;
   }
 
   /**
    * Move cursor to bottom
    */
-  moveCursorToBottom(): void {
+  moveCursorToBottom(pageSize: number = 10): void {
     this.selection.cursorIndex = Math.max(0, this.entries.length - 1);
+    // Adjust scroll offset so the last item is visible at the bottom of the viewport
+    // The scroll offset should position the last item so it's the last visible item
+    const maxScroll = Math.max(0, this.entries.length - pageSize);
+    this.scrollOffset = maxScroll;
   }
 
   /**
