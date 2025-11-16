@@ -234,7 +234,7 @@ describe('SizeColumn', () => {
     };
 
     const color = column.color!(entry, false);
-    expect(color).toBe('#9399b2');
+    expect(color).toBe('#7f849c'); // CatppuccinMocha.overlay1
   });
 });
 

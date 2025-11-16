@@ -2,15 +2,20 @@
  * Tests for loading manager
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, it, expect, beforeEach, afterEach, mock } from 'bun:test';
 import { LoadingManager, LoadingState, LoadingOperation } from './loading-manager.js';
 import { CliRenderer } from '@opentui/core';
 
-// Mock renderer
+// Mock renderer with proper context for TextRenderable creation
 const mockRenderer = {
   root: {
     add: () => {},
     remove: () => {},
+  },
+  height: 24,
+  width: 80,
+  _ctx: {
+    requestRender: () => {},
   },
 } as any;
 
@@ -19,6 +24,8 @@ describe('LoadingManager', () => {
 
   beforeEach(() => {
     loadingManager = new LoadingManager(mockRenderer);
+    // Mock the render method to avoid OpenTUI rendering errors in tests
+    loadingManager['render'] = () => {};
   });
 
   afterEach(() => {
@@ -58,9 +65,12 @@ describe('LoadingManager', () => {
       loadingManager.startLoading('test-op', 'Test Operation');
       loadingManager.completeSuccess('test-op', 'Success message');
       
-      const operation = loadingManager.getActiveOperations()[0];
-      expect(operation.state).toBe(LoadingState.Success);
-      expect(operation.message).toBe('Success message');
+      const operation = loadingManager['operations'].get('test-op');
+      expect(operation).toBeDefined();
+      if (operation) {
+        expect(operation.state).toBe(LoadingState.Success);
+        expect(operation.message).toBe('Success message');
+      }
     });
 
     it('should complete operation with error', () => {
@@ -161,12 +171,17 @@ describe('LoadingManager', () => {
     });
 
     it('should stop spinner when no operations', () => {
-      const stopSpy = jest.spyOn(loadingManager as any, 'stopSpinner');
+      let stopSpinnerCalled = false;
+      const originalStopSpinner = loadingManager['stopSpinner'].bind(loadingManager);
+      loadingManager['stopSpinner'] = () => {
+        stopSpinnerCalled = true;
+        originalStopSpinner();
+      };
       
       loadingManager.startLoading('test-op', 'Test Operation');
       loadingManager.removeOperation('test-op');
       
-      expect(stopSpy).toHaveBeenCalled();
+      expect(stopSpinnerCalled).toBe(true);
     });
   });
 

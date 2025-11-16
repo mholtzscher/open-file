@@ -64,7 +64,7 @@ describe('Syntax highlighting', () => {
       const directory = entries.find(e => e.type === EntryType.Directory)!;
       const color = nameColumn!.color!(directory, false);
       
-      expect(color).toBe('#0088DD'); // Blue
+      expect(color).toBe('#89b4fa'); // Blue
     });
 
     it('should color selected directories brighter blue', () => {
@@ -74,7 +74,7 @@ describe('Syntax highlighting', () => {
       const directory = entries.find(e => e.type === EntryType.Directory)!;
       const color = nameColumn!.color!(directory, true);
       
-      expect(color).toBe('#0099FF'); // Brighter blue
+      expect(color).toBe('#74c7ec'); // Brighter blue
     });
   });
 
@@ -86,7 +86,7 @@ describe('Syntax highlighting', () => {
       const file = entries.find(e => e.type === EntryType.File)!;
       const color = nameColumn!.color!(file, false);
       
-      expect(color).toBe('#FFFFFF'); // White
+      expect(color).toBe('#cdd6f4'); // White
     });
 
     it('should color selected files white', () => {
@@ -96,7 +96,7 @@ describe('Syntax highlighting', () => {
       const file = entries.find(e => e.type === EntryType.File)!;
       const color = nameColumn!.color!(file, true);
       
-      expect(color).toBe('#FFFFFF'); // Still white (selection handled differently)
+      expect(color).toBe('#b4befe'); // CatppuccinMocha.lavender (selected file)
     });
   });
 
@@ -109,7 +109,7 @@ describe('Syntax highlighting', () => {
       const getEntryColor = (bufferView as any).getEntryColor.bind(bufferView);
       const color = getEntryColor(1, entries[1]);
       
-      expect(color).toBe('#FFFF00'); // Yellow
+      expect(color).toBe('#f9e2af'); // Yellow
     });
 
     it('should highlight cursor in red during edit mode', () => {
@@ -119,7 +119,7 @@ describe('Syntax highlighting', () => {
       const getEntryColor = (bufferView as any).getEntryColor.bind(bufferView);
       const color = getEntryColor(1, entries[1]);
       
-      expect(color).toBe('#FF0000'); // Red
+      expect(color).toBe('#fab387'); // Red
     });
   });
 
@@ -134,7 +134,7 @@ describe('Syntax highlighting', () => {
       
       // Middle entry should be highlighted as selected
       const color = getEntryColor(1, entries[1]);
-      expect(color).toBe('#00FF00'); // Green
+      expect(color).toBe('#a6e3a1'); // Green
     });
 
     it('should handle reverse selection', () => {
@@ -147,7 +147,7 @@ describe('Syntax highlighting', () => {
       
       // Middle entry should still be highlighted
       const color = getEntryColor(1, entries[1]);
-      expect(color).toBe('#00FF00'); // Green
+      expect(color).toBe('#a6e3a1'); // Green
     });
   });
 
@@ -162,7 +162,7 @@ describe('Syntax highlighting', () => {
       const getEntryColor = (bufferView as any).getEntryColor.bind(bufferView);
       const color = getEntryColor(1, entries[1]);
       
-      expect(color).toBe('#FF0000'); // Red (edit mode takes priority)
+      expect(color).toBe('#fab387'); // Red (edit mode takes priority)
     });
 
     it('should prioritize cursor over selection', () => {
@@ -174,7 +174,7 @@ describe('Syntax highlighting', () => {
       const getEntryColor = (bufferView as any).getEntryColor.bind(bufferView);
       const color = getEntryColor(1, entries[1]);
       
-      expect(color).toBe('#00FF00'); // Green (selection takes priority over cursor)
+      expect(color).toBe('#a6e3a1'); // Green (selection takes priority over cursor)
     });
 
     it('should use entry colors for non-selected items', () => {
@@ -184,7 +184,7 @@ describe('Syntax highlighting', () => {
       const getEntryColor = (bufferView as any).getEntryColor.bind(bufferView);
       const color = getEntryColor(2, entries[2]); // Third entry
       
-      expect(color).toBe('#0088DD'); // Directory blue
+      expect(color).toBe('#89b4fa'); // Directory blue
     });
   });
 });

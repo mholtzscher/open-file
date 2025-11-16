@@ -77,7 +77,7 @@ describe('StatusBar', () => {
     it('should use default color when not specified', () => {
       statusBar.setMessage('Default color message');
       expect(statusBar['message']).toBe('Default color message');
-      expect(statusBar['messageColor']).toBe('#888888');
+      expect(statusBar['messageColor']).toBe('#7f849c'); // CatppuccinMocha.overlay1
     });
 
     it('should clear message', () => {
@@ -94,21 +94,21 @@ describe('StatusBar', () => {
       statusBar.showError('Something went wrong');
       
       expect(statusBar['message']).toBe('❌ Something went wrong');
-      expect(statusBar['messageColor']).toBe('#fab387');
+      expect(statusBar['messageColor']).toBe('#f38ba8'); // CatppuccinMocha.red
     });
 
     it('should show success message', () => {
       statusBar.showSuccess('Operation completed');
       
       expect(statusBar['message']).toBe('✓ Operation completed');
-      expect(statusBar['messageColor']).toBe('#00FF00');
+      expect(statusBar['messageColor']).toBe('#a6e3a1'); // CatppuccinMocha.green
     });
 
     it('should show info message', () => {
       statusBar.showInfo('Information');
       
       expect(statusBar['message']).toBe('ℹ Information');
-      expect(statusBar['messageColor']).toBe('#fab387');
+      expect(statusBar['messageColor']).toBe('#74c7ec'); // CatppuccinMocha.sapphire
     });
   });
 

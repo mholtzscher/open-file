@@ -156,6 +156,18 @@ export function createDefaultKeybindings(): KeybindingRegistry {
     handler: () => {},
   });
 
+  registry.register(EditMode.Normal, 'C-d', {
+    key: 'C-d',
+    description: 'Page down',
+    handler: () => {},
+  });
+
+  registry.register(EditMode.Normal, 'C-u', {
+    key: 'C-u',
+    description: 'Page up',
+    handler: () => {},
+  });
+
   registry.register(EditMode.Normal, 'i', {
     key: 'i',
     description: 'Enter edit/insert mode',

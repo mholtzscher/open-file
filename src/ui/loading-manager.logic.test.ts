@@ -18,6 +18,8 @@ describe('LoadingManager Logic', () => {
 
   beforeEach(() => {
     loadingManager = new LoadingManager(mockRenderer);
+    // Mock the render method to avoid OpenTUI rendering errors in tests
+    loadingManager['render'] = () => {};
   });
 
   afterEach(() => {
@@ -55,9 +57,12 @@ describe('LoadingManager Logic', () => {
       loadingManager.startLoading('test-op', 'Test Operation');
       loadingManager.completeSuccess('test-op', 'Success message');
       
-      const operation = loadingManager.getActiveOperations()[0];
-      expect(operation.state).toBe(LoadingState.Success);
-      expect(operation.message).toBe('Success message');
+      const operation = loadingManager['operations'].get('test-op');
+      expect(operation).toBeDefined();
+      if (operation) {
+        expect(operation.state).toBe(LoadingState.Success);
+        expect(operation.message).toBe('Success message');
+      }
     });
 
     it('should complete operation with error', () => {

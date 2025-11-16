@@ -12,6 +12,39 @@ import {
   ListObjectsV2CommandOutput
 } from '@aws-sdk/client-s3';
 
+// Mock command classes with proper constructors
+class MockListObjectsV2Command {
+  constructor(public params: any) {}
+}
+
+class MockCopyObjectCommand {
+  constructor(public params: any) {}
+}
+
+class MockHeadObjectCommand {
+  constructor(public params: any) {}
+}
+
+class MockPutObjectCommand {
+  constructor(public params: any) {}
+}
+
+class MockDeleteObjectCommand {
+  constructor(public params: any) {}
+}
+
+class MockGetObjectCommand {
+  constructor(public params: any) {}
+}
+
+class MockCreateBucketCommand {
+  constructor(public params: any) {}
+}
+
+class MockDeleteBucketCommand {
+  constructor(public params: any) {}
+}
+
 // Mock the AWS SDK
 const mockSend = mock(() => Promise.resolve({}));
 const mockClient = {
@@ -21,14 +54,14 @@ const mockClient = {
 // Mock S3Client constructor
 mock.module('@aws-sdk/client-s3', () => ({
   S3Client: mock(() => mockClient),
-  ListObjectsV2Command: mock((params) => ({ params })),
-  CopyObjectCommand: mock((params) => ({ params })),
-  HeadObjectCommand: mock((params) => ({ params })),
-  PutObjectCommand: mock((params) => ({ params })),
-  DeleteObjectCommand: mock((params) => ({ params })),
-  GetObjectCommand: mock((params) => ({ params })),
-  CreateBucketCommand: mock((params) => ({ params })),
-  DeleteBucketCommand: mock((params) => ({ params })),
+  ListObjectsV2Command: MockListObjectsV2Command,
+  CopyObjectCommand: MockCopyObjectCommand,
+  HeadObjectCommand: MockHeadObjectCommand,
+  PutObjectCommand: MockPutObjectCommand,
+  DeleteObjectCommand: MockDeleteObjectCommand,
+  GetObjectCommand: MockGetObjectCommand,
+  CreateBucketCommand: MockCreateBucketCommand,
+  DeleteBucketCommand: MockDeleteBucketCommand,
 }));
 
 describe('S3Adapter copy enhancements', () => {
