@@ -135,6 +135,6 @@ history/
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
 - ❌ Do NOT clutter repo root with planning documents
-- ❌ Do NOT directly read or edit beads json or sqlite db, always use the mcp server.
+- ❌ Do NOT directly read issues.json always use the mcp server.
 
 For more details, see README.md and QUICKSTART.md.
