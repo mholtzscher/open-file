@@ -1,0 +1,28 @@
+{
+  "name": "open-s3",
+  "version": "1.0.0",
+  "description": "Terminal UI for S3 bucket exploration",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "open-s3": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "s3",
+    "tui",
+    "terminal",
+    "explorer"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3"
+  }
+}
