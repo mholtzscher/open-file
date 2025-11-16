@@ -170,14 +170,30 @@ class S3Explorer {
          // Page up
          this.handlePageUp();
          break;
-       case '/':
-         // Enter search mode
-         this.handleEnterSearch();
-         break;
-     }
+        case '/':
+          // Enter search mode
+          this.handleEnterSearch();
+          break;
+        case 'u':
+          // Undo (Vim-style)
+          if (this.bufferState.undo()) {
+            this.statusBar.showSuccess('Undone');
+          } else {
+            this.statusBar.showInfo('Nothing to undo');
+          }
+          break;
+        case 'C-r':
+          // Redo (Vim-style, Ctrl+R)
+          if (this.bufferState.redo()) {
+            this.statusBar.showSuccess('Redone');
+          } else {
+            this.statusBar.showInfo('Nothing to redo');
+          }
+          break;
+      }
 
-     this.render();
-  }
+      this.render();
+   }
 
   /**
    * Handle keys in visual mode
@@ -217,32 +233,42 @@ class S3Explorer {
      this.render();
    }
 
-   /**
-    * Handle keys in search mode
-    */
-   private handleSearchModeKey(key: any): void {
-     switch (key.name) {
-       case 'escape':
-         this.bufferState.exitSearchMode();
-         break;
-       case 'enter':
-         // Confirm search and stay in search mode for refinement
-         break;
-       case 'backspace':
-         // Delete last character from search query
-         this.bufferState.updateSearchQuery(this.bufferState.searchQuery.slice(0, -1));
-         break;
-       default:
-         // Add character to search query if it's a printable character
-         if (key.name && key.name.length === 1) {
-           const newQuery = this.bufferState.searchQuery + key.name;
-           this.bufferState.updateSearchQuery(newQuery);
-         }
-         break;
-     }
+    /**
+     * Handle keys in search mode
+     */
+    private handleSearchModeKey(key: any): void {
+      switch (key.name) {
+        case 'escape':
+          this.bufferState.exitSearchMode();
+          break;
+        case 'enter':
+          // Confirm search and stay in search mode for refinement
+          break;
+        case 'backspace':
+          // Delete last character from search query
+          this.bufferState.updateSearchQuery(this.bufferState.searchQuery.slice(0, -1));
+          break;
+        case 'C-c':
+          // Toggle case-sensitive search
+          this.bufferState.toggleCaseSensitive();
+          this.statusBar.showInfo(`Case-sensitive: ${this.bufferState.searchCaseSensitive ? 'ON' : 'OFF'}`);
+          break;
+        case 'C-r':
+          // Toggle regex mode
+          this.bufferState.toggleRegexMode();
+          this.statusBar.showInfo(`Regex mode: ${this.bufferState.searchUseRegex ? 'ON' : 'OFF'}`);
+          break;
+        default:
+          // Add character to search query if it's a printable character
+          if (key.name && key.name.length === 1) {
+            const newQuery = this.bufferState.searchQuery + key.name;
+            this.bufferState.updateSearchQuery(newQuery);
+          }
+          break;
+      }
 
-     this.render();
-   }
+      this.render();
+    }
 
   /**
    * Navigate into a directory
@@ -288,6 +314,9 @@ class S3Explorer {
    * Delete selected entries
    */
   private handleDeleteSelection(): void {
+    // Save state to undo history before making changes
+    this.bufferState.saveToHistory();
+    
     const selected = this.bufferState.getSelectedEntries();
     for (const entry of selected) {
       const index = this.bufferState.entries.findIndex(e => e.id === entry.id);
@@ -377,6 +406,8 @@ class S3Explorer {
        return;
      }
      
+     // Save state to undo history before pasting
+     this.bufferState.saveToHistory();
      const pastedEntries = this.bufferState.pasteAfterCursor();
      this.statusBar.showSuccess(`Pasted ${pastedEntries.length} entry/entries`);
    }
@@ -390,6 +421,8 @@ class S3Explorer {
        return;
      }
      
+     // Save state to undo history before pasting
+     this.bufferState.saveToHistory();
      const pastedEntries = this.bufferState.pasteBeforeCursor();
      this.statusBar.showSuccess(`Pasted ${pastedEntries.length} entry/entries`);
    }

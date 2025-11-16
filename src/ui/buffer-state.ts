@@ -76,11 +76,17 @@ export class BufferState {
   /** Scroll offset for viewport (number of entries scrolled from top) */
   scrollOffset = 0;
   
-  /** Search/filter query */
-  searchQuery = '';
-  
-  /** Whether search mode is active */
-  isSearching = false;
+   /** Search/filter query */
+   searchQuery = '';
+   
+   /** Whether search mode is active */
+   isSearching = false;
+
+   /** Whether search is case-sensitive */
+   searchCaseSensitive = false;
+
+   /** Whether to use regex matching */
+   searchUseRegex = false;
 
   constructor(entries: Entry[] = []) {
     this.entries = entries;
@@ -201,14 +207,16 @@ export class BufferState {
     this.mode = EditMode.Normal;
   }
 
-  /**
-   * Add an entry to the buffer
-   */
-  addEntry(entry: Entry): void {
-    this.entries.push(entry);
-    this.idMap.registerEntry(entry.path, entry.id);
-    this.isDirty = true;
-  }
+   /**
+    * Add an entry to the buffer
+    */
+   addEntry(entry: Entry): void {
+     this.entries.push(entry);
+     this.idMap.registerEntry(entry.path, entry.id);
+     this.isDirty = true;
+     // Clear redo history when making a new change
+     this.redoHistory = [];
+   }
 
   /**
    * Remove an entry from the buffer
@@ -219,6 +227,8 @@ export class BufferState {
       this.entries.splice(index, 1);
       this.idMap.removeEntry(entry.path);
       this.isDirty = true;
+      // Clear redo history when making a new change
+      this.redoHistory = [];
     }
   }
 
@@ -238,6 +248,8 @@ export class BufferState {
       }
       
       this.isDirty = true;
+      // Clear redo history when making a new change
+      this.redoHistory = [];
     }
   }
 
@@ -433,20 +445,38 @@ export class BufferState {
      }
    }
 
-   /**
-    * Get filtered entries based on search query
-    * Case-insensitive substring matching on entry name
-    */
-   getFilteredEntries(): Entry[] {
-     if (!this.searchQuery) {
-       return this.entries;
-     }
-     
-     const query = this.searchQuery.toLowerCase();
-     return this.entries.filter(entry =>
-       entry.name.toLowerCase().includes(query)
-     );
-   }
+    /**
+     * Get filtered entries based on search query
+     * Supports case-sensitive and regex matching
+     */
+    getFilteredEntries(): Entry[] {
+      if (!this.searchQuery) {
+        return this.entries;
+      }
+      
+      try {
+        if (this.searchUseRegex) {
+          // Use regex matching
+          const flags = this.searchCaseSensitive ? 'g' : 'gi';
+          const regex = new RegExp(this.searchQuery, flags);
+          return this.entries.filter(entry => regex.test(entry.name));
+        } else {
+          // Use substring matching
+          const query = this.searchCaseSensitive ? this.searchQuery : this.searchQuery.toLowerCase();
+          return this.entries.filter(entry => {
+            const name = this.searchCaseSensitive ? entry.name : entry.name.toLowerCase();
+            return name.includes(query);
+          });
+        }
+      } catch (e) {
+        // If regex is invalid, fall back to substring matching
+        const query = this.searchCaseSensitive ? this.searchQuery : this.searchQuery.toLowerCase();
+        return this.entries.filter(entry => {
+          const name = this.searchCaseSensitive ? entry.name : entry.name.toLowerCase();
+          return name.includes(query);
+        });
+      }
+    }
 
    /**
     * Get currently displayed entries (respecting search filter and scroll)
@@ -469,15 +499,143 @@ export class BufferState {
      return 0;
    }
 
-   /**
-    * Check if entry matches current search query
-    */
-   isEntryMatching(entry: Entry): boolean {
-     if (!this.searchQuery) {
-       return true;
-     }
-     
-     const query = this.searchQuery.toLowerCase();
-     return entry.name.toLowerCase().includes(query);
-   }
+    /**
+     * Check if entry matches current search query
+     */
+    isEntryMatching(entry: Entry): boolean {
+      if (!this.searchQuery) {
+        return true;
+      }
+      
+      const query = this.searchQuery.toLowerCase();
+      return entry.name.toLowerCase().includes(query);
+    }
+
+    /**
+     * Toggle case-sensitive search
+     */
+    toggleCaseSensitive(): void {
+      this.searchCaseSensitive = !this.searchCaseSensitive;
+      // Re-apply filter with new setting
+      this.updateSearchQuery(this.searchQuery);
+    }
+
+    /**
+     * Toggle regex matching
+     */
+    toggleRegexMode(): void {
+      this.searchUseRegex = !this.searchUseRegex;
+      // Re-apply filter with new setting
+      this.updateSearchQuery(this.searchQuery);
+    }
+
+    /**
+     * Get search filter status string
+     */
+    getSearchStatus(): string {
+      const flags: string[] = [];
+      if (this.searchCaseSensitive) flags.push('Aa');
+      if (this.searchUseRegex) flags.push('.*');
+      return flags.length > 0 ? `[${flags.join(' ')}]` : '';
+    }
+
+    /**
+     * Save current state to undo history
+     */
+    saveToHistory(): void {
+      this.undoHistory.push(this.clone());
+      // Clear redo history when making a new change
+      this.redoHistory = [];
+    }
+
+    /**
+     * Undo last operation
+     */
+    undo(): boolean {
+      if (this.undoHistory.length === 0) {
+        return false;
+      }
+
+      // Save current state to redo history
+      this.redoHistory.push(this.clone());
+
+      // Restore previous state
+      const previousState = this.undoHistory.pop()!;
+      this.entries = previousState.entries;
+      this.originalEntries = previousState.originalEntries;
+      this.mode = previousState.mode;
+      this.selection = { ...previousState.selection };
+      this.isDirty = previousState.isDirty;
+      this.currentPath = previousState.currentPath;
+      this.copyRegister = [...previousState.copyRegister];
+      this.scrollOffset = previousState.scrollOffset;
+      this.searchQuery = previousState.searchQuery;
+      this.isSearching = previousState.isSearching;
+      this.idMap = new EntryIdMap();
+      for (const entry of this.entries) {
+        this.idMap.registerEntry(entry.path, entry.id);
+      }
+
+      return true;
+    }
+
+    /**
+     * Redo last undone operation
+     */
+    redo(): boolean {
+      if (this.redoHistory.length === 0) {
+        return false;
+      }
+
+      // Save current state to undo history
+      this.undoHistory.push(this.clone());
+
+      // Restore next state
+      const nextState = this.redoHistory.pop()!;
+      this.entries = nextState.entries;
+      this.originalEntries = nextState.originalEntries;
+      this.mode = nextState.mode;
+      this.selection = { ...nextState.selection };
+      this.isDirty = nextState.isDirty;
+      this.currentPath = nextState.currentPath;
+      this.copyRegister = [...nextState.copyRegister];
+      this.scrollOffset = nextState.scrollOffset;
+      this.searchQuery = nextState.searchQuery;
+      this.isSearching = nextState.isSearching;
+      this.idMap = new EntryIdMap();
+      for (const entry of this.entries) {
+        this.idMap.registerEntry(entry.path, entry.id);
+      }
+
+      return true;
+    }
+
+    /**
+     * Check if undo is available
+     */
+    canUndo(): boolean {
+      return this.undoHistory.length > 0;
+    }
+
+    /**
+     * Check if redo is available
+     */
+    canRedo(): boolean {
+      return this.redoHistory.length > 0;
+    }
+
+    /**
+     * Clear undo/redo history
+     */
+    clearHistory(): void {
+      this.undoHistory = [];
+      this.redoHistory = [];
+    }
+
+    /**
+     * Get undo/redo history status
+     */
+    getHistoryStatus(): string {
+      return `Undo: ${this.undoHistory.length}, Redo: ${this.redoHistory.length}`;
+    }
 }

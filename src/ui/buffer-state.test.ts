@@ -481,4 +481,136 @@ describe('BufferState', () => {
       expect(selected?.name).toBe('file1.txt');
     });
   });
+
+  describe('Undo/Redo Operations', () => {
+    it('should save state to undo history', () => {
+      const id1 = generateEntryId();
+      const entries: Entry[] = [
+        {
+          id: id1,
+          name: 'file1.txt',
+          type: EntryType.File,
+          path: 'file1.txt',
+        },
+      ];
+
+      const buffer = new BufferState(entries);
+      expect(buffer.canUndo()).toBe(false);
+      
+      buffer.saveToHistory();
+      expect(buffer.canUndo()).toBe(true);
+    });
+
+    it('should undo and restore previous state', () => {
+      const id1 = generateEntryId();
+      const id2 = generateEntryId();
+      
+      const entries: Entry[] = [
+        {
+          id: id1,
+          name: 'file1.txt',
+          type: EntryType.File,
+          path: 'file1.txt',
+        },
+      ];
+
+      const buffer = new BufferState(entries);
+      buffer.saveToHistory();
+      
+      // Add an entry
+      buffer.addEntry({
+        id: id2,
+        name: 'file2.txt',
+        type: EntryType.File,
+        path: 'file2.txt',
+      });
+      
+      expect(buffer.entries.length).toBe(2);
+      
+      // Undo
+      const didUndo = buffer.undo();
+      expect(didUndo).toBe(true);
+      expect(buffer.entries.length).toBe(1);
+    });
+
+    it('should redo and restore next state', () => {
+      const id1 = generateEntryId();
+      const id2 = generateEntryId();
+      
+      const entries: Entry[] = [
+        {
+          id: id1,
+          name: 'file1.txt',
+          type: EntryType.File,
+          path: 'file1.txt',
+        },
+      ];
+
+      const buffer = new BufferState(entries);
+      buffer.saveToHistory();
+      
+      buffer.addEntry({
+        id: id2,
+        name: 'file2.txt',
+        type: EntryType.File,
+        path: 'file2.txt',
+      });
+      
+      // Undo and then redo
+      buffer.undo();
+      expect(buffer.entries.length).toBe(1);
+      
+      const didRedo = buffer.redo();
+      expect(didRedo).toBe(true);
+      expect(buffer.entries.length).toBe(2);
+    });
+
+    it('should return false when no undo available', () => {
+      const buffer = new BufferState([]);
+      expect(buffer.undo()).toBe(false);
+    });
+
+    it('should return false when no redo available', () => {
+      const buffer = new BufferState([]);
+      expect(buffer.redo()).toBe(false);
+    });
+
+    it('should clear redo history on new change after undo', () => {
+      const id1 = generateEntryId();
+      const id2 = generateEntryId();
+      const id3 = generateEntryId();
+      
+      const entries: Entry[] = [
+        {
+          id: id1,
+          name: 'file1.txt',
+          type: EntryType.File,
+          path: 'file1.txt',
+        },
+      ];
+
+      const buffer = new BufferState(entries);
+      buffer.saveToHistory();
+      
+      buffer.addEntry({
+        id: id2,
+        name: 'file2.txt',
+        type: EntryType.File,
+        path: 'file2.txt',
+      });
+      
+      buffer.undo();
+      expect(buffer.canRedo()).toBe(true);
+      
+      // Make a new change
+      buffer.addEntry({
+        id: id3,
+        name: 'file3.txt',
+        type: EntryType.File,
+        path: 'file3.txt',
+      });
+      
+      expect(buffer.canRedo()).toBe(false);
+    });
+  });
 });

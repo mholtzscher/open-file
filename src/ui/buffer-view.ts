@@ -280,19 +280,22 @@ export class BufferView {
        this.renderedLines.set(actualIndex, line);
      }
      
-     // Show search query if in search mode
-     if (this.bufferState.isSearching) {
-       const searchRow = this.options.top! - 1;
-       const searchText = new TextRenderable(this.renderer, {
-         id: 'search-bar',
-         content: `/ ${this.bufferState.searchQuery}${this.bufferState.searchQuery ? ` (${filtered.length} matches)` : ''}`,
-         fg: '#FF6600',
-         position: 'absolute',
-         left: this.options.left,
-         top: searchRow,
-       });
-       this.renderer.root.add(searchText);
-     }
+      // Show search query if in search mode
+      if (this.bufferState.isSearching) {
+        const searchRow = this.options.top! - 1;
+        const flags = this.bufferState.getSearchStatus();
+        const matchInfo = this.bufferState.searchQuery ? ` (${filtered.length} matches)` : '';
+        const content = `/ ${this.bufferState.searchQuery}${flags}${matchInfo}`;
+        const searchText = new TextRenderable(this.renderer, {
+          id: 'search-bar',
+          content: content,
+          fg: '#FF6600',
+          position: 'absolute',
+          left: this.options.left,
+          top: searchRow,
+        });
+        this.renderer.root.add(searchText);
+      }
    }
 
   /**
