@@ -16,7 +16,7 @@ import {
   ListObjectsV2CommandInput,
   _Object,
 } from '@aws-sdk/client-s3';
-import { Adapter, ListOptions, ListResult } from './adapter.js';
+import { Adapter, ListOptions, ListResult, OperationOptions } from './adapter.js';
 import { Entry, EntryType, EntryMetadata } from '../types/entry.js';
 import { generateEntryId } from '../utils/entry-id.js';
 import { retryWithBackoff, getS3RetryConfig } from '../utils/retry.js';
@@ -242,13 +242,24 @@ export class S3Adapter implements Adapter {
   async create(
     path: string,
     type: EntryType,
-    content?: Buffer | string
+    content?: Buffer | string,
+    options?: OperationOptions
   ): Promise<void> {
     const normalized = this.normalizePath(path, type === EntryType.Directory);
 
     try {
       if (type === EntryType.Directory) {
         // Create directory marker (empty object with trailing slash)
+        if (options?.onProgress) {
+          options.onProgress({
+            operation: 'Creating directory',
+            bytesTransferred: 0,
+            totalBytes: 0,
+            percentage: 0,
+            currentFile: path,
+          });
+        }
+        
         await retryWithBackoff(
           () => {
             const command = new PutObjectCommand({
@@ -261,9 +272,31 @@ export class S3Adapter implements Adapter {
           },
           getS3RetryConfig()
         );
+        
+        if (options?.onProgress) {
+          options.onProgress({
+            operation: 'Created directory',
+            bytesTransferred: 0,
+            totalBytes: 0,
+            percentage: 100,
+            currentFile: path,
+          });
+        }
       } else {
         // Create file with content
         const body = content instanceof Buffer ? content : Buffer.from(content || '');
+        const totalBytes = body.length;
+        
+        if (options?.onProgress) {
+          options.onProgress({
+            operation: 'Creating file',
+            bytesTransferred: 0,
+            totalBytes,
+            percentage: 0,
+            currentFile: path,
+          });
+        }
+        
         await retryWithBackoff(
           () => {
             const command = new PutObjectCommand({
@@ -275,6 +308,16 @@ export class S3Adapter implements Adapter {
           },
           getS3RetryConfig()
         );
+        
+        if (options?.onProgress) {
+          options.onProgress({
+            operation: 'Created file',
+            bytesTransferred: totalBytes,
+            totalBytes,
+            percentage: 100,
+            currentFile: path,
+          });
+        }
       }
     } catch (error) {
       console.error(`Failed to create ${path}:`, error);
@@ -285,7 +328,7 @@ export class S3Adapter implements Adapter {
   /**
    * Delete a file or directory
    */
-  async delete(path: string, recursive?: boolean): Promise<void> {
+  async delete(path: string, recursive?: boolean, _options?: OperationOptions): Promise<void> {
     const normalized = this.normalizePath(path);
 
     try {
@@ -343,7 +386,7 @@ export class S3Adapter implements Adapter {
   /**
    * Move/rename a file or directory
    */
-  async move(source: string, destination: string): Promise<void> {
+  async move(source: string, destination: string, _options?: OperationOptions): Promise<void> {
     const srcNormalized = this.normalizePath(source);
     const destNormalized = this.normalizePath(
       destination,
@@ -384,8 +427,10 @@ export class S3Adapter implements Adapter {
   /**
    * Copy a file or directory
    */
-  async copy(source: string, destination: string, targetBucket?: string): Promise<void> {
+  async copy(source: string, destination: string, optionsOrBucket?: OperationOptions | string): Promise<void> {
     const srcNormalized = this.normalizePath(source);
+    // Support both old targetBucket parameter and new OperationOptions
+    const targetBucket = typeof optionsOrBucket === 'string' ? optionsOrBucket : undefined;
     const destBucket = targetBucket || this.bucket;
     const destNormalized = this.normalizePath(
       destination,

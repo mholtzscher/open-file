@@ -167,11 +167,11 @@ export class MockAdapter implements Adapter {
     };
   }
 
-  async create(path: string, type: EntryType, content?: Buffer | string): Promise<void> {
+  async create(path: string, type: EntryType, content?: Buffer | string, _options?: any): Promise<void> {
     this.createSync(path, type, content);
   }
 
-  async delete(path: string, recursive?: boolean): Promise<void> {
+  async delete(path: string, recursive?: boolean, _options?: any): Promise<void> {
     const normalized = this.normalizePath(path);
     const toDelete: string[] = [];
 
@@ -189,7 +189,7 @@ export class MockAdapter implements Adapter {
     toDelete.forEach(p => this.entries.delete(p));
   }
 
-  async move(source: string, destination: string): Promise<void> {
+  async move(source: string, destination: string, _options?: any): Promise<void> {
     const srcNormalized = this.normalizePath(source);
     const entry = this.entries.get(srcNormalized) || this.entries.get(srcNormalized + '/');
     
@@ -215,7 +215,7 @@ export class MockAdapter implements Adapter {
     });
   }
 
-  async copy(source: string, destination: string): Promise<void> {
+  async copy(source: string, destination: string, _options?: any): Promise<void> {
     const srcNormalized = this.normalizePath(source);
     const entry = this.entries.get(srcNormalized) || this.entries.get(srcNormalized + '/');
     
