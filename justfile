@@ -6,19 +6,19 @@ default:
 
 # Install dependencies
 install:
-    npm install
+    bun install
 
-# Build TypeScript to JavaScript
+# Build TypeScript to JavaScript (optional with Bun - can run .ts directly)
 build:
-    npm run build
+    bun build src/index.ts --outdir dist --target bun
 
 # Run in watch mode for development
 dev:
-    npm run dev
+    bun run --watch src/index.ts
 
-# Run the application
-run: build
-    npm start
+# Run the application directly (no build needed with Bun!)
+run:
+    bun run src/index.ts
 
 # Clean build artifacts
 clean:
@@ -33,17 +33,17 @@ clean-all:
 # Reinstall dependencies from scratch
 reinstall: clean-all install
 
-# Check TypeScript types without building
+# Check TypeScript types
 check:
-    npx tsc --noEmit
+    bun run --no-install tsc --noEmit
 
 # Format code (placeholder for when we add prettier)
 fmt:
     @echo "Code formatting not yet configured"
 
-# Run tests (placeholder for when we add tests)
+# Run tests
 test:
-    @echo "Tests not yet implemented"
+    bun test
 
 # Run linting (placeholder for when we add eslint)
 lint:
@@ -52,9 +52,8 @@ lint:
 # Show project info
 info:
     @echo "Project: open-s3"
-    @echo "TypeScript version: $(npx tsc --version)"
-    @echo "Node version: $(node --version)"
-    @echo "NPM version: $(npm --version)"
+    @echo "Bun version: $(bun --version)"
+    @echo "TypeScript version: $(bun run --no-install tsc --version)"
 
-# Quick development cycle: clean, install, build, run
-quick: clean install build run
+# Quick development cycle: clean, install, run
+quick: clean install run

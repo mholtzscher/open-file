@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { createCliRenderer, CliRenderer, TextRenderable } from '@opentui/core';
 import { MockAdapter } from './adapters/mock-adapter.js';
