@@ -124,7 +124,14 @@ class S3Explorer {
       if (key.name === 'G' || key.name === 'g' || key.shift || key.name?.toLowerCase() === 'g') {
         console.log('Key pressed:', key.name, 'shift:', key.shift, 'full:', key);
       }
-      const keyResult = this.bufferState.handleKeyPress(key.name);
+      
+      // Convert shift+g to G if needed
+      let keyName = key.name;
+      if (key.shift && key.name === 'g') {
+        keyName = 'G';
+      }
+      
+      const keyResult = this.bufferState.handleKeyPress(keyName);
     
        // If key was handled as a sequence, execute the action
        // Note: buffer-state already executed most sequence actions (gg, G, yy, dd)
