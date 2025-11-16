@@ -19,6 +19,7 @@ import {
 import { Adapter, ListOptions, ListResult } from './adapter.js';
 import { Entry, EntryType, EntryMetadata } from '../types/entry.js';
 import { generateEntryId } from '../utils/entry-id.js';
+import { retryWithBackoff, getS3RetryConfig } from '../utils/retry.js';
 
 /**
  * Configuration for S3 adapter
@@ -135,8 +136,13 @@ export class S3Adapter implements Adapter {
     };
 
     try {
-      const command = new ListObjectsV2Command(params);
-      const response = await this.client.send(command);
+      const response = await retryWithBackoff(
+        () => {
+          const command = new ListObjectsV2Command(params);
+          return this.client.send(command);
+        },
+        getS3RetryConfig()
+      );
 
       const entries: Entry[] = [];
 
@@ -196,12 +202,16 @@ export class S3Adapter implements Adapter {
     const normalized = this.normalizePath(path);
 
     try {
-      const command = new HeadObjectCommand({
-        Bucket: this.bucket,
-        Key: normalized,
-      });
-
-      const response = await this.client.send(command);
+      const response = await retryWithBackoff(
+        () => {
+          const command = new HeadObjectCommand({
+            Bucket: this.bucket,
+            Key: normalized,
+          });
+          return this.client.send(command);
+        },
+        getS3RetryConfig()
+      );
 
       // Determine if it's a directory based on content-type
       const isDirectory = normalized.endsWith('/') ||
@@ -239,22 +249,32 @@ export class S3Adapter implements Adapter {
     try {
       if (type === EntryType.Directory) {
         // Create directory marker (empty object with trailing slash)
-        const command = new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: normalized,
-          Body: '',
-          ContentType: 'application/x-directory',
-        });
-        await this.client.send(command);
+        await retryWithBackoff(
+          () => {
+            const command = new PutObjectCommand({
+              Bucket: this.bucket,
+              Key: normalized,
+              Body: '',
+              ContentType: 'application/x-directory',
+            });
+            return this.client.send(command);
+          },
+          getS3RetryConfig()
+        );
       } else {
         // Create file with content
         const body = content instanceof Buffer ? content : Buffer.from(content || '');
-        const command = new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: normalized,
-          Body: body,
-        });
-        await this.client.send(command);
+        await retryWithBackoff(
+          () => {
+            const command = new PutObjectCommand({
+              Bucket: this.bucket,
+              Key: normalized,
+              Body: body,
+            });
+            return this.client.send(command);
+          },
+          getS3RetryConfig()
+        );
       }
     } catch (error) {
       console.error(`Failed to create ${path}:`, error);
@@ -272,33 +292,48 @@ export class S3Adapter implements Adapter {
       if (recursive) {
         // Delete directory and all contents
         const prefix = normalized.endsWith('/') ? normalized : normalized + '/';
-        const listCommand = new ListObjectsV2Command({
-          Bucket: this.bucket,
-          Prefix: prefix,
-        });
-
-        const response = await this.client.send(listCommand);
+        
+        const response = await retryWithBackoff(
+          () => {
+            const listCommand = new ListObjectsV2Command({
+              Bucket: this.bucket,
+              Prefix: prefix,
+            });
+            return this.client.send(listCommand);
+          },
+          getS3RetryConfig()
+        );
 
         // Delete all objects in the directory
         if (response.Contents) {
           for (const obj of response.Contents) {
             if (obj.Key) {
-              const deleteCommand = new DeleteObjectCommand({
-                Bucket: this.bucket,
-                Key: obj.Key,
-              });
-              await this.client.send(deleteCommand);
+              await retryWithBackoff(
+                () => {
+                  const deleteCommand = new DeleteObjectCommand({
+                    Bucket: this.bucket,
+                    Key: obj.Key,
+                  });
+                  return this.client.send(deleteCommand);
+                },
+                getS3RetryConfig()
+              );
             }
           }
         }
       }
 
       // Delete the object itself
-      const command = new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: normalized,
-      });
-      await this.client.send(command);
+      await retryWithBackoff(
+        () => {
+          const command = new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: normalized,
+          });
+          return this.client.send(command);
+        },
+        getS3RetryConfig()
+      );
     } catch (error) {
       console.error(`Failed to delete ${path}:`, error);
       throw error;
@@ -317,19 +352,29 @@ export class S3Adapter implements Adapter {
 
     try {
       // Copy to new location
-      const copyCommand = new CopyObjectCommand({
-        Bucket: this.bucket,
-        CopySource: `${this.bucket}/${srcNormalized}`,
-        Key: destNormalized,
-      });
-      await this.client.send(copyCommand);
+      await retryWithBackoff(
+        () => {
+          const copyCommand = new CopyObjectCommand({
+            Bucket: this.bucket,
+            CopySource: `${this.bucket}/${srcNormalized}`,
+            Key: destNormalized,
+          });
+          return this.client.send(copyCommand);
+        },
+        getS3RetryConfig()
+      );
 
       // Delete from old location
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: srcNormalized,
-      });
-      await this.client.send(deleteCommand);
+      await retryWithBackoff(
+        () => {
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: srcNormalized,
+          });
+          return this.client.send(deleteCommand);
+        },
+        getS3RetryConfig()
+      );
     } catch (error) {
       console.error(`Failed to move ${source} to ${destination}:`, error);
       throw error;
@@ -347,12 +392,17 @@ export class S3Adapter implements Adapter {
     );
 
     try {
-      const command = new CopyObjectCommand({
-        Bucket: this.bucket,
-        CopySource: `${this.bucket}/${srcNormalized}`,
-        Key: destNormalized,
-      });
-      await this.client.send(command);
+      await retryWithBackoff(
+        () => {
+          const command = new CopyObjectCommand({
+            Bucket: this.bucket,
+            CopySource: `${this.bucket}/${srcNormalized}`,
+            Key: destNormalized,
+          });
+          return this.client.send(command);
+        },
+        getS3RetryConfig()
+      );
     } catch (error) {
       console.error(`Failed to copy ${source} to ${destination}:`, error);
       throw error;
@@ -366,11 +416,16 @@ export class S3Adapter implements Adapter {
     const normalized = this.normalizePath(path);
 
     try {
-      const command = new HeadObjectCommand({
-        Bucket: this.bucket,
-        Key: normalized,
-      });
-      await this.client.send(command);
+      await retryWithBackoff(
+        () => {
+          const command = new HeadObjectCommand({
+            Bucket: this.bucket,
+            Key: normalized,
+          });
+          return this.client.send(command);
+        },
+        getS3RetryConfig()
+      );
       return true;
     } catch (error) {
       return false;
