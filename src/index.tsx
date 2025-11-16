@@ -78,9 +78,17 @@ async function main() {
   });
 
   // Setup keyboard event handling
-  renderer.keyInput.on('keypress', (key) => {
+  renderer.keyInput.on('keypress', (key: any) => {
     if (globalKeyboardDispatcher) {
-      globalKeyboardDispatcher(key);
+      // Normalize key object to match expected interface
+      const normalizedKey = {
+        name: key.name || key.key || 'unknown',
+        ctrl: key.ctrl || key.ctrlKey || false,
+        shift: key.shift || key.shiftKey || false,
+        meta: key.meta || key.metaKey || false,
+        char: key.char,
+      };
+      globalKeyboardDispatcher(normalizedKey);
     }
   });
 
