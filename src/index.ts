@@ -200,9 +200,10 @@ class S3Explorer {
             this.statusBar.showInfo('Nothing to redo');
           }
           break;
-      }
+       }
+     }
 
-      this.render();
+     this.render();
    }
 
   /**
