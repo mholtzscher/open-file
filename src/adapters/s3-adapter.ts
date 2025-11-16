@@ -384,28 +384,84 @@ export class S3Adapter implements Adapter {
   /**
    * Copy a file or directory
    */
-  async copy(source: string, destination: string): Promise<void> {
+  async copy(source: string, destination: string, targetBucket?: string): Promise<void> {
     const srcNormalized = this.normalizePath(source);
+    const destBucket = targetBucket || this.bucket;
     const destNormalized = this.normalizePath(
       destination,
       source.endsWith('/')
     );
 
     try {
-      await retryWithBackoff(
-        () => {
-          const command = new CopyObjectCommand({
-            Bucket: this.bucket,
-            CopySource: `${this.bucket}/${srcNormalized}`,
-            Key: destNormalized,
-          });
-          return this.client.send(command);
-        },
-        getS3RetryConfig()
-      );
+      // Check if source is a directory
+      if (source.endsWith('/')) {
+        // Copy directory recursively
+        await this.copyDirectory(srcNormalized, destNormalized, destBucket);
+      } else {
+        // Copy single file
+        await this.copySingleFile(srcNormalized, destNormalized, destBucket);
+      }
     } catch (error) {
       console.error(`Failed to copy ${source} to ${destination}:`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Copy a single file
+   */
+  private async copySingleFile(source: string, destination: string, targetBucket: string): Promise<void> {
+    await retryWithBackoff(
+      () => {
+        const command = new CopyObjectCommand({
+          Bucket: targetBucket,
+          CopySource: `${this.bucket}/${source}`,
+          Key: destination,
+          MetadataDirective: 'COPY', // Preserve metadata
+        });
+        return this.client.send(command);
+      },
+      getS3RetryConfig()
+    );
+  }
+
+  /**
+   * Copy a directory recursively
+   */
+  private async copyDirectory(source: string, destination: string, targetBucket: string): Promise<void> {
+    // List all objects in the source directory
+    const response = await retryWithBackoff(
+      () => {
+        const command = new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: source,
+        });
+        return this.client.send(command);
+      },
+      getS3RetryConfig()
+    );
+
+    // Copy each object
+    if (response.Contents) {
+      for (const obj of response.Contents) {
+        if (obj.Key && obj.Key !== source) { // Skip the directory marker itself
+          const relativePath = obj.Key.substring(source.length);
+          const destKey = destination + relativePath;
+          
+          await retryWithBackoff(
+            () => {
+              const command = new CopyObjectCommand({
+                Bucket: targetBucket,
+                CopySource: `${this.bucket}/${obj.Key}`,
+                Key: destKey,
+                MetadataDirective: 'COPY', // Preserve metadata
+              });
+              return this.client.send(command);
+            },
+            getS3RetryConfig()
+          );
+        }
+      }
     }
   }
 

@@ -88,6 +88,10 @@ export class BufferState {
    /** Whether to use regex matching */
    searchUseRegex = false;
 
+   /** Key sequence state for multi-key commands */
+   private keySequence: string[] = [];
+   private keySequenceTimeout?: ReturnType<typeof setTimeout>;
+
   constructor(entries: Entry[] = []) {
     this.entries = entries;
     this.originalEntries = JSON.parse(JSON.stringify(entries));
@@ -520,14 +524,62 @@ export class BufferState {
       this.updateSearchQuery(this.searchQuery);
     }
 
-    /**
-     * Toggle regex matching
-     */
-    toggleRegexMode(): void {
-      this.searchUseRegex = !this.searchUseRegex;
-      // Re-apply filter with new setting
-      this.updateSearchQuery(this.searchQuery);
-    }
+   /**
+    * Toggle regex matching
+    */
+   toggleRegexMode(): void {
+     this.searchUseRegex = !this.searchUseRegex;
+   }
+
+   /**
+    * Handle key press for sequence detection
+    */
+   handleKeyPress(key: string): { handled: boolean; sequence: string[]; action?: 'moveToTop' | 'moveToBottom' } {
+     // Clear existing timeout
+     if (this.keySequenceTimeout) {
+       clearTimeout(this.keySequenceTimeout);
+     }
+
+     // Add key to sequence
+     this.keySequence.push(key);
+     
+
+     
+     // Set timeout to clear sequence after 500ms
+     this.keySequenceTimeout = setTimeout(() => {
+       this.keySequence = [];
+     }, 500);
+
+     // Check for gg sequence
+     if (this.keySequence.length === 2 && 
+         this.keySequence[0] === 'g' && 
+         this.keySequence[1] === 'g') {
+       this.keySequence = [];
+       this.moveCursorToTop();
+       return { handled: true, sequence: ['g', 'g'], action: 'moveToTop' };
+     }
+
+     // Check for G (single key)
+     if (this.keySequence.length === 1 && this.keySequence[0] === 'G') {
+       console.log('G detected, entries.length:', this.entries.length);
+       this.moveCursorToBottom();
+       return { handled: true, sequence: ['G'], action: 'moveToBottom' };
+     }
+
+     // Single g without second g - not handled yet
+     if (this.keySequence.length === 1 && this.keySequence[0] === 'g') {
+       return { handled: false, sequence: ['g'] };
+     }
+
+     // Other keys - clear sequence and not handled
+     if (this.keySequence.length > 0) {
+       const sequence = [...this.keySequence];
+       this.keySequence = [];
+       return { handled: false, sequence };
+     }
+
+     return { handled: false, sequence: this.keySequence };
+   }
 
     /**
      * Get search filter status string

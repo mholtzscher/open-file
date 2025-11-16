@@ -112,69 +112,79 @@ class S3Explorer {
    * Handle keys in normal mode
    */
   private handleNormalModeKey(key: any): void {
-    switch (key.name) {
-      case 'q':
-        process.exit(0);
-        break;
-      case 'j':
-        this.bufferState.moveCursorDown();
-        break;
-      case 'k':
-        this.bufferState.moveCursorUp();
-        break;
-      case 'g':
-        // gg to go to top (simplified: just one 'g')
+    const keyResult = this.bufferState.handleKeyPress(key.name);
+    
+    // If key was handled as a sequence, execute the action
+    if (keyResult.handled) {
+      if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === 'g') {
+        // gg - move to top
         this.bufferState.moveCursorToTop();
-        break;
-      case 'G':
+      } else if (keyResult.sequence[0] === 'G') {
+        // G - move to bottom
         this.bufferState.moveCursorToBottom();
-        break;
-      case 'v':
-        this.bufferState.startVisualSelection();
-        break;
-      case 'enter':
-      case 'l':
-        // Navigate into directory or open file
-        this.handleNavigate();
-        break;
-      case 'h':
-      case 'backspace':
-        // Navigate to parent directory
-        this.handleNavigateUp();
-        break;
-      case 'i':
-      case 'a':
-        this.bufferState.enterEditMode();
-        break;
-       case 'w':
-         // Save buffer (commit changes)
-         this.handleSave();
-         break;
-       case 'c':
-         // Copy selected entry
-         this.handleCopy();
-         break;
-       case 'p':
-         // Paste after cursor
-         this.handlePasteAfter();
-         break;
-       case 'P':
-         // Paste before cursor
-         this.handlePasteBefore();
-         break;
-       case 'C-d':
-         // Page down
-         this.handlePageDown();
-         break;
-       case 'C-u':
-         // Page up
-         this.handlePageUp();
-         break;
-        case '/':
+      }
+      return;
+    }
+
+    // Handle single keys that aren't part of a sequence
+    if (keyResult.sequence.length === 0 || 
+        (keyResult.sequence.length === 1 && keyResult.sequence[0] !== 'g')) {
+      switch (key.name) {
+        case 'q':
+          process.exit(0);
+          break;
+        case 'j':
+          this.bufferState.moveCursorDown();
+          break;
+        case 'k':
+          this.bufferState.moveCursorUp();
+          break;
+        case 'v':
+          this.bufferState.startVisualSelection();
+          break;
+        case 'enter':
+        case 'l':
+          // Navigate into directory or open file
+          this.handleNavigate();
+          break;
+        case 'h':
+        case 'backspace':
+          // Navigate to parent directory
+          this.handleNavigateUp();
+          break;
+        case 'i':
+        case 'a':
+          this.bufferState.enterEditMode();
+          break;
+         case 'w':
+          // Save buffer (commit changes)
+          this.handleSave();
+          break;
+         case 'c':
+          // Copy selected entry
+          this.handleCopy();
+          break;
+         case 'p':
+          // Paste after cursor
+          this.handlePasteAfter();
+          break;
+         case 'P':
+          // Paste before cursor
+          this.handlePasteBefore();
+          break;
+         case 'C-d':
+          // Page down
+          this.handlePageDown();
+          break;
+         case 'C-u':
+          // Page up
+          this.handlePageUp();
+          break;
+         case '/':
           // Enter search mode
           this.handleEnterSearch();
           break;
-        case 'u':
+         case 'u':
           // Undo (Vim-style)
           if (this.bufferState.undo()) {
             this.statusBar.showSuccess('Undone');
