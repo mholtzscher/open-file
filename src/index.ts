@@ -140,7 +140,7 @@ class S3Explorer {
            // dd - delete current line
            this.handleDeleteLine();
          }
-         return;
+         // Don't return early - let it fall through to render() at the end
        }
 
      // Handle Ctrl+N and Ctrl+P (page navigation) - these should work regardless
