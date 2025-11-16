@@ -1,24 +1,39 @@
 #!/usr/bin/env bun
 
 import { createCliRenderer, CliRenderer, TextRenderable } from '@opentui/core';
+import { Adapter } from './adapters/adapter.js';
 import { MockAdapter } from './adapters/mock-adapter.js';
+import { S3Adapter } from './adapters/s3-adapter.js';
 import { BufferState, EditMode } from './ui/buffer-state.js';
 import { BufferView } from './ui/buffer-view.js';
 import { ConfirmationDialog } from './ui/confirmation-dialog.js';
 import { detectChanges, buildOperationPlan } from './utils/change-detection.js';
+import { ConfigManager } from './utils/config.js';
+import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 
 /**
  * Main application class
  */
 class S3Explorer {
   private renderer!: CliRenderer;
-  private adapter: MockAdapter;
+  private adapter!: Adapter;
   private bufferState!: BufferState;
   private bufferView!: BufferView;
   private currentPath = 'test-bucket/';
+  private configManager: ConfigManager;
+  private bucket: string = 'test-bucket';
 
-  constructor() {
-    this.adapter = new MockAdapter();
+  constructor(bucket?: string, adapter?: Adapter) {
+    this.configManager = new ConfigManager();
+    if (bucket) {
+      this.bucket = bucket;
+      this.currentPath = bucket.endsWith('/') ? bucket : bucket + '/';
+    }
+    if (adapter) {
+      this.adapter = adapter;
+    } else {
+      this.adapter = new MockAdapter();
+    }
   }
 
   /**
@@ -327,7 +342,48 @@ class S3Explorer {
 
 // Main entry point
 async function main() {
-  const app = new S3Explorer();
+  // Parse CLI arguments (skip 'bun' and script name)
+  const args = Bun.argv.slice(2);
+  const cliArgs = parseArgs(args);
+
+  // Handle help and version flags
+  if (cliArgs.help) {
+    printHelp();
+    process.exit(0);
+  }
+
+  if (cliArgs.version) {
+    printVersion();
+    process.exit(0);
+  }
+
+  // Create config manager
+  const configManager = new ConfigManager(cliArgs.config);
+
+  // Determine adapter
+  let adapter: Adapter;
+  const adapterType = cliArgs.adapter || configManager.getAdapter();
+
+  if (adapterType === 's3') {
+    // Get S3 config from CLI args or config file
+    const s3Config = configManager.getS3Config();
+    const finalS3Config = {
+      region: cliArgs.region || s3Config.region || 'us-east-1',
+      bucket: cliArgs.bucket || s3Config.bucket || 'my-bucket',
+      endpoint: cliArgs.endpoint || s3Config.endpoint,
+      accessKeyId: cliArgs.accessKey || s3Config.accessKeyId,
+      secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
+    };
+
+    adapter = new S3Adapter(finalS3Config);
+  } else {
+    // Use mock adapter
+    adapter = new MockAdapter();
+  }
+
+  // Create and start application
+  const bucket = cliArgs.bucket || configManager.getS3Config().bucket || 'test-bucket';
+  const app = new S3Explorer(bucket, adapter);
   await app.start();
 }
 
