@@ -114,8 +114,8 @@ class S3Explorer {
    /**
     * Handle keys in normal mode
     */
-   private handleNormalModeKey(key: any): void {
-     const keyResult = this.bufferState.handleKeyPress(key.name);
+    private handleNormalModeKey(key: any): void {
+      const keyResult = this.bufferState.handleKeyPress(key.name);
     
        // If key was handled as a sequence, execute the action
        if (keyResult.handled) {
@@ -139,12 +139,13 @@ class S3Explorer {
        }
 
      // Handle Ctrl+N and Ctrl+P (page navigation) - these should work regardless
-     if (key.name === 'C-n' || key.name === 'c-n') {
+     // Try multiple key name formats since different systems report them differently
+     if (key.name === 'C-n' || key.name === 'c-n' || (key.ctrl && key.name === 'n')) {
        this.handlePageDown();
        this.render();
        return;
      }
-     if (key.name === 'C-p' || key.name === 'c-p') {
+     if (key.name === 'C-p' || key.name === 'c-p' || (key.ctrl && key.name === 'p')) {
        this.handlePageUp();
        this.render();
        return;
