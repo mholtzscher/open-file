@@ -161,10 +161,12 @@ class S3Explorer {
            process.exit(0);
            break;
           case 'j':
-            this.bufferState.moveCursorDown(10); // Pass page size for scroll adjustment
+            const pageSize = Math.max(10, this.renderer.height - 7);
+            this.bufferState.moveCursorDown(pageSize); // Pass page size for scroll adjustment
             break;
           case 'k':
-            this.bufferState.moveCursorUp(10); // Pass page size for scroll adjustment
+            const pageSizeUp = Math.max(10, this.renderer.height - 7);
+            this.bufferState.moveCursorUp(pageSizeUp); // Pass page size for scroll adjustment
             break;
          case 'v':
            this.bufferState.startVisualSelection();
@@ -534,8 +536,8 @@ class S3Explorer {
       * Page down (Ctrl+N) - half page
       */
     private handlePageDown(): void {
-     const pageSize = 10; // Entries per page
-     const halfPage = Math.ceil(pageSize / 2); // Half page = 5 entries
+     const pageSize = Math.max(10, this.renderer.height - 7); // Dynamic page size based on terminal height
+     const halfPage = Math.ceil(pageSize / 2); // Half page scroll
      this.bufferState.pageDown(halfPage, pageSize);
      this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
    }
@@ -544,8 +546,8 @@ class S3Explorer {
       * Page up (Ctrl+P) - half page
       */
     private handlePageUp(): void {
-     const pageSize = 10; // Entries per page
-     const halfPage = Math.ceil(pageSize / 2); // Half page = 5 entries
+     const pageSize = Math.max(10, this.renderer.height - 7); // Dynamic page size based on terminal height
+     const halfPage = Math.ceil(pageSize / 2); // Half page scroll
      this.bufferState.pageUp(halfPage, pageSize);
      this.statusBar.showInfo(`Scroll: ${this.bufferState.scrollOffset}-${Math.min(this.bufferState.scrollOffset + pageSize, this.bufferState.entries.length)}`);
    }
@@ -638,21 +640,23 @@ class S3Explorer {
        top: 2,
      });
 
-      // Create buffer view with improved styling (only once, then reuse and update)
-      if (!this.bufferView) {
-         const displayConfig = this.configManager.getDisplayConfig();
-         this.bufferView = new BufferView(this.renderer, this.bufferState, {
-           left: 4,
-           top: 4,
-           height: 10, // Match the page size used in scrolling logic
-           showIcons: displayConfig.showIcons ?? true,
-           showSizes: displayConfig.showSizes ?? true,
-           showDates: displayConfig.showDates ?? false,
-         });
-       } else {
-         // Update the existing buffer view with new state
-         this.bufferView.updateState(this.bufferState);
-       }
+       // Create buffer view with improved styling (only once, then reuse and update)
+       if (!this.bufferView) {
+          const displayConfig = this.configManager.getDisplayConfig();
+          // Calculate height to use full terminal: total height - top padding - status bar - title - bucket line - margin
+          const calculatedHeight = Math.max(10, this.renderer.height - 7);
+          this.bufferView = new BufferView(this.renderer, this.bufferState, {
+            left: 4,
+            top: 4,
+            height: calculatedHeight,
+            showIcons: displayConfig.showIcons ?? true,
+            showSizes: displayConfig.showSizes ?? true,
+            showDates: displayConfig.showDates ?? false,
+          });
+        } else {
+          // Update the existing buffer view with new state
+          this.bufferView.updateState(this.bufferState);
+        }
 
      // Update status bar
      this.statusBar.setPath(this.bufferState.currentPath);
