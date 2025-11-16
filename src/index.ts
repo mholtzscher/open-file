@@ -123,23 +123,14 @@ class S3Explorer {
       const keyResult = this.bufferState.handleKeyPress(key.name);
     
        // If key was handled as a sequence, execute the action
+       // Note: buffer-state already executed most sequence actions (gg, G, yy, dd)
+       // We only need to handle app-level actions here like showing the help menu
        if (keyResult.handled) {
-         if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === 'g') {
-           // gg - move to top
-           this.bufferState.moveCursorToTop();
-         } else if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === '?') {
-           // g? - show help/actions menu
+         if (keyResult.sequence[0] === 'g' && keyResult.sequence[1] === '?') {
+           // g? - show help/actions menu (app-level action)
            this.handleShowHelp();
-         } else if (keyResult.sequence[0] === 'G') {
-           // G - move to bottom
-           this.bufferState.moveCursorToBottom();
-         } else if (keyResult.sequence[0] === 'y' && keyResult.sequence[1] === 'y') {
-           // yy - copy/yank current line
-           this.handleCopy();
-         } else if (keyResult.sequence[0] === 'd' && keyResult.sequence[1] === 'd') {
-           // dd - delete current line
-           this.handleDeleteLine();
          }
+         // Other sequence actions (gg, G, yy, dd) are already handled by buffer-state
          // Don't return early - let it fall through to render() at the end
        }
 
