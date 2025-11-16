@@ -46,24 +46,36 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   // Initialize buffer state
   const bufferState = useBufferState([], currentPath);
 
-  // Setup navigation handlers
-  const navigationHandlers = useNavigationHandlers(bufferState, {
-    onLoadBuffer: async (path: string) => {
-      try {
-        const result = await adapter.list(path);
-        // This would update buffer state with new entries
-        setStatusMessage(`Navigated to ${path}`);
-      } catch (err) {
-        const parsedError = parseAwsError(err, 'Navigation failed');
-        setStatusMessage(parsedError.message);
-        setStatusMessageColor(CatppuccinMocha.red);
-      }
-    },
-    onErrorOccurred: (error: string) => {
-      setStatusMessage(error);
-      setStatusMessageColor(CatppuccinMocha.red);
-    },
-  });
+   // Setup navigation handlers
+   const navigationHandlers = useNavigationHandlers(bufferState, {
+     onLoadBuffer: async (path: string) => {
+       try {
+         const result = await adapter.list(path);
+         
+         // Update buffer state with new entries and current path
+         const currentEntries = bufferState.entries;
+         currentEntries.length = 0;
+         currentEntries.push(...result.entries);
+         
+         // Update current path in buffer state
+         bufferState.currentPath = path;
+         
+         // Reset cursor to top of new directory
+         bufferState.cursorToTop();
+         
+         setStatusMessage(`Navigated to ${path}`);
+         setStatusMessageColor(CatppuccinMocha.green);
+       } catch (err) {
+         const parsedError = parseAwsError(err, 'Navigation failed');
+         setStatusMessage(parsedError.message);
+         setStatusMessageColor(CatppuccinMocha.red);
+       }
+     },
+     onErrorOccurred: (error: string) => {
+       setStatusMessage(error);
+       setStatusMessageColor(CatppuccinMocha.red);
+     },
+   });
 
   // Setup keyboard event handlers - memoized in ref for global dispatcher
   // Note: j/k/v navigation is handled directly by useKeyboardEvents
