@@ -8,6 +8,8 @@
 import {
   S3Client,
   ListObjectsV2Command,
+  ListBucketsCommand,
+  GetBucketLocationCommand,
   GetObjectCommand,
   PutObjectCommand,
   DeleteObjectCommand,
@@ -50,6 +52,22 @@ export interface S3AdapterConfig {
   endpoint?: string;
   /** Force path style (required for MinIO and some S3-compatible services) */
   forcePathStyle?: boolean;
+}
+
+/**
+ * Bucket information with metadata
+ */
+export interface BucketInfo {
+  /** Bucket name */
+  name: string;
+  /** Creation date */
+  creationDate?: Date;
+  /** Bucket region */
+  region?: string;
+  /** Total size in bytes */
+  totalSize?: number;
+  /** Number of objects */
+  objectCount?: number;
 }
 
 /**
@@ -326,6 +344,72 @@ export class S3Adapter implements Adapter {
         message: (error as any)?.message,
         statusCode: (error as any)?.$metadata?.httpStatusCode,
       });
+      throw parsedError;
+    }
+  }
+
+  /**
+   * List all S3 buckets in the account with metadata
+   */
+  async listBuckets(): Promise<BucketInfo[]> {
+    const logger = getLogger();
+
+    try {
+      logger.debug('S3Adapter.listBuckets called');
+
+      const response = await retryWithBackoff(() => {
+        const command = new ListBucketsCommand({});
+        return this.client.send(command);
+      }, getS3RetryConfig());
+
+      logger.debug('ListBuckets response received', {
+        bucketCount: response.Buckets?.length || 0,
+      });
+
+      const buckets: BucketInfo[] = [];
+
+      // Process each bucket
+      if (response.Buckets) {
+        for (const bucket of response.Buckets) {
+          if (bucket.Name) {
+            // Get bucket region
+            let region: string | undefined;
+            try {
+              const locationResponse = await retryWithBackoff(() => {
+                const command = new GetBucketLocationCommand({ Bucket: bucket.Name });
+                return this.client.send(command);
+              }, getS3RetryConfig());
+              // LocationConstraint is undefined for us-east-1, otherwise it's the region
+              region = locationResponse.LocationConstraint || 'us-east-1';
+            } catch (error) {
+              logger.debug('Failed to get bucket location', {
+                bucket: bucket.Name,
+                error: (error as any)?.message,
+              });
+              // Region might not be accessible, continue anyway
+            }
+
+            buckets.push({
+              name: bucket.Name,
+              creationDate: bucket.CreationDate,
+              region,
+            });
+          }
+        }
+      }
+
+      // Sort by creation date (newest first)
+      buckets.sort((a, b) => {
+        if (!a.creationDate || !b.creationDate) return 0;
+        return b.creationDate.getTime() - a.creationDate.getTime();
+      });
+
+      logger.debug('Parsed buckets', { count: buckets.length });
+
+      return buckets;
+    } catch (error) {
+      logger.error('Failed to list S3 buckets', error);
+      const parsedError = parseAwsError(error, 'listBuckets');
       throw parsedError;
     }
   }
