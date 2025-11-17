@@ -569,41 +569,135 @@ export class S3Adapter implements Adapter {
   /**
    * Move/rename a file or directory
    */
-  async move(source: string, destination: string, _options?: OperationOptions): Promise<void> {
+  async move(source: string, destination: string, options?: OperationOptions): Promise<void> {
     const srcNormalized = this.normalizePath(source);
-    const destNormalized = this.normalizePath(
-      destination,
-      source.endsWith('/')
-    );
+    const isDirectory = source.endsWith('/');
+    const destNormalized = this.normalizePath(destination, isDirectory);
 
     try {
-      // Copy to new location
+      if (isDirectory) {
+        // Move directory recursively
+        await this.moveDirectory(srcNormalized, destNormalized, options);
+      } else {
+        // Move single file
+        await this.moveSingleFile(srcNormalized, destNormalized);
+      }
+    } catch (error) {
+      console.error(`Failed to move ${source} to ${destination}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Move a single file (copy + delete)
+   */
+  private async moveSingleFile(source: string, destination: string): Promise<void> {
+    // Copy to new location with metadata preservation
+    await retryWithBackoff(
+      () => {
+        const copyCommand = new CopyObjectCommand({
+          Bucket: this.bucket,
+          CopySource: `${this.bucket}/${source}`,
+          Key: destination,
+          MetadataDirective: 'COPY', // Preserve metadata
+        });
+        return this.client.send(copyCommand);
+      },
+      getS3RetryConfig()
+    );
+
+    // Delete from old location
+    await retryWithBackoff(
+      () => {
+        const deleteCommand = new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: source,
+        });
+        return this.client.send(deleteCommand);
+      },
+      getS3RetryConfig()
+    );
+  }
+
+  /**
+   * Move a directory recursively
+   */
+  private async moveDirectory(
+    source: string,
+    destination: string,
+    options?: OperationOptions
+  ): Promise<void> {
+    const objectsToMove: string[] = [];
+    
+    // List all objects with pagination
+    let continuationToken: string | undefined;
+    do {
+      const response = await retryWithBackoff(
+        () => {
+          const listCommand = new ListObjectsV2Command({
+            Bucket: this.bucket,
+            Prefix: source,
+            ContinuationToken: continuationToken,
+          });
+          return this.client.send(listCommand);
+        },
+        getS3RetryConfig()
+      );
+
+      // Collect objects to move
+      if (response.Contents) {
+        for (const obj of response.Contents) {
+          if (obj.Key) {
+            objectsToMove.push(obj.Key);
+          }
+        }
+      }
+
+      continuationToken = response.NextContinuationToken;
+    } while (continuationToken);
+
+    // Move each object
+    for (let i = 0; i < objectsToMove.length; i++) {
+      const srcKey = objectsToMove[i];
+      const relativePath = srcKey.substring(source.length);
+      const destKey = destination + relativePath;
+
+      // Copy object
       await retryWithBackoff(
         () => {
           const copyCommand = new CopyObjectCommand({
             Bucket: this.bucket,
-            CopySource: `${this.bucket}/${srcNormalized}`,
-            Key: destNormalized,
+            CopySource: `${this.bucket}/${srcKey}`,
+            Key: destKey,
+            MetadataDirective: 'COPY', // Preserve metadata
           });
           return this.client.send(copyCommand);
         },
         getS3RetryConfig()
       );
 
-      // Delete from old location
+      // Delete original
       await retryWithBackoff(
         () => {
           const deleteCommand = new DeleteObjectCommand({
             Bucket: this.bucket,
-            Key: srcNormalized,
+            Key: srcKey,
           });
           return this.client.send(deleteCommand);
         },
         getS3RetryConfig()
       );
-    } catch (error) {
-      console.error(`Failed to move ${source} to ${destination}:`, error);
-      throw error;
+
+      // Report progress
+      if (options?.onProgress) {
+        options.onProgress({
+          operation: 'Moving objects',
+          bytesTransferred: i + 1,
+          totalBytes: objectsToMove.length,
+          percentage: Math.round(((i + 1) / objectsToMove.length) * 100),
+          currentFile: srcKey,
+        });
+      }
     }
   }
 
