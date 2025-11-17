@@ -182,6 +182,15 @@ export class S3Adapter implements Adapter {
   }
 
   /**
+   * Set the bucket to operate on (for bucket selection from root view)
+   */
+  setBucket(bucketName: string): void {
+    const logger = getLogger();
+    this.bucket = bucketName;
+    logger.debug('S3Adapter bucket changed', { bucket: bucketName });
+  }
+
+  /**
    * Normalize path to S3 prefix format
    * - Remove leading slash
    * - Ensure trailing slash for directories

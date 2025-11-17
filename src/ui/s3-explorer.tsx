@@ -99,6 +99,11 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
             // EntryType.Bucket
             // Navigate into this bucket
             const bucketName = currentEntry.name;
+            // Update adapter bucket context before changing UI state
+            const s3Adapter = adapter as any;
+            if (s3Adapter.setBucket) {
+              s3Adapter.setBucket(bucketName);
+            }
             setBucket(bucketName);
             return;
           }
