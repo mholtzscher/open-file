@@ -7,23 +7,20 @@
 
 import { Entry, EntryType } from '../types/entry.js';
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
-import { Theme } from './theme.js';
-import { Column, getDefaultColumns, renderRow } from './columns.js';
+import { Theme, CatppuccinMocha } from './theme.js';
 
 export interface BufferViewProps {
   bufferState: UseBufferStateReturn;
   left?: number;
   top?: number;
   height?: number;
-  columns?: Column[];
-  // Deprecated - use columns config instead
   showIcons?: boolean;
   showSizes?: boolean;
   showDates?: boolean;
 }
 
 /**
- * Legacy format functions for backward compatibility
+ * Format size for display
  */
 function formatSize(size: number | undefined): string {
   if (!size) return '-';
@@ -36,6 +33,9 @@ function formatSize(size: number | undefined): string {
   return `${size}B`;
 }
 
+/**
+ * Format date for display
+ */
 function formatDate(date: Date | undefined): string {
   if (!date) return '-';
   const d = date instanceof Date ? date : new Date(date);
@@ -47,7 +47,7 @@ function formatDate(date: Date | undefined): string {
 }
 
 /**
- * Format an entry for display (legacy - use columns instead)
+ * Format an entry for display
  */
 function formatEntry(entry: Entry, _isSelected: boolean, showIcons: boolean, showSizes: boolean, showDates: boolean): string {
   const parts: string[] = [];
@@ -85,15 +85,6 @@ function getEntryColor(entry: Entry, isSelected: boolean): string {
 }
 
 /**
- * Apply text styling using ANSI escape codes
- */
-function applyTextStyle(text: string, bold?: boolean): string {
-  if (!bold) return text;
-  // ANSI escape code for bold: \x1b[1m ... \x1b[0m
-  return `\x1b[1m${text}\x1b[0m`;
-}
-
-/**
  * BufferView React component
  */
 export function BufferView({
@@ -101,25 +92,12 @@ export function BufferView({
   left = 2,
   top = 3,
   height = 20,
-  columns,
-  // Legacy props for backward compatibility
   showIcons = true,
   showSizes = true,
   showDates = false,
 }: BufferViewProps) {
   const entries = bufferState.entries;
   const cursorIndex = bufferState.selection.cursorIndex;
-
-  // Use provided columns or create default based on legacy props
-  const activeColumns = columns ?? (() => {
-    const defaultCols = getDefaultColumns();
-    return defaultCols.map(col => {
-      if (col.id === 'icon') col.visible = showIcons;
-      if (col.id === 'size') col.visible = showSizes;
-      if (col.id === 'modified') col.visible = showDates;
-      return col;
-    });
-  })();
 
   // Get visible entries (with scroll offset)
   const visibleEntries = entries.slice(bufferState.scrollOffset, bufferState.scrollOffset + height);
@@ -136,19 +114,8 @@ export function BufferView({
           realIndex <= Math.max(bufferState.selection.selectionStart, bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart);
 
         const cursor = isSelected ? '> ' : '  ';
-        
-        // Use legacy format function for now (column system needs work)
-        const content = formatEntry(entry, isSelected, showIcons, showSizes, showDates);
-        
-        // Get style for entry
-        const style = Theme.getEntryStyle(
-          entry.type === EntryType.Directory ? 'directory' : 'file',
-          isSelected,
-          isInVisualSelection
-        );
-
-        // Apply text styling only to content, not cursor
-        const styledContent = applyTextStyle(content, style.bold);
+        const content = cursor + formatEntry(entry, isSelected, showIcons, showSizes, showDates);
+        const color = getEntryColor(entry, isSelected);
 
         return (
           <text
@@ -156,10 +123,10 @@ export function BufferView({
             position="absolute"
             left={left}
             top={top + idx}
-            fg={style.fg}
-            bg={style.bg}
+            fg={color}
+            bg={isInVisualSelection ? CatppuccinMocha.surface0 : undefined}
           >
-            {cursor}{styledContent}
+            {content}
           </text>
         );
       })}
