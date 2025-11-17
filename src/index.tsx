@@ -57,7 +57,6 @@ async function main() {
 
     // Create config manager
     const configManager = new ConfigManager(cliArgs.config);
-    logger.debug('Config manager initialized');
 
     // Determine adapter
     let adapter: Adapter;
@@ -66,29 +65,13 @@ async function main() {
     if (adapterType === 's3') {
       // Get S3 config from CLI args or config file
       const s3Config = configManager.getS3Config();
-      logger.debug('S3 config from configManager', {
-        region: s3Config.region,
-        bucket: s3Config.bucket,
-        profile: s3Config.profile,
-        endpoint: s3Config.endpoint,
-      });
 
       // Determine region priority: CLI > config file > active profile > us-east-1
       let region = cliArgs.region || s3Config.region;
-      logger.debug('Region resolution', {
-        cliRegion: cliArgs.region,
-        configRegion: s3Config.region,
-        selected: region,
-      });
 
       if (!region) {
         const profileRegion = getActiveAwsRegion();
         region = profileRegion || process.env.AWS_REGION || 'us-east-1';
-        logger.debug('Region from profile or env', {
-          profileRegion,
-          envRegion: process.env.AWS_REGION,
-          final: region,
-        });
       }
 
       const finalS3Config = {
@@ -100,15 +83,6 @@ async function main() {
         secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
       };
 
-      logger.debug('Final S3 config before adapter creation', {
-        region: finalS3Config.region,
-        bucket: finalS3Config.bucket,
-        profile: finalS3Config.profile,
-        endpoint: finalS3Config.endpoint,
-        hasAccessKey: !!finalS3Config.accessKeyId,
-        hasSecretKey: !!finalS3Config.secretAccessKey,
-      });
-
       adapter = new S3Adapter(finalS3Config);
       logger.info('S3 adapter initialized successfully', {
         region: finalS3Config.region,
@@ -116,18 +90,11 @@ async function main() {
         profile: finalS3Config.profile || 'default',
       });
     } else {
-      logger.debug('Initializing mock adapter');
       adapter = new MockAdapter();
-      logger.info('Mock adapter initialized');
     }
 
     // Get bucket name - can be undefined for root view mode
     const bucket = cliArgs.bucket || configManager.getS3Config().bucket;
-    logger.debug('Starting S3 Explorer', {
-      bucket: bucket || '(root view mode)',
-      adapterType,
-      isRootViewMode: !bucket,
-    });
 
     // Create and start renderer
     let renderer: any;
@@ -164,7 +131,6 @@ async function main() {
     try {
       const root = createRoot(renderer);
       root.render(<S3Explorer bucket={bucket} adapter={adapter} configManager={configManager} />);
-      logger.info('App rendered successfully');
     } catch (renderError) {
       logger.error('Failed to render app', renderError);
       throw renderError;
@@ -177,7 +143,6 @@ async function main() {
 }
 
 main().catch(async error => {
-  console.error('Fatal error:', error);
   const logger = getLogger();
   try {
     logger.error('Fatal error occurred', error);

@@ -1,10 +1,5 @@
-/**
- * OS-aware logging infrastructure
- *
- * Writes logs to appropriate OS-specific directories:
- * - Linux: $XDG_STATE_HOME/open-s3/logs (or ~/.local/state/open-s3/logs)
- * - macOS: ~/Library/Logs/open-s3
- * - Windows: %LOCALAPPDATA%/open-s3/logs
+/** OS-aware logging infrastructure
+ * Writes logs to appropriate OS-specific directories and a log file.
  */
 
 import { createWriteStream, mkdirSync, existsSync } from 'fs';
@@ -21,16 +16,12 @@ export enum LogLevel {
 export interface LoggerOptions {
   level?: LogLevel;
   name?: string;
-  maxFileSize?: number; // in bytes, default 10MB
-  maxFiles?: number; // number of rotated files to keep
+  maxFileSize?: number; // in bytes, not used in this minimal version
+  maxFiles?: number; // number of rotated files, not used here
 }
 
-/**
- * Get OS-specific log directory
- */
 function getLogDirectory(): string {
   const home = homedir();
-
   switch (platform()) {
     case 'linux': {
       const xdgStateHome = process.env.XDG_STATE_HOME || join(home, '.local', 'state');
@@ -49,16 +40,10 @@ function getLogDirectory(): string {
   }
 }
 
-/**
- * Format log timestamp
- */
 function formatTimestamp(): string {
   return new Date().toISOString();
 }
 
-/**
- * Format log level as string
- */
 function formatLevel(level: LogLevel): string {
   switch (level) {
     case LogLevel.Debug:
@@ -74,9 +59,6 @@ function formatLevel(level: LogLevel): string {
   }
 }
 
-/**
- * Logger class for file-based logging
- */
 export class Logger {
   level: LogLevel;
   private logDir: string;
@@ -89,145 +71,82 @@ export class Logger {
     this.level = options.level ?? LogLevel.Info;
     this.logDir = getLogDirectory();
 
-    // Ensure log directory exists
     try {
       if (!existsSync(this.logDir)) {
         mkdirSync(this.logDir, { recursive: true });
       }
     } catch (err) {
-      console.error(`Failed to create log directory ${this.logDir}:`, err);
+      // If log dir can't be created, we'll still try to write to where we can
+      // Do not throw in constructor
     }
 
     const name = options.name ?? 'open-s3';
     this.logFile = join(this.logDir, `${name}.log`);
 
-    // Create write stream
     try {
       this.stream = createWriteStream(this.logFile, { flags: 'a' });
     } catch (err) {
-      console.error(`Failed to create log file ${this.logFile}:`, err);
+      // If stream can't be created, logging to file won't happen
+      this.stream = null;
     }
   }
 
-  /**
-   * Write log entry
-   */
   private write(level: LogLevel, message: string, data?: any): void {
-    if (level < this.level) {
-      return;
-    }
-
-    // Don't write if stream is closed
-    if (!this.stream) {
-      return;
-    }
+    if (level < this.level) return;
+    if (!this.stream) return;
 
     const timestamp = formatTimestamp();
     const levelStr = formatLevel(level);
     const logEntry = `[${timestamp}] ${levelStr} ${message}`;
 
-    if (data !== undefined) {
-      this.queue.push(`${logEntry} ${JSON.stringify(data)}`);
-    } else {
-      this.queue.push(logEntry);
-    }
+    const entry = data !== undefined ? `${logEntry} ${JSON.stringify(data)}` : logEntry;
 
+    this.queue.push(entry);
     this.flush();
   }
 
-  /**
-   * Flush queued log entries to file
-   */
   private flush(): void {
-    if (this.isWriting || !this.stream || this.queue.length === 0) {
-      return;
-    }
-
+    if (this.isWriting || !this.stream || this.queue.length === 0) return;
     this.isWriting = true;
     const entry = this.queue.shift();
 
     if (entry) {
-      try {
-        const writeStream = this.stream;
-        if (!writeStream || writeStream.destroyed) {
-          this.isWriting = false;
-          return;
-        }
-
-        writeStream.write(`${entry}\n`, (err: any) => {
-          this.isWriting = false;
-          if (err) {
-            // Silently ignore write errors - stream might be closing
-            // Only log if it's not a stream destroyed/closed error
-            if (err.code && !err.code.includes('STREAM')) {
-              // Don't use console.error to avoid recursion
-            }
-          }
-          if (this.queue.length > 0 && this.stream && !this.stream.destroyed) {
-            this.flush();
-          }
-        });
-      } catch (error) {
-        // Silently ignore write errors during shutdown
+      this.stream.write(`${entry}\n`, () => {
         this.isWriting = false;
-      }
+        if (this.queue.length > 0 && this.stream && !this.stream.destroyed) {
+          this.flush();
+        }
+      });
+    } else {
+      this.isWriting = false;
     }
   }
 
-  /**
-   * Debug level logging
-   */
   debug(message: string, data?: any): void {
-    if (this.level <= LogLevel.Debug) {
-      console.error(`[DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
-    }
     this.write(LogLevel.Debug, message, data);
   }
 
-  /**
-   * Info level logging
-   */
   info(message: string, data?: any): void {
-    if (this.level <= LogLevel.Info) {
-      console.error(`[INFO] ${message}`, data ? JSON.stringify(data, null, 2) : '');
-    }
     this.write(LogLevel.Info, message, data);
   }
 
-  /**
-   * Warning level logging
-   */
   warn(message: string, data?: any): void {
-    if (this.level <= LogLevel.Warn) {
-      console.error(`[WARN] ${message}`, data ? JSON.stringify(data, null, 2) : '');
-    }
     this.write(LogLevel.Warn, message, data);
   }
 
-  /**
-   * Error level logging
-   */
   error(message: string, error?: Error | any): void {
     if (error instanceof Error) {
-      console.error(`[ERROR] ${message}`, {
+      const payload = {
         name: error.name,
         message: error.message,
         stack: error.stack,
-      });
-      this.write(LogLevel.Error, message, {
-        name: error.name,
-        message: error.message,
-        stack: error.stack,
-      });
+      };
+      this.write(LogLevel.Error, message, payload);
     } else {
-      console.error(`[ERROR] ${message}`, error);
       this.write(LogLevel.Error, message, error);
     }
   }
 
-  /**
-   * Close the logger
-   */
   close(): Promise<void> {
     return new Promise(resolve => {
       if (this.stream) {
@@ -241,48 +160,25 @@ export class Logger {
     });
   }
 
-  /**
-   * Get log file path
-   */
   getLogFilePath(): string {
     return this.logFile;
   }
 
-  /**
-   * Get log directory path
-   */
   getLogDirectoryPath(): string {
     return this.logDir;
   }
 }
 
-/**
- * Global logger instance
- */
 let globalLogger: Logger | null = null;
-
-/**
- * Get or create global logger
- */
 export function getLogger(options?: LoggerOptions): Logger {
-  if (!globalLogger) {
-    globalLogger = new Logger(options);
-  }
+  if (!globalLogger) globalLogger = new Logger(options);
   return globalLogger;
 }
 
-/**
- * Set log level globally
- */
 export function setLogLevel(level: LogLevel): void {
-  if (globalLogger) {
-    globalLogger.level = level;
-  }
+  if (globalLogger) globalLogger.level = level;
 }
 
-/**
- * Shutdown logger (flush and close)
- */
 export async function shutdownLogger(): Promise<void> {
   if (globalLogger) {
     await globalLogger.close();
