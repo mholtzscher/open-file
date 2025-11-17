@@ -13,6 +13,7 @@ interface StatusBarProps {
   message?: string;
   messageColor?: string;
   searchQuery?: string;
+  commandBuffer?: string;
 }
 
 /**
@@ -30,6 +31,8 @@ function getModeString(mode: EditMode): string {
       return 'INSERT';
     case EditMode.Search:
       return 'SEARCH';
+    case EditMode.Command:
+      return 'COMMAND';
     default:
       return 'UNKNOWN';
   }
@@ -44,12 +47,14 @@ export function StatusBar({
   message,
   messageColor = CatppuccinMocha.overlay1,
   searchQuery = '',
+  commandBuffer = '',
 }: StatusBarProps) {
   // Left side: path and mode
   const pathText = `📂 ${path}`;
   const modeText = `[${getModeString(mode)}]`;
   const searchText = mode === EditMode.Search ? ` /${searchQuery}` : '';
-  const leftContent = `${pathText} ${modeText}${searchText}`;
+  const commandText = mode === EditMode.Command ? ` ${commandBuffer}` : '';
+  const leftContent = `${pathText} ${modeText}${searchText}${commandText}`;
 
   // Right side: message or help text
   const helpText =

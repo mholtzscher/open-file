@@ -200,6 +200,9 @@ export function useKeyboardEvents(
             bufferState.enterSearchMode();
             if (handlers.onEnterSearchMode) handlers.onEnterSearchMode();
             break;
+          case ':':
+            bufferState.enterCommandMode();
+            break;
           case 'w':
             if (handlers.onSave) handlers.onSave();
             break;
@@ -296,6 +299,39 @@ export function useKeyboardEvents(
     [bufferState, handlers]
   );
 
+  // Handle keyboard events in command mode
+  const handleCommandMode = useCallback(
+    (key: string, char?: string) => {
+      switch (key) {
+        case 'escape':
+          bufferState.exitCommandMode();
+          break;
+        case 'enter': {
+          // Execute command
+          const command = bufferState.getEditBuffer().trim();
+          if (command === ':w') {
+            if (handlers.onSave) handlers.onSave();
+          } else if (command === ':q') {
+            if (handlers.onQuit) handlers.onQuit();
+          }
+          // Exit command mode after execution
+          bufferState.exitCommandMode();
+          break;
+        }
+        case 'backspace':
+          bufferState.backspaceEditBuffer();
+          break;
+        default:
+          // Add character to command buffer if printable
+          if (char && char.length === 1) {
+            bufferState.appendToEditBuffer(char);
+          }
+          break;
+      }
+    },
+    [bufferState, handlers]
+  );
+
   // Main keyboard event handler
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
@@ -310,6 +346,11 @@ export function useKeyboardEvents(
         if (handlers.onPageUp) handlers.onPageUp();
         return;
       }
+      // Handle Ctrl+S (save) in all modes
+      if (event.ctrl && (key === 's' || key === 'S')) {
+        if (handlers.onSave) handlers.onSave();
+        return;
+      }
 
       // Route to appropriate mode handler
       switch (bufferState.mode) {
@@ -321,6 +362,9 @@ export function useKeyboardEvents(
           break;
         case EditMode.Search:
           handleSearchMode(key, event.char);
+          break;
+        case EditMode.Command:
+          handleCommandMode(key, event.char);
           break;
         case EditMode.Edit: {
           // Edit mode - edit the current entry name
@@ -384,7 +428,7 @@ export function useKeyboardEvents(
           break;
       }
     },
-    [bufferState, handleNormalMode, handleInsertMode, handleSearchMode, handlers]
+    [bufferState, handleNormalMode, handleInsertMode, handleSearchMode, handleCommandMode, handlers]
   );
 
   // Cleanup on unmount

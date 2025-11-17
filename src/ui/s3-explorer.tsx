@@ -321,6 +321,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         message={statusMessage && !showErrorPanel ? statusMessage : undefined}
         messageColor={statusMessageColor}
         searchQuery={bufferState.searchQuery}
+        commandBuffer={bufferState.editBuffer}
       />
 
       {/* Confirmation Dialog */}

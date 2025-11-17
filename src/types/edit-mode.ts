@@ -10,4 +10,5 @@ export enum EditMode {
   Insert = 'insert',
   Edit = 'edit',
   Search = 'search',
+  Command = 'command',
 }

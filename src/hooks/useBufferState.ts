@@ -60,6 +60,8 @@ export interface UseBufferStateReturn {
   exitEditMode: () => void;
   enterSearchMode: () => void;
   exitSearchMode: () => void;
+  enterCommandMode: () => void;
+  exitCommandMode: () => void;
 
   // Sorting
   setSortConfig: (config: SortConfig) => void;
@@ -238,6 +240,16 @@ export function useBufferState(
     setSearchQuery('');
   }, []);
 
+  const enterCommandMode = useCallback(() => {
+    setMode(EditMode.Command);
+    setEditBuffer(':');
+  }, []);
+
+  const exitCommandMode = useCallback(() => {
+    setMode(EditMode.Normal);
+    setEditBuffer('');
+  }, []);
+
   // Sorting
   const setSortConfig = useCallback((config: SortConfig) => {
     setSortConfigState(config);
@@ -352,6 +364,8 @@ export function useBufferState(
     exitEditMode,
     enterSearchMode,
     exitSearchMode,
+    enterCommandMode,
+    exitCommandMode,
 
     setSortConfig,
     updateSearchQuery,
