@@ -32,4 +32,4 @@ jobs:
         run: bunx tsc --noEmit
 
       - name: Build
-        run: bunx esbuild src/index.ts --bundle --platform=node --outfile=dist/index.js --external:@opentui/core --external:@aws-sdk/client-s3 || true
+        run: bunx esbuild src/index.tsx --bundle --platform=node --outfile=dist/index.js --external:@opentui/core --external:@aws-sdk/client-s3 || true
