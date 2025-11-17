@@ -26,6 +26,7 @@ import { Adapter, ListOptions, ListResult, OperationOptions } from './adapter.js
 import { Entry, EntryType, EntryMetadata } from '../types/entry.js';
 import { generateEntryId } from '../utils/entry-id.js';
 import { retryWithBackoff, getS3RetryConfig } from '../utils/retry.js';
+import { parseAwsError } from '../utils/errors.js';
 
 /**
  * Configuration for S3 adapter
@@ -220,7 +221,7 @@ export class S3Adapter implements Adapter {
       };
     } catch (error) {
       console.error('Failed to list S3 objects:', error);
-      throw error;
+      throw parseAwsError(error, 'list');
     }
   }
 
@@ -295,7 +296,7 @@ export class S3Adapter implements Adapter {
       };
     } catch (error) {
       console.error(`Failed to get metadata for ${path}:`, error);
-      throw error;
+      throw parseAwsError(error, 'getMetadata');
     }
   }
 
@@ -496,7 +497,7 @@ export class S3Adapter implements Adapter {
       }
     } catch (error) {
       console.error(`Failed to create ${path}:`, error);
-      throw error;
+      throw parseAwsError(error, 'create');
     }
   }
 
@@ -585,7 +586,7 @@ export class S3Adapter implements Adapter {
       }
     } catch (error) {
       console.error(`Failed to delete ${path}:`, error);
-      throw error;
+      throw parseAwsError(error, 'delete');
     }
   }
 
@@ -607,7 +608,7 @@ export class S3Adapter implements Adapter {
       }
     } catch (error) {
       console.error(`Failed to move ${source} to ${destination}:`, error);
-      throw error;
+      throw parseAwsError(error, 'move');
     }
   }
 
@@ -749,7 +750,7 @@ export class S3Adapter implements Adapter {
       }
     } catch (error) {
       console.error(`Failed to copy ${source} to ${destination}:`, error);
-      throw error;
+      throw parseAwsError(error, 'copy');
     }
   }
 
