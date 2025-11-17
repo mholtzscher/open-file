@@ -131,33 +131,41 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
     };
   }, [handleKeyDown]);
 
-   // Initialize data from adapter
-   useEffect(() => {
-     const initializeData = async () => {
-       try {
-         const path = bufferState.currentPath;
-         console.error(`DEBUG: Loading bucket: ${bucket}, path: "${path}"`);
-         const result = await adapter.list(path);
-         console.error(`DEBUG: Received ${result.entries.length} entries`);
-         console.error(`DEBUG: Entries:`, result.entries.map(e => e.name));
-         
-         // Load entries into buffer state
-         bufferState.setEntries([...result.entries]);
-         
-         setStatusMessage(`Loaded ${result.entries.length} items`);
-         setStatusMessageColor(CatppuccinMocha.green);
-         setIsInitialized(true);
-        } catch (err) {
-          console.error('DEBUG: Error loading bucket:', err);
-          const parsedError = parseAwsError(err, 'Failed to load bucket');
-          setStatusMessage(formatErrorForDisplay(parsedError, 70));
-          setStatusMessageColor(CatppuccinMocha.red);
-          setIsInitialized(true); // Set initialized even on error so we show the error
-        }
-     };
+    // Initialize data from adapter
+    useEffect(() => {
+      const initializeData = async () => {
+        try {
+          const path = bufferState.currentPath;
+          console.error(`[S3Explorer] Initializing data...`);
+          console.error(`[S3Explorer] Loading bucket: ${bucket}, path: "${path}"`);
+          const result = await adapter.list(path);
+          console.error(`[S3Explorer] Received ${result.entries.length} entries`);
+          console.error(`[S3Explorer] Entries:`, result.entries.map(e => e.name));
+          
+          // Load entries into buffer state
+          bufferState.setEntries([...result.entries]);
+          console.error(`[S3Explorer] Entries loaded into buffer state`);
+          
+          setStatusMessage(`Loaded ${result.entries.length} items`);
+          setStatusMessageColor(CatppuccinMocha.green);
+          console.error(`[S3Explorer] Status message set, about to set initialized`);
+          setIsInitialized(true);
+          console.error(`[S3Explorer] Initialized set to true`);
+         } catch (err) {
+           console.error('[S3Explorer] Error loading bucket:', err);
+           const parsedError = parseAwsError(err, 'Failed to load bucket');
+           const errorDisplay = formatErrorForDisplay(parsedError, 70);
+           console.error('[S3Explorer] Setting error message:', errorDisplay);
+           setStatusMessage(errorDisplay);
+           setStatusMessageColor(CatppuccinMocha.red);
+           setIsInitialized(true); // Set initialized even on error so we show the error
+           console.error('[S3Explorer] Initialized set to true after error');
+         }
+      };
 
-     initializeData();
-   }, [bucket, adapter, bufferState.currentPath, bufferState.setEntries]);
+      console.error(`[S3Explorer] useEffect triggered`);
+      initializeData();
+    }, [bucket, adapter, bufferState.currentPath, bufferState.setEntries]);
 
   if (!isInitialized) {
     return (
