@@ -8,19 +8,22 @@
 import { Entry, EntryType } from '../types/entry.js';
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { Theme, CatppuccinMocha } from './theme.js';
+import { Column, getDefaultColumns, renderRow } from './columns.js';
 
 export interface BufferViewProps {
   bufferState: UseBufferStateReturn;
   left?: number;
   top?: number;
   height?: number;
+  columns?: Column[];
+  // Deprecated - use columns config instead
   showIcons?: boolean;
   showSizes?: boolean;
   showDates?: boolean;
 }
 
 /**
- * Format size for display
+ * Legacy format functions for backward compatibility
  */
 function formatSize(size: number | undefined): string {
   if (!size) return '-';
@@ -33,9 +36,6 @@ function formatSize(size: number | undefined): string {
   return `${size}B`;
 }
 
-/**
- * Format date for display
- */
 function formatDate(date: Date | undefined): string {
   if (!date) return '-';
   const d = date instanceof Date ? date : new Date(date);
@@ -47,7 +47,7 @@ function formatDate(date: Date | undefined): string {
 }
 
 /**
- * Format an entry for display
+ * Format an entry for display (legacy - use columns instead)
  */
 function formatEntry(entry: Entry, _isSelected: boolean, showIcons: boolean, showSizes: boolean, showDates: boolean): string {
   const parts: string[] = [];
@@ -92,12 +92,25 @@ export function BufferView({
   left = 2,
   top = 3,
   height = 20,
+  columns,
+  // Legacy props for backward compatibility
   showIcons = true,
   showSizes = true,
   showDates = false,
 }: BufferViewProps) {
   const entries = bufferState.entries;
   const cursorIndex = bufferState.selection.cursorIndex;
+
+  // Use provided columns or create default based on legacy props
+  const activeColumns = columns ?? (() => {
+    const defaultCols = getDefaultColumns();
+    return defaultCols.map(col => {
+      if (col.id === 'icon') col.visible = showIcons;
+      if (col.id === 'size') col.visible = showSizes;
+      if (col.id === 'modified') col.visible = showDates;
+      return col;
+    });
+  })();
 
   // Get visible entries (with scroll offset)
   const visibleEntries = entries.slice(bufferState.scrollOffset, bufferState.scrollOffset + height);
@@ -114,7 +127,8 @@ export function BufferView({
           realIndex <= Math.max(bufferState.selection.selectionStart, bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart);
 
         const cursor = isSelected ? '> ' : '  ';
-        const content = cursor + formatEntry(entry, isSelected, showIcons, showSizes, showDates);
+        // Use column system for rendering
+        const content = cursor + renderRow(entry, activeColumns);
         const color = getEntryColor(entry, isSelected);
 
         return (
