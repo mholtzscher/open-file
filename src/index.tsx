@@ -32,121 +32,141 @@ export function getGlobalKeyboardDispatcher() {
  * Main entry point for open-s3 application
  */
 async function main() {
-   // Parse CLI arguments first to check for debug flag
-   const args = Bun.argv.slice(2);
-   const cliArgs = parseArgs(args);
+  try {
+    // Parse CLI arguments first to check for debug flag
+    const args = Bun.argv.slice(2);
+    console.error('[MAIN] Parsed CLI args:', args);
+    const cliArgs = parseArgs(args);
+    console.error('[MAIN] CLI args parsed:', cliArgs);
 
-   // Initialize logger with appropriate level
-   const logLevel = cliArgs.debug ? LogLevel.Debug : LogLevel.Info;
-   const logger = getLogger({ level: logLevel });
-   // Ensure log level is set in case logger was already initialized
-   setLogLevel(logLevel);
-   logger.info('Application starting', { args, debug: cliArgs.debug });
+    // Initialize logger with appropriate level
+    const logLevel = cliArgs.debug ? LogLevel.Debug : LogLevel.Info;
+    const logger = getLogger({ level: logLevel });
+    // Ensure log level is set in case logger was already initialized
+    setLogLevel(logLevel);
+    logger.info('Application starting', { args, debug: cliArgs.debug });
+    console.error('[MAIN] Logger initialized with level:', logLevel);
 
-  // Handle help and version flags
-  if (cliArgs.help) {
-    printHelp();
-    process.exit(0);
-  }
-
-  if (cliArgs.version) {
-    printVersion();
-    process.exit(0);
-  }
-
-  // Create config manager
-  const configManager = new ConfigManager(cliArgs.config);
-  logger.debug('Config manager initialized');
-
-  // Determine adapter
-  let adapter: Adapter;
-  const adapterType = cliArgs.adapter || configManager.getAdapter();
-
-   if (adapterType === 's3') {
-     // Get S3 config from CLI args or config file
-     const s3Config = configManager.getS3Config();
-     logger.debug('S3 config from configManager', { 
-       region: s3Config.region,
-       bucket: s3Config.bucket,
-       profile: s3Config.profile,
-       endpoint: s3Config.endpoint,
-     });
-     
-     // Determine region priority: CLI > config file > active profile > us-east-1
-     let region = cliArgs.region || s3Config.region;
-     logger.debug('Region resolution', {
-       cliRegion: cliArgs.region,
-       configRegion: s3Config.region,
-       selected: region,
-     });
-     
-     if (!region) {
-       const profileRegion = getActiveAwsRegion();
-       region = profileRegion || process.env.AWS_REGION || 'us-east-1';
-       logger.debug('Region from profile or env', {
-         profileRegion,
-         envRegion: process.env.AWS_REGION,
-         final: region,
-       });
-     }
-     
-     const finalS3Config = {
-       region,
-       bucket: cliArgs.bucket || s3Config.bucket || 'my-bucket',
-       profile: cliArgs.profile,
-       endpoint: cliArgs.endpoint || s3Config.endpoint,
-       accessKeyId: cliArgs.accessKey || s3Config.accessKeyId,
-       secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
-     };
-
-     logger.debug('Final S3 config before adapter creation', { 
-       region: finalS3Config.region,
-       bucket: finalS3Config.bucket,
-       profile: finalS3Config.profile,
-       endpoint: finalS3Config.endpoint,
-       hasAccessKey: !!finalS3Config.accessKeyId,
-       hasSecretKey: !!finalS3Config.secretAccessKey,
-     });
-     
-     adapter = new S3Adapter(finalS3Config);
-     logger.info('S3 adapter initialized successfully', { 
-       region: finalS3Config.region, 
-       bucket: finalS3Config.bucket,
-       profile: finalS3Config.profile || 'default'
-     });
-   } else {
-     logger.debug('Initializing mock adapter');
-     adapter = new MockAdapter();
-     logger.info('Mock adapter initialized');
-   }
-
-  // Get bucket name
-  const bucket = cliArgs.bucket || configManager.getS3Config().bucket || 'test-bucket';
-  logger.debug('Starting S3 Explorer', { bucket, adapterType });
-
-  // Create and start renderer
-  const renderer = await createCliRenderer({
-    exitOnCtrlC: true,
-  });
-
-  // Setup keyboard event handling
-  renderer.keyInput.on('keypress', (key: any) => {
-    if (globalKeyboardDispatcher) {
-      // Normalize key object to match expected interface
-      const normalizedKey = {
-        name: key.name || key.key || 'unknown',
-        ctrl: key.ctrl || key.ctrlKey || false,
-        shift: key.shift || key.shiftKey || false,
-        meta: key.meta || key.metaKey || false,
-        char: key.char,
-      };
-      globalKeyboardDispatcher(normalizedKey);
+    // Handle help and version flags
+    if (cliArgs.help) {
+      printHelp();
+      process.exit(0);
     }
-  });
 
-  // Create and render app
-  const root = createRoot(renderer);
-  root.render(<S3Explorer bucket={bucket} adapter={adapter} configManager={configManager} />);
+    if (cliArgs.version) {
+      printVersion();
+      process.exit(0);
+    }
+
+    // Create config manager
+    console.error('[MAIN] Creating config manager...');
+    const configManager = new ConfigManager(cliArgs.config);
+    logger.debug('Config manager initialized');
+
+    // Determine adapter
+    let adapter: Adapter;
+    const adapterType = cliArgs.adapter || configManager.getAdapter();
+    console.error('[MAIN] Adapter type:', adapterType);
+
+    if (adapterType === 's3') {
+      console.error('[MAIN] Initializing S3 adapter...');
+      // Get S3 config from CLI args or config file
+      const s3Config = configManager.getS3Config();
+      logger.debug('S3 config from configManager', { 
+        region: s3Config.region,
+        bucket: s3Config.bucket,
+        profile: s3Config.profile,
+        endpoint: s3Config.endpoint,
+      });
+      
+      // Determine region priority: CLI > config file > active profile > us-east-1
+      let region = cliArgs.region || s3Config.region;
+      logger.debug('Region resolution', {
+        cliRegion: cliArgs.region,
+        configRegion: s3Config.region,
+        selected: region,
+      });
+      
+      if (!region) {
+        const profileRegion = getActiveAwsRegion();
+        region = profileRegion || process.env.AWS_REGION || 'us-east-1';
+        logger.debug('Region from profile or env', {
+          profileRegion,
+          envRegion: process.env.AWS_REGION,
+          final: region,
+        });
+      }
+      
+      const finalS3Config = {
+        region,
+        bucket: cliArgs.bucket || s3Config.bucket || 'my-bucket',
+        profile: cliArgs.profile,
+        endpoint: cliArgs.endpoint || s3Config.endpoint,
+        accessKeyId: cliArgs.accessKey || s3Config.accessKeyId,
+        secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
+      };
+
+      logger.debug('Final S3 config before adapter creation', { 
+        region: finalS3Config.region,
+        bucket: finalS3Config.bucket,
+        profile: finalS3Config.profile,
+        endpoint: finalS3Config.endpoint,
+        hasAccessKey: !!finalS3Config.accessKeyId,
+        hasSecretKey: !!finalS3Config.secretAccessKey,
+      });
+      
+      console.error('[MAIN] Creating S3Adapter...');
+      adapter = new S3Adapter(finalS3Config);
+      console.error('[MAIN] S3Adapter created successfully');
+      logger.info('S3 adapter initialized successfully', { 
+        region: finalS3Config.region, 
+        bucket: finalS3Config.bucket,
+        profile: finalS3Config.profile || 'default'
+      });
+    } else {
+      console.error('[MAIN] Initializing mock adapter');
+      logger.debug('Initializing mock adapter');
+      adapter = new MockAdapter();
+      logger.info('Mock adapter initialized');
+    }
+
+    // Get bucket name
+    const bucket = cliArgs.bucket || configManager.getS3Config().bucket || 'test-bucket';
+    logger.debug('Starting S3 Explorer', { bucket, adapterType });
+
+    // Create and start renderer
+    console.error('[MAIN] Creating CLI renderer...');
+    const renderer = await createCliRenderer({
+      exitOnCtrlC: true,
+    });
+    console.error('[MAIN] CLI renderer created');
+
+    // Setup keyboard event handling
+    renderer.keyInput.on('keypress', (key: any) => {
+      if (globalKeyboardDispatcher) {
+        // Normalize key object to match expected interface
+        const normalizedKey = {
+          name: key.name || key.key || 'unknown',
+          ctrl: key.ctrl || key.ctrlKey || false,
+          shift: key.shift || key.shiftKey || false,
+          meta: key.meta || key.metaKey || false,
+          char: key.char,
+        };
+        globalKeyboardDispatcher(normalizedKey);
+      }
+    });
+
+    // Create and render app
+    console.error('[MAIN] Rendering S3Explorer component...');
+    const root = createRoot(renderer);
+    root.render(<S3Explorer bucket={bucket} adapter={adapter} configManager={configManager} />);
+    console.error('[MAIN] Render called, app should be running');
+  } catch (error) {
+    console.error('[MAIN] Caught error in main:', error);
+    const logger = getLogger();
+    logger.error('Error in main', error);
+    throw error;
+  }
 }
 
 main()
