@@ -37,8 +37,8 @@ export function HelpDialog({ visible }: HelpDialogProps) {
     { keys: 'j/k', description: 'Move cursor down/up' },
     { keys: 'gg/G', description: 'Go to top/bottom' },
     { keys: 'Ctrl+N/P', description: 'Page down/up' },
-    { keys: 'h/-', description: 'Navigate to parent' },
-    { keys: 'l/Enter', description: 'Open directory/bucket' },
+    { keys: 'h/-', description: 'Navigate to parent / Close preview' },
+    { keys: 'l/Enter', description: 'Open directory/file preview' },
     { section: '' },
     { section: 'SELECTION & EDIT' },
     { keys: 'v', description: 'Visual selection mode' },
@@ -58,7 +58,6 @@ export function HelpDialog({ visible }: HelpDialogProps) {
     { keys: ':', description: 'Command mode' },
     { section: '' },
     { section: 'OTHER' },
-    { keys: 'P', description: 'Toggle file preview' },
     { keys: '?/g?', description: 'Toggle help' },
     { keys: 'q', description: 'Quit' },
   ];

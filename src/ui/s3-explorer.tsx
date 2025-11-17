@@ -205,6 +205,15 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         await navigationHandlers.navigateInto();
       },
       onNavigateUp: async () => {
+        // If preview is enabled, close it first
+        if (previewEnabled) {
+          setPreviewEnabled(false);
+          setPreviewContent('');
+          setStatusMessage('Preview closed');
+          setStatusMessageColor(CatppuccinMocha.text);
+          return;
+        }
+
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         // If we're in root view mode (no bucket set), can't navigate up
         if (!bucket) {
@@ -337,20 +346,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           const nextPaneId = multiPaneLayout.panes[nextIndex].id;
           multiPaneLayout.activatePane(nextPaneId);
           setStatusMessage(`Switched to pane ${nextIndex + 1}`);
-          setStatusMessageColor(CatppuccinMocha.blue);
-        }
-      },
-      onTogglePreview: () => {
-        // Manual toggle - enable/disable preview mode
-        if (previewEnabled) {
-          setPreviewEnabled(false);
-          setPreviewContent('');
-          setStatusMessage('Preview disabled');
-          setStatusMessageColor(CatppuccinMocha.text);
-        } else {
-          // Enable preview mode - content will be fetched by effect
-          setPreviewEnabled(true);
-          setStatusMessage('Preview enabled');
           setStatusMessageColor(CatppuccinMocha.blue);
         }
       },
