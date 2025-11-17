@@ -146,8 +146,8 @@ export function BufferView({
           isInVisualSelection
         );
 
-        // Apply text styling
-        const styledContent = applyTextStyle(cursor + rowContent, style.bold);
+        // Apply text styling only to content, not cursor
+        const styledContent = applyTextStyle(rowContent, style.bold);
 
         return (
           <text
@@ -158,7 +158,7 @@ export function BufferView({
             fg={style.fg}
             bg={style.bg}
           >
-            {styledContent}
+            {cursor}{styledContent}
           </text>
         );
       })}

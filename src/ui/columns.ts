@@ -56,13 +56,14 @@ function padString(str: string, width: number, align: 'left' | 'right' | 'center
 export class IconColumn implements Column {
   id = 'icon';
   name = 'Icon';
-  width = 4;
+  width = 3;
   visible = true;
   align: 'left' | 'right' | 'center' = 'left';
 
   render(entry: Entry): string {
     const icon = entry.type === EntryType.Directory ? '📁' : '📄';
-    return padString(icon, this.width, this.align);
+    // Emojis can be 2 chars wide, just add one space after
+    return icon + ' ';
   }
 }
 
@@ -72,7 +73,7 @@ export class IconColumn implements Column {
 export class NameColumn implements Column {
   id = 'name';
   name = 'Name';
-  width = 40;
+  width = 35;
   minWidth = 20;
   visible = true;
   align: 'left' | 'right' | 'center' = 'left';
@@ -80,7 +81,8 @@ export class NameColumn implements Column {
   render(entry: Entry): string {
     const suffix = entry.type === EntryType.Directory ? '/' : '';
     const name = entry.name + suffix;
-    return padString(name, this.width, this.align);
+    // Add extra space after column
+    return padString(name, this.width, this.align) + '  ';
   }
 }
 
@@ -90,13 +92,13 @@ export class NameColumn implements Column {
 export class SizeColumn implements Column {
   id = 'size';
   name = 'Size';
-  width = 10;
+  width = 8;
   visible = true;
   align: 'left' | 'right' | 'center' = 'right';
 
   render(entry: Entry): string {
     if (entry.type === EntryType.Directory) {
-      return padString('-', this.width, this.align);
+      return padString('-', this.width, this.align) + ' ';
     }
 
     const size = entry.size ?? 0;
@@ -112,7 +114,7 @@ export class SizeColumn implements Column {
       formatted = `${size}B`;
     }
 
-    return padString(formatted, this.width, this.align);
+    return padString(formatted, this.width, this.align) + ' ';
   }
 }
 
@@ -122,7 +124,7 @@ export class SizeColumn implements Column {
 export class DateColumn implements Column {
   id = 'modified';
   name = 'Modified';
-  width = 12;
+  width = 10;
   visible = true;
   align: 'left' | 'right' | 'center' = 'left';
 
@@ -201,7 +203,8 @@ export function renderRow(entry: Entry, columns: Column[]): string {
     }
   }
 
-  return parts.join(' ');
+  // Columns already have padding, no need for extra separator
+  return parts.join('');
 }
 
 /**
