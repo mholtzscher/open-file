@@ -130,9 +130,13 @@ async function main() {
       logger.info('Mock adapter initialized');
     }
 
-    // Get bucket name
-    const bucket = cliArgs.bucket || configManager.getS3Config().bucket || 'test-bucket';
-    logger.debug('Starting S3 Explorer', { bucket, adapterType });
+    // Get bucket name - can be undefined for root view mode
+    const bucket = cliArgs.bucket || configManager.getS3Config().bucket;
+    logger.debug('Starting S3 Explorer', {
+      bucket: bucket || '(root view mode)',
+      adapterType,
+      isRootViewMode: !bucket,
+    });
 
     // Create and start renderer
     console.error('[MAIN] Creating CLI renderer...');

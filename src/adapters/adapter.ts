@@ -123,4 +123,10 @@ export interface Adapter {
    * @returns true if exists, false otherwise
    */
   exists(path: string): Promise<boolean>;
+
+  /**
+   * (Optional) Get bucket entries for root view (S3 adapter only)
+   * @returns List of bucket entries, or undefined if not supported
+   */
+  getBucketEntries?(): Promise<Entry[]>;
 }

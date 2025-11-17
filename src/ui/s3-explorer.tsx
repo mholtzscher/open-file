@@ -20,7 +20,7 @@ import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { setGlobalKeyboardDispatcher } from '../index.tsx';
 
 interface S3ExplorerProps {
-  bucket: string;
+  bucket?: string;
   adapter: Adapter;
   configManager: ConfigManager;
 }
@@ -136,28 +136,51 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   useEffect(() => {
     const initializeData = async () => {
       try {
-        const path = bufferState.currentPath;
         console.error(`[S3Explorer] Initializing data...`);
-        console.error(`[S3Explorer] Loading bucket: ${bucket}, path: "${path}"`);
-        const result = await adapter.list(path);
-        console.error(`[S3Explorer] Received ${result.entries.length} entries`);
-        console.error(
-          `[S3Explorer] Entries:`,
-          result.entries.map(e => e.name)
-        );
 
-        // Load entries into buffer state
-        bufferState.setEntries([...result.entries]);
-        console.error(`[S3Explorer] Entries loaded into buffer state`);
+        // Check if we're in root view mode (no bucket specified)
+        if (!bucket) {
+          console.error(`[S3Explorer] Root view mode detected, loading buckets...`);
+          // Load buckets for root view
+          const s3Adapter = adapter as any; // Cast to access S3-specific method
+          if (s3Adapter.getBucketEntries) {
+            const entries = await s3Adapter.getBucketEntries();
+            console.error(`[S3Explorer] Received ${entries.length} buckets`);
+            bufferState.setEntries([...entries]);
+            bufferState.setCurrentPath('');
+            setStatusMessage(`Found ${entries.length} bucket(s)`);
+            setStatusMessageColor(CatppuccinMocha.green);
+          } else {
+            throw new Error('Adapter does not support bucket listing');
+          }
+        } else {
+          // Load entries from specific bucket
+          const path = bufferState.currentPath;
+          console.error(`[S3Explorer] Loading bucket: ${bucket}, path: "${path}"`);
+          const result = await adapter.list(path);
+          console.error(`[S3Explorer] Received ${result.entries.length} entries`);
+          console.error(
+            `[S3Explorer] Entries:`,
+            result.entries.map(e => e.name)
+          );
 
-        setStatusMessage(`Loaded ${result.entries.length} items`);
-        setStatusMessageColor(CatppuccinMocha.green);
+          // Load entries into buffer state
+          bufferState.setEntries([...result.entries]);
+          console.error(`[S3Explorer] Entries loaded into buffer state`);
+
+          setStatusMessage(`Loaded ${result.entries.length} items`);
+          setStatusMessageColor(CatppuccinMocha.green);
+        }
+
         console.error(`[S3Explorer] Status message set, about to set initialized`);
         setIsInitialized(true);
         console.error(`[S3Explorer] Initialized set to true`);
       } catch (err) {
-        console.error('[S3Explorer] Error loading bucket:', err);
-        const parsedError = parseAwsError(err, 'Failed to load bucket');
+        console.error('[S3Explorer] Error loading data:', err);
+        const parsedError = parseAwsError(
+          err,
+          bucket ? 'Failed to load bucket' : 'Failed to list buckets'
+        );
         const errorDisplay = formatErrorForDisplay(parsedError, 70);
         console.error('[S3Explorer] Setting error message:', errorDisplay);
         setStatusMessage(errorDisplay);

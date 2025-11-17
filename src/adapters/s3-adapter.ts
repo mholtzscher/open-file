@@ -419,6 +419,24 @@ export class S3Adapter implements Adapter {
   }
 
   /**
+   * Get bucket entries for root view display
+   */
+  async getBucketEntries(): Promise<Entry[]> {
+    const buckets = await this.listBuckets();
+    return buckets.map(bucket => ({
+      id: generateEntryId(),
+      name: bucket.name,
+      type: EntryType.Bucket,
+      path: bucket.name,
+      modified: bucket.creationDate,
+      metadata: {
+        region: bucket.region,
+        createdAt: bucket.creationDate,
+      },
+    }));
+  }
+
+  /**
    * Get metadata for a specific entry
    */
   async getMetadata(path: string): Promise<Entry> {
