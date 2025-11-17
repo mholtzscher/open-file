@@ -40,6 +40,7 @@ interface NavigationConfig {
   onLoadBuffer?: (path: string) => Promise<void>;
   onErrorOccurred?: (error: string) => void;
   onNavigationComplete?: () => void;
+  onBucketSelected?: (bucketName: string, region?: string) => void;
 }
 
 /**
@@ -49,7 +50,7 @@ export function useNavigationHandlers(
   bufferState: UseBufferStateReturn,
   config: NavigationConfig = {}
 ): UseNavigationHandlersReturn {
-  // Navigate into selected directory
+  // Navigate into selected directory or bucket
   const navigateInto = useCallback(async () => {
     const selected = bufferState.getSelectedEntry();
 
@@ -60,10 +61,22 @@ export function useNavigationHandlers(
       return;
     }
 
+    // Handle bucket entry selection
+    if (selected.type === EntryType.Bucket) {
+      if (config.onBucketSelected) {
+        const bucketRegion = selected.metadata?.region;
+        config.onBucketSelected(selected.name, bucketRegion);
+      }
+      if (config.onNavigationComplete) {
+        config.onNavigationComplete();
+      }
+      return;
+    }
+
     // Check if entry is a directory
     if (selected.type !== EntryType.Directory) {
       if (config.onErrorOccurred) {
-        config.onErrorOccurred('Selected entry is not a directory');
+        config.onErrorOccurred('Selected entry is not a directory or bucket');
       }
       return;
     }
