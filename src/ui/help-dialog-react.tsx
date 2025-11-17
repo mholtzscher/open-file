@@ -61,7 +61,6 @@ export function HelpDialog({ visible }: HelpDialogProps) {
       left={5}
       top={1}
       width={70}
-      height={23}
       borderStyle="rounded"
       borderColor={CatppuccinMocha.yellow}
       backgroundColor={CatppuccinMocha.base}
@@ -69,6 +68,7 @@ export function HelpDialog({ visible }: HelpDialogProps) {
       flexDirection="column"
       paddingLeft={2}
       paddingTop={1}
+      paddingBottom={1}
     >
       {keybindings.map((item, idx) => {
         if ('section' in item) {
