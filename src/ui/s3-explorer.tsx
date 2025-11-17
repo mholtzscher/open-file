@@ -409,7 +409,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     <>
       {/* Header */}
       <text position="absolute" left={2} top={0} fg={CatppuccinMocha.blue}>
-        open-s3: {bucket} ({terminalSize.width}x{terminalSize.height})
+        open-s3: {bucket}
       </text>
 
       {/* Error Dialog - shows when there's an error */}
