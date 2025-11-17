@@ -45,6 +45,11 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   // Initialize buffer state
   const bufferState = useBufferState([], currentPath);
 
+  // Update viewport height when layout changes
+  useEffect(() => {
+    bufferState.setViewportHeight(layout.contentHeight);
+  }, [layout.contentHeight, bufferState.setViewportHeight]);
+
   // Setup navigation handlers config - memoized to prevent recreation
   const navigationConfig = useMemo(
     () => ({

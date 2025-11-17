@@ -5,7 +5,7 @@
  * This hook manages entries, cursor, selection, and edit modes.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Entry } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
 import { SortConfig, DEFAULT_SORT_CONFIG, sortEntries } from '../utils/sorting.js';
@@ -28,10 +28,12 @@ export interface UseBufferStateReturn {
   searchQuery: string;
   scrollOffset: number;
   copyRegister: Entry[];
+  viewportHeight: number;
   
   // Buffer data operations
   setEntries: (entries: Entry[]) => void;
   setCurrentPath: (path: string) => void;
+  setViewportHeight: (height: number) => void;
   
   // Cursor/Selection operations
   moveCursorDown: (amount: number) => void;
@@ -84,37 +86,65 @@ export function useBufferState(initialEntries: Entry[] = [], initialPath: string
   const [searchQuery, setSearchQuery] = useState('');
   const [scrollOffset, setScrollOffset] = useState(0);
   const [copyRegister, setCopyRegister] = useState<Entry[]>([]);
+  const [viewportHeight, setViewportHeight] = useState(20);
 
   // Helper function to ensure cursor is within bounds
   const constrainCursor = useCallback((index: number): number => {
     return Math.max(0, Math.min(index, entries.length - 1));
   }, [entries.length]);
 
+  // Update scroll offset to keep cursor visible
+  const updateScrollOffset = useCallback((cursorIndex: number) => {
+    setScrollOffset((prevOffset) => {
+      // If cursor is above viewport, scroll up
+      if (cursorIndex < prevOffset) {
+        return cursorIndex;
+      }
+      // If cursor is below viewport, scroll down
+      if (cursorIndex >= prevOffset + viewportHeight) {
+        return cursorIndex - viewportHeight + 1;
+      }
+      // Cursor is visible, no scroll needed
+      return prevOffset;
+    });
+  }, [viewportHeight]);
+
   // Cursor movement
   const moveCursorDown = useCallback((amount: number = 1) => {
-    setSelection((prev) => ({
-      ...prev,
-      cursorIndex: constrainCursor(prev.cursorIndex + amount),
-    }));
-  }, [constrainCursor]);
+    setSelection((prev) => {
+      const newIndex = constrainCursor(prev.cursorIndex + amount);
+      updateScrollOffset(newIndex);
+      return {
+        ...prev,
+        cursorIndex: newIndex,
+      };
+    });
+  }, [constrainCursor, updateScrollOffset]);
 
   const moveCursorUp = useCallback((amount: number = 1) => {
-    setSelection((prev) => ({
-      ...prev,
-      cursorIndex: constrainCursor(prev.cursorIndex - amount),
-    }));
-  }, [constrainCursor]);
+    setSelection((prev) => {
+      const newIndex = constrainCursor(prev.cursorIndex - amount);
+      updateScrollOffset(newIndex);
+      return {
+        ...prev,
+        cursorIndex: newIndex,
+      };
+    });
+  }, [constrainCursor, updateScrollOffset]);
 
   const cursorToTop = useCallback(() => {
     setSelection((prev) => ({ ...prev, cursorIndex: 0 }));
+    setScrollOffset(0);
   }, []);
 
   const cursorToBottom = useCallback(() => {
+    const newIndex = Math.max(0, entries.length - 1);
     setSelection((prev) => ({
       ...prev,
-      cursorIndex: Math.max(0, entries.length - 1),
+      cursorIndex: newIndex,
     }));
-  }, [entries.length]);
+    updateScrollOffset(newIndex);
+  }, [entries.length, updateScrollOffset]);
 
   // Visual selection
   const startVisualSelection = useCallback(() => {
@@ -132,13 +162,15 @@ export function useBufferState(initialEntries: Entry[] = [], initialPath: string
       if (!prev.isActive || prev.selectionStart === undefined) return prev;
 
       const newEnd = direction === 'up' ? prev.cursorIndex - 1 : prev.cursorIndex + 1;
+      const newIndex = constrainCursor(newEnd);
+      updateScrollOffset(newIndex);
       return {
         ...prev,
-        selectionEnd: constrainCursor(newEnd),
-        cursorIndex: constrainCursor(newEnd),
+        selectionEnd: newIndex,
+        cursorIndex: newIndex,
       };
     });
-  }, [constrainCursor]);
+  }, [constrainCursor, updateScrollOffset]);
 
   const exitVisualSelection = useCallback(() => {
     setSelection((prev) => ({
@@ -244,9 +276,11 @@ export function useBufferState(initialEntries: Entry[] = [], initialPath: string
     searchQuery,
     scrollOffset,
     copyRegister,
+    viewportHeight,
 
     setEntries,
     setCurrentPath,
+    setViewportHeight,
 
     moveCursorDown,
     moveCursorUp,
