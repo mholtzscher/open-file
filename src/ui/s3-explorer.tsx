@@ -99,10 +99,15 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
             // EntryType.Bucket
             // Navigate into this bucket
             const bucketName = currentEntry.name;
-            // Update adapter bucket context before changing UI state
+            const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
+
+            // Update adapter bucket and region context before changing UI state
             const s3Adapter = adapter as any;
             if (s3Adapter.setBucket) {
               s3Adapter.setBucket(bucketName);
+            }
+            if (s3Adapter.setRegion) {
+              s3Adapter.setRegion(bucketRegion);
             }
             setBucket(bucketName);
             return;

@@ -78,10 +78,14 @@ export class S3Adapter implements Adapter {
   private client: S3Client;
   private bucket?: string;
   private prefix: string = '';
+  private currentRegion: string;
+  private config: S3AdapterConfig;
 
   constructor(config: S3AdapterConfig) {
     const logger = getLogger();
     this.bucket = config.bucket;
+    this.config = config;
+    this.currentRegion = config.region || 'us-east-1';
 
     logger.debug('S3Adapter constructor called', {
       bucket: config.bucket,
@@ -188,6 +192,48 @@ export class S3Adapter implements Adapter {
     const logger = getLogger();
     this.bucket = bucketName;
     logger.debug('S3Adapter bucket changed', { bucket: bucketName });
+  }
+
+  /**
+   * Set the region and reinitialize S3Client if needed (for bucket selection from root view)
+   */
+  setRegion(region: string): void {
+    const logger = getLogger();
+    if (region !== this.currentRegion) {
+      logger.debug('S3Adapter region changed', {
+        oldRegion: this.currentRegion,
+        newRegion: region,
+      });
+      this.currentRegion = region;
+      // Reinitialize S3Client with new region
+      this.reinitializeClient();
+    }
+  }
+
+  /**
+   * Reinitialize S3Client with current region
+   */
+  private reinitializeClient(): void {
+    const logger = getLogger();
+    const clientConfig: any = { region: this.currentRegion };
+
+    // Preserve endpoint if set
+    if (this.config.endpoint) {
+      clientConfig.endpoint = this.config.endpoint;
+      clientConfig.forcePathStyle = this.config.forcePathStyle;
+    }
+
+    // Preserve credentials if set
+    if (this.config.accessKeyId && this.config.secretAccessKey) {
+      clientConfig.credentials = {
+        accessKeyId: this.config.accessKeyId,
+        secretAccessKey: this.config.secretAccessKey,
+        ...(this.config.sessionToken && { sessionToken: this.config.sessionToken }),
+      };
+    }
+
+    logger.debug('Reinitializing S3Client', { region: this.currentRegion });
+    this.client = new S3Client(clientConfig);
   }
 
   /**
