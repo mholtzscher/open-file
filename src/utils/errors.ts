@@ -141,6 +141,30 @@ export function parseAwsError(error: unknown, operation: string = 'operation'): 
 
   const message = error.message || error.toString();
 
+  // Check for region mismatch error (very common issue)
+  if (message.includes('bucket must be addressed using specified endpoint') ||
+      message.includes('PermanentRedirect') ||
+      message.includes('moved permanently') ||
+      (message.includes('region') && (message.includes('but client configured') || message.includes('Bucket in')))) {
+    // Extract region from error message if available
+    let suggestion = 'Bucket may be in a different region. ';
+    
+    // Try to extract the correct region from error metadata (multiple patterns)
+    const regionMatch = message.match(/region[:\s]+([a-z0-9-]+)/i) ||
+                       message.match(/Bucket in region[:\s]+([a-z0-9-]+)/i);
+    if (regionMatch && regionMatch[1]) {
+      suggestion += `Try: --region ${regionMatch[1]}`;
+    } else {
+      suggestion += 'Try specifying the correct region with --region flag (e.g., us-west-2, eu-west-1)';
+    }
+    
+    return new AdapterError(
+      `Region mismatch: ${suggestion}`,
+      'REGION_MISMATCH',
+      false
+    );
+  }
+
   // Check for specific AWS error codes
   if ('code' in error) {
     const awsCode = (error as any).code;
@@ -184,12 +208,38 @@ export function parseAwsError(error: unknown, operation: string = 'operation'): 
 
 /**
  * Create a user-friendly error message
+ * Wraps long messages for better readability
  */
-export function formatErrorForDisplay(error: AdapterError | Error): string {
-  if (error instanceof AdapterError) {
-    return `❌ ${error.message}`;
+export function formatErrorForDisplay(error: AdapterError | Error, maxLength: number = 80): string {
+  const message = error instanceof AdapterError ? error.message : `Error: ${error.message}`;
+  
+  // For shorter messages, just prefix with emoji
+  if (message.length <= maxLength) {
+    return `❌ ${message}`;
   }
-  return `❌ Error: ${error.message}`;
+  
+  // For longer messages, try to wrap at word boundaries
+  const words = message.split(' ');
+  const lines: string[] = [];
+  let currentLine = '';
+  
+  for (const word of words) {
+    if ((currentLine + ' ' + word).length > maxLength) {
+      if (currentLine) {
+        lines.push(currentLine);
+      }
+      currentLine = word;
+    } else {
+      currentLine = currentLine ? `${currentLine} ${word}` : word;
+    }
+  }
+  
+  if (currentLine) {
+    lines.push(currentLine);
+  }
+  
+  // Return first line with emoji, rest indented
+  return lines.map((line, i) => i === 0 ? `❌ ${line}` : `   ${line}`).join('\n');
 }
 
 /**

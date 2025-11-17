@@ -199,6 +199,37 @@ describe('parseAwsError', () => {
     expect(result).toBeInstanceOf(OperationFailedError);
     expect((result as OperationFailedError).originalError).toBe(genericError);
   });
+
+  it('should parse region mismatch error', () => {
+    const regionError = new Error('The bucket must be addressed using specified endpoint');
+    
+    const result = parseAwsError(regionError, 'list');
+    
+    expect(result).toBeInstanceOf(AdapterError);
+    expect(result.code).toBe('REGION_MISMATCH');
+    expect(result.message).toContain('Region mismatch');
+    expect(result.message).toContain('Try specifying the correct region');
+  });
+
+  it('should extract region from error message', () => {
+    const regionError = new Error('Bucket in region: us-west-2, but client configured for us-east-1');
+    
+    const result = parseAwsError(regionError, 'list');
+    
+    expect(result).toBeInstanceOf(AdapterError);
+    expect(result.code).toBe('REGION_MISMATCH');
+    expect(result.message).toContain('us-west-2');
+  });
+
+  it('should parse PermanentRedirect error', () => {
+    const redirectError = new Error('PermanentRedirect: The bucket is in another region');
+    
+    const result = parseAwsError(redirectError, 'list');
+    
+    expect(result).toBeInstanceOf(AdapterError);
+    expect(result.code).toBe('REGION_MISMATCH');
+    expect(result.message).toContain('Region mismatch');
+  });
 });
 
 describe('formatErrorForDisplay', () => {
@@ -214,6 +245,24 @@ describe('formatErrorForDisplay', () => {
     const result = formatErrorForDisplay(error);
     
     expect(result).toBe('❌ Error: Generic error');
+  });
+
+  it('should wrap long error messages', () => {
+    const error = new Error('This is a very long error message that should be wrapped because it exceeds the maximum line length allowed');
+    const result = formatErrorForDisplay(error, 40);
+    
+    expect(result).toContain('\n');
+    const lines = result.split('\n');
+    expect(lines[0]).toMatch(/^❌ /);
+    expect(lines[1]).toMatch(/^   /);
+  });
+
+  it('should not wrap short error messages', () => {
+    const error = new Error('Short error');
+    const result = formatErrorForDisplay(error, 80);
+    
+    expect(result).not.toContain('\n');
+    expect(result).toBe('❌ Error: Short error');
   });
 });
 

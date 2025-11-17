@@ -16,7 +16,7 @@ import { BufferView } from './buffer-view-react.js';
 import { StatusBar } from './status-bar-react.js';
 import { ConfirmationDialog } from './confirmation-dialog-react.js';
 import { CatppuccinMocha } from './theme.js';
-import { parseAwsError } from '../utils/errors.js';
+import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { setGlobalKeyboardDispatcher } from '../index.tsx';
 
 interface S3ExplorerProps {
@@ -71,7 +71,7 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
           setStatusMessageColor(CatppuccinMocha.green);
         } catch (err) {
           const parsedError = parseAwsError(err, 'Navigation failed');
-          setStatusMessage(parsedError.message);
+          setStatusMessage(formatErrorForDisplay(parsedError, 70));
           setStatusMessageColor(CatppuccinMocha.red);
         }
       },
@@ -147,13 +147,13 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
          setStatusMessage(`Loaded ${result.entries.length} items`);
          setStatusMessageColor(CatppuccinMocha.green);
          setIsInitialized(true);
-       } catch (err) {
-         console.error('DEBUG: Error loading bucket:', err);
-         const parsedError = parseAwsError(err, 'Failed to load bucket');
-         setStatusMessage(parsedError.message);
-         setStatusMessageColor(CatppuccinMocha.red);
-         setIsInitialized(true); // Set initialized even on error so we show the error
-       }
+        } catch (err) {
+          console.error('DEBUG: Error loading bucket:', err);
+          const parsedError = parseAwsError(err, 'Failed to load bucket');
+          setStatusMessage(formatErrorForDisplay(parsedError, 70));
+          setStatusMessageColor(CatppuccinMocha.red);
+          setIsInitialized(true); // Set initialized even on error so we show the error
+        }
      };
 
      initializeData();
