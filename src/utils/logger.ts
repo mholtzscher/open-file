@@ -158,6 +158,9 @@ export class Logger {
    * Debug level logging
    */
   debug(message: string, data?: any): void {
+    if (this.level <= LogLevel.Debug) {
+      console.error(`[DEBUG] ${message}`, data ? JSON.stringify(data, null, 2) : '');
+    }
     this.write(LogLevel.Debug, message, data);
   }
 
@@ -165,6 +168,9 @@ export class Logger {
    * Info level logging
    */
   info(message: string, data?: any): void {
+    if (this.level <= LogLevel.Info) {
+      console.error(`[INFO] ${message}`, data ? JSON.stringify(data, null, 2) : '');
+    }
     this.write(LogLevel.Info, message, data);
   }
 
@@ -172,6 +178,9 @@ export class Logger {
    * Warning level logging
    */
   warn(message: string, data?: any): void {
+    if (this.level <= LogLevel.Warn) {
+      console.error(`[WARN] ${message}`, data ? JSON.stringify(data, null, 2) : '');
+    }
     this.write(LogLevel.Warn, message, data);
   }
 
@@ -180,12 +189,18 @@ export class Logger {
    */
   error(message: string, error?: Error | any): void {
     if (error instanceof Error) {
+      console.error(`[ERROR] ${message}`, {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
       this.write(LogLevel.Error, message, {
         name: error.name,
         message: error.message,
         stack: error.stack,
       });
     } else {
+      console.error(`[ERROR] ${message}`, error);
       this.write(LogLevel.Error, message, error);
     }
   }

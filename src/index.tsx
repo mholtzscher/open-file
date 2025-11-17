@@ -8,7 +8,7 @@ import { MockAdapter } from './adapters/mock-adapter.js';
 import { S3Adapter } from './adapters/s3-adapter.js';
 import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
-import { getLogger, shutdownLogger, LogLevel } from './utils/logger.js';
+import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger.js';
 import { getActiveAwsRegion } from './utils/aws-profile.js';
 
 // Global keyboard event dispatcher - exported at module level
@@ -32,14 +32,16 @@ export function getGlobalKeyboardDispatcher() {
  * Main entry point for open-s3 application
  */
 async function main() {
-  // Parse CLI arguments first to check for debug flag
-  const args = Bun.argv.slice(2);
-  const cliArgs = parseArgs(args);
+   // Parse CLI arguments first to check for debug flag
+   const args = Bun.argv.slice(2);
+   const cliArgs = parseArgs(args);
 
-  // Initialize logger with appropriate level
-  const logLevel = cliArgs.debug ? LogLevel.Debug : LogLevel.Info;
-  const logger = getLogger({ level: logLevel });
-  logger.info('Application starting', { args, debug: cliArgs.debug });
+   // Initialize logger with appropriate level
+   const logLevel = cliArgs.debug ? LogLevel.Debug : LogLevel.Info;
+   const logger = getLogger({ level: logLevel });
+   // Ensure log level is set in case logger was already initialized
+   setLogLevel(logLevel);
+   logger.info('Application starting', { args, debug: cliArgs.debug });
 
   // Handle help and version flags
   if (cliArgs.help) {
