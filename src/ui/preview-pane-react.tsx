@@ -47,9 +47,12 @@ export function PreviewPane({
       borderColor={CatppuccinMocha.blue}
       backgroundColor={CatppuccinMocha.base}
       title={truncated ? `Preview (${totalLines} lines)` : 'Preview'}
+      flexDirection="column"
+      paddingLeft={1}
+      paddingTop={1}
     >
       {lines.map((line, idx) => (
-        <text key={idx} position="absolute" left={1} top={1 + idx} fg={CatppuccinMocha.text}>
+        <text key={idx} fg={CatppuccinMocha.text}>
           {line.substring(0, maxLineWidth)}
         </text>
       ))}
