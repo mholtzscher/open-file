@@ -465,46 +465,60 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   useEffect(() => {
     const fetchPreview = async () => {
       const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-      const selectedEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
 
-      // Only preview files in single-pane mode to avoid cluttering multi-pane view
-      if (!multiPaneLayout.isMultiPaneMode && selectedEntry && isPreviewableFile(selectedEntry)) {
-        try {
-          // Limit preview size to 100KB to avoid performance issues
-          const maxPreviewSize = 100 * 1024;
-          if (selectedEntry.size && selectedEntry.size > maxPreviewSize) {
-            setPreviewContent(`File too large to preview (${formatBytes(selectedEntry.size)})`);
-            setShowPreview(true);
-            return;
-          }
-
-          // Build full path for the selected file
-          const fullPath = currentBufferState.currentPath
-            ? `${currentBufferState.currentPath}${selectedEntry.name}`
-            : selectedEntry.name;
-
-          const buffer = await adapter.read(fullPath);
-          const content = buffer.toString('utf-8');
-          setPreviewContent(content);
-          setShowPreview(true);
-        } catch (err) {
-          console.error('Failed to load preview:', err);
-          setPreviewContent('Failed to load preview');
-          setShowPreview(true);
-        }
-      } else {
+      // Early exit if not in bucket view or not initialized
+      if (!bucket || !isInitialized) {
         setShowPreview(false);
         setPreviewContent('');
+        return;
+      }
+
+      // Early exit if multi-pane mode
+      if (multiPaneLayout.isMultiPaneMode) {
+        setShowPreview(false);
+        setPreviewContent('');
+        return;
+      }
+
+      const selectedEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
+
+      // Only preview files
+      if (!selectedEntry || !isPreviewableFile(selectedEntry)) {
+        setShowPreview(false);
+        setPreviewContent('');
+        return;
+      }
+
+      try {
+        // Limit preview size to 100KB to avoid performance issues
+        const maxPreviewSize = 100 * 1024;
+        if (selectedEntry.size && selectedEntry.size > maxPreviewSize) {
+          setPreviewContent(`File too large to preview (${formatBytes(selectedEntry.size)})`);
+          setShowPreview(true);
+          return;
+        }
+
+        // Build full path for the selected file
+        const fullPath = currentBufferState.currentPath
+          ? `${currentBufferState.currentPath}${selectedEntry.name}`
+          : selectedEntry.name;
+
+        const buffer = await adapter.read(fullPath);
+        const content = buffer.toString('utf-8');
+        setPreviewContent(content);
+        setShowPreview(true);
+      } catch (err) {
+        console.error('Failed to load preview:', err);
+        setPreviewContent('Failed to load preview');
+        setShowPreview(true);
       }
     };
 
-    if (bucket && isInitialized) {
-      fetchPreview();
-    }
+    fetchPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeBufferState.selection.cursorIndex,
-    activeBufferState.entries.length,
+    activeBufferState.currentPath,
     bucket,
     isInitialized,
     multiPaneLayout.isMultiPaneMode,
@@ -564,7 +578,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           top={layout.headerHeight}
           width={
             showPreview
-              ? Math.floor(terminalSize.size.width * 0.58)
+              ? Math.floor(terminalSize.size.width * 0.55) - 2
               : Math.max(terminalSize.size.width - 4, 40)
           }
           height={layout.contentHeight}
@@ -668,9 +682,9 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       {showPreview && !multiPaneLayout.isMultiPaneMode && (
         <PreviewPane
           content={previewContent}
-          left={Math.floor(terminalSize.size.width * 0.6)}
+          left={Math.floor(terminalSize.size.width * 0.55) + 2}
           top={layout.headerHeight}
-          width={Math.floor(terminalSize.size.width * 0.38)}
+          width={Math.floor(terminalSize.size.width * 0.45) - 4}
           height={layout.contentHeight}
           visible={true}
         />
