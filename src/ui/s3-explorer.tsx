@@ -140,9 +140,13 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           // If no parts left, we're going to root (empty path)
           const parentPath = parts.length > 0 ? parts.join('/') + '/' : '';
           await navigationHandlers.navigateToPath(parentPath);
+          setStatusMessage(`Navigated to ${parentPath || 'bucket root'}`);
+          setStatusMessageColor(CatppuccinMocha.green);
         } else {
-          // At bucket root, go back to bucket list
+          // At bucket root, go back to bucket list (root view)
           setBucket(undefined);
+          setStatusMessage('Back to bucket listing');
+          setStatusMessageColor(CatppuccinMocha.blue);
         }
       },
       onDelete: () => {

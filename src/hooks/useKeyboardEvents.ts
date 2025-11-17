@@ -162,6 +162,7 @@ export function useKeyboardEvents(
             break;
           case 'h':
           case '-':
+          case 'backspace':
             if (handlers.onNavigateUp) handlers.onNavigateUp();
             break;
           case 'l':
