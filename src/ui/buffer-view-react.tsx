@@ -85,14 +85,6 @@ function getEntryColor(entry: Entry, isSelected: boolean): string {
 }
 
 /**
- * Apply bold to text if needed (for directories)
- */
-function applyBold(text: string, shouldBold: boolean): string {
-  if (!shouldBold) return text;
-  return `\x1b[1m${text}\x1b[22m`; // Bold on, then bold off (not full reset)
-}
-
-/**
  * BufferView React component
  */
 export function BufferView({
@@ -122,10 +114,7 @@ export function BufferView({
           realIndex <= Math.max(bufferState.selection.selectionStart, bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart);
 
         const cursor = isSelected ? '> ' : '  ';
-        const entryText = formatEntry(entry, isSelected, showIcons, showSizes, showDates);
-        // Apply bold only to directory entries
-        const styledEntry = applyBold(entryText, entry.type === EntryType.Directory);
-        const content = cursor + styledEntry;
+        const content = cursor + formatEntry(entry, isSelected, showIcons, showSizes, showDates);
         const color = getEntryColor(entry, isSelected);
 
         return (
