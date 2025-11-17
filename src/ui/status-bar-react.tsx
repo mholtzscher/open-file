@@ -82,20 +82,17 @@ export function StatusBar({
       : 'q:quit  j/k:nav  v:select  i:insert  dd:delete  w:save  p:paste  Ctrl+N/P:page  g?:help';
   const rightContent = message || helpText;
 
-  // Render as a simplified text status bar
+  // Render as a flex row status bar
   return (
-    <>
-      <text position="absolute" left={2} bottom={0} fg={CatppuccinMocha.yellow}>
-        {leftContent}
-      </text>
-      <text
-        position="absolute"
-        right={2}
-        bottom={0}
-        fg={message ? messageColor : CatppuccinMocha.overlay0}
-      >
-        {rightContent}
-      </text>
-    </>
+    <box
+      flexDirection="row"
+      width="100%"
+      justifyContent="space-between"
+      paddingLeft={2}
+      paddingRight={2}
+    >
+      <text fg={CatppuccinMocha.yellow}>{leftContent}</text>
+      <text fg={message ? messageColor : CatppuccinMocha.overlay0}>{rightContent}</text>
+    </box>
   );
 }

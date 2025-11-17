@@ -19,6 +19,7 @@ import { StatusBar } from './status-bar-react.js';
 import { ConfirmationDialog } from './confirmation-dialog-react.js';
 import { HelpDialog } from './help-dialog-react.js';
 import { PreviewPane } from './preview-pane-react.js';
+import { Header } from './header-react.js';
 import { CatppuccinMocha } from './theme.js';
 import { ErrorDialog } from './error-dialog-react.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
@@ -541,22 +542,12 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   }
 
   return (
-    <>
-      {/* Header - absolute positioned */}
-      <text position="absolute" left={2} top={0} fg={CatppuccinMocha.blue}>
-        open-s3: {bucket}
-      </text>
+    <box flexDirection="column" width="100%" height="100%">
+      {/* Header */}
+      <Header bucket={bucket} />
 
       {/* Main content area with panes - flex layout */}
-      <box
-        position="absolute"
-        left={0}
-        top={layout.headerHeight}
-        width="100%"
-        height={layout.contentHeight}
-        flexDirection="row"
-        gap={1}
-      >
+      <box flexGrow={1} flexDirection="row" gap={1}>
         {multiPaneLayout.isMultiPaneMode && multiPaneLayout.panes.length > 1 ? (
           // Multi-pane mode
           multiPaneLayout.panes.map(pane => {
@@ -609,19 +600,20 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         )}
       </box>
 
-      {/* Status Bar - absolute positioned at bottom */}
-      <StatusBar
-        path={activeBufferState.currentPath}
-        mode={activeBufferState.mode}
-        message={statusMessage && !showErrorDialog ? statusMessage : undefined}
-        messageColor={statusMessageColor}
-        searchQuery={activeBufferState.searchQuery}
-        commandBuffer={activeBufferState.editBuffer}
-        bucket={bucket}
-      />
+      {/* Status Bar */}
+      <box height={layout.footerHeight} flexShrink={0}>
+        <StatusBar
+          path={activeBufferState.currentPath}
+          mode={activeBufferState.mode}
+          message={statusMessage && !showErrorDialog ? statusMessage : undefined}
+          messageColor={statusMessageColor}
+          searchQuery={activeBufferState.searchQuery}
+          commandBuffer={activeBufferState.editBuffer}
+          bucket={bucket}
+        />
+      </box>
 
       {/* Overlays - positioned absolutely */}
-
       {/* Error Dialog - shows when there's an error */}
       {showErrorDialog && <ErrorDialog visible={true} message={statusMessage} />}
 
@@ -699,6 +691,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
       {/* Help Dialog */}
       <HelpDialog visible={showHelpDialog} />
-    </>
+    </box>
   );
 }
