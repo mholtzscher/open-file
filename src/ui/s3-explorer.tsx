@@ -458,25 +458,40 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         <FloatingWindow
           title="Help"
           width={70}
-          height={18}
+          height={23}
           left={5}
-          top={5}
+          top={1}
           borderColor={CatppuccinMocha.yellow}
           textColor={CatppuccinMocha.text}
           visible={true}
           content={[
             'Navigation:',
-            '  j/k - Move cursor down/up',
-            '  Enter - Navigate into directory',
-            '  - (dash) - Navigate up',
+            '  j/k         - Move cursor down/up',
+            '  gg/G        - Go to top/bottom',
+            '  Ctrl+N/P    - Page down/up',
+            '  h/-/Bksp    - Navigate up (parent)',
+            '  l/Enter     - Navigate into directory/bucket',
             '',
-            'Actions:',
-            '  v - Toggle selection',
-            '  dd - Delete selected',
-            '  w - Save changes',
-            '  q - Quit',
+            'Selection & Editing:',
+            '  v           - Visual selection mode',
+            '  i           - Insert mode (create new entry)',
+            '  a           - Edit mode (rename entry)',
+            '  ESC         - Exit mode',
             '',
-            'Press ? or Esc to close help',
+            'Operations:',
+            '  dd          - Delete entry/selection',
+            '  yy          - Copy entry',
+            '  p           - Paste',
+            '  w/Ctrl+S    - Save changes',
+            '',
+            'Search & Commands:',
+            '  /           - Search mode',
+            '  n/N         - Next/previous match',
+            '  :           - Command mode',
+            '',
+            'Other:',
+            '  ?/g?        - Toggle this help',
+            '  q           - Quit',
           ]}
         />
       )}
