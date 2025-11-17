@@ -1086,4 +1086,131 @@ export class S3Adapter implements Adapter {
       return false;
     }
   }
+
+  /**
+   * Download/read a file with progress tracking
+   */
+  async read(path: string, options?: OperationOptions): Promise<Buffer> {
+    const normalized = this.normalizePath(path);
+    const logger = getLogger();
+
+    try {
+      // First, get the file size via HeadObject
+      const headResponse = await retryWithBackoff(() => {
+        const command = new HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: normalized,
+        });
+        return this.client.send(command);
+      }, getS3RetryConfig());
+
+      const totalBytes = headResponse.ContentLength || 0;
+
+      // Report initial progress
+      if (options?.onProgress) {
+        options.onProgress({
+          operation: 'Downloading file',
+          bytesTransferred: 0,
+          totalBytes,
+          percentage: 0,
+          currentFile: normalized,
+        });
+      }
+
+      // Download the file
+      const getResponse = await retryWithBackoff(() => {
+        const command = new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: normalized,
+        });
+        return this.client.send(command);
+      }, getS3RetryConfig());
+
+      // Convert stream to buffer
+      if (!getResponse.Body) {
+        throw new Error('No body in response');
+      }
+
+      const chunks: Uint8Array[] = [];
+      let bytesTransferred = 0;
+
+      // Handle both stream and Blob body types
+      if (getResponse.Body instanceof Buffer) {
+        // Direct buffer
+        bytesTransferred = getResponse.Body.length;
+        chunks.push(getResponse.Body);
+      } else if (typeof getResponse.Body === 'object' && 'getReader' in getResponse.Body) {
+        // ReadableStream or similar with getReader
+        const reader = (
+          getResponse.Body as any as {
+            getReader(): { read(): Promise<{ done: boolean; value?: Uint8Array }> };
+          }
+        ).getReader();
+        let done = false;
+        while (!done) {
+          const { done: isDone, value } = await reader.read();
+          done = isDone;
+          if (value) {
+            chunks.push(value);
+            bytesTransferred += value.length;
+
+            // Report progress
+            if (options?.onProgress) {
+              options.onProgress({
+                operation: 'Downloading file',
+                bytesTransferred,
+                totalBytes,
+                percentage: totalBytes > 0 ? Math.round((bytesTransferred / totalBytes) * 100) : 0,
+                currentFile: normalized,
+              });
+            }
+          }
+        }
+      } else if (typeof getResponse.Body === 'object' && 'on' in getResponse.Body) {
+        // Node.js stream
+        const stream = getResponse.Body as any;
+        await new Promise<void>((resolve, reject) => {
+          stream.on('data', (chunk: Uint8Array) => {
+            chunks.push(chunk);
+            bytesTransferred += chunk.length;
+
+            // Report progress
+            if (options?.onProgress) {
+              options.onProgress({
+                operation: 'Downloading file',
+                bytesTransferred,
+                totalBytes,
+                percentage: totalBytes > 0 ? Math.round((bytesTransferred / totalBytes) * 100) : 0,
+                currentFile: normalized,
+              });
+            }
+          });
+          stream.on('end', () => resolve());
+          stream.on('error', reject);
+        });
+      } else {
+        // Try to use as buffer-like object
+        const bodyBuffer = Buffer.from(await (getResponse.Body as any));
+        chunks.push(bodyBuffer);
+        bytesTransferred = bodyBuffer.length;
+      }
+
+      // Report completion
+      if (options?.onProgress) {
+        options.onProgress({
+          operation: 'Downloaded file',
+          bytesTransferred,
+          totalBytes,
+          percentage: 100,
+          currentFile: normalized,
+        });
+      }
+
+      // Combine chunks into single buffer
+      return Buffer.concat(chunks);
+    } catch (error) {
+      logger.error('Failed to read file from S3', error);
+      throw parseAwsError(error, 'read');
+    }
+  }
 }

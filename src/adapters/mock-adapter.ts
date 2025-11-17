@@ -247,4 +247,20 @@ export class MockAdapter implements Adapter {
     const normalized = this.normalizePath(path);
     return this.entries.has(normalized) || this.entries.has(normalized + '/');
   }
+
+  async read(path: string, _options?: any): Promise<Buffer> {
+    const normalized = this.normalizePath(path);
+    const entry = this.entries.get(normalized);
+
+    if (!entry) {
+      throw new Error(`Entry not found: ${path}`);
+    }
+
+    if (entry.type === EntryType.Directory) {
+      throw new Error(`Cannot read directory: ${path}`);
+    }
+
+    const content = entry.content || '';
+    return Buffer.from(content);
+  }
 }

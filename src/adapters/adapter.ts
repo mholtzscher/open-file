@@ -125,6 +125,14 @@ export interface Adapter {
   exists(path: string): Promise<boolean>;
 
   /**
+   * Download/read a file with optional progress tracking
+   * @param path - Path to the file to download
+   * @param options - Operation options (progress callback, etc.)
+   * @returns File content as Buffer
+   */
+  read(path: string, options?: OperationOptions): Promise<Buffer>;
+
+  /**
    * (Optional) Get bucket entries for root view (S3 adapter only)
    * @returns List of bucket entries, or undefined if not supported
    */

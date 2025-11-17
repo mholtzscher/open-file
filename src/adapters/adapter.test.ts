@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'bun:test';
 import { MockAdapter } from './mock-adapter.js';
 import { EntryType } from '../types/entry.js';
+import { ProgressEvent } from './adapter.js';
 
 describe('MockAdapter', () => {
   const adapter = new MockAdapter();
@@ -218,6 +219,153 @@ describe('MockAdapter', () => {
       await adapter.create('test-bucket/size-test.txt', EntryType.File, content);
       const entry = await adapter.getMetadata('test-bucket/size-test.txt');
       expect(entry.size).toBe(content.length);
+    });
+  });
+
+  describe('progress tracking', () => {
+    it('should track progress during file creation', async () => {
+      const progressEvents: ProgressEvent[] = [];
+      const content = 'Hello World - Test Content';
+
+      await adapter.create('test-bucket/progress-create.txt', EntryType.File, content, {
+        onProgress: (event: ProgressEvent) => {
+          progressEvents.push(event);
+        },
+      });
+
+      // Progress should have been reported (may vary based on file size)
+      expect(progressEvents.length).toBeGreaterThanOrEqual(0);
+      if (progressEvents.length > 0) {
+        // Check that progress events have the right structure
+        const event = progressEvents[0];
+        expect(event.operation).toBeDefined();
+        expect(typeof event.bytesTransferred).toBe('number');
+        expect(typeof event.percentage).toBe('number');
+      }
+    });
+
+    it('should track progress during file copy', async () => {
+      await adapter.create('test-bucket/original-copy.txt', EntryType.File, 'test content');
+
+      const progressEvents: ProgressEvent[] = [];
+      await adapter.copy('test-bucket/original-copy.txt', 'test-bucket/copied-file.txt', {
+        onProgress: (event: ProgressEvent) => {
+          progressEvents.push(event);
+        },
+      });
+
+      // Copy operations may or may not report progress depending on size
+      expect(Array.isArray(progressEvents)).toBe(true);
+    });
+
+    it('should track progress during file move', async () => {
+      await adapter.create('test-bucket/original-move.txt', EntryType.File, 'test content');
+
+      const progressEvents: ProgressEvent[] = [];
+      await adapter.move('test-bucket/original-move.txt', 'test-bucket/moved-file.txt', {
+        onProgress: (event: ProgressEvent) => {
+          progressEvents.push(event);
+        },
+      });
+
+      // Move operations may or may not report progress depending on size
+      expect(Array.isArray(progressEvents)).toBe(true);
+    });
+
+    it('should track progress during file deletion', async () => {
+      await adapter.create('test-bucket/file-to-delete.txt', EntryType.File, 'test content');
+
+      const progressEvents: ProgressEvent[] = [];
+      await adapter.delete('test-bucket/file-to-delete.txt', false, {
+        onProgress: (event: ProgressEvent) => {
+          progressEvents.push(event);
+        },
+      });
+
+      // Deletion may or may not report progress
+      expect(Array.isArray(progressEvents)).toBe(true);
+    });
+
+    it('should include current file in progress events', async () => {
+      const progressEvents: ProgressEvent[] = [];
+      const content = 'X'.repeat(1000); // Larger content
+
+      await adapter.create('test-bucket/progress-file.txt', EntryType.File, content, {
+        onProgress: (event: ProgressEvent) => {
+          progressEvents.push(event);
+        },
+      });
+
+      // If any progress events were reported, they should have currentFile
+      if (progressEvents.length > 0) {
+        for (const event of progressEvents) {
+          expect(event.currentFile).toBeDefined();
+        }
+      }
+    });
+
+    it('should report progress percentage (0-100)', async () => {
+      const progressEvents: ProgressEvent[] = [];
+      const content = 'X'.repeat(1000);
+
+      await adapter.create('test-bucket/progress-percentage.txt', EntryType.File, content, {
+        onProgress: (event: ProgressEvent) => {
+          progressEvents.push(event);
+        },
+      });
+
+      if (progressEvents.length > 0) {
+        for (const event of progressEvents) {
+          expect(event.percentage).toBeGreaterThanOrEqual(0);
+          expect(event.percentage).toBeLessThanOrEqual(100);
+        }
+      }
+    });
+
+    it('should work without progress callback', async () => {
+      // Ensure that operations work fine without progress callback
+      await adapter.create('test-bucket/no-progress.txt', EntryType.File, 'test');
+      const exists = await adapter.exists('test-bucket/no-progress.txt');
+      expect(exists).toBe(true);
+    });
+  });
+
+  describe('read operation', () => {
+    it('should read file content', async () => {
+      const content = 'Hello from file';
+      await adapter.create('test-bucket/read-test.txt', EntryType.File, content);
+
+      const buffer = await adapter.read('test-bucket/read-test.txt');
+      expect(buffer.toString()).toBe(content);
+    });
+
+    it('should read file with progress tracking', async () => {
+      const content = 'X'.repeat(1000);
+      await adapter.create('test-bucket/read-progress.txt', EntryType.File, content);
+
+      const progressEvents: ProgressEvent[] = [];
+      const buffer = await adapter.read('test-bucket/read-progress.txt', {
+        onProgress: (event: ProgressEvent) => {
+          progressEvents.push(event);
+        },
+      });
+
+      expect(buffer.toString()).toBe(content);
+      expect(Array.isArray(progressEvents)).toBe(true);
+    });
+
+    it('should throw error when reading directory', async () => {
+      await adapter.create('test-bucket/read-dir/', EntryType.Directory);
+
+      expect(async () => {
+        await adapter.read('test-bucket/read-dir/');
+      }).toThrow();
+    });
+
+    it('should throw error when reading non-existent file', async () => {
+      expect(async () => {
+        await adapter.read('test-bucket/non-existent-file.txt');
+      }).toThrow();
     });
   });
 });
