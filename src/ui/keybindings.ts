@@ -35,6 +35,7 @@ export class KeybindingRegistry {
     this.bindings.set(EditMode.Edit, new Map());
     this.bindings.set(EditMode.Insert, new Map());
     this.bindings.set(EditMode.Search, new Map());
+    this.bindings.set(EditMode.Command, new Map());
   }
 
   /**
@@ -89,6 +90,7 @@ export class KeybindingRegistry {
       EditMode.Edit,
       EditMode.Insert,
       EditMode.Search,
+      EditMode.Command,
     ]) {
       this.clear(mode);
     }
@@ -277,6 +279,25 @@ export function createDefaultKeybindings(): KeybindingRegistry {
   registry.register(EditMode.Normal, '/', {
     key: '/',
     description: 'Enter search mode',
+    handler: () => {},
+  });
+
+  // Command mode keybindings
+  registry.register(EditMode.Normal, ':', {
+    key: ':',
+    description: 'Enter command mode',
+    handler: () => {},
+  });
+
+  registry.register(EditMode.Command, 'enter', {
+    key: 'enter',
+    description: 'Execute command',
+    handler: () => {},
+  });
+
+  registry.register(EditMode.Command, 'escape', {
+    key: 'escape',
+    description: 'Exit command mode',
     handler: () => {},
   });
 
