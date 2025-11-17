@@ -66,20 +66,23 @@ export function HelpDialog({ visible }: HelpDialogProps) {
       borderColor={CatppuccinMocha.yellow}
       backgroundColor={CatppuccinMocha.base}
       title="Help"
+      flexDirection="column"
+      paddingLeft={2}
+      paddingTop={1}
     >
       {keybindings.map((item, idx) => {
         if ('section' in item) {
           return (
-            <text key={idx} position="absolute" left={2} top={1 + idx} fg={CatppuccinMocha.text}>
+            <text key={idx} fg={CatppuccinMocha.text} width={66}>
               {item.section}
             </text>
           );
         }
         const keyText = `  ${item.keys}`.padEnd(12);
+        const fullText = `${keyText}${item.description}`;
         return (
-          <text key={idx} position="absolute" left={2} top={1 + idx} fg={CatppuccinMocha.subtext0}>
-            {keyText}
-            {item.description}
+          <text key={idx} fg={CatppuccinMocha.subtext0} width={66}>
+            {fullText}
           </text>
         );
       })}
