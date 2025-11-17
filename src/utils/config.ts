@@ -139,7 +139,7 @@ export class ConfigManager {
    * Get adapter type
    */
   getAdapter(): string {
-    return this.config.adapter || 'mock';
+    return this.config.adapter || 's3';
   }
 
   /**
