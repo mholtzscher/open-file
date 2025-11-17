@@ -15,6 +15,7 @@ import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.j
 import { BufferView } from './buffer-view-react.js';
 import { StatusBar } from './status-bar-react.js';
 import { ConfirmationDialog } from './confirmation-dialog-react.js';
+import { FloatingWindow } from './floating-window-react.js';
 import { CatppuccinMocha } from './theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { setGlobalKeyboardDispatcher } from '../index.tsx';
@@ -441,50 +442,30 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       )}
 
       {/* Help Dialog */}
-      {showHelpDialog && (
-        <box
-          position="absolute"
-          left={5}
-          top={5}
-          width={70}
-          height={15}
-          borderStyle="rounded"
-          borderColor={CatppuccinMocha.yellow}
-          backgroundColor={CatppuccinMocha.base}
-          title="Help"
-        >
-          <text position="absolute" left={2} top={1} fg={CatppuccinMocha.text}>
-            Navigation:
-          </text>
-          <text position="absolute" left={4} top={2} fg={CatppuccinMocha.subtext0}>
-            j/k - Move cursor down/up
-          </text>
-          <text position="absolute" left={4} top={3} fg={CatppuccinMocha.subtext0}>
-            Enter - Navigate into directory
-          </text>
-          <text position="absolute" left={4} top={4} fg={CatppuccinMocha.subtext0}>
-            - (dash) - Navigate up
-          </text>
-          <text position="absolute" left={2} top={6} fg={CatppuccinMocha.text}>
-            Actions:
-          </text>
-          <text position="absolute" left={4} top={7} fg={CatppuccinMocha.subtext0}>
-            v - Toggle selection
-          </text>
-          <text position="absolute" left={4} top={8} fg={CatppuccinMocha.subtext0}>
-            dd - Delete selected
-          </text>
-          <text position="absolute" left={4} top={9} fg={CatppuccinMocha.subtext0}>
-            w - Save changes
-          </text>
-          <text position="absolute" left={4} top={10} fg={CatppuccinMocha.subtext0}>
-            q - Quit
-          </text>
-          <text position="absolute" left={2} bottom={1} fg={CatppuccinMocha.overlay0}>
-            Press ? or Esc to close help
-          </text>
-        </box>
-      )}
+      <FloatingWindow
+        title="Help"
+        width={70}
+        height={18}
+        left={5}
+        top={5}
+        borderColor={CatppuccinMocha.yellow}
+        textColor={CatppuccinMocha.text}
+        visible={showHelpDialog}
+        content={[
+          'Navigation:',
+          '  j/k - Move cursor down/up',
+          '  Enter - Navigate into directory',
+          '  - (dash) - Navigate up',
+          '',
+          'Actions:',
+          '  v - Toggle selection',
+          '  dd - Delete selected',
+          '  w - Save changes',
+          '  q - Quit',
+          '',
+          'Press ? or Esc to close help',
+        ]}
+      />
     </>
   );
 }
