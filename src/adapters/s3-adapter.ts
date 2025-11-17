@@ -165,6 +165,8 @@ export class S3Adapter implements Adapter {
       ContinuationToken: options?.continuationToken,
     };
 
+    console.error(`DEBUG S3Adapter.list: bucket=${this.bucket}, prefix="${prefix}"`);
+
     try {
       const response = await retryWithBackoff(
         () => {
@@ -173,6 +175,8 @@ export class S3Adapter implements Adapter {
         },
         getS3RetryConfig()
       );
+
+      console.error(`DEBUG S3: CommonPrefixes=${response.CommonPrefixes?.length || 0}, Contents=${response.Contents?.length || 0}`);
 
       const entries: Entry[] = [];
 

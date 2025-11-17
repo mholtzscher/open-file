@@ -40,10 +40,12 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   const terminalSize = useTerminalSize();
   const layout = useLayoutDimensions(terminalSize.size);
 
-  const currentPath = bucket.endsWith('/') ? bucket : bucket + '/';
+  // For S3, the path should be the prefix within the bucket, not the bucket name
+  // Start at root of bucket (empty prefix)
+  const initialPath = '';
 
   // Initialize buffer state
-  const bufferState = useBufferState([], currentPath);
+  const bufferState = useBufferState([], initialPath);
 
   // Update viewport height when layout changes
   useEffect(() => {
@@ -133,7 +135,11 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
    useEffect(() => {
      const initializeData = async () => {
        try {
-         const result = await adapter.list(currentPath);
+         const path = bufferState.currentPath;
+         console.error(`DEBUG: Loading bucket: ${bucket}, path: "${path}"`);
+         const result = await adapter.list(path);
+         console.error(`DEBUG: Received ${result.entries.length} entries`);
+         console.error(`DEBUG: Entries:`, result.entries.map(e => e.name));
          
          // Load entries into buffer state
          bufferState.setEntries([...result.entries]);
@@ -142,14 +148,16 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
          setStatusMessageColor(CatppuccinMocha.green);
          setIsInitialized(true);
        } catch (err) {
+         console.error('DEBUG: Error loading bucket:', err);
          const parsedError = parseAwsError(err, 'Failed to load bucket');
          setStatusMessage(parsedError.message);
          setStatusMessageColor(CatppuccinMocha.red);
+         setIsInitialized(true); // Set initialized even on error so we show the error
        }
      };
 
      initializeData();
-   }, [bucket, adapter, currentPath, bufferState.setEntries]);
+   }, [bucket, adapter, bufferState.currentPath, bufferState.setEntries]);
 
   if (!isInitialized) {
     return (
