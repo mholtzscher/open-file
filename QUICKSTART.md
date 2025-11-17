@@ -5,8 +5,11 @@
 ### Option 1: Demo with Mock Data (No AWS Required)
 
 ```bash
-./run-demo.sh
-# Or directly:
+just demo
+```
+
+Or directly:
+```bash
 bun run src/index.tsx --mock
 ```
 
@@ -15,12 +18,12 @@ This runs the app with mock data for testing the UI. No AWS credentials needed!
 ### Option 2: Real S3 Bucket
 
 ```bash
-./run-s3.sh YOUR-BUCKET-NAME [REGION]
+just s3 YOUR-BUCKET-NAME
 ```
 
-Example:
+With custom region:
 ```bash
-./run-s3.sh my-bucket us-west-2
+just s3 my-bucket us-west-2
 ```
 
 **Prerequisites:**
@@ -29,6 +32,11 @@ Example:
 
 ### Option 3: LocalStack (Local S3 Testing)
 
+```bash
+just localstack test-bucket
+```
+
+Or directly:
 ```bash
 bun run src/index.tsx --endpoint http://localhost:4566 --bucket test-bucket
 ```

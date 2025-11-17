@@ -2,6 +2,14 @@
 
 # Default recipe to display help
 default:
+    @echo "Open-S3 - Terminal UI for AWS S3"
+    @echo ""
+    @echo "Quick Start:"
+    @echo "  just demo              - Run with mock data (no AWS required)"
+    @echo "  just s3 BUCKET         - Connect to S3 bucket"
+    @echo "  just s3 my-bucket us-west-2  - Specify region"
+    @echo ""
+    @echo "All available commands:"
     @just --list
 
 # Install dependencies
@@ -70,9 +78,31 @@ info:
 # Quick development cycle: clean, install, run
 quick: clean install run
 
-# Run with mock adapter (for testing without S3)
-run-mock:
-    bun run src/index.tsx --adapter mock
+# Run demo with mock data (no AWS required)
+demo:
+    @echo "Starting open-s3 with mock data..."
+    @echo "Press 'q' to quit"
+    @echo ""
+    bun run src/index.tsx --mock
+
+# Run with mock adapter (alias for demo)
+run-mock: demo
+
+# Run with real S3 bucket
+s3 BUCKET REGION="us-east-1":
+    @echo "Starting open-s3 with bucket: {{BUCKET}} in region: {{REGION}}"
+    @echo "Using AWS credentials from environment"
+    @echo "Press 'q' to quit"
+    @echo ""
+    bun run src/index.tsx --bucket {{BUCKET}} --region {{REGION}}
+
+# Run with LocalStack (local S3 testing)
+localstack BUCKET="test-bucket":
+    @echo "Starting open-s3 with LocalStack..."
+    @echo "Bucket: {{BUCKET}}"
+    @echo "Endpoint: http://localhost:4566"
+    @echo ""
+    bun run src/index.tsx --endpoint http://localhost:4566 --bucket {{BUCKET}}
 
 # Check for ready work items using bd
 bd-status:
@@ -86,3 +116,19 @@ migration-status:
 # Development with type checking and running
 dev-check: check
     bun run --watch src/index.tsx
+
+# Run all tests and type checking
+ci: check test
+    @echo "✓ All checks passed!"
+
+# Quick test - run tests and show summary
+t:
+    @bun test 2>&1 | tail -5
+
+# Show version and help
+help:
+    bun run src/index.tsx --help
+
+# Show version
+version:
+    bun run src/index.tsx --version
