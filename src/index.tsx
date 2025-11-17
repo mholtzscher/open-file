@@ -136,31 +136,54 @@ async function main() {
 
     // Create and start renderer
     console.error('[MAIN] Creating CLI renderer...');
-    const renderer = await createCliRenderer({
-      exitOnCtrlC: true,
-    });
-    console.error('[MAIN] CLI renderer created');
+    let renderer: any;
+    try {
+      renderer = await createCliRenderer({
+        exitOnCtrlC: true,
+      });
+      console.error('[MAIN] CLI renderer created successfully');
+    } catch (rendererError) {
+      console.error('[MAIN] ERROR creating CLI renderer:', rendererError);
+      logger.error('Failed to create CLI renderer', rendererError);
+      throw rendererError;
+    }
 
     // Setup keyboard event handling
-    renderer.keyInput.on('keypress', (key: any) => {
-      if (globalKeyboardDispatcher) {
-        // Normalize key object to match expected interface
-        const normalizedKey = {
-          name: key.name || key.key || 'unknown',
-          ctrl: key.ctrl || key.ctrlKey || false,
-          shift: key.shift || key.shiftKey || false,
-          meta: key.meta || key.metaKey || false,
-          char: key.char,
-        };
-        globalKeyboardDispatcher(normalizedKey);
-      }
-    });
+    console.error('[MAIN] Setting up keyboard event handling...');
+    try {
+      renderer.keyInput.on('keypress', (key: any) => {
+        if (globalKeyboardDispatcher) {
+          // Normalize key object to match expected interface
+          const normalizedKey = {
+            name: key.name || key.key || 'unknown',
+            ctrl: key.ctrl || key.ctrlKey || false,
+            shift: key.shift || key.shiftKey || false,
+            meta: key.meta || key.metaKey || false,
+            char: key.char,
+          };
+          globalKeyboardDispatcher(normalizedKey);
+        }
+      });
+      console.error('[MAIN] Keyboard event handler attached');
+    } catch (keyError) {
+      console.error('[MAIN] ERROR setting up keyboard handler:', keyError);
+      logger.error('Failed to setup keyboard handler', keyError);
+      throw keyError;
+    }
 
     // Create and render app
-    console.error('[MAIN] Rendering S3Explorer component...');
-    const root = createRoot(renderer);
-    root.render(<S3Explorer bucket={bucket} adapter={adapter} configManager={configManager} />);
-    console.error('[MAIN] Render called, app should be running');
+    console.error('[MAIN] Creating root and rendering S3Explorer...');
+    try {
+      const root = createRoot(renderer);
+      console.error('[MAIN] Root created, calling render()...');
+      root.render(<S3Explorer bucket={bucket} adapter={adapter} configManager={configManager} />);
+      console.error('[MAIN] Render called, app should be running');
+      logger.info('App rendered successfully');
+    } catch (renderError) {
+      console.error('[MAIN] ERROR during render:', renderError);
+      logger.error('Failed to render app', renderError);
+      throw renderError;
+    }
   } catch (error) {
     console.error('[MAIN] Caught error in main:', error);
     const logger = getLogger();
