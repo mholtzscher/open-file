@@ -84,6 +84,17 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   const keyboardHandlers = useMemo(
     () => ({
       onNavigateInto: () => navigationHandlers.navigateInto(),
+      onNavigateUp: async () => {
+        const currentPath = bufferState.currentPath;
+        const parts = currentPath.split('/').filter(p => p);
+        
+        if (parts.length > 1) {
+          // Remove last part to go up one level
+          parts.pop();
+          const parentPath = parts.join('/') + '/';
+          await navigationHandlers.navigateToPath(parentPath);
+        }
+      },
       onDelete: () => {
         const selected = bufferState.getSelectedEntries();
         if (selected.length > 0) {
