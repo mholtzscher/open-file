@@ -14,6 +14,10 @@ import {
   CopyObjectCommand,
   HeadObjectCommand,
   GetObjectTaggingCommand,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
   ListObjectsV2CommandInput,
   _Object,
 } from '@aws-sdk/client-s3';
@@ -272,6 +276,111 @@ export class S3Adapter implements Adapter {
   }
 
   /**
+   * Upload a large file using multipart upload
+   * AWS recommends multipart upload for files larger than 100MB,
+   * but it can be used for files as small as 5MB
+   */
+  private async uploadLargeFile(
+    key: string,
+    body: Buffer,
+    options?: OperationOptions
+  ): Promise<void> {
+    const PART_SIZE = 5 * 1024 * 1024; // 5MB per part
+    const totalBytes = body.length;
+    const parts: { ETag: string; PartNumber: number }[] = [];
+    let uploadId: string | undefined;
+
+    try {
+      // Initiate multipart upload
+      const createResponse = await retryWithBackoff(
+        () => {
+          const command = new CreateMultipartUploadCommand({
+            Bucket: this.bucket,
+            Key: key,
+          });
+          return this.client.send(command);
+        },
+        getS3RetryConfig()
+      );
+
+      uploadId = createResponse.UploadId;
+      if (!uploadId) {
+        throw new Error('Failed to initiate multipart upload');
+      }
+
+      // Upload parts
+      const numParts = Math.ceil(totalBytes / PART_SIZE);
+      for (let partNumber = 1; partNumber <= numParts; partNumber++) {
+        const start = (partNumber - 1) * PART_SIZE;
+        const end = Math.min(start + PART_SIZE, totalBytes);
+        const partBody = body.subarray(start, end);
+
+        const uploadResponse = await retryWithBackoff(
+          () => {
+            const command = new UploadPartCommand({
+              Bucket: this.bucket,
+              Key: key,
+              PartNumber: partNumber,
+              UploadId: uploadId,
+              Body: partBody,
+            });
+            return this.client.send(command);
+          },
+          getS3RetryConfig()
+        );
+
+        if (uploadResponse.ETag) {
+          parts.push({
+            ETag: uploadResponse.ETag,
+            PartNumber: partNumber,
+          });
+        }
+
+        // Report progress
+        if (options?.onProgress) {
+          options.onProgress({
+            operation: 'Uploading file',
+            bytesTransferred: end,
+            totalBytes,
+            percentage: Math.round((end / totalBytes) * 100),
+            currentFile: key,
+          });
+        }
+      }
+
+      // Complete multipart upload
+      await retryWithBackoff(
+        () => {
+          const command = new CompleteMultipartUploadCommand({
+            Bucket: this.bucket,
+            Key: key,
+            UploadId: uploadId,
+            MultipartUpload: { Parts: parts },
+          });
+          return this.client.send(command);
+        },
+        getS3RetryConfig()
+      );
+    } catch (error) {
+      // Abort multipart upload on error
+      if (uploadId) {
+        try {
+          await this.client.send(
+            new AbortMultipartUploadCommand({
+              Bucket: this.bucket,
+              Key: key,
+              UploadId: uploadId,
+            })
+          );
+        } catch (abortError) {
+          console.error('Failed to abort multipart upload:', abortError);
+        }
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Create a new file or directory
    */
   async create(
@@ -321,6 +430,7 @@ export class S3Adapter implements Adapter {
         // Create file with content
         const body = content instanceof Buffer ? content : Buffer.from(content || '');
         const totalBytes = body.length;
+        const MULTIPART_THRESHOLD = 5 * 1024 * 1024; // 5MB
         
         if (options?.onProgress) {
           options.onProgress({
@@ -332,17 +442,23 @@ export class S3Adapter implements Adapter {
           });
         }
         
-        await retryWithBackoff(
-          () => {
-            const command = new PutObjectCommand({
-              Bucket: this.bucket,
-              Key: normalized,
-              Body: body,
-            });
-            return this.client.send(command);
-          },
-          getS3RetryConfig()
-        );
+        // Use multipart upload for large files
+        if (totalBytes > MULTIPART_THRESHOLD) {
+          await this.uploadLargeFile(normalized, body, options);
+        } else {
+          // Use regular PutObject for small files
+          await retryWithBackoff(
+            () => {
+              const command = new PutObjectCommand({
+                Bucket: this.bucket,
+                Key: normalized,
+                Body: body,
+              });
+              return this.client.send(command);
+            },
+            getS3RetryConfig()
+          );
+        }
         
         if (options?.onProgress) {
           options.onProgress({
