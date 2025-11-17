@@ -46,6 +46,18 @@ export const CatppuccinMocha = {
 } as const;
 
 /**
+ * Text style configuration
+ */
+export interface TextStyle {
+  fg?: string;
+  bg?: string;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+  dim?: boolean;
+}
+
+/**
  * Theme utilities for UI components
  */
 export class Theme {
@@ -57,10 +69,29 @@ export class Theme {
   }
 
   /**
+   * Get style for directory entries
+   */
+  static getDirectoryStyle(isSelected: boolean): TextStyle {
+    return {
+      fg: isSelected ? CatppuccinMocha.sapphire : CatppuccinMocha.blue,
+      bold: true,
+    };
+  }
+
+  /**
    * Get color for file entries
    */
   static getFileColor(isSelected: boolean): string {
     return isSelected ? CatppuccinMocha.lavender : CatppuccinMocha.text;
+  }
+
+  /**
+   * Get style for file entries
+   */
+  static getFileStyle(isSelected: boolean): TextStyle {
+    return {
+      fg: isSelected ? CatppuccinMocha.lavender : CatppuccinMocha.text,
+    };
   }
 
   /**
@@ -159,5 +190,37 @@ export class Theme {
    */
   static getAccentColor(): string {
     return CatppuccinMocha.flamingo;
+  }
+
+  /**
+   * Get background color for cursor line
+   */
+  static getCursorLineBackground(): string {
+    return CatppuccinMocha.surface0;
+  }
+
+  /**
+   * Get background color for visual selection
+   */
+  static getVisualSelectionBackground(): string {
+    return CatppuccinMocha.surface1;
+  }
+
+  /**
+   * Get style for entry based on type and selection state
+   */
+  static getEntryStyle(type: 'file' | 'directory', isSelected: boolean, isInVisualSelection: boolean): TextStyle {
+    const baseStyle = type === 'directory' 
+      ? Theme.getDirectoryStyle(isSelected)
+      : Theme.getFileStyle(isSelected);
+
+    if (isInVisualSelection) {
+      return {
+        ...baseStyle,
+        bg: Theme.getVisualSelectionBackground(),
+      };
+    }
+
+    return baseStyle;
   }
 }

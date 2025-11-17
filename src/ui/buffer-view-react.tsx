@@ -7,7 +7,7 @@
 
 import { Entry, EntryType } from '../types/entry.js';
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
-import { Theme, CatppuccinMocha } from './theme.js';
+import { Theme } from './theme.js';
 import { Column, getDefaultColumns, renderRow } from './columns.js';
 
 export interface BufferViewProps {
@@ -85,6 +85,15 @@ function getEntryColor(entry: Entry, isSelected: boolean): string {
 }
 
 /**
+ * Apply text styling using ANSI escape codes
+ */
+function applyTextStyle(text: string, bold?: boolean): string {
+  if (!bold) return text;
+  // ANSI escape code for bold: \x1b[1m ... \x1b[0m
+  return `\x1b[1m${text}\x1b[0m`;
+}
+
+/**
  * BufferView React component
  */
 export function BufferView({
@@ -128,8 +137,17 @@ export function BufferView({
 
         const cursor = isSelected ? '> ' : '  ';
         // Use column system for rendering
-        const content = cursor + renderRow(entry, activeColumns);
-        const color = getEntryColor(entry, isSelected);
+        const rowContent = renderRow(entry, activeColumns);
+        
+        // Get style for entry
+        const style = Theme.getEntryStyle(
+          entry.type === EntryType.Directory ? 'directory' : 'file',
+          isSelected,
+          isInVisualSelection
+        );
+
+        // Apply text styling
+        const styledContent = applyTextStyle(cursor + rowContent, style.bold);
 
         return (
           <text
@@ -137,10 +155,10 @@ export function BufferView({
             position="absolute"
             left={left}
             top={top + idx}
-            fg={color}
-            bg={isInVisualSelection ? CatppuccinMocha.surface0 : undefined}
+            fg={style.fg}
+            bg={style.bg}
           >
-            {content}
+            {styledContent}
           </text>
         );
       })}
