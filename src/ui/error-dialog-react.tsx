@@ -10,14 +10,17 @@ import { useTerminalSize } from '../hooks/useTerminalSize.js';
 interface ErrorDialogProps {
   visible: boolean;
   message: string;
+  width?: number;
+  terminalWidth?: number;
 }
 
-export function ErrorDialog({ visible, message }: ErrorDialogProps) {
+export function ErrorDialog({ visible, message, width: propWidth, terminalWidth: propTerminalWidth }: ErrorDialogProps) {
   if (!visible) return null;
 
   const terminalSize = useTerminalSize();
-  const dialogWidth = 70;
-  const centerLeft = Math.floor((terminalSize.width - dialogWidth) / 2);
+  const dialogWidth = propWidth ?? 70;
+  const termWidth = propTerminalWidth ?? terminalSize.width;
+  const centerLeft = Math.floor((termWidth - dialogWidth) / 2);
 
   return (
     <box

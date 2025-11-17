@@ -2,8 +2,19 @@
  * ErrorDialog tests
  */
 
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, mock } from 'bun:test';
 import { ErrorDialog } from './error-dialog-react.js';
+
+// Mock the useTerminalSize hook
+mock.module('../hooks/useTerminalSize.js', () => ({
+  useTerminalSize: () => ({
+    size: { width: 80, height: 24 },
+    width: 80,
+    height: 24,
+    isSmall: false,
+    isMedium: true,
+  }),
+}));
 
 describe('ErrorDialog', () => {
   it('returns null when not visible', () => {
