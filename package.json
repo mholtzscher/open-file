@@ -2,15 +2,15 @@
   "name": "open-s3",
   "version": "1.0.0",
   "description": "Terminal UI for S3 bucket exploration",
-  "main": "src/index.ts",
+  "main": "src/index.tsx",
   "type": "module",
   "bin": {
-    "open-s3": "./src/index.ts"
+    "open-s3": "./src/index.tsx"
   },
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --target bun",
+    "build": "bun build src/index.tsx --outdir dist --target bun",
     "test": "bun test",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

@@ -263,4 +263,35 @@ export class MockAdapter implements Adapter {
     const content = entry.content || '';
     return Buffer.from(content);
   }
+
+  /**
+   * Get list of buckets (for root view)
+   * Returns mock buckets for testing
+   */
+  async getBucketEntries(): Promise<Entry[]> {
+    return [
+      {
+        id: 'bucket-1',
+        name: 'test-bucket',
+        type: EntryType.Bucket,
+        path: 'test-bucket',
+        modified: new Date(),
+        metadata: {
+          region: 'us-east-1',
+          createdAt: new Date('2024-01-01'),
+        },
+      },
+      {
+        id: 'bucket-2',
+        name: 'demo-bucket',
+        type: EntryType.Bucket,
+        path: 'demo-bucket',
+        modified: new Date(),
+        metadata: {
+          region: 'us-west-2',
+          createdAt: new Date('2024-02-01'),
+        },
+      },
+    ];
+  }
 }

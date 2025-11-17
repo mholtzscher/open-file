@@ -12,7 +12,9 @@ import { useBufferState } from '../hooks/useBufferState.js';
 import { useKeyboardEvents } from '../hooks/useKeyboardEvents.js';
 import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
 import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
-import { BufferView } from './buffer-view-react.js';
+import { useMultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
+
+import { Pane } from './pane-react.js';
 import { StatusBar } from './status-bar-react.js';
 import { ConfirmationDialog } from './confirmation-dialog-react.js';
 import { HelpDialog } from './help-dialog-react.js';
@@ -54,6 +56,17 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   // Initialize buffer state
   const bufferState = useBufferState([], initialPath);
 
+  // Initialize multi-pane layout
+  const multiPaneLayout = useMultiPaneLayout(terminalSize.size, layout);
+
+  // Add initial pane if none exist - only run once on mount
+  useEffect(() => {
+    if (multiPaneLayout.panes.length === 0) {
+      multiPaneLayout.addPane(bufferState);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Update viewport height when layout changes
   useEffect(() => {
     bufferState.setViewportHeight(layout.contentHeight);
@@ -63,19 +76,20 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   const navigationConfig = useMemo(
     () => ({
       onLoadBuffer: async (path: string) => {
+        const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         try {
           const result = await adapter.list(path);
 
           // Update buffer state with new entries and current path
           // Create a new array to ensure React detects the change
-          bufferState.setEntries([...result.entries]);
-          bufferState.setCurrentPath(path);
+          activeBufferState.setEntries([...result.entries]);
+          activeBufferState.setCurrentPath(path);
 
           // Save original entries for change detection
           setOriginalEntries([...result.entries]);
 
           // Reset cursor to top of new directory
-          bufferState.cursorToTop();
+          activeBufferState.cursorToTop();
 
           setStatusMessage(`Navigated to ${path}`);
           setStatusMessageColor(CatppuccinMocha.green);
@@ -90,20 +104,22 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         setStatusMessageColor(CatppuccinMocha.red);
       },
     }),
-    [adapter, bufferState.setEntries, bufferState.setCurrentPath, bufferState.cursorToTop]
+    [adapter, bufferState, multiPaneLayout]
   );
 
-  // Setup navigation handlers
-  const navigationHandlers = useNavigationHandlers(bufferState, navigationConfig);
+  // Setup navigation handlers - use active buffer state
+  const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+  const navigationHandlers = useNavigationHandlers(activeBufferState, navigationConfig);
 
   // Setup keyboard event handlers - memoized to prevent stale closure
   // Note: j/k/v navigation is handled directly by useKeyboardEvents
   const keyboardHandlers = useMemo(
     () => ({
       onNavigateInto: async () => {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         // Check if we're navigating into a bucket from root view
-        if (!bucket && bufferState.entries.length > 0) {
-          const currentEntry = bufferState.entries[bufferState.selection.cursorIndex];
+        if (!bucket && currentBufferState.entries.length > 0) {
+          const currentEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
           if (currentEntry && currentEntry.type === 'bucket') {
             // EntryType.Bucket
             // Navigate into this bucket
@@ -126,6 +142,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         await navigationHandlers.navigateInto();
       },
       onNavigateUp: async () => {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         // If we're in root view mode (no bucket set), can't navigate up
         if (!bucket) {
           setStatusMessage('Already at root');
@@ -133,7 +150,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           return;
         }
 
-        const currentPath = bufferState.currentPath;
+        const currentPath = currentBufferState.currentPath;
         const parts = currentPath.split('/').filter(p => p);
 
         if (parts.length > 0) {
@@ -152,17 +169,29 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         }
       },
       onDelete: () => {
-        const selected = bufferState.getSelectedEntries();
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        const selected = currentBufferState.getSelectedEntries();
         if (selected.length > 0) {
           setPendingOperations(selected);
           setShowConfirmDialog(true);
         }
       },
-      onPageDown: () => bufferState.moveCursorDown(10),
-      onPageUp: () => bufferState.moveCursorUp(10),
+      onPageDown: () => {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        currentBufferState.moveCursorDown(10);
+      },
+      onPageUp: () => {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        currentBufferState.moveCursorUp(10);
+      },
       onSave: () => {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         // Detect changes between original and edited entries
-        const changes = detectChanges(originalEntries, bufferState.entries, {} as EntryIdMap);
+        const changes = detectChanges(
+          originalEntries,
+          currentBufferState.entries,
+          {} as EntryIdMap
+        );
 
         // Build operation plan from changes
         const plan = buildOperationPlan(changes);
@@ -219,7 +248,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         setStatusMessageColor(CatppuccinMocha.blue);
       },
       onSearch: (query: string) => {
-        bufferState.updateSearchQuery(query);
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        currentBufferState.updateSearchQuery(query);
         if (query) {
           setStatusMessage(`Searching: ${query}`);
           setStatusMessageColor(CatppuccinMocha.blue);
@@ -228,12 +258,40 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           setStatusMessageColor(CatppuccinMocha.text);
         }
       },
+      onToggleMultiPane: () => {
+        multiPaneLayout.toggleMultiPaneMode();
+        setStatusMessage(
+          multiPaneLayout.isMultiPaneMode ? 'Multi-pane mode enabled' : 'Single pane mode'
+        );
+        setStatusMessageColor(CatppuccinMocha.blue);
+      },
+      onSwitchPane: () => {
+        if (multiPaneLayout.panes.length > 1) {
+          const currentIndex = multiPaneLayout.panes.findIndex(
+            pane => pane.id === multiPaneLayout.activePaneId
+          );
+          const nextIndex = (currentIndex + 1) % multiPaneLayout.panes.length;
+          const nextPaneId = multiPaneLayout.panes[nextIndex].id;
+          multiPaneLayout.activatePane(nextPaneId);
+          setStatusMessage(`Switched to pane ${nextIndex + 1}`);
+          setStatusMessageColor(CatppuccinMocha.blue);
+        }
+      },
     }),
-    [navigationHandlers, bufferState, bucket, showHelpDialog, setBucket, originalEntries, adapter]
+    [
+      navigationHandlers,
+      bufferState,
+      bucket,
+      showHelpDialog,
+      setBucket,
+      originalEntries,
+      adapter,
+      multiPaneLayout,
+    ]
   );
 
-  // Setup keyboard events
-  const { handleKeyDown } = useKeyboardEvents(bufferState, keyboardHandlers);
+  // Setup keyboard events - use active buffer state
+  const { handleKeyDown } = useKeyboardEvents(activeBufferState, keyboardHandlers);
 
   // Register global keyboard dispatcher on mount
   useEffect(() => {
@@ -268,6 +326,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       try {
         console.error(`[S3Explorer] Initializing data...`);
 
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         // Check if we're in root view mode (no bucket specified)
         if (!bucket) {
           console.error(`[S3Explorer] Root view mode detected, loading buckets...`);
@@ -276,8 +335,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           if (s3Adapter.getBucketEntries) {
             const entries = await s3Adapter.getBucketEntries();
             console.error(`[S3Explorer] Received ${entries.length} buckets`);
-            bufferState.setEntries([...entries]);
-            bufferState.setCurrentPath('');
+            currentBufferState.setEntries([...entries]);
+            currentBufferState.setCurrentPath('');
             setStatusMessage(`Found ${entries.length} bucket(s)`);
             setStatusMessageColor(CatppuccinMocha.green);
           } else {
@@ -285,7 +344,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           }
         } else {
           // Load entries from specific bucket
-          const path = bufferState.currentPath;
+          const path = currentBufferState.currentPath;
           console.error(`[S3Explorer] Loading bucket: ${bucket}, path: "${path}"`);
           const result = await adapter.list(path);
           console.error(`[S3Explorer] Received ${result.entries.length} entries`);
@@ -295,7 +354,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           );
 
           // Load entries into buffer state
-          bufferState.setEntries([...result.entries]);
+          currentBufferState.setEntries([...result.entries]);
           console.error(`[S3Explorer] Entries loaded into buffer state`);
 
           setStatusMessage(`Loaded ${result.entries.length} items`);
@@ -322,7 +381,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
     console.error(`[S3Explorer] useEffect triggered`);
     initializeData();
-  }, [bucket, adapter, bufferState.setEntries]);
+  }, [bucket, adapter, bufferState.setEntries, multiPaneLayout]);
 
   if (!isInitialized) {
     return (
@@ -345,25 +404,63 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       {/* Error Dialog - shows when there's an error */}
       {showErrorDialog && <ErrorDialog visible={true} message={statusMessage} />}
 
-      {/* Buffer View - responsive to terminal size */}
-      <BufferView
-        bufferState={bufferState}
-        left={2}
-        top={layout.headerHeight}
-        height={layout.contentHeight}
-        showIcons={!terminalSize.isSmall}
-        showSizes={!terminalSize.isSmall}
-        showDates={!terminalSize.isMedium}
-      />
+      {/* Multi-pane layout or single pane */}
+      {multiPaneLayout.isMultiPaneMode && multiPaneLayout.panes.length > 1 ? (
+        // Multi-pane mode
+        multiPaneLayout.panes.map((pane, index) => {
+          const dimensions =
+            multiPaneLayout.paneDimensions[index] || multiPaneLayout.paneDimensions[0];
+          const paneTitle = bucket
+            ? `${bucket}${pane.bufferState.currentPath ? ':' + pane.bufferState.currentPath : ''}`
+            : `Buckets`;
+
+          return (
+            <Pane
+              key={pane.id}
+              id={pane.id}
+              bufferState={pane.bufferState}
+              left={dimensions.left}
+              top={dimensions.top}
+              width={dimensions.width}
+              height={dimensions.height}
+              isActive={pane.isActive}
+              title={paneTitle}
+              showIcons={!terminalSize.isSmall}
+              showSizes={!terminalSize.isSmall}
+              showDates={!terminalSize.isMedium}
+            />
+          );
+        })
+      ) : (
+        // Single pane mode - use main buffer state directly
+        <Pane
+          id="main-pane"
+          bufferState={bufferState}
+          left={2}
+          top={layout.headerHeight}
+          width={Math.max(terminalSize.size.width - 4, 40)}
+          height={layout.contentHeight}
+          isActive={true}
+          title={
+            bucket
+              ? `${bucket}${bufferState.currentPath ? ':' + bufferState.currentPath : ''}`
+              : `Buckets`
+          }
+          showHeader={false}
+          showIcons={!terminalSize.isSmall}
+          showSizes={!terminalSize.isSmall}
+          showDates={!terminalSize.isMedium}
+        />
+      )}
 
       {/* Status Bar */}
       <StatusBar
-        path={bufferState.currentPath}
-        mode={bufferState.mode}
+        path={activeBufferState.currentPath}
+        mode={activeBufferState.mode}
         message={statusMessage && !showErrorDialog ? statusMessage : undefined}
         messageColor={statusMessageColor}
-        searchQuery={bufferState.searchQuery}
-        commandBuffer={bufferState.editBuffer}
+        searchQuery={activeBufferState.searchQuery}
+        commandBuffer={activeBufferState.editBuffer}
         bucket={bucket}
       />
 
@@ -413,8 +510,9 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
               // Reload buffer after operations complete
               if (successCount > 0) {
                 try {
-                  const result = await adapter.list(bufferState.currentPath);
-                  bufferState.setEntries([...result.entries]);
+                  const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+                  const result = await adapter.list(currentBufferState.currentPath);
+                  currentBufferState.setEntries([...result.entries]);
                   setOriginalEntries([...result.entries]);
                   setStatusMessage(`${successCount} operation(s) completed successfully`);
                   setStatusMessageColor(CatppuccinMocha.green);
