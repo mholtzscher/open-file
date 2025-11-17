@@ -21,9 +21,10 @@ describe('IconColumn', () => {
   it('should render directory icon', () => {
     const column = new IconColumn();
     const entry: Entry = {
-      id: generateEntryId('test'),
+      id: generateEntryId(),
       name: 'test',
       type: EntryType.Directory,
+      path: 'test/',
     };
 
     const result = column.render(entry);
@@ -33,9 +34,10 @@ describe('IconColumn', () => {
   it('should render file icon', () => {
     const column = new IconColumn();
     const entry: Entry = {
-      id: generateEntryId('test.txt'),
+      id: generateEntryId(),
       name: 'test.txt',
       type: EntryType.File,
+      path: 'test.txt',
     };
 
     const result = column.render(entry);
@@ -47,9 +49,10 @@ describe('NameColumn', () => {
   it('should render name with directory suffix', () => {
     const column = new NameColumn();
     const entry: Entry = {
-      id: generateEntryId('mydir'),
+      id: generateEntryId(),
       name: 'mydir',
       type: EntryType.Directory,
+      path: 'mydir/',
     };
 
     const result = column.render(entry);
@@ -59,9 +62,10 @@ describe('NameColumn', () => {
   it('should render name without suffix for files', () => {
     const column = new NameColumn();
     const entry: Entry = {
-      id: generateEntryId('file.txt'),
+      id: generateEntryId(),
       name: 'file.txt',
       type: EntryType.File,
+      path: 'file.txt',
     };
 
     const result = column.render(entry);
@@ -72,7 +76,7 @@ describe('NameColumn', () => {
   it('should pad name to specified width', () => {
     const column = new NameColumn();
     const entry: Entry = {
-      id: generateEntryId('x'),
+      id: generateEntryId(),
       name: 'x',
       type: EntryType.File,
       path: '/x',
@@ -86,7 +90,7 @@ describe('NameColumn', () => {
   it('should truncate long filenames with ellipsis', () => {
     const column = new NameColumn();
     const entry: Entry = {
-      id: generateEntryId('very-long-filename'),
+      id: generateEntryId(),
       name: 'fantasy-draft-implementation-plan.md',
       type: EntryType.File,
       path: '/fantasy-draft-implementation-plan.md',
@@ -106,7 +110,7 @@ describe('NameColumn', () => {
     // Create a name that's exactly 35 chars
     const exactName = 'a'.repeat(35);
     const entry: Entry = {
-      id: generateEntryId(exactName),
+      id: generateEntryId(),
       name: exactName,
       type: EntryType.File,
       path: `/${exactName}`,
@@ -124,9 +128,10 @@ describe('SizeColumn', () => {
   it('should show dash for directory', () => {
     const column = new SizeColumn();
     const entry: Entry = {
-      id: generateEntryId('dir'),
+      id: generateEntryId(),
       name: 'dir',
       type: EntryType.Directory,
+      path: 'dir/',
     };
 
     const result = column.render(entry);
@@ -136,9 +141,10 @@ describe('SizeColumn', () => {
   it('should format bytes', () => {
     const column = new SizeColumn();
     const entry: Entry = {
-      id: generateEntryId('file.txt'),
+      id: generateEntryId(),
       name: 'file.txt',
       type: EntryType.File,
+      path: 'file.txt',
       size: 512,
     };
 
@@ -149,9 +155,10 @@ describe('SizeColumn', () => {
   it('should format kilobytes', () => {
     const column = new SizeColumn();
     const entry: Entry = {
-      id: generateEntryId('file.txt'),
+      id: generateEntryId(),
       name: 'file.txt',
       type: EntryType.File,
+      path: 'file.txt',
       size: 10 * 1024,
     };
 
@@ -162,9 +169,10 @@ describe('SizeColumn', () => {
   it('should format megabytes', () => {
     const column = new SizeColumn();
     const entry: Entry = {
-      id: generateEntryId('file.txt'),
+      id: generateEntryId(),
       name: 'file.txt',
       type: EntryType.File,
+      path: 'file.txt',
       size: 5 * 1024 * 1024,
     };
 
@@ -175,9 +183,10 @@ describe('SizeColumn', () => {
   it('should format gigabytes', () => {
     const column = new SizeColumn();
     const entry: Entry = {
-      id: generateEntryId('file.iso'),
+      id: generateEntryId(),
       name: 'file.iso',
       type: EntryType.File,
+      path: 'file.iso',
       size: 2 * 1024 * 1024 * 1024,
     };
 
@@ -190,9 +199,10 @@ describe('DateColumn', () => {
   it('should show dash when no date', () => {
     const column = new DateColumn();
     const entry: Entry = {
-      id: generateEntryId('file.txt'),
+      id: generateEntryId(),
       name: 'file.txt',
       type: EntryType.File,
+      path: 'file.txt',
     };
 
     const result = column.render(entry);
@@ -203,9 +213,10 @@ describe('DateColumn', () => {
     const column = new DateColumn();
     const date = new Date('2024-01-15');
     const entry: Entry = {
-      id: generateEntryId('file.txt'),
+      id: generateEntryId(),
       name: 'file.txt',
       type: EntryType.File,
+      path: 'file.txt',
       modified: date,
     };
 
@@ -228,9 +239,10 @@ describe('Column functions', () => {
   it('should render row with all columns', () => {
     const columns = getDefaultColumns();
     const entry: Entry = {
-      id: generateEntryId('myfile.txt'),
+      id: generateEntryId(),
       name: 'myfile.txt',
       type: EntryType.File,
+      path: 'myfile.txt',
       size: 1024,
       modified: new Date('2024-01-15'),
     };
