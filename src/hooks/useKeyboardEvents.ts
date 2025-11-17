@@ -39,6 +39,9 @@ export interface KeyboardHandlers {
   onSave?: () => void;
   onQuit?: () => void;
   onShowHelp?: () => void;
+  onBucketsCommand?: () => void;
+  onBucketCommand?: (bucketName: string) => void;
+  onCommand?: (command: string) => void;
 }
 
 export interface UseKeyboardEventsReturn {
@@ -315,6 +318,17 @@ export function useKeyboardEvents(
             if (handlers.onSave) handlers.onSave();
           } else if (command === ':q') {
             if (handlers.onQuit) handlers.onQuit();
+          } else if (command === ':buckets') {
+            if (handlers.onBucketsCommand) handlers.onBucketsCommand();
+          } else if (command.startsWith(':bucket ')) {
+            // :bucket <name>
+            const bucketName = command.substring(':bucket '.length).trim();
+            if (bucketName && handlers.onBucketCommand) {
+              handlers.onBucketCommand(bucketName);
+            }
+          } else if (handlers.onCommand) {
+            // Pass unrecognized commands to generic handler
+            handlers.onCommand(command);
           }
           // Exit command mode after execution
           bufferState.exitCommandMode();

@@ -186,8 +186,34 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       },
       onQuit: () => process.exit(0),
       onShowHelp: () => setShowHelpDialog(!showHelpDialog),
+      onBucketsCommand: () => {
+        // :buckets command - return to root view
+        if (!bucket) {
+          setStatusMessage('Already viewing buckets');
+          setStatusMessageColor(CatppuccinMocha.text);
+        } else {
+          setBucket(undefined);
+          setStatusMessage('Switched to bucket listing');
+          setStatusMessageColor(CatppuccinMocha.blue);
+        }
+      },
+      onBucketCommand: (bucketName: string) => {
+        // :bucket <name> command - switch to bucket
+        const s3Adapter = adapter as any;
+        if (s3Adapter.setBucket) {
+          s3Adapter.setBucket(bucketName);
+        }
+        setBucket(bucketName);
+        setStatusMessage(`Switched to bucket: ${bucketName}`);
+        setStatusMessageColor(CatppuccinMocha.blue);
+      },
+      onCommand: (command: string) => {
+        // Generic command handler for unrecognized commands
+        setStatusMessage(`Unknown command: ${command}`);
+        setStatusMessageColor(CatppuccinMocha.red);
+      },
     }),
-    [navigationHandlers, bufferState, bucket, showHelpDialog, setBucket, originalEntries]
+    [navigationHandlers, bufferState, bucket, showHelpDialog, setBucket, originalEntries, adapter]
   );
 
   // Setup keyboard events
