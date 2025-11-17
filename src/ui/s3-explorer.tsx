@@ -93,7 +93,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   const [originalEntries, setOriginalEntries] = useState<any[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [previewContent, setPreviewContent] = useState<string>('');
-  const [showPreview, setShowPreview] = useState(false);
+  const [previewEnabled, setPreviewEnabled] = useState(false);
 
   // Track terminal size for responsive layout
   const terminalSize = useTerminalSize();
@@ -330,14 +330,15 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         }
       },
       onTogglePreview: () => {
-        // Manual toggle - disable auto preview and toggle visibility
-        if (showPreview) {
-          setShowPreview(false);
+        // Manual toggle - enable/disable preview mode
+        if (previewEnabled) {
+          setPreviewEnabled(false);
+          setPreviewContent('');
           setStatusMessage('Preview disabled');
           setStatusMessageColor(CatppuccinMocha.text);
         } else {
-          // Re-enable and trigger preview fetch
-          setShowPreview(true);
+          // Enable preview mode - content will be fetched by effect
+          setPreviewEnabled(true);
           setStatusMessage('Preview enabled');
           setStatusMessageColor(CatppuccinMocha.blue);
         }
@@ -348,7 +349,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       bufferState,
       bucket,
       showHelpDialog,
-      showPreview,
+      previewEnabled,
       setBucket,
       originalEntries,
       adapter,
@@ -461,21 +462,25 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucket, adapter]);
 
-  // Preview content when selection changes
+  // Preview content when selection changes (only if preview is enabled)
   useEffect(() => {
     const fetchPreview = async () => {
       const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
 
+      // Early exit if preview is disabled
+      if (!previewEnabled) {
+        setPreviewContent('');
+        return;
+      }
+
       // Early exit if not in bucket view or not initialized
       if (!bucket || !isInitialized) {
-        setShowPreview(false);
         setPreviewContent('');
         return;
       }
 
       // Early exit if multi-pane mode
       if (multiPaneLayout.isMultiPaneMode) {
-        setShowPreview(false);
         setPreviewContent('');
         return;
       }
@@ -484,7 +489,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
       // Only preview files
       if (!selectedEntry || !isPreviewableFile(selectedEntry)) {
-        setShowPreview(false);
         setPreviewContent('');
         return;
       }
@@ -494,7 +498,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         const maxPreviewSize = 100 * 1024;
         if (selectedEntry.size && selectedEntry.size > maxPreviewSize) {
           setPreviewContent(`File too large to preview (${formatBytes(selectedEntry.size)})`);
-          setShowPreview(true);
           return;
         }
 
@@ -506,17 +509,16 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         const buffer = await adapter.read(fullPath);
         const content = buffer.toString('utf-8');
         setPreviewContent(content);
-        setShowPreview(true);
       } catch (err) {
         console.error('Failed to load preview:', err);
         setPreviewContent('Failed to load preview');
-        setShowPreview(true);
       }
     };
 
     fetchPreview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    previewEnabled,
     activeBufferState.selection.cursorIndex,
     activeBufferState.currentPath,
     bucket,
@@ -577,7 +579,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           left={2}
           top={layout.headerHeight}
           width={
-            showPreview
+            previewEnabled
               ? Math.floor(terminalSize.size.width * 0.5)
               : Math.max(terminalSize.size.width - 4, 40)
           }
@@ -678,8 +680,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         />
       )}
 
-      {/* Preview Pane - only in single pane mode */}
-      {showPreview && !multiPaneLayout.isMultiPaneMode && (
+      {/* Preview Pane - only in single pane mode when enabled */}
+      {previewEnabled && !multiPaneLayout.isMultiPaneMode && previewContent && (
         <PreviewPane
           content={previewContent}
           left={Math.floor(terminalSize.size.width * 0.5) + 4}
