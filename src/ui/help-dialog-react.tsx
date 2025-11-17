@@ -57,7 +57,9 @@ export function HelpDialog({ visible }: HelpDialogProps) {
     { keys: 'n/N', description: 'Next/prev match' },
     { keys: ':', description: 'Command mode' },
     { section: '' },
-    { keys: '?/g?', description: 'Toggle help  |  q  Quit' },
+    { section: 'OTHER' },
+    { keys: '?/g?', description: 'Toggle help' },
+    { keys: 'q', description: 'Quit' },
   ];
 
   return (
