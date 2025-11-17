@@ -31,16 +31,22 @@ import { retryWithBackoff, getS3RetryConfig } from '../utils/retry.js';
  * Configuration for S3 adapter
  */
 export interface S3AdapterConfig {
-  /** AWS region */
-  region: string;
+  /** AWS region (defaults to AWS_REGION or us-east-1) */
+  region?: string;
   /** S3 bucket name */
   bucket: string;
-  /** Access key (optional - uses AWS credentials from environment) */
+  /** Access key (optional - uses AWS credentials from environment if not provided) */
   accessKeyId?: string;
   /** Secret access key (optional) */
   secretAccessKey?: string;
-  /** Custom S3 endpoint (for LocalStack, etc.) */
+  /** Session token (optional - for temporary credentials) */
+  sessionToken?: string;
+  /** AWS profile name (optional - uses AWS_PROFILE if not provided) */
+  profile?: string;
+  /** Custom S3 endpoint (for LocalStack/MinIO/etc.) */
   endpoint?: string;
+  /** Force path style (required for MinIO and some S3-compatible services) */
+  forcePathStyle?: boolean;
 }
 
 /**
@@ -55,17 +61,34 @@ export class S3Adapter implements Adapter {
   constructor(config: S3AdapterConfig) {
     this.bucket = config.bucket;
 
-    // Initialize S3 client
-    this.client = new S3Client({
-      region: config.region,
-      ...(config.endpoint && { endpoint: config.endpoint }),
-      ...(config.accessKeyId && {
-        credentials: {
-          accessKeyId: config.accessKeyId,
-          secretAccessKey: config.secretAccessKey || '',
-        },
-      }),
-    });
+    // Initialize S3 client with flexible configuration
+    const clientConfig: any = {
+      // Region: use config, then AWS_REGION env var, then default
+      region: config.region || process.env.AWS_REGION || 'us-east-1',
+    };
+
+    // Custom endpoint (for LocalStack, MinIO, etc.)
+    if (config.endpoint) {
+      clientConfig.endpoint = config.endpoint;
+      // Force path style for S3-compatible services
+      clientConfig.forcePathStyle = config.forcePathStyle ?? true;
+    }
+
+    // Credentials: explicit credentials take precedence over environment
+    if (config.accessKeyId && config.secretAccessKey) {
+      clientConfig.credentials = {
+        accessKeyId: config.accessKeyId,
+        secretAccessKey: config.secretAccessKey,
+        ...(config.sessionToken && { sessionToken: config.sessionToken }),
+      };
+    }
+    // If no explicit credentials, AWS SDK will use:
+    // 1. Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+    // 2. AWS profile from ~/.aws/credentials
+    // 3. EC2 instance metadata / ECS task role
+    // 4. Other AWS credential providers
+
+    this.client = new S3Client(clientConfig);
   }
 
   /**
