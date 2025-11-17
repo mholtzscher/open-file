@@ -38,8 +38,8 @@ import { getLogger } from '../utils/logger.js';
 export interface S3AdapterConfig {
   /** AWS region (defaults to AWS_REGION or us-east-1) */
   region?: string;
-  /** S3 bucket name */
-  bucket: string;
+  /** S3 bucket name (optional - if not provided, bucket listing mode is used) */
+  bucket?: string;
   /** Access key (optional - uses AWS credentials from environment if not provided) */
   accessKeyId?: string;
   /** Secret access key (optional) */
@@ -76,7 +76,7 @@ export interface BucketInfo {
 export class S3Adapter implements Adapter {
   readonly name = 's3';
   private client: S3Client;
-  private bucket: string;
+  private bucket?: string;
   private prefix: string = '';
 
   constructor(config: S3AdapterConfig) {
@@ -249,11 +249,15 @@ export class S3Adapter implements Adapter {
    * List entries at a given path
    */
   async list(path: string, options?: ListOptions): Promise<ListResult> {
+    if (!this.bucket) {
+      throw new Error('Bucket not configured. Use listBuckets() to list all buckets.');
+    }
+    const bucket = this.bucket; // Narrow type for TypeScript
     const logger = getLogger();
     const prefix = this.normalizePath(path, true);
 
     const params: ListObjectsV2CommandInput = {
-      Bucket: this.bucket,
+      Bucket: bucket,
       Prefix: prefix,
       Delimiter: '/',
       MaxKeys: options?.limit || 1000,
@@ -881,6 +885,9 @@ export class S3Adapter implements Adapter {
     destination: string,
     optionsOrBucket?: OperationOptions | string
   ): Promise<void> {
+    if (!this.bucket) {
+      throw new Error('Bucket not configured for copy operation.');
+    }
     const srcNormalized = this.normalizePath(source);
     // Support both old targetBucket parameter and new OperationOptions
     const targetBucket = typeof optionsOrBucket === 'string' ? optionsOrBucket : undefined;
