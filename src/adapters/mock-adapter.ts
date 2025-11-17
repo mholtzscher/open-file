@@ -107,7 +107,9 @@ export class MockAdapter implements Adapter {
   }
 
   async list(path: string, options?: ListOptions): Promise<ListResult> {
-    const normalized = this.normalizePath(path, true);
+    // For mock adapter, if path is empty, list root as "test-bucket/"
+    const listPath = path === '' ? 'test-bucket/' : path;
+    const normalized = this.normalizePath(listPath, true);
     const entries: Entry[] = [];
 
     // Find all entries that are direct children of this path
