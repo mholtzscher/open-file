@@ -161,6 +161,7 @@ export function useKeyboardEvents(
             bufferState.moveCursorUp(1);
             break;
           case 'h':
+          case '-':
             if (handlers.onNavigateUp) handlers.onNavigateUp();
             break;
           case 'l':
