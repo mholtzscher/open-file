@@ -454,7 +454,34 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           title="Help"
         >
           <text position="absolute" left={2} top={1} fg={CatppuccinMocha.text}>
-            j/k - navigate | v - select | dd - delete | w - save | q - quit
+            Navigation:
+          </text>
+          <text position="absolute" left={4} top={2} fg={CatppuccinMocha.subtext0}>
+            j/k - Move cursor down/up
+          </text>
+          <text position="absolute" left={4} top={3} fg={CatppuccinMocha.subtext0}>
+            Enter - Navigate into directory
+          </text>
+          <text position="absolute" left={4} top={4} fg={CatppuccinMocha.subtext0}>
+            - (dash) - Navigate up
+          </text>
+          <text position="absolute" left={2} top={6} fg={CatppuccinMocha.text}>
+            Actions:
+          </text>
+          <text position="absolute" left={4} top={7} fg={CatppuccinMocha.subtext0}>
+            v - Toggle selection
+          </text>
+          <text position="absolute" left={4} top={8} fg={CatppuccinMocha.subtext0}>
+            dd - Delete selected
+          </text>
+          <text position="absolute" left={4} top={9} fg={CatppuccinMocha.subtext0}>
+            w - Save changes
+          </text>
+          <text position="absolute" left={4} top={10} fg={CatppuccinMocha.subtext0}>
+            q - Quit
+          </text>
+          <text position="absolute" left={2} bottom={1} fg={CatppuccinMocha.overlay0}>
+            Press ? or Esc to close help
           </text>
         </box>
       )}
