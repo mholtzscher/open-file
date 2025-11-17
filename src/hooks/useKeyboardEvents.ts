@@ -277,6 +277,8 @@ export function useKeyboardEvents(
       switch (key) {
         case 'escape':
           bufferState.exitSearchMode();
+          // Reset view when exiting search
+          bufferState.cursorToTop();
           break;
         case 'backspace':
           if (handlers.onSearch) {
@@ -285,10 +287,19 @@ export function useKeyboardEvents(
           }
           break;
         case 'n':
-          // Find next - handled by buffer state
+          // Find next match
+          if (bufferState.searchQuery) {
+            // This is a simple navigation - just move cursor down
+            // The filtered display will show the matches
+            bufferState.moveCursorDown(1);
+          }
           break;
         case 'N':
-          // Find previous - handled by buffer state
+          // Find previous match
+          if (bufferState.searchQuery) {
+            // Move cursor up to find previous
+            bufferState.moveCursorUp(1);
+          }
           break;
         default:
           // Add character to search query if printable

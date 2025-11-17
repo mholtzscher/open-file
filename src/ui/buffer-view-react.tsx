@@ -123,7 +123,12 @@ export function BufferView({
   showSizes = true,
   showDates = false,
 }: BufferViewProps) {
-  const entries = bufferState.entries;
+  // Use filtered entries when searching
+  const filteredEntries = bufferState.getFilteredEntries();
+  const entries =
+    filteredEntries.length < bufferState.entries.length && bufferState.searchQuery
+      ? filteredEntries
+      : bufferState.entries;
   const cursorIndex = bufferState.selection.cursorIndex;
 
   // Get visible entries (with scroll offset)

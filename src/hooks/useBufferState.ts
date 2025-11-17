@@ -80,6 +80,7 @@ export interface UseBufferStateReturn {
   // Getting data
   getSelectedEntry: () => Entry | undefined;
   getSelectedEntries: () => Entry[];
+  getFilteredEntries: () => Entry[];
 }
 
 /**
@@ -288,6 +289,17 @@ export function useBufferState(
     return entries.slice(start, end + 1);
   }, [selection, entries]);
 
+  // Filter entries based on search query
+  const getFilteredEntries = useCallback((): Entry[] => {
+    if (!searchQuery) {
+      return entries;
+    }
+
+    // Simple substring matching (case-insensitive by default)
+    const query = searchQuery.toLowerCase();
+    return entries.filter(entry => entry.name.toLowerCase().includes(query));
+  }, [entries, searchQuery]);
+
   // Copy/paste
   const copySelection = useCallback(() => {
     const selected = selection.isActive ? getSelectedEntries() : getSelectedEntry();
@@ -377,5 +389,6 @@ export function useBufferState(
 
     getSelectedEntry,
     getSelectedEntries,
+    getFilteredEntries,
   };
 }

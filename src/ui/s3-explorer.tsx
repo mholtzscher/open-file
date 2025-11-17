@@ -212,6 +212,20 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         setStatusMessage(`Unknown command: ${command}`);
         setStatusMessageColor(CatppuccinMocha.red);
       },
+      onEnterSearchMode: () => {
+        setStatusMessage('Search mode: type pattern, n/N to navigate, ESC to clear');
+        setStatusMessageColor(CatppuccinMocha.blue);
+      },
+      onSearch: (query: string) => {
+        bufferState.updateSearchQuery(query);
+        if (query) {
+          setStatusMessage(`Searching: ${query}`);
+          setStatusMessageColor(CatppuccinMocha.blue);
+        } else {
+          setStatusMessage('Search cleared');
+          setStatusMessageColor(CatppuccinMocha.text);
+        }
+      },
     }),
     [navigationHandlers, bufferState, bucket, showHelpDialog, setBucket, originalEntries, adapter]
   );
