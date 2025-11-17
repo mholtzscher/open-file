@@ -52,11 +52,13 @@ export function FloatingWindow({
       backgroundColor={backgroundColor}
       title={title}
     >
-      {content.map((line, idx) => (
-        <text key={idx} position="absolute" left={2} top={2 + idx} fg={textColor}>
-          {line}
-        </text>
-      ))}
+      <group flexDirection="column" paddingLeft={2} paddingTop={1}>
+        {content.map((line, idx) => (
+          <text key={idx} fg={textColor}>
+            {line}
+          </text>
+        ))}
+      </group>
     </box>
   );
 }
