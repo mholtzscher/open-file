@@ -58,6 +58,7 @@ export function HelpDialog({ visible }: HelpDialogProps) {
     { keys: ':', description: 'Command mode' },
     { section: '' },
     { section: 'OTHER' },
+    { keys: 'P', description: 'Toggle file preview' },
     { keys: '?/g?', description: 'Toggle help' },
     { keys: 'q', description: 'Quit' },
   ];

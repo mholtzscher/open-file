@@ -18,6 +18,7 @@ import { Pane } from './pane-react.js';
 import { StatusBar } from './status-bar-react.js';
 import { ConfirmationDialog } from './confirmation-dialog-react.js';
 import { HelpDialog } from './help-dialog-react.js';
+import { PreviewPane } from './preview-pane-react.js';
 import { CatppuccinMocha } from './theme.js';
 import { ErrorDialog } from './error-dialog-react.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
@@ -29,6 +30,52 @@ interface S3ExplorerProps {
   bucket?: string;
   adapter: Adapter;
   configManager: ConfigManager;
+}
+
+/**
+ * Helper to determine if a file should be previewed
+ */
+function isPreviewableFile(entry: any): boolean {
+  if (!entry || entry.type !== 'file') return false;
+
+  const name = entry.name.toLowerCase();
+  const textExtensions = [
+    '.txt',
+    '.md',
+    '.json',
+    '.yaml',
+    '.yml',
+    '.xml',
+    '.csv',
+    '.log',
+    '.js',
+    '.ts',
+    '.tsx',
+    '.jsx',
+    '.py',
+    '.rb',
+    '.go',
+    '.rs',
+    '.c',
+    '.cpp',
+    '.h',
+    '.java',
+    '.sh',
+    '.bash',
+    '.zsh',
+  ];
+
+  return textExtensions.some(ext => name.endsWith(ext));
+}
+
+/**
+ * Format bytes for display
+ */
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return bytes + 'B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
+  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + 'GB';
 }
 
 /**
@@ -44,6 +91,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   const [pendingOperations, setPendingOperations] = useState<any[]>([]);
   const [originalEntries, setOriginalEntries] = useState<any[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
+  const [previewContent, setPreviewContent] = useState<string>('');
+  const [showPreview, setShowPreview] = useState(false);
 
   // Track terminal size for responsive layout
   const terminalSize = useTerminalSize();
@@ -279,12 +328,26 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           setStatusMessageColor(CatppuccinMocha.blue);
         }
       },
+      onTogglePreview: () => {
+        // Manual toggle - disable auto preview and toggle visibility
+        if (showPreview) {
+          setShowPreview(false);
+          setStatusMessage('Preview disabled');
+          setStatusMessageColor(CatppuccinMocha.text);
+        } else {
+          // Re-enable and trigger preview fetch
+          setShowPreview(true);
+          setStatusMessage('Preview enabled');
+          setStatusMessageColor(CatppuccinMocha.blue);
+        }
+      },
     }),
     [
       navigationHandlers,
       bufferState,
       bucket,
       showHelpDialog,
+      showPreview,
       setBucket,
       originalEntries,
       adapter,
@@ -397,6 +460,55 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucket, adapter]);
 
+  // Preview content when selection changes
+  useEffect(() => {
+    const fetchPreview = async () => {
+      const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+      const selectedEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
+
+      // Only preview files in single-pane mode to avoid cluttering multi-pane view
+      if (!multiPaneLayout.isMultiPaneMode && selectedEntry && isPreviewableFile(selectedEntry)) {
+        try {
+          // Limit preview size to 100KB to avoid performance issues
+          const maxPreviewSize = 100 * 1024;
+          if (selectedEntry.size && selectedEntry.size > maxPreviewSize) {
+            setPreviewContent(`File too large to preview (${formatBytes(selectedEntry.size)})`);
+            setShowPreview(true);
+            return;
+          }
+
+          // Build full path for the selected file
+          const fullPath = currentBufferState.currentPath
+            ? `${currentBufferState.currentPath}${selectedEntry.name}`
+            : selectedEntry.name;
+
+          const buffer = await adapter.read(fullPath);
+          const content = buffer.toString('utf-8');
+          setPreviewContent(content);
+          setShowPreview(true);
+        } catch (err) {
+          console.error('Failed to load preview:', err);
+          setPreviewContent('Failed to load preview');
+          setShowPreview(true);
+        }
+      } else {
+        setShowPreview(false);
+        setPreviewContent('');
+      }
+    };
+
+    if (bucket && isInitialized) {
+      fetchPreview();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeBufferState.selection.cursorIndex,
+    activeBufferState.entries.length,
+    bucket,
+    isInitialized,
+    multiPaneLayout.isMultiPaneMode,
+  ]);
+
   if (!isInitialized) {
     return (
       <text fg={CatppuccinMocha.blue} position="absolute" left={2} top={2}>
@@ -449,7 +561,11 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           bufferState={bufferState}
           left={2}
           top={layout.headerHeight}
-          width={Math.max(terminalSize.size.width - 4, 40)}
+          width={
+            showPreview
+              ? Math.floor(terminalSize.size.width * 0.58)
+              : Math.max(terminalSize.size.width - 4, 40)
+          }
           height={layout.contentHeight}
           isActive={true}
           title={
@@ -544,6 +660,18 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
             setShowConfirmDialog(false);
             setPendingOperations([]);
           }}
+        />
+      )}
+
+      {/* Preview Pane - only in single pane mode */}
+      {showPreview && !multiPaneLayout.isMultiPaneMode && (
+        <PreviewPane
+          content={previewContent}
+          left={Math.floor(terminalSize.size.width * 0.6)}
+          top={layout.headerHeight}
+          width={Math.floor(terminalSize.size.width * 0.38)}
+          height={layout.contentHeight}
+          visible={true}
         />
       )}
 

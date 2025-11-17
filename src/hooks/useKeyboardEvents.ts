@@ -42,6 +42,7 @@ export interface KeyboardHandlers {
   onBucketsCommand?: () => void;
   onBucketCommand?: (bucketName: string) => void;
   onCommand?: (command: string) => void;
+  onTogglePreview?: () => void;
 }
 
 export interface UseKeyboardEventsReturn {
@@ -192,6 +193,10 @@ export function useKeyboardEvents(
             break;
           case 'p':
             if (handlers.onPaste) handlers.onPaste();
+            break;
+          case 'P':
+            // Shift+P - toggle preview
+            if (handlers.onTogglePreview) handlers.onTogglePreview();
             break;
           case 'i':
             bufferState.enterInsertMode();

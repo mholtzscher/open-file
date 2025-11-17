@@ -28,7 +28,13 @@ export function PreviewPane({
 }: PreviewPaneProps) {
   if (!visible || !content) return null;
 
-  const lines = content.split('\n').slice(0, height);
+  // Reserve space for border (2 chars) and padding (2 chars)
+  const maxLineWidth = width - 4;
+  const maxLines = height - 2; // Reserve space for top/bottom border
+
+  const lines = content.split('\n').slice(0, maxLines);
+  const totalLines = content.split('\n').length;
+  const truncated = totalLines > maxLines;
 
   return (
     <box
@@ -40,11 +46,11 @@ export function PreviewPane({
       borderStyle="rounded"
       borderColor={CatppuccinMocha.blue}
       backgroundColor={CatppuccinMocha.base}
-      title="Preview"
+      title={truncated ? `Preview (${totalLines} lines)` : 'Preview'}
     >
       {lines.map((line, idx) => (
         <text key={idx} position="absolute" left={1} top={1 + idx} fg={CatppuccinMocha.text}>
-          {line.substring(0, width - 2)}
+          {line.substring(0, maxLineWidth)}
         </text>
       ))}
     </box>
