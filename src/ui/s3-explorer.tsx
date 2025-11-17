@@ -244,11 +244,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           setShowHelpDialog(false);
           return;
         }
-      } else if (
-        statusMessageColor === CatppuccinMocha.red &&
-        (key.name === 'enter' || key.name === 'return')
-      ) {
-        // Acknowledge error by Enter
+      } else if (statusMessageColor === CatppuccinMocha.red && key.name === 'escape') {
+        // Acknowledge error by Escape
         setStatusMessage('');
         return;
       } else if (key.name === '?') {

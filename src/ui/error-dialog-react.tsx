@@ -15,37 +15,30 @@ interface ErrorDialogProps {
 export function ErrorDialog({ visible, message }: ErrorDialogProps) {
   if (!visible) return null;
 
-  // Use terminal size if available, otherwise use defaults
-  let terminalWidth = 80;
-  try {
-    const terminalSize = useTerminalSize();
-    terminalWidth = terminalSize.width;
-  } catch {
-    // Fallback for test environments where hooks aren't available
-    terminalWidth = 80;
-  }
-
-  const width = 70;
-  const left = Math.max(2, Math.floor((terminalWidth - width) / 2));
-  const top = 1;
+  const terminalSize = useTerminalSize();
+  const dialogWidth = 70;
+  const centerLeft = Math.floor((terminalSize.width - dialogWidth) / 2);
 
   return (
     <box
       position="absolute"
-      left={left}
-      top={top}
-      width={width}
-      height={6}
+      left={centerLeft}
+      top={1}
+      width={dialogWidth}
       borderStyle="rounded"
       borderColor={CatppuccinMocha.red}
       backgroundColor={CatppuccinMocha.base}
       title="Error"
+      flexDirection="column"
+      paddingLeft={2}
+      paddingTop={1}
+      paddingBottom={1}
     >
-      <text position="absolute" left={2} top={1} fg={CatppuccinMocha.red}>
+      <text fg={CatppuccinMocha.red} width={66}>
         {message}
       </text>
-      <text position="absolute" left={2} bottom={1} fg={CatppuccinMocha.overlay0}>
-        Press Enter to dismiss
+      <text fg={CatppuccinMocha.overlay0} width={66}>
+        Press Escape to dismiss
       </text>
     </box>
   );
