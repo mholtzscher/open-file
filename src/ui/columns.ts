@@ -65,7 +65,17 @@ export class IconColumn implements Column {
   align: 'left' | 'right' | 'center' = 'left';
 
   render(entry: Entry): string {
-    const icon = entry.type === EntryType.Directory ? '📁' : '📄';
+    let icon: string;
+    switch (entry.type) {
+      case EntryType.Directory:
+        icon = '📁';
+        break;
+      case EntryType.Bucket:
+        icon = '🪣';
+        break;
+      default:
+        icon = '📄';
+    }
     // Emojis can be 2 chars wide, just add one space after
     return icon + ' ';
   }
@@ -83,7 +93,13 @@ export class NameColumn implements Column {
   align: 'left' | 'right' | 'center' = 'left';
 
   render(entry: Entry): string {
-    const suffix = entry.type === EntryType.Directory ? '/' : '';
+    let suffix = '';
+    if (entry.type === EntryType.Directory) {
+      suffix = '/';
+    } else if (entry.type === EntryType.Bucket) {
+      // Buckets don't get a suffix in root view
+      suffix = '';
+    }
     const name = entry.name + suffix;
     // Add extra space after column
     return padString(name, this.width, this.align) + '  ';
@@ -176,6 +192,57 @@ export class StorageClassColumn implements Column {
 }
 
 /**
+ * Bucket region column - shows S3 bucket region (root view only)
+ */
+export class BucketRegionColumn implements Column {
+  id = 'bucket-region';
+  name = 'Region';
+  width = 12;
+  visible = true;
+  align: 'left' | 'right' | 'center' = 'left';
+
+  render(entry: Entry): string {
+    const region = entry.metadata?.region;
+    if (!region || entry.type !== EntryType.Bucket) {
+      return padString('-', this.width, this.align) + ' ';
+    }
+
+    return padString(region, this.width, this.align) + ' ';
+  }
+}
+
+/**
+ * Bucket created date column - shows bucket creation date (root view only)
+ */
+export class BucketCreatedColumn implements Column {
+  id = 'bucket-created';
+  name = 'Created';
+  width = 10;
+  visible = true;
+  align: 'left' | 'right' | 'center' = 'left';
+
+  render(entry: Entry): string {
+    if (entry.type !== EntryType.Bucket) {
+      return padString('-', this.width, this.align);
+    }
+
+    const createdAt = entry.metadata?.createdAt;
+    if (!createdAt) {
+      return padString('-', this.width, this.align);
+    }
+
+    const date = createdAt instanceof Date ? createdAt : new Date(createdAt);
+    const formatted = date.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: '2-digit',
+    });
+
+    return padString(formatted, this.width, this.align);
+  }
+}
+
+/**
  * Column configuration
  */
 export interface ColumnConfig {
@@ -193,6 +260,13 @@ export function getDefaultColumns(): Column[] {
     new DateColumn(),
     new StorageClassColumn(),
   ];
+}
+
+/**
+ * Bucket root view column configuration (for listing S3 buckets)
+ */
+export function getBucketColumns(): Column[] {
+  return [new IconColumn(), new NameColumn(), new BucketRegionColumn(), new BucketCreatedColumn()];
 }
 
 /**

@@ -4,6 +4,7 @@
 export enum EntryType {
   File = 'file',
   Directory = 'directory',
+  Bucket = 'bucket',
 }
 
 /**
@@ -16,6 +17,14 @@ export interface EntryMetadata {
   etag?: string;
   /** Storage class (for S3) */
   storageClass?: string;
+  /** Bucket region (for bucket entries) */
+  region?: string;
+  /** Bucket creation date (for bucket entries) */
+  createdAt?: Date;
+  /** Total size in bytes (for bucket entries) */
+  totalSize?: number;
+  /** Number of objects (for bucket entries) */
+  objectCount?: number;
   /** Custom metadata key-value pairs */
   custom?: Record<string, string>;
 }
