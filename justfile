@@ -6,7 +6,8 @@ default:
     @echo ""
     @echo "Quick Start:"
     @echo "  just demo              - Run with mock data (no AWS required)"
-    @echo "  just s3 BUCKET         - Connect to S3 bucket"
+    @echo "  just s3                - Browse all S3 buckets (root view)"
+    @echo "  just s3 my-bucket      - Connect to specific S3 bucket"
     @echo "  just s3 my-bucket us-west-2  - Specify region"
     @echo ""
     @echo "All available commands:"
@@ -92,21 +93,36 @@ demo:
 # Run with mock adapter (alias for demo)
 run-mock: demo
 
-# Run with real S3 bucket
-s3 BUCKET REGION="us-east-1":
-    @echo "Starting open-s3 with bucket: {{BUCKET}} in region: {{REGION}}"
-    @echo "Using AWS credentials from environment"
-    @echo "Press 'q' to quit"
-    @echo ""
-    bun run src/index.tsx --bucket {{BUCKET}} --region {{REGION}}
+# Run with real S3 (shows all buckets if no bucket specified)
+s3 BUCKET="" REGION="us-east-1":
+    @if [ -z "{{BUCKET}}" ]; then \
+        echo "Starting open-s3 - showing all S3 buckets (root view)"; \
+        echo "Use vim keybindings to navigate, Enter to select a bucket"; \
+        echo "Press 'q' to quit"; \
+        echo ""; \
+        bun run src/index.tsx --region {{REGION}}; \
+    else \
+        echo "Starting open-s3 with bucket: {{BUCKET}} in region: {{REGION}}"; \
+        echo "Using AWS credentials from environment"; \
+        echo "Press 'q' to quit"; \
+        echo ""; \
+        bun run src/index.tsx --bucket {{BUCKET}} --region {{REGION}}; \
+    fi
 
-# Run with LocalStack (local S3 testing)
-localstack BUCKET="test-bucket":
-    @echo "Starting open-s3 with LocalStack..."
-    @echo "Bucket: {{BUCKET}}"
-    @echo "Endpoint: http://localhost:4566"
-    @echo ""
-    bun run src/index.tsx --endpoint http://localhost:4566 --bucket {{BUCKET}}
+# Run with LocalStack (local S3 testing) - shows all buckets if no bucket specified
+localstack BUCKET="":
+    @if [ -z "{{BUCKET}}" ]; then \
+        echo "Starting open-s3 with LocalStack - showing all buckets"; \
+        echo "Endpoint: http://localhost:4566"; \
+        echo ""; \
+        bun run src/index.tsx --endpoint http://localhost:4566; \
+    else \
+        echo "Starting open-s3 with LocalStack..."; \
+        echo "Bucket: {{BUCKET}}"; \
+        echo "Endpoint: http://localhost:4566"; \
+        echo ""; \
+        bun run src/index.tsx --endpoint http://localhost:4566 --bucket {{BUCKET}}; \
+    fi
 
 # Check for ready work items using bd
 bd-status:
