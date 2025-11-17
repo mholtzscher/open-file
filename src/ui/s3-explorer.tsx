@@ -442,30 +442,32 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       )}
 
       {/* Help Dialog */}
-      <FloatingWindow
-        title="Help"
-        width={70}
-        height={18}
-        left={5}
-        top={5}
-        borderColor={CatppuccinMocha.yellow}
-        textColor={CatppuccinMocha.text}
-        visible={showHelpDialog}
-        content={[
-          'Navigation:',
-          '  j/k - Move cursor down/up',
-          '  Enter - Navigate into directory',
-          '  - (dash) - Navigate up',
-          '',
-          'Actions:',
-          '  v - Toggle selection',
-          '  dd - Delete selected',
-          '  w - Save changes',
-          '  q - Quit',
-          '',
-          'Press ? or Esc to close help',
-        ]}
-      />
+      {showHelpDialog && (
+        <FloatingWindow
+          title="Help"
+          width={70}
+          height={18}
+          left={5}
+          top={5}
+          borderColor={CatppuccinMocha.yellow}
+          textColor={CatppuccinMocha.text}
+          visible={true}
+          content={[
+            'Navigation:',
+            '  j/k - Move cursor down/up',
+            '  Enter - Navigate into directory',
+            '  - (dash) - Navigate up',
+            '',
+            'Actions:',
+            '  v - Toggle selection',
+            '  dd - Delete selected',
+            '  w - Save changes',
+            '  q - Quit',
+            '',
+            'Press ? or Esc to close help',
+          ]}
+        />
+      )}
     </>
   );
 }
