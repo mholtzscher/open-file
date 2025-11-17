@@ -11,7 +11,7 @@ interface MockEntry extends Entry {
 
 /**
  * MockAdapter - In-memory adapter for testing
- * 
+ *
  * Useful for testing the UI without connecting to S3
  */
 export class MockAdapter implements Adapter {
@@ -45,22 +45,22 @@ export class MockAdapter implements Adapter {
     this.createSync('test-bucket/images/', EntryType.Directory);
     this.createSync('test-bucket/videos/', EntryType.Directory);
     this.createSync('test-bucket/scrollable/', EntryType.Directory);
-    
+
     this.createSync('test-bucket/README.md', EntryType.File, 'Hello from mock S3!');
     this.createSync('test-bucket/config.json', EntryType.File, '{"version": "1.0"}');
-    
+
     this.createSync('test-bucket/documents/report.pdf', EntryType.File, 'PDF content...');
     this.createSync('test-bucket/documents/notes.txt', EntryType.File, 'My notes here');
-    
+
     this.createSync('test-bucket/images/photo1.jpg', EntryType.File, 'JPEG binary data');
     this.createSync('test-bucket/images/photo2.png', EntryType.File, 'PNG binary data');
-    
+
     // Add 100 fake files to scrollable directory for testing page scrolling
     for (let i = 1; i <= 100; i++) {
       const paddedNumber = i.toString().padStart(3, '0');
       this.createSync(
-        `test-bucket/scrollable/file-${paddedNumber}.txt`, 
-        EntryType.File, 
+        `test-bucket/scrollable/file-${paddedNumber}.txt`,
+        EntryType.File,
         `Content of file ${i}`
       );
     }
@@ -120,7 +120,7 @@ export class MockAdapter implements Adapter {
       if (entryPath.startsWith(normalized)) {
         const relativePath = entryPath.substring(normalized.length);
         const parts = relativePath.split('/').filter(p => p);
-        
+
         // Direct child: only one part (for files) or first part (for subdirs)
         if (parts.length === 1 || (parts.length === 2 && entryPath.endsWith('/'))) {
           entries.push({
@@ -153,7 +153,7 @@ export class MockAdapter implements Adapter {
   async getMetadata(path: string): Promise<Entry> {
     const normalized = this.normalizePath(path);
     const entry = this.entries.get(normalized) || this.entries.get(normalized + '/');
-    
+
     if (!entry) {
       throw new Error(`Entry not found: ${path}`);
     }
@@ -169,7 +169,12 @@ export class MockAdapter implements Adapter {
     };
   }
 
-  async create(path: string, type: EntryType, content?: Buffer | string, _options?: any): Promise<void> {
+  async create(
+    path: string,
+    type: EntryType,
+    content?: Buffer | string,
+    _options?: any
+  ): Promise<void> {
     this.createSync(path, type, content);
   }
 
@@ -194,7 +199,7 @@ export class MockAdapter implements Adapter {
   async move(source: string, destination: string, _options?: any): Promise<void> {
     const srcNormalized = this.normalizePath(source);
     const entry = this.entries.get(srcNormalized) || this.entries.get(srcNormalized + '/');
-    
+
     if (!entry) {
       throw new Error(`Source not found: ${source}`);
     }
@@ -220,7 +225,7 @@ export class MockAdapter implements Adapter {
   async copy(source: string, destination: string, _options?: any): Promise<void> {
     const srcNormalized = this.normalizePath(source);
     const entry = this.entries.get(srcNormalized) || this.entries.get(srcNormalized + '/');
-    
+
     if (!entry) {
       throw new Error(`Source not found: ${source}`);
     }

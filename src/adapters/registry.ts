@@ -1,6 +1,6 @@
 /**
  * Adapter Registry
- * 
+ *
  * Manages multiple adapters and provides a way to switch between them.
  * Allows the application to support different storage backends.
  */

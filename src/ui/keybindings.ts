@@ -1,6 +1,6 @@
 /**
  * Keybinding registry system
- * 
+ *
  * Centralized management of keybindings for different modes
  */
 
@@ -83,7 +83,13 @@ export class KeybindingRegistry {
    * Clear all bindings
    */
   clearAll(): void {
-    for (const mode of [EditMode.Normal, EditMode.Visual, EditMode.Edit, EditMode.Insert, EditMode.Search]) {
+    for (const mode of [
+      EditMode.Normal,
+      EditMode.Visual,
+      EditMode.Edit,
+      EditMode.Insert,
+      EditMode.Search,
+    ]) {
       this.clear(mode);
     }
   }
@@ -108,17 +114,17 @@ export function createDefaultKeybindings(): KeybindingRegistry {
     handler: () => {},
   });
 
-   registry.register(EditMode.Normal, 'g', {
-     key: 'g',
-     description: 'Move to top (gg)',
-     handler: () => {},
-   });
+  registry.register(EditMode.Normal, 'g', {
+    key: 'g',
+    description: 'Move to top (gg)',
+    handler: () => {},
+  });
 
-   registry.register(EditMode.Normal, 'd', {
-     key: 'd',
-     description: 'Delete entry (dd)',
-     handler: () => {},
-   });
+  registry.register(EditMode.Normal, 'd', {
+    key: 'd',
+    description: 'Delete entry (dd)',
+    handler: () => {},
+  });
 
   registry.register(EditMode.Normal, 'G', {
     key: 'G',
@@ -180,53 +186,53 @@ export function createDefaultKeybindings(): KeybindingRegistry {
     handler: () => {},
   });
 
-   registry.register(EditMode.Normal, 'w', {
-     key: 'w',
-     description: 'Save changes',
-     handler: () => {},
-   });
+  registry.register(EditMode.Normal, 'w', {
+    key: 'w',
+    description: 'Save changes',
+    handler: () => {},
+  });
 
-   registry.register(EditMode.Normal, 'c', {
-     key: 'c',
-     description: 'Copy selected entry',
-     handler: () => {},
-   });
+  registry.register(EditMode.Normal, 'c', {
+    key: 'c',
+    description: 'Copy selected entry',
+    handler: () => {},
+  });
 
-   registry.register(EditMode.Normal, 'p', {
-     key: 'p',
-     description: 'Paste after cursor',
-     handler: () => {},
-   });
+  registry.register(EditMode.Normal, 'p', {
+    key: 'p',
+    description: 'Paste after cursor',
+    handler: () => {},
+  });
 
-   registry.register(EditMode.Normal, 'P', {
-     key: 'P',
-     description: 'Paste before cursor',
-     handler: () => {},
-   });
+  registry.register(EditMode.Normal, 'P', {
+    key: 'P',
+    description: 'Paste before cursor',
+    handler: () => {},
+  });
 
-    registry.register(EditMode.Normal, 'n', {
-      key: 'n',
-      description: 'Next page (page down)',
-      handler: () => {},
-    });
+  registry.register(EditMode.Normal, 'n', {
+    key: 'n',
+    description: 'Next page (page down)',
+    handler: () => {},
+  });
 
-   registry.register(EditMode.Normal, 'p', {
-     key: 'p',
-     description: 'Previous page (page up)',
-     handler: () => {},
-   });
+  registry.register(EditMode.Normal, 'p', {
+    key: 'p',
+    description: 'Previous page (page up)',
+    handler: () => {},
+  });
 
-   registry.register(EditMode.Normal, 'P', {
-     key: 'P',
-     description: 'Paste after cursor',
-     handler: () => {},
-   });
+  registry.register(EditMode.Normal, 'P', {
+    key: 'P',
+    description: 'Paste after cursor',
+    handler: () => {},
+  });
 
-   registry.register(EditMode.Normal, 'q', {
-     key: 'q',
-     description: 'Quit application',
-     handler: () => {},
-   });
+  registry.register(EditMode.Normal, 'q', {
+    key: 'q',
+    description: 'Quit application',
+    handler: () => {},
+  });
 
   // Visual mode
   registry.register(EditMode.Visual, 'j', {
@@ -253,26 +259,26 @@ export function createDefaultKeybindings(): KeybindingRegistry {
     handler: () => {},
   });
 
-   // Edit mode
-   registry.register(EditMode.Edit, 'escape', {
-     key: 'escape',
-     description: 'Exit edit mode',
-     handler: () => {},
-   });
+  // Edit mode
+  registry.register(EditMode.Edit, 'escape', {
+    key: 'escape',
+    description: 'Exit edit mode',
+    handler: () => {},
+  });
 
-   // Search mode
-   registry.register(EditMode.Search, 'escape', {
-     key: 'escape',
-     description: 'Exit search mode',
-     handler: () => {},
-   });
+  // Search mode
+  registry.register(EditMode.Search, 'escape', {
+    key: 'escape',
+    description: 'Exit search mode',
+    handler: () => {},
+  });
 
-   // Search keybinding in normal mode
-   registry.register(EditMode.Normal, '/', {
-     key: '/',
-     description: 'Enter search mode',
-     handler: () => {},
-   });
+  // Search keybinding in normal mode
+  registry.register(EditMode.Normal, '/', {
+    key: '/',
+    description: 'Enter search mode',
+    handler: () => {},
+  });
 
-   return registry;
+  return registry;
 }

@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+*.lock
+*.lockb
+.git
+.DS_Store
+coverage
+.beads
+history

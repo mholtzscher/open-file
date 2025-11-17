@@ -1,6 +1,6 @@
 /**
  * S3 Adapter - AWS S3 backend integration
- * 
+ *
  * Implements the Adapter interface using AWS SDK v3 for S3 operations.
  * Handles virtual directories, prefixes, and S3-specific features.
  */
@@ -88,7 +88,7 @@ export class S3Adapter implements Adapter {
       logger.debug('Loaded AWS profile config', {
         profile: profileConfig?.profile,
         region: profileConfig?.region,
-        hasCredentials: !!(profileConfig?.accessKeyId),
+        hasCredentials: !!profileConfig?.accessKeyId,
       });
     }
 
@@ -106,7 +106,7 @@ export class S3Adapter implements Adapter {
       // Try to get region from active profile if AWS_PROFILE is set
       const activeRegion = getActiveAwsRegion();
       clientConfig.region = activeRegion || 'us-east-1';
-      logger.debug('Using region from active profile or default', { 
+      logger.debug('Using region from active profile or default', {
         region: clientConfig.region,
         fromProfile: !!activeRegion,
       });
@@ -116,7 +116,7 @@ export class S3Adapter implements Adapter {
     if (config.endpoint) {
       clientConfig.endpoint = config.endpoint;
       clientConfig.forcePathStyle = config.forcePathStyle ?? true;
-      logger.debug('Using custom endpoint', { 
+      logger.debug('Using custom endpoint', {
         endpoint: config.endpoint,
         forcePathStyle: clientConfig.forcePathStyle,
       });
@@ -253,15 +253,12 @@ export class S3Adapter implements Adapter {
 
     try {
       logger.debug('Sending ListObjectsV2Command', params);
-      
-      const response = await retryWithBackoff(
-        () => {
-          logger.debug('Executing ListObjectsV2Command...');
-          const command = new ListObjectsV2Command(params);
-          return this.client.send(command);
-        },
-        getS3RetryConfig()
-      );
+
+      const response = await retryWithBackoff(() => {
+        logger.debug('Executing ListObjectsV2Command...');
+        const command = new ListObjectsV2Command(params);
+        return this.client.send(command);
+      }, getS3RetryConfig());
 
       logger.debug('ListObjectsV2 response received', {
         commonPrefixesCount: response.CommonPrefixes?.length || 0,
@@ -310,27 +307,27 @@ export class S3Adapter implements Adapter {
         return a.name.localeCompare(b.name);
       });
 
-       logger.debug('Parsed entries', {
-         count: entries.length,
-         directories: entries.filter(e => e.type === EntryType.Directory).length,
-         files: entries.filter(e => e.type === EntryType.File).length,
-       });
+      logger.debug('Parsed entries', {
+        count: entries.length,
+        directories: entries.filter(e => e.type === EntryType.Directory).length,
+        files: entries.filter(e => e.type === EntryType.File).length,
+      });
 
-       return {
-         entries,
-         continuationToken: response.NextContinuationToken,
-         hasMore: response.IsTruncated ?? false,
-       };
-     } catch (error) {
-       logger.error('Failed to list S3 objects', error);
-       const parsedError = parseAwsError(error, 'list');
-       logger.error('Parsed error', {
-         code: (error as any)?.Code,
-         message: (error as any)?.message,
-         statusCode: (error as any)?.$metadata?.httpStatusCode,
-       });
-       throw parsedError;
-     }
+      return {
+        entries,
+        continuationToken: response.NextContinuationToken,
+        hasMore: response.IsTruncated ?? false,
+      };
+    } catch (error) {
+      logger.error('Failed to list S3 objects', error);
+      const parsedError = parseAwsError(error, 'list');
+      logger.error('Parsed error', {
+        code: (error as any)?.Code,
+        message: (error as any)?.message,
+        statusCode: (error as any)?.$metadata?.httpStatusCode,
+      });
+      throw parsedError;
+    }
   }
 
   /**
@@ -340,24 +337,21 @@ export class S3Adapter implements Adapter {
     const normalized = this.normalizePath(path);
 
     try {
-      const response = await retryWithBackoff(
-        () => {
-          const command = new HeadObjectCommand({
-            Bucket: this.bucket,
-            Key: normalized,
-          });
-          return this.client.send(command);
-        },
-        getS3RetryConfig()
-      );
+      const response = await retryWithBackoff(() => {
+        const command = new HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: normalized,
+        });
+        return this.client.send(command);
+      }, getS3RetryConfig());
 
       // Determine if it's a directory based on content-type
-      const isDirectory = normalized.endsWith('/') ||
-        response.ContentType === 'application/x-directory';
+      const isDirectory =
+        normalized.endsWith('/') || response.ContentType === 'application/x-directory';
 
       // Fetch tags if available
       const custom: Record<string, string> = {};
-      
+
       // Add version-id if available
       if (response.VersionId) {
         custom.versionId = response.VersionId;
@@ -365,17 +359,14 @@ export class S3Adapter implements Adapter {
 
       // Try to fetch tags (may fail if bucket doesn't have tagging enabled)
       try {
-        const tagsResponse = await retryWithBackoff(
-          () => {
-            const command = new GetObjectTaggingCommand({
-              Bucket: this.bucket,
-              Key: normalized,
-              ...(response.VersionId && { VersionId: response.VersionId }),
-            });
-            return this.client.send(command);
-          },
-          getS3RetryConfig()
-        );
+        const tagsResponse = await retryWithBackoff(() => {
+          const command = new GetObjectTaggingCommand({
+            Bucket: this.bucket,
+            Key: normalized,
+            ...(response.VersionId && { VersionId: response.VersionId }),
+          });
+          return this.client.send(command);
+        }, getS3RetryConfig());
 
         if (tagsResponse.TagSet && tagsResponse.TagSet.length > 0) {
           for (const tag of tagsResponse.TagSet) {
@@ -390,7 +381,11 @@ export class S3Adapter implements Adapter {
 
       return {
         id: generateEntryId(),
-        name: normalized.split('/').filter(p => p).pop() || normalized,
+        name:
+          normalized
+            .split('/')
+            .filter(p => p)
+            .pop() || normalized,
         type: isDirectory ? EntryType.Directory : EntryType.File,
         path: normalized,
         size: response.ContentLength,
@@ -425,16 +420,13 @@ export class S3Adapter implements Adapter {
 
     try {
       // Initiate multipart upload
-      const createResponse = await retryWithBackoff(
-        () => {
-          const command = new CreateMultipartUploadCommand({
-            Bucket: this.bucket,
-            Key: key,
-          });
-          return this.client.send(command);
-        },
-        getS3RetryConfig()
-      );
+      const createResponse = await retryWithBackoff(() => {
+        const command = new CreateMultipartUploadCommand({
+          Bucket: this.bucket,
+          Key: key,
+        });
+        return this.client.send(command);
+      }, getS3RetryConfig());
 
       uploadId = createResponse.UploadId;
       if (!uploadId) {
@@ -448,19 +440,16 @@ export class S3Adapter implements Adapter {
         const end = Math.min(start + PART_SIZE, totalBytes);
         const partBody = body.subarray(start, end);
 
-        const uploadResponse = await retryWithBackoff(
-          () => {
-            const command = new UploadPartCommand({
-              Bucket: this.bucket,
-              Key: key,
-              PartNumber: partNumber,
-              UploadId: uploadId,
-              Body: partBody,
-            });
-            return this.client.send(command);
-          },
-          getS3RetryConfig()
-        );
+        const uploadResponse = await retryWithBackoff(() => {
+          const command = new UploadPartCommand({
+            Bucket: this.bucket,
+            Key: key,
+            PartNumber: partNumber,
+            UploadId: uploadId,
+            Body: partBody,
+          });
+          return this.client.send(command);
+        }, getS3RetryConfig());
 
         if (uploadResponse.ETag) {
           parts.push({
@@ -482,18 +471,15 @@ export class S3Adapter implements Adapter {
       }
 
       // Complete multipart upload
-      await retryWithBackoff(
-        () => {
-          const command = new CompleteMultipartUploadCommand({
-            Bucket: this.bucket,
-            Key: key,
-            UploadId: uploadId,
-            MultipartUpload: { Parts: parts },
-          });
-          return this.client.send(command);
-        },
-        getS3RetryConfig()
-      );
+      await retryWithBackoff(() => {
+        const command = new CompleteMultipartUploadCommand({
+          Bucket: this.bucket,
+          Key: key,
+          UploadId: uploadId,
+          MultipartUpload: { Parts: parts },
+        });
+        return this.client.send(command);
+      }, getS3RetryConfig());
     } catch (error) {
       // Abort multipart upload on error
       if (uploadId) {
@@ -536,20 +522,17 @@ export class S3Adapter implements Adapter {
             currentFile: path,
           });
         }
-        
-        await retryWithBackoff(
-          () => {
-            const command = new PutObjectCommand({
-              Bucket: this.bucket,
-              Key: normalized,
-              Body: '',
-              ContentType: 'application/x-directory',
-            });
-            return this.client.send(command);
-          },
-          getS3RetryConfig()
-        );
-        
+
+        await retryWithBackoff(() => {
+          const command = new PutObjectCommand({
+            Bucket: this.bucket,
+            Key: normalized,
+            Body: '',
+            ContentType: 'application/x-directory',
+          });
+          return this.client.send(command);
+        }, getS3RetryConfig());
+
         if (options?.onProgress) {
           options.onProgress({
             operation: 'Created directory',
@@ -564,7 +547,7 @@ export class S3Adapter implements Adapter {
         const body = content instanceof Buffer ? content : Buffer.from(content || '');
         const totalBytes = body.length;
         const MULTIPART_THRESHOLD = 5 * 1024 * 1024; // 5MB
-        
+
         if (options?.onProgress) {
           options.onProgress({
             operation: 'Creating file',
@@ -574,25 +557,22 @@ export class S3Adapter implements Adapter {
             currentFile: path,
           });
         }
-        
+
         // Use multipart upload for large files
         if (totalBytes > MULTIPART_THRESHOLD) {
           await this.uploadLargeFile(normalized, body, options);
         } else {
           // Use regular PutObject for small files
-          await retryWithBackoff(
-            () => {
-              const command = new PutObjectCommand({
-                Bucket: this.bucket,
-                Key: normalized,
-                Body: body,
-              });
-              return this.client.send(command);
-            },
-            getS3RetryConfig()
-          );
+          await retryWithBackoff(() => {
+            const command = new PutObjectCommand({
+              Bucket: this.bucket,
+              Key: normalized,
+              Body: body,
+            });
+            return this.client.send(command);
+          }, getS3RetryConfig());
         }
-        
+
         if (options?.onProgress) {
           options.onProgress({
             operation: 'Created file',
@@ -620,21 +600,18 @@ export class S3Adapter implements Adapter {
         // Delete directory and all contents using batch delete
         const prefix = normalized.endsWith('/') ? normalized : normalized + '/';
         const objectsToDelete: { Key: string }[] = [];
-        
+
         // List all objects with pagination
         let continuationToken: string | undefined;
         do {
-          const response = await retryWithBackoff(
-            () => {
-              const listCommand = new ListObjectsV2Command({
-                Bucket: this.bucket,
-                Prefix: prefix,
-                ContinuationToken: continuationToken,
-              });
-              return this.client.send(listCommand);
-            },
-            getS3RetryConfig()
-          );
+          const response = await retryWithBackoff(() => {
+            const listCommand = new ListObjectsV2Command({
+              Bucket: this.bucket,
+              Prefix: prefix,
+              ContinuationToken: continuationToken,
+            });
+            return this.client.send(listCommand);
+          }, getS3RetryConfig());
 
           // Collect objects to delete
           if (response.Contents) {
@@ -652,20 +629,17 @@ export class S3Adapter implements Adapter {
         const BATCH_SIZE = 1000;
         for (let i = 0; i < objectsToDelete.length; i += BATCH_SIZE) {
           const batch = objectsToDelete.slice(i, i + BATCH_SIZE);
-          
-          await retryWithBackoff(
-            () => {
-              const deleteCommand = new DeleteObjectsCommand({
-                Bucket: this.bucket,
-                Delete: {
-                  Objects: batch,
-                  Quiet: true, // Don't return list of deleted objects
-                },
-              });
-              return this.client.send(deleteCommand);
-            },
-            getS3RetryConfig()
-          );
+
+          await retryWithBackoff(() => {
+            const deleteCommand = new DeleteObjectsCommand({
+              Bucket: this.bucket,
+              Delete: {
+                Objects: batch,
+                Quiet: true, // Don't return list of deleted objects
+              },
+            });
+            return this.client.send(deleteCommand);
+          }, getS3RetryConfig());
 
           // Report progress
           if (options?.onProgress) {
@@ -681,16 +655,13 @@ export class S3Adapter implements Adapter {
         }
       } else {
         // Delete single object
-        await retryWithBackoff(
-          () => {
-            const command = new DeleteObjectCommand({
-              Bucket: this.bucket,
-              Key: normalized,
-            });
-            return this.client.send(command);
-          },
-          getS3RetryConfig()
-        );
+        await retryWithBackoff(() => {
+          const command = new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: normalized,
+          });
+          return this.client.send(command);
+        }, getS3RetryConfig());
       }
     } catch (error) {
       console.error(`Failed to delete ${path}:`, error);
@@ -725,30 +696,24 @@ export class S3Adapter implements Adapter {
    */
   private async moveSingleFile(source: string, destination: string): Promise<void> {
     // Copy to new location with metadata preservation
-    await retryWithBackoff(
-      () => {
-        const copyCommand = new CopyObjectCommand({
-          Bucket: this.bucket,
-          CopySource: `${this.bucket}/${source}`,
-          Key: destination,
-          MetadataDirective: 'COPY', // Preserve metadata
-        });
-        return this.client.send(copyCommand);
-      },
-      getS3RetryConfig()
-    );
+    await retryWithBackoff(() => {
+      const copyCommand = new CopyObjectCommand({
+        Bucket: this.bucket,
+        CopySource: `${this.bucket}/${source}`,
+        Key: destination,
+        MetadataDirective: 'COPY', // Preserve metadata
+      });
+      return this.client.send(copyCommand);
+    }, getS3RetryConfig());
 
     // Delete from old location
-    await retryWithBackoff(
-      () => {
-        const deleteCommand = new DeleteObjectCommand({
-          Bucket: this.bucket,
-          Key: source,
-        });
-        return this.client.send(deleteCommand);
-      },
-      getS3RetryConfig()
-    );
+    await retryWithBackoff(() => {
+      const deleteCommand = new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: source,
+      });
+      return this.client.send(deleteCommand);
+    }, getS3RetryConfig());
   }
 
   /**
@@ -760,21 +725,18 @@ export class S3Adapter implements Adapter {
     options?: OperationOptions
   ): Promise<void> {
     const objectsToMove: string[] = [];
-    
+
     // List all objects with pagination
     let continuationToken: string | undefined;
     do {
-      const response = await retryWithBackoff(
-        () => {
-          const listCommand = new ListObjectsV2Command({
-            Bucket: this.bucket,
-            Prefix: source,
-            ContinuationToken: continuationToken,
-          });
-          return this.client.send(listCommand);
-        },
-        getS3RetryConfig()
-      );
+      const response = await retryWithBackoff(() => {
+        const listCommand = new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: source,
+          ContinuationToken: continuationToken,
+        });
+        return this.client.send(listCommand);
+      }, getS3RetryConfig());
 
       // Collect objects to move
       if (response.Contents) {
@@ -795,30 +757,24 @@ export class S3Adapter implements Adapter {
       const destKey = destination + relativePath;
 
       // Copy object
-      await retryWithBackoff(
-        () => {
-          const copyCommand = new CopyObjectCommand({
-            Bucket: this.bucket,
-            CopySource: `${this.bucket}/${srcKey}`,
-            Key: destKey,
-            MetadataDirective: 'COPY', // Preserve metadata
-          });
-          return this.client.send(copyCommand);
-        },
-        getS3RetryConfig()
-      );
+      await retryWithBackoff(() => {
+        const copyCommand = new CopyObjectCommand({
+          Bucket: this.bucket,
+          CopySource: `${this.bucket}/${srcKey}`,
+          Key: destKey,
+          MetadataDirective: 'COPY', // Preserve metadata
+        });
+        return this.client.send(copyCommand);
+      }, getS3RetryConfig());
 
       // Delete original
-      await retryWithBackoff(
-        () => {
-          const deleteCommand = new DeleteObjectCommand({
-            Bucket: this.bucket,
-            Key: srcKey,
-          });
-          return this.client.send(deleteCommand);
-        },
-        getS3RetryConfig()
-      );
+      await retryWithBackoff(() => {
+        const deleteCommand = new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: srcKey,
+        });
+        return this.client.send(deleteCommand);
+      }, getS3RetryConfig());
 
       // Report progress
       if (options?.onProgress) {
@@ -836,16 +792,17 @@ export class S3Adapter implements Adapter {
   /**
    * Copy a file or directory
    */
-  async copy(source: string, destination: string, optionsOrBucket?: OperationOptions | string): Promise<void> {
+  async copy(
+    source: string,
+    destination: string,
+    optionsOrBucket?: OperationOptions | string
+  ): Promise<void> {
     const srcNormalized = this.normalizePath(source);
     // Support both old targetBucket parameter and new OperationOptions
     const targetBucket = typeof optionsOrBucket === 'string' ? optionsOrBucket : undefined;
     const options = typeof optionsOrBucket === 'object' ? optionsOrBucket : undefined;
     const destBucket = targetBucket || this.bucket;
-    const destNormalized = this.normalizePath(
-      destination,
-      source.endsWith('/')
-    );
+    const destNormalized = this.normalizePath(destination, source.endsWith('/'));
 
     try {
       // Check if source is a directory
@@ -865,19 +822,20 @@ export class S3Adapter implements Adapter {
   /**
    * Copy a single file
    */
-  private async copySingleFile(source: string, destination: string, targetBucket: string): Promise<void> {
-    await retryWithBackoff(
-      () => {
-        const command = new CopyObjectCommand({
-          Bucket: targetBucket,
-          CopySource: `${this.bucket}/${source}`,
-          Key: destination,
-          MetadataDirective: 'COPY', // Preserve metadata
-        });
-        return this.client.send(command);
-      },
-      getS3RetryConfig()
-    );
+  private async copySingleFile(
+    source: string,
+    destination: string,
+    targetBucket: string
+  ): Promise<void> {
+    await retryWithBackoff(() => {
+      const command = new CopyObjectCommand({
+        Bucket: targetBucket,
+        CopySource: `${this.bucket}/${source}`,
+        Key: destination,
+        MetadataDirective: 'COPY', // Preserve metadata
+      });
+      return this.client.send(command);
+    }, getS3RetryConfig());
   }
 
   /**
@@ -890,26 +848,24 @@ export class S3Adapter implements Adapter {
     options?: OperationOptions
   ): Promise<void> {
     const objectsToCopy: string[] = [];
-    
+
     // List all objects with pagination
     let continuationToken: string | undefined;
     do {
-      const response = await retryWithBackoff(
-        () => {
-          const command = new ListObjectsV2Command({
-            Bucket: this.bucket,
-            Prefix: source,
-            ContinuationToken: continuationToken,
-          });
-          return this.client.send(command);
-        },
-        getS3RetryConfig()
-      );
+      const response = await retryWithBackoff(() => {
+        const command = new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: source,
+          ContinuationToken: continuationToken,
+        });
+        return this.client.send(command);
+      }, getS3RetryConfig());
 
       // Collect objects to copy
       if (response.Contents) {
         for (const obj of response.Contents) {
-          if (obj.Key && obj.Key !== source) { // Skip the directory marker itself
+          if (obj.Key && obj.Key !== source) {
+            // Skip the directory marker itself
             objectsToCopy.push(obj.Key);
           }
         }
@@ -924,18 +880,15 @@ export class S3Adapter implements Adapter {
       const relativePath = srcKey.substring(source.length);
       const destKey = destination + relativePath;
 
-      await retryWithBackoff(
-        () => {
-          const command = new CopyObjectCommand({
-            Bucket: targetBucket,
-            CopySource: `${this.bucket}/${srcKey}`,
-            Key: destKey,
-            MetadataDirective: 'COPY', // Preserve metadata
-          });
-          return this.client.send(command);
-        },
-        getS3RetryConfig()
-      );
+      await retryWithBackoff(() => {
+        const command = new CopyObjectCommand({
+          Bucket: targetBucket,
+          CopySource: `${this.bucket}/${srcKey}`,
+          Key: destKey,
+          MetadataDirective: 'COPY', // Preserve metadata
+        });
+        return this.client.send(command);
+      }, getS3RetryConfig());
 
       // Report progress
       if (options?.onProgress) {
@@ -957,16 +910,13 @@ export class S3Adapter implements Adapter {
     const normalized = this.normalizePath(path);
 
     try {
-      await retryWithBackoff(
-        () => {
-          const command = new HeadObjectCommand({
-            Bucket: this.bucket,
-            Key: normalized,
-          });
-          return this.client.send(command);
-        },
-        getS3RetryConfig()
-      );
+      await retryWithBackoff(() => {
+        const command = new HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: normalized,
+        });
+        return this.client.send(command);
+      }, getS3RetryConfig());
       return true;
     } catch (error) {
       return false;

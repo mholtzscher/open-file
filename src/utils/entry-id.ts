@@ -1,6 +1,6 @@
 /**
  * Entry ID generation and management utilities
- * 
+ *
  * Entry IDs uniquely identify entries across buffer edits.
  * This allows us to track which entries have been renamed, moved, or deleted.
  */
@@ -9,7 +9,7 @@ import { randomBytes } from 'crypto';
 
 /**
  * Generate a unique entry ID
- * 
+ *
  * Uses a combination of timestamp and random bytes for uniqueness
  * Format: "entry_<timestamp>_<random>"
  */
@@ -28,7 +28,7 @@ export function isValidEntryId(id: string): boolean {
 
 /**
  * Map for tracking entry IDs during buffer edits
- * 
+ *
  * Maintains mapping from entry path to ID so we can track changes
  */
 export class EntryIdMap {

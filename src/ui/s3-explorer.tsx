@@ -1,6 +1,6 @@
 /**
  * S3Explorer React component
- * 
+ *
  * Main application component that manages the S3 bucket exploration interface.
  * Declarative React component that uses hooks for state management and rendering.
  */
@@ -58,15 +58,15 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
       onLoadBuffer: async (path: string) => {
         try {
           const result = await adapter.list(path);
-          
+
           // Update buffer state with new entries and current path
           // Create a new array to ensure React detects the change
           bufferState.setEntries([...result.entries]);
           bufferState.setCurrentPath(path);
-          
+
           // Reset cursor to top of new directory
           bufferState.cursorToTop();
-          
+
           setStatusMessage(`Navigated to ${path}`);
           setStatusMessageColor(CatppuccinMocha.green);
         } catch (err) {
@@ -91,18 +91,18 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   const keyboardHandlers = useMemo(
     () => ({
       onNavigateInto: () => navigationHandlers.navigateInto(),
-       onNavigateUp: async () => {
-         const currentPath = bufferState.currentPath;
-         const parts = currentPath.split('/').filter(p => p);
-         
-         if (parts.length > 0) {
-           // Remove last part to go up one level
-           parts.pop();
-           // If no parts left, we're going to root (empty path)
-           const parentPath = parts.length > 0 ? parts.join('/') + '/' : '';
-           await navigationHandlers.navigateToPath(parentPath);
-         }
-       },
+      onNavigateUp: async () => {
+        const currentPath = bufferState.currentPath;
+        const parts = currentPath.split('/').filter(p => p);
+
+        if (parts.length > 0) {
+          // Remove last part to go up one level
+          parts.pop();
+          // If no parts left, we're going to root (empty path)
+          const parentPath = parts.length > 0 ? parts.join('/') + '/' : '';
+          await navigationHandlers.navigateToPath(parentPath);
+        }
+      },
       onDelete: () => {
         const selected = bufferState.getSelectedEntries();
         if (selected.length > 0) {
@@ -132,41 +132,44 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
     };
   }, [handleKeyDown]);
 
-    // Initialize data from adapter
-    useEffect(() => {
-      const initializeData = async () => {
-        try {
-          const path = bufferState.currentPath;
-          console.error(`[S3Explorer] Initializing data...`);
-          console.error(`[S3Explorer] Loading bucket: ${bucket}, path: "${path}"`);
-          const result = await adapter.list(path);
-          console.error(`[S3Explorer] Received ${result.entries.length} entries`);
-          console.error(`[S3Explorer] Entries:`, result.entries.map(e => e.name));
-          
-          // Load entries into buffer state
-          bufferState.setEntries([...result.entries]);
-          console.error(`[S3Explorer] Entries loaded into buffer state`);
-          
-          setStatusMessage(`Loaded ${result.entries.length} items`);
-          setStatusMessageColor(CatppuccinMocha.green);
-          console.error(`[S3Explorer] Status message set, about to set initialized`);
-          setIsInitialized(true);
-          console.error(`[S3Explorer] Initialized set to true`);
-         } catch (err) {
-           console.error('[S3Explorer] Error loading bucket:', err);
-           const parsedError = parseAwsError(err, 'Failed to load bucket');
-           const errorDisplay = formatErrorForDisplay(parsedError, 70);
-           console.error('[S3Explorer] Setting error message:', errorDisplay);
-           setStatusMessage(errorDisplay);
-           setStatusMessageColor(CatppuccinMocha.red);
-           setIsInitialized(true); // Set initialized even on error so we show the error
-           console.error('[S3Explorer] Initialized set to true after error');
-         }
-      };
+  // Initialize data from adapter
+  useEffect(() => {
+    const initializeData = async () => {
+      try {
+        const path = bufferState.currentPath;
+        console.error(`[S3Explorer] Initializing data...`);
+        console.error(`[S3Explorer] Loading bucket: ${bucket}, path: "${path}"`);
+        const result = await adapter.list(path);
+        console.error(`[S3Explorer] Received ${result.entries.length} entries`);
+        console.error(
+          `[S3Explorer] Entries:`,
+          result.entries.map(e => e.name)
+        );
 
-      console.error(`[S3Explorer] useEffect triggered`);
-      initializeData();
-    }, [bucket, adapter, bufferState.currentPath, bufferState.setEntries]);
+        // Load entries into buffer state
+        bufferState.setEntries([...result.entries]);
+        console.error(`[S3Explorer] Entries loaded into buffer state`);
+
+        setStatusMessage(`Loaded ${result.entries.length} items`);
+        setStatusMessageColor(CatppuccinMocha.green);
+        console.error(`[S3Explorer] Status message set, about to set initialized`);
+        setIsInitialized(true);
+        console.error(`[S3Explorer] Initialized set to true`);
+      } catch (err) {
+        console.error('[S3Explorer] Error loading bucket:', err);
+        const parsedError = parseAwsError(err, 'Failed to load bucket');
+        const errorDisplay = formatErrorForDisplay(parsedError, 70);
+        console.error('[S3Explorer] Setting error message:', errorDisplay);
+        setStatusMessage(errorDisplay);
+        setStatusMessageColor(CatppuccinMocha.red);
+        setIsInitialized(true); // Set initialized even on error so we show the error
+        console.error('[S3Explorer] Initialized set to true after error');
+      }
+    };
+
+    console.error(`[S3Explorer] useEffect triggered`);
+    initializeData();
+  }, [bucket, adapter, bufferState.currentPath, bufferState.setEntries]);
 
   if (!isInitialized) {
     return (
@@ -176,67 +179,58 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
     );
   }
 
-   // Show error panel if there's an error message
-   const showErrorPanel = statusMessage && statusMessageColor === CatppuccinMocha.red;
-   const errorPanelHeight = showErrorPanel ? 6 : 0;
-   const adjustedContentHeight = showErrorPanel ? layout.contentHeight - errorPanelHeight : layout.contentHeight;
+  // Show error panel if there's an error message
+  const showErrorPanel = statusMessage && statusMessageColor === CatppuccinMocha.red;
+  const errorPanelHeight = showErrorPanel ? 6 : 0;
+  const adjustedContentHeight = showErrorPanel
+    ? layout.contentHeight - errorPanelHeight
+    : layout.contentHeight;
 
-   return (
-     <>
-       {/* Header */}
-       <text
-         position="absolute"
-         left={2}
-         top={0}
-         fg={CatppuccinMocha.blue}
-       >
-         open-s3: {bucket} ({terminalSize.width}x{terminalSize.height})
-       </text>
+  return (
+    <>
+      {/* Header */}
+      <text position="absolute" left={2} top={0} fg={CatppuccinMocha.blue}>
+        open-s3: {bucket} ({terminalSize.width}x{terminalSize.height})
+      </text>
 
-       {/* Error Panel - shows when there's an error */}
-       {showErrorPanel && (
-         <box
-           position="absolute"
-           left={2}
-           top={layout.headerHeight}
-           width={terminalSize.width - 4}
-           height={errorPanelHeight}
-           borderStyle="rounded"
-           borderColor={CatppuccinMocha.red}
-           backgroundColor={CatppuccinMocha.base}
-           title="ERROR"
-         >
-           <text
-             position="absolute"
-             left={2}
-             top={1}
-             right={2}
-             fg={CatppuccinMocha.red}
-           >
-             {statusMessage}
-           </text>
-         </box>
-       )}
+      {/* Error Panel - shows when there's an error */}
+      {showErrorPanel && (
+        <box
+          position="absolute"
+          left={2}
+          top={layout.headerHeight}
+          width={terminalSize.width - 4}
+          height={errorPanelHeight}
+          borderStyle="rounded"
+          borderColor={CatppuccinMocha.red}
+          backgroundColor={CatppuccinMocha.base}
+          title="ERROR"
+        >
+          <text position="absolute" left={2} top={1} right={2} fg={CatppuccinMocha.red}>
+            {statusMessage}
+          </text>
+        </box>
+      )}
 
-       {/* Buffer View - responsive to terminal size */}
-       <BufferView
-         bufferState={bufferState}
-         left={2}
-         top={layout.headerHeight + errorPanelHeight}
-         height={adjustedContentHeight}
-         showIcons={!terminalSize.isSmall}
-         showSizes={!terminalSize.isSmall}
-         showDates={!terminalSize.isMedium}
-       />
+      {/* Buffer View - responsive to terminal size */}
+      <BufferView
+        bufferState={bufferState}
+        left={2}
+        top={layout.headerHeight + errorPanelHeight}
+        height={adjustedContentHeight}
+        showIcons={!terminalSize.isSmall}
+        showSizes={!terminalSize.isSmall}
+        showDates={!terminalSize.isMedium}
+      />
 
-       {/* Status Bar */}
-       <StatusBar
-         path={bufferState.currentPath}
-         mode={bufferState.mode}
-         message={statusMessage && !showErrorPanel ? statusMessage : undefined}
-         messageColor={statusMessageColor}
-         searchQuery={bufferState.searchQuery}
-       />
+      {/* Status Bar */}
+      <StatusBar
+        path={bufferState.currentPath}
+        mode={bufferState.mode}
+        message={statusMessage && !showErrorPanel ? statusMessage : undefined}
+        messageColor={statusMessageColor}
+        searchQuery={bufferState.searchQuery}
+      />
 
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
@@ -274,13 +268,8 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
           backgroundColor={CatppuccinMocha.base}
           title="Help"
         >
-          <text
-            position="absolute"
-            left={2}
-            top={1}
-            fg={CatppuccinMocha.text}
-          >
-            j/k - navigate  |  v - select  |  dd - delete  |  w - save  |  q - quit
+          <text position="absolute" left={2} top={1} fg={CatppuccinMocha.text}>
+            j/k - navigate | v - select | dd - delete | w - save | q - quit
           </text>
         </box>
       )}

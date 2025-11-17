@@ -3,6 +3,7 @@
 ## Current State vs. Target State
 
 ### 🔴 Current State: Complete Chaos
+
 ```
 bd-467 (Epic)           bd-txk (Epic)           bd-oy5 (Epic)
    |                       |                        |
@@ -23,6 +24,7 @@ NO CONNECTIONS BETWEEN ANY TASKS!
 ### 🟢 Target State: Clear Hierarchy
 
 #### Tier 1: Foundation Types (Must Come First)
+
 ```
 ┌─────────────────────────────────────────────┐
 │           TYPE DEFINITIONS                  │
@@ -34,6 +36,7 @@ NO CONNECTIONS BETWEEN ANY TASKS!
 ```
 
 #### Tier 2: Core Infrastructure
+
 ```
 ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
 │  FOUNDATION  │  │  UI LAYER    │  │  S3 ADAPTER  │
@@ -47,6 +50,7 @@ NO CONNECTIONS BETWEEN ANY TASKS!
 ```
 
 #### Tier 3: Save Operation (Critical Linear Path)
+
 ```
 START
   │
@@ -81,6 +85,7 @@ START
 ## Dependency Categories
 
 ### 1️⃣ Foundation Layer (Must Execute First)
+
 ```
 bd-2cl ──┬──→ bd-807 (BufferState needs Entry type)
 (Entry)  ├──→ bd-0sv (BufferView needs Entry type)
@@ -103,6 +108,7 @@ bd-pdh ──┬──→ bd-56l (OperationPlan contains operations)
 ```
 
 ### 2️⃣ UI Component Layer (Hierarchical)
+
 ```
 bd-xxq (App)
   │
@@ -115,7 +121,7 @@ bd-xxq (App)
   │    │
   │    └─→ bd-7rr (Buffer loading)
   │
-  ├─→ bd-0sv (BufferView) 
+  ├─→ bd-0sv (BufferView)
   │    └─→ [see above]
   │
   └─→ bd-ziy (StatusBar)
@@ -123,6 +129,7 @@ bd-xxq (App)
 ```
 
 ### 3️⃣ Save Operation Layer (Linear Sequence)
+
 ```
 INFRASTRUCTURE:
   bd-2fk (Entry ID) ────┐
@@ -138,6 +145,7 @@ SUPPORTING:
 ```
 
 ### 4️⃣ S3 Backend Layer (Fan-Out)
+
 ```
 Setup & Config:
   bd-0fg (S3 client setup)
@@ -158,6 +166,7 @@ Error Handling:
 ```
 
 ### 5️⃣ Navigation Layer (Mode-Based)
+
 ```
 System:
   bd-ycl (Mode system)
@@ -184,6 +193,7 @@ Advanced:
 ## Dependency Density Map
 
 ### Current Distribution
+
 ```
 Dependencies:   0 ■ (absolutely barren)
 Tasks:         68 ■■■■■■■■■■■■■■■■■■■■■■ (many independent)
@@ -193,6 +203,7 @@ CHAOS METRIC: 99.8% (tasks are orphaned from hierarchy)
 ```
 
 ### Target Distribution
+
 ```
 Dependencies: 122 ■■■■■■■■■■■■■■■■■■■■■■■■■■ (well-structured)
 Tasks:         68 ■■■■■■■■■■■■■■■■■■■■■■ (interconnected)
@@ -206,6 +217,7 @@ ORDER METRIC: 65% (clear critical paths visible)
 ## Impact Analysis by Task Category
 
 ### 🔴 CRITICAL (Blocks Multiple Paths)
+
 ```
 Task              │ Current   │ After Fix │ Impact
 ──────────────────┼───────────┼───────────┼─────────────────
@@ -217,6 +229,7 @@ bd-ycl (Mode)     │ 0 blocks  │ 8 blocks  │ All nav blocked
 ```
 
 ### 🟠 HIGH PRIORITY (Blocks Significant Features)
+
 ```
 Task              │ Blocks    │ Reason
 ──────────────────┼───────────┼─────────────────
@@ -228,6 +241,7 @@ bd-6g8 (List)     │ 2 tasks   │ Bucket operations
 ```
 
 ### 🟡 MEDIUM PRIORITY (Nice Dependencies)
+
 ```
 Task              │ Blocks    │ Reason
 ──────────────────┼───────────┼─────────────────
@@ -241,6 +255,7 @@ bd-807 (State)    │ 2 tasks   │ Buffer operations
 ## Critical Path Analysis
 
 ### Longest Chain: Save Operation
+
 ```
 Depth: 7 levels
 Length: bd-2fk → bd-bga → bd-2pd → bd-19s → bd-0j3 → bd-ret
@@ -253,12 +268,13 @@ Impact: HIGH - Entire save system is sequential
 ```
 
 ### Widest Fan-Out: Type Foundation
+
 ```
 Depth: 1 level (directly blocks)
 Width: 14+ tasks affected
 
 bd-2cl blocks:   9 tasks
-bd-38p blocks:   5 tasks  
+bd-38p blocks:   5 tasks
 bd-pdh blocks:   4 tasks
 (some overlap)
 
@@ -266,6 +282,7 @@ Impact: CRITICAL - Types are prerequisite to everything
 ```
 
 ### Bottleneck: S3 Setup
+
 ```
 bd-0fg (S3 setup)
   │
@@ -285,45 +302,48 @@ Impact: MEDIUM - Could parallelize all 6 after setup
 ## Metrics Summary
 
 ### Connectivity
+
 ```
 Components that are "islands" (no dependencies):
   Current:  68/68 tasks (100% isolated)
   Target:   0/68 tasks  (all connected)
-  
+
 Average dependencies per task:
   Current:  0
   Target:   1.8
-  
+
 Tasks with parents (epic links):
   Current:  0/68 (0%)
   Target:   68/68 (100%)
 ```
 
 ### Blocking
+
 ```
 Tasks with blockers:
   Current:  0
   Target:   45-50
-  
+
 Fully ready tasks:
   Current:  68 (all ready, but meaningless)
   Target:   10-15 (truly ready after dependencies added)
-  
+
 Blocked by single task:
   Current:  0
   Target:   ~20 (bd-2cl, bd-38p, bd-0fg, etc.)
 ```
 
 ### Structure
+
 ```
 Epics without tasks:
   Current:  0 (all show dependents)
   Target:   0 (all have parent-child links)
-  
+
 Circular dependencies:
   Current:  0 ✓
   Target:   0 ✓ (no circles to introduce)
-  
+
 Task ordering complexity:
   Current:  Impossible (no ordering)
   Target:   Clear (critical paths visible)
@@ -374,4 +394,3 @@ Week 3:
 
 RESULT: 122+ dependencies properly mapped ✓
 ```
-

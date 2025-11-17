@@ -1,6 +1,6 @@
 /**
  * StatusBar React component
- * 
+ *
  * Displays current path, mode, and status messages at the bottom of the screen
  */
 
@@ -61,12 +61,7 @@ export function StatusBar({
   // Render as a simplified text status bar
   return (
     <>
-      <text
-        position="absolute"
-        left={2}
-        bottom={0}
-        fg={CatppuccinMocha.yellow}
-      >
+      <text position="absolute" left={2} bottom={0} fg={CatppuccinMocha.yellow}>
         {leftContent}
       </text>
       <text

@@ -25,7 +25,7 @@ describe('IconColumn', () => {
       name: 'test',
       type: EntryType.Directory,
     };
-    
+
     const result = column.render(entry);
     expect(result).toContain('📁');
   });
@@ -37,7 +37,7 @@ describe('IconColumn', () => {
       name: 'test.txt',
       type: EntryType.File,
     };
-    
+
     const result = column.render(entry);
     expect(result).toContain('📄');
   });
@@ -51,7 +51,7 @@ describe('NameColumn', () => {
       name: 'mydir',
       type: EntryType.Directory,
     };
-    
+
     const result = column.render(entry);
     expect(result).toContain('mydir/');
   });
@@ -63,7 +63,7 @@ describe('NameColumn', () => {
       name: 'file.txt',
       type: EntryType.File,
     };
-    
+
     const result = column.render(entry);
     expect(result).toContain('file.txt');
     expect(result).not.toContain('file.txt/');
@@ -76,7 +76,7 @@ describe('NameColumn', () => {
       name: 'x',
       type: EntryType.File,
     };
-    
+
     const result = column.render(entry);
     // Width is 35 + 2 extra spaces
     expect(result.length).toBeGreaterThanOrEqual(35);
@@ -91,7 +91,7 @@ describe('SizeColumn', () => {
       name: 'dir',
       type: EntryType.Directory,
     };
-    
+
     const result = column.render(entry);
     expect(result).toContain('-');
   });
@@ -104,7 +104,7 @@ describe('SizeColumn', () => {
       type: EntryType.File,
       size: 512,
     };
-    
+
     const result = column.render(entry);
     expect(result).toContain('B');
   });
@@ -117,7 +117,7 @@ describe('SizeColumn', () => {
       type: EntryType.File,
       size: 10 * 1024,
     };
-    
+
     const result = column.render(entry);
     expect(result).toContain('KB');
   });
@@ -130,7 +130,7 @@ describe('SizeColumn', () => {
       type: EntryType.File,
       size: 5 * 1024 * 1024,
     };
-    
+
     const result = column.render(entry);
     expect(result).toContain('MB');
   });
@@ -143,7 +143,7 @@ describe('SizeColumn', () => {
       type: EntryType.File,
       size: 2 * 1024 * 1024 * 1024,
     };
-    
+
     const result = column.render(entry);
     expect(result).toContain('GB');
   });
@@ -157,7 +157,7 @@ describe('DateColumn', () => {
       name: 'file.txt',
       type: EntryType.File,
     };
-    
+
     const result = column.render(entry);
     expect(result).toContain('-');
   });
@@ -171,7 +171,7 @@ describe('DateColumn', () => {
       type: EntryType.File,
       modified: date,
     };
-    
+
     const result = column.render(entry);
     expect(result).toMatch(/\d{2}\/\d{2}\/\d{2}/);
   });
@@ -197,7 +197,7 @@ describe('Column functions', () => {
       size: 1024,
       modified: new Date('2024-01-15'),
     };
-    
+
     const result = renderRow(entry, columns);
     expect(result.length).toBeGreaterThan(0);
   });
@@ -211,7 +211,7 @@ describe('Column functions', () => {
   it('should toggle column visibility', () => {
     const columns = getDefaultColumns();
     const updated = toggleColumn(columns, 'size');
-    
+
     const sizeColumn = updated.find(c => c.id === 'size');
     expect(sizeColumn?.visible).toBe(false);
   });
@@ -219,7 +219,7 @@ describe('Column functions', () => {
   it('should set column width', () => {
     const columns = getDefaultColumns();
     const updated = setColumnWidth(columns, 'name', 50);
-    
+
     const nameColumn = updated.find(c => c.id === 'name');
     expect(nameColumn?.width).toBe(50);
   });

@@ -1,6 +1,6 @@
 /**
  * Custom React hook for tracking terminal size
- * 
+ *
  * Monitors terminal resize events and provides reactive dimensions.
  * Helps create responsive layouts that adapt to terminal size changes.
  */
@@ -16,7 +16,7 @@ export interface UseTerminalSizeReturn {
   size: TerminalSize;
   width: number;
   height: number;
-  isSmall: boolean;  // width < 60 or height < 10
+  isSmall: boolean; // width < 60 or height < 10
   isMedium: boolean; // width < 100 or height < 20
 }
 
@@ -30,7 +30,7 @@ const DEFAULT_SIZE: TerminalSize = {
 
 /**
  * Custom hook for terminal size tracking
- * 
+ *
  * Provides reactive terminal dimensions that update on resize events.
  * Works with OpenTUI and Bun's terminal APIs.
  */
@@ -103,7 +103,7 @@ export function useTerminalSize(): UseTerminalSizeReturn {
 
 /**
  * Helper hook to calculate layout dimensions
- * 
+ *
  * Provides precalculated dimensions for common layout patterns
  */
 export interface LayoutDimensions {

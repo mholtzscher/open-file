@@ -11,7 +11,9 @@
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist --target bun",
-    "test": "bun test"
+    "test": "bun test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "keywords": [
     "s3",
@@ -23,6 +25,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/bun": "latest",
+    "prettier": "^3.6.2",
     "typescript": "^5.9.3"
   },
   "dependencies": {

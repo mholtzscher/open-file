@@ -10,6 +10,7 @@
 **License:** MIT
 
 ### Key Characteristics
+
 - **TypeScript-first** with full type safety
 - **Component-based architecture** using Yoga layout engine
 - **Multiple renderers**: React, SolidJS, and imperative API
@@ -24,25 +25,27 @@
 ### System Components
 
 #### 1.1 CliRenderer (Central Hub)
+
 The `CliRenderer` is the heart of OpenTUI - it orchestrates the entire application.
 
 ```typescript
-import { createCliRenderer } from "@opentui/core"
+import { createCliRenderer } from '@opentui/core';
 
 const renderer = await createCliRenderer({
   targetFps: 60,
   consoleOptions: {
-    position: "bottom",
+    position: 'bottom',
     sizePercent: 30,
   },
   exitOnCtrlC: true,
-})
+});
 
 // Optional: Start rendering loop
-renderer.start()
+renderer.start();
 ```
 
 **Responsibilities:**
+
 - Manages terminal output and rendering
 - Handles input events and keyboard input
 - Orchestrates rendering loop (optional live mode)
@@ -52,14 +55,16 @@ renderer.start()
 #### 1.2 Rendering System
 
 **Three-tier architecture:**
+
 1. **Renderables** - Low-level visual components
 2. **Constructs** - Component constructors (like React)
 3. **Reconcilers** - Framework integrations (React/Solid)
 
 **Live vs. Passive Rendering:**
+
 ```typescript
 // Live mode - continuous rendering loop
-await renderer.start()
+await renderer.start();
 
 // Passive mode - only render on changes
 // The renderer works standalone without calling start()
@@ -67,71 +72,74 @@ await renderer.start()
 ```
 
 #### 1.3 Layout Engine
+
 OpenTUI uses **Yoga** (Facebook's layout engine) providing CSS Flexbox-like capabilities.
 
 ```typescript
-import { GroupRenderable, BoxRenderable } from "@opentui/core"
+import { GroupRenderable, BoxRenderable } from '@opentui/core';
 
 const container = new GroupRenderable(renderer, {
-  id: "container",
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  width: "100%",
+  id: 'container',
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  width: '100%',
   height: 10,
   gap: 2,
-})
+});
 
 const child1 = new BoxRenderable(renderer, {
   flexGrow: 1,
-  height: "100%",
-  backgroundColor: "#444",
-})
+  height: '100%',
+  backgroundColor: '#444',
+});
 
 const child2 = new BoxRenderable(renderer, {
   width: 20,
-  height: "100%",
-  backgroundColor: "#666",
-})
+  height: '100%',
+  backgroundColor: '#666',
+});
 
-container.add(child1)
-container.add(child2)
-renderer.root.add(container)
+container.add(child1);
+container.add(child2);
+renderer.root.add(container);
 ```
 
 #### 1.4 Color System (RGBA)
+
 Consistent color handling throughout the framework.
 
 ```typescript
-import { RGBA, parseColor } from "@opentui/core"
+import { RGBA, parseColor } from '@opentui/core';
 
 // Multiple ways to specify colors
-const red1 = RGBA.fromInts(255, 0, 0, 255)
-const blue1 = RGBA.fromValues(0.0, 0.0, 1.0, 1.0)
-const green1 = RGBA.fromHex("#00FF00")
-const transparent = RGBA.fromValues(1, 1, 1, 0.5)
+const red1 = RGBA.fromInts(255, 0, 0, 255);
+const blue1 = RGBA.fromValues(0.0, 0.0, 1.0, 1.0);
+const green1 = RGBA.fromHex('#00FF00');
+const transparent = RGBA.fromValues(1, 1, 1, 0.5);
 
 // Use parseColor for flexible input
-const color = parseColor("#FF0000")
+const color = parseColor('#FF0000');
 ```
 
 #### 1.5 Event System
+
 EventEmitter-based architecture for keyboard input and component events.
 
 ```typescript
-import { type KeyEvent } from "@opentui/core"
+import { type KeyEvent } from '@opentui/core';
 
-renderer.keyInput.on("keypress", (key: KeyEvent) => {
-  console.log("Key:", key.name)
-  console.log("Ctrl:", key.ctrl)
-  console.log("Shift:", key.shift)
-  console.log("Alt:", key.meta)
-  console.log("Option:", key.option)
-})
+renderer.keyInput.on('keypress', (key: KeyEvent) => {
+  console.log('Key:', key.name);
+  console.log('Ctrl:', key.ctrl);
+  console.log('Shift:', key.shift);
+  console.log('Alt:', key.meta);
+  console.log('Option:', key.option);
+});
 
-renderer.keyInput.on("paste", (text: string) => {
-  console.log("Pasted:", text)
-})
+renderer.keyInput.on('paste', (text: string) => {
+  console.log('Pasted:', text);
+});
 ```
 
 ---
@@ -143,30 +151,30 @@ renderer.keyInput.on("paste", (text: string) => {
 Display styled text with colors, attributes, and formatting.
 
 ```typescript
-import { TextRenderable, TextAttributes, t, bold, underline, fg } from "@opentui/core"
+import { TextRenderable, TextAttributes, t, bold, underline, fg } from '@opentui/core';
 
 // Simple text
 const simple = new TextRenderable(renderer, {
-  id: "simple-text",
-  content: "Hello, World!",
-  fg: "#00FF00",
+  id: 'simple-text',
+  content: 'Hello, World!',
+  fg: '#00FF00',
   attributes: TextAttributes.BOLD | TextAttributes.UNDERLINE,
-  position: "absolute",
+  position: 'absolute',
   left: 5,
   top: 2,
-})
+});
 
 // Styled text using template literals
 const styled = new TextRenderable(renderer, {
-  id: "styled-text",
-  content: t`${bold("Bold")} ${underline("Underlined")} ${fg("#FF0000")("Red")}`,
-  position: "absolute",
+  id: 'styled-text',
+  content: t`${bold('Bold')} ${underline('Underlined')} ${fg('#FF0000')('Red')}`,
+  position: 'absolute',
   left: 5,
   top: 5,
-})
+});
 
-renderer.root.add(simple)
-renderer.root.add(styled)
+renderer.root.add(simple);
+renderer.root.add(styled);
 ```
 
 ### 2.2 Box (BoxRenderable)
@@ -174,24 +182,24 @@ renderer.root.add(styled)
 Container with borders, backgrounds, and titles.
 
 ```typescript
-import { BoxRenderable } from "@opentui/core"
+import { BoxRenderable } from '@opentui/core';
 
 const panel = new BoxRenderable(renderer, {
-  id: "settings-panel",
+  id: 'settings-panel',
   width: 40,
   height: 15,
-  backgroundColor: "#1a1a2e",
-  borderStyle: "double",
-  borderColor: "#00FF00",
-  title: "Settings",
-  titleAlignment: "center",
+  backgroundColor: '#1a1a2e',
+  borderStyle: 'double',
+  borderColor: '#00FF00',
+  title: 'Settings',
+  titleAlignment: 'center',
   padding: { top: 1, left: 2, right: 2, bottom: 1 },
-  position: "absolute",
+  position: 'absolute',
   left: 10,
   top: 5,
-})
+});
 
-renderer.root.add(panel)
+renderer.root.add(panel);
 ```
 
 ### 2.3 Input (InputRenderable)
@@ -199,34 +207,34 @@ renderer.root.add(panel)
 Text input field with cursor and validation support.
 
 ```typescript
-import { InputRenderable, InputRenderableEvents } from "@opentui/core"
+import { InputRenderable, InputRenderableEvents } from '@opentui/core';
 
 const nameInput = new InputRenderable(renderer, {
-  id: "name-input",
-  position: "absolute",
+  id: 'name-input',
+  position: 'absolute',
   left: 5,
   top: 2,
   width: 40,
   height: 3,
-  backgroundColor: "#001122",
-  textColor: "#FFFFFF",
-  placeholder: "Enter your name...",
-  placeholderColor: "#666666",
-  cursorColor: "#FFFF00",
-  value: "",
+  backgroundColor: '#001122',
+  textColor: '#FFFFFF',
+  placeholder: 'Enter your name...',
+  placeholderColor: '#666666',
+  cursorColor: '#FFFF00',
+  value: '',
   maxLength: 50,
-})
+});
 
 nameInput.on(InputRenderableEvents.INPUT, (value: string) => {
-  console.log("Input:", value)
-})
+  console.log('Input:', value);
+});
 
 nameInput.on(InputRenderableEvents.CHANGE, (value: string) => {
-  console.log("Submitted:", value)
-})
+  console.log('Submitted:', value);
+});
 
-nameInput.focus()
-renderer.root.add(nameInput)
+nameInput.focus();
+renderer.root.add(nameInput);
 ```
 
 ### 2.4 Select (SelectRenderable)
@@ -234,37 +242,37 @@ renderer.root.add(nameInput)
 List selection component with descriptions and navigation.
 
 ```typescript
-import { SelectRenderable, SelectRenderableEvents, type SelectOption } from "@opentui/core"
+import { SelectRenderable, SelectRenderableEvents, type SelectOption } from '@opentui/core';
 
 const options: SelectOption[] = [
-  { name: "New File", description: "Create a new file", value: "new" },
-  { name: "Open File", description: "Open an existing file", value: "open" },
-  { name: "Exit", description: "Exit the application", value: "exit" },
-]
+  { name: 'New File', description: 'Create a new file', value: 'new' },
+  { name: 'Open File', description: 'Open an existing file', value: 'open' },
+  { name: 'Exit', description: 'Exit the application', value: 'exit' },
+];
 
 const menu = new SelectRenderable(renderer, {
-  id: "main-menu",
-  position: "absolute",
+  id: 'main-menu',
+  position: 'absolute',
   left: 5,
   top: 3,
   width: 40,
   height: 12,
   options: options,
-  backgroundColor: "#1e293b",
-  selectedBackgroundColor: "#3b82f6",
-  textColor: "#e2e8f0",
-  descriptionColor: "#94a3b8",
+  backgroundColor: '#1e293b',
+  selectedBackgroundColor: '#3b82f6',
+  textColor: '#e2e8f0',
+  descriptionColor: '#94a3b8',
   showDescription: true,
   showScrollIndicator: true,
   wrapSelection: true,
-})
+});
 
 menu.on(SelectRenderableEvents.ITEM_SELECTED, (index: number, option: SelectOption) => {
-  console.log("Selected:", option.name)
-})
+  console.log('Selected:', option.name);
+});
 
-menu.focus()
-renderer.root.add(menu)
+menu.focus();
+renderer.root.add(menu);
 ```
 
 ### 2.5 TabSelect (TabSelectRenderable)
@@ -272,30 +280,30 @@ renderer.root.add(menu)
 Horizontal tab-based selection component.
 
 ```typescript
-import { TabSelectRenderable, TabSelectRenderableEvents } from "@opentui/core"
+import { TabSelectRenderable, TabSelectRenderableEvents } from '@opentui/core';
 
 const tabs = new TabSelectRenderable(renderer, {
-  id: "main-tabs",
-  position: "absolute",
+  id: 'main-tabs',
+  position: 'absolute',
   left: 2,
   top: 1,
   width: 60,
   options: [
-    { name: "Home", description: "Dashboard", value: "home" },
-    { name: "Files", description: "File management", value: "files" },
-    { name: "Settings", description: "Settings", value: "settings" },
+    { name: 'Home', description: 'Dashboard', value: 'home' },
+    { name: 'Files', description: 'File management', value: 'files' },
+    { name: 'Settings', description: 'Settings', value: 'settings' },
   ],
   tabWidth: 20,
-  backgroundColor: "#2d3748",
-  selectedBackgroundColor: "#3b82f6",
-})
+  backgroundColor: '#2d3748',
+  selectedBackgroundColor: '#3b82f6',
+});
 
 tabs.on(TabSelectRenderableEvents.ITEM_SELECTED, (index, option) => {
-  console.log("Tab selected:", option.name)
-})
+  console.log('Tab selected:', option.name);
+});
 
-tabs.focus()
-renderer.root.add(tabs)
+tabs.focus();
+renderer.root.add(tabs);
 ```
 
 ### 2.6 Group (GroupRenderable)
@@ -303,24 +311,24 @@ renderer.root.add(tabs)
 Container for layout composition using Yoga flexbox.
 
 ```typescript
-import { GroupRenderable } from "@opentui/core"
+import { GroupRenderable } from '@opentui/core';
 
 const mainLayout = new GroupRenderable(renderer, {
-  id: "main-layout",
-  flexDirection: "column",
-  width: "100%",
-  height: "100%",
+  id: 'main-layout',
+  flexDirection: 'column',
+  width: '100%',
+  height: '100%',
   gap: 1,
-})
+});
 
-const header = new BoxRenderable(renderer, { id: "header", height: 3 })
-const content = new BoxRenderable(renderer, { id: "content", flexGrow: 1 })
-const footer = new BoxRenderable(renderer, { id: "footer", height: 2 })
+const header = new BoxRenderable(renderer, { id: 'header', height: 3 });
+const content = new BoxRenderable(renderer, { id: 'content', flexGrow: 1 });
+const footer = new BoxRenderable(renderer, { id: 'footer', height: 2 });
 
-mainLayout.add(header)
-mainLayout.add(content)
-mainLayout.add(footer)
-renderer.root.add(mainLayout)
+mainLayout.add(header);
+mainLayout.add(content);
+mainLayout.add(footer);
+renderer.root.add(mainLayout);
 ```
 
 ### 2.7 ASCIIFont (ASCIIFontRenderable)
@@ -328,19 +336,19 @@ renderer.root.add(mainLayout)
 Display text using ASCII art fonts.
 
 ```typescript
-import { ASCIIFontRenderable } from "@opentui/core"
+import { ASCIIFontRenderable } from '@opentui/core';
 
 const title = new ASCIIFontRenderable(renderer, {
-  id: "title",
-  text: "OPENTUI",
-  font: "tiny",
-  color: RGBA.fromHex("#00FF00"),
-  position: "absolute",
+  id: 'title',
+  text: 'OPENTUI',
+  font: 'tiny',
+  color: RGBA.fromHex('#00FF00'),
+  position: 'absolute',
   left: 10,
   top: 2,
-})
+});
 
-renderer.root.add(title)
+renderer.root.add(title);
 ```
 
 ### 2.8 FrameBuffer (FrameBufferRenderable)
@@ -348,22 +356,22 @@ renderer.root.add(title)
 Low-level rendering surface for custom graphics.
 
 ```typescript
-import { FrameBufferRenderable, RGBA } from "@opentui/core"
+import { FrameBufferRenderable, RGBA } from '@opentui/core';
 
 const canvas = new FrameBufferRenderable(renderer, {
-  id: "canvas",
-  position: "absolute",
+  id: 'canvas',
+  position: 'absolute',
   left: 5,
   top: 5,
   width: 50,
   height: 20,
-})
+});
 
-const buffer = canvas.frameBuffer
-buffer.fillRect(10, 5, 20, 8, RGBA.fromHex("#FF0000"))
-buffer.drawText("Graphics", 12, 7, RGBA.fromHex("#FFFFFF"))
+const buffer = canvas.frameBuffer;
+buffer.fillRect(10, 5, 20, 8, RGBA.fromHex('#FF0000'));
+buffer.drawText('Graphics', 12, 7, RGBA.fromHex('#FFFFFF'));
 
-renderer.root.add(canvas)
+renderer.root.add(canvas);
 ```
 
 ---
@@ -373,48 +381,48 @@ renderer.root.add(canvas)
 ### 3.1 Keyboard Input
 
 ```typescript
-renderer.keyInput.on("keypress", (key: KeyEvent) => {
-  if (key.name === "escape") {
-    console.log("ESC pressed")
+renderer.keyInput.on('keypress', (key: KeyEvent) => {
+  if (key.name === 'escape') {
+    console.log('ESC pressed');
   }
-  if (key.ctrl && key.name === "c") {
-    console.log("Ctrl+C pressed")
+  if (key.ctrl && key.name === 'c') {
+    console.log('Ctrl+C pressed');
   }
-  if (key.shift && key.name === "up") {
-    console.log("Shift+Up pressed")
+  if (key.shift && key.name === 'up') {
+    console.log('Shift+Up pressed');
   }
-})
+});
 ```
 
 ### 3.2 Component Events
 
 ```typescript
-import { RenderableEvents } from "@opentui/core"
+import { RenderableEvents } from '@opentui/core';
 
 component.on(RenderableEvents.FOCUSED, () => {
-  console.log("Component focused")
-})
+  console.log('Component focused');
+});
 
 component.on(RenderableEvents.BLURRED, () => {
-  console.log("Component lost focus")
-})
+  console.log('Component lost focus');
+});
 
 component.on(RenderableEvents.MOUNTED, () => {
-  console.log("Component added")
-})
+  console.log('Component added');
+});
 
 component.on(RenderableEvents.UNMOUNTED, () => {
-  console.log("Component removed")
-})
+  console.log('Component removed');
+});
 ```
 
 ### 3.3 Focus Management
 
 ```typescript
 // Check and set focus
-console.log(input.focused)
-input.focus()
-input.blur()
+console.log(input.focused);
+input.focus();
+input.blur();
 ```
 
 ---
@@ -424,39 +432,40 @@ input.blur()
 ### 4.1 Basic Structure
 
 ```typescript
-import { createCliRenderer, BoxRenderable, TextRenderable } from "@opentui/core"
+import { createCliRenderer, BoxRenderable, TextRenderable } from '@opentui/core';
 
 async function main() {
   const renderer = await createCliRenderer({
     targetFps: 60,
     exitOnCtrlC: true,
-  })
+  });
 
   // Build UI
   const text = new TextRenderable(renderer, {
-    id: "hello",
-    content: "Hello, OpenTUI!",
-    position: "absolute",
+    id: 'hello',
+    content: 'Hello, OpenTUI!',
+    position: 'absolute',
     left: 5,
     top: 2,
-  })
-  renderer.root.add(text)
+  });
+  renderer.root.add(text);
 
   // Setup event handlers
-  renderer.keyInput.on("keypress", (key) => {
-    if (key.name === "escape") process.exit(0)
-  })
+  renderer.keyInput.on('keypress', key => {
+    if (key.name === 'escape') process.exit(0);
+  });
 
   // Start rendering
-  renderer.start()
+  renderer.start();
 }
 
-main()
+main();
 ```
 
 ### 4.2 Complete Todo App Example
 
 See input-demo.ts for a full example with:
+
 - Multiple input fields with validation
 - Navigation between fields (Tab/Shift+Tab)
 - Real-time input events and validation feedback
@@ -470,28 +479,28 @@ class AppState {
     data: [],
     selectedIndex: 0,
     loading: false,
-  }
+  };
 
-  private listeners: Array<(state: any) => void> = []
+  private listeners: Array<(state: any) => void> = [];
 
   subscribe(listener: (state: any) => void) {
-    this.listeners.push(listener)
+    this.listeners.push(listener);
   }
 
   dispatch(action: any) {
     switch (action.type) {
-      case "SET_DATA":
-        this.state.data = action.payload
-        break
-      case "SET_SELECTED":
-        this.state.selectedIndex = action.payload
-        break
+      case 'SET_DATA':
+        this.state.data = action.payload;
+        break;
+      case 'SET_SELECTED':
+        this.state.selectedIndex = action.payload;
+        break;
     }
-    this.listeners.forEach(l => l(this.state))
+    this.listeners.forEach(l => l(this.state));
   }
 
   getState() {
-    return this.state
+    return this.state;
   }
 }
 ```
@@ -507,6 +516,7 @@ bun install solid-js @opentui/solid
 ```
 
 **tsconfig.json:**
+
 ```json
 {
   "compilerOptions": {
@@ -517,24 +527,26 @@ bun install solid-js @opentui/solid
 ```
 
 **bunfig.toml:**
+
 ```toml
 preload = ["@opentui/solid/preload"]
 ```
 
 **Usage:**
+
 ```tsx
-import { render } from "@opentui/solid"
-import { createSignal } from "solid-js"
+import { render } from '@opentui/solid';
+import { createSignal } from 'solid-js';
 
 render(() => {
-  const [count, setCount] = createSignal(0)
+  const [count, setCount] = createSignal(0);
 
   return (
     <box border="rounded" title="Counter">
       <text>Count: {count()}</text>
     </box>
-  )
-})
+  );
+});
 ```
 
 ### 5.2 React (@opentui/react)
@@ -567,23 +579,23 @@ render(<App />)
 // Only call renderer.start() for animations/live updates
 
 // Batch updates in containers
-const container = new GroupRenderable(renderer, { id: "batch" })
-container.add(item1)
-container.add(item2)
-renderer.root.add(container)
+const container = new GroupRenderable(renderer, { id: 'batch' });
+container.add(item1);
+container.add(item2);
+renderer.root.add(container);
 
 // Lower FPS for slower systems
-const renderer = await createCliRenderer({ targetFps: 24 })
+const renderer = await createCliRenderer({ targetFps: 24 });
 ```
 
 ### 6.2 Cleanup
 
 ```typescript
-process.on("SIGINT", () => {
-  renderer.root.removeAll()
-  renderer.keyInput.removeAllListeners()
-  process.exit(0)
-})
+process.on('SIGINT', () => {
+  renderer.root.removeAll();
+  renderer.keyInput.removeAllListeners();
+  process.exit(0);
+});
 ```
 
 ### 6.3 Component Composition
@@ -595,17 +607,17 @@ function createPanel(renderer: any, config: any) {
     width: config.width,
     height: config.height,
     ...config.style,
-  })
+  });
 
   if (config.title) {
     const title = new TextRenderable(renderer, {
       id: `${config.id}-title`,
       content: config.title,
-    })
-    panel.add(title)
+    });
+    panel.add(title);
   }
 
-  return panel
+  return panel;
 }
 ```
 
@@ -613,17 +625,17 @@ function createPanel(renderer: any, config: any) {
 
 ```typescript
 class FocusManager {
-  private components: any[] = []
-  private currentIndex = 0
+  private components: any[] = [];
+  private currentIndex = 0;
 
   register(component: any) {
-    this.components.push(component)
+    this.components.push(component);
   }
 
   nextFocus() {
-    this.components[this.currentIndex]?.blur()
-    this.currentIndex = (this.currentIndex + 1) % this.components.length
-    this.components[this.currentIndex]?.focus()
+    this.components[this.currentIndex]?.blur();
+    this.currentIndex = (this.currentIndex + 1) % this.components.length;
+    this.components[this.currentIndex]?.focus();
   }
 }
 ```
@@ -653,6 +665,7 @@ class FocusManager {
 ## 9. Quick Reference
 
 ### Create Components
+
 ```typescript
 new TextRenderable(renderer, { id: "text", content: "Hello" })
 new BoxRenderable(renderer, { id: "box", width: 40, height: 10 })
@@ -662,13 +675,15 @@ new GroupRenderable(renderer, { id: "group", flexDirection: "column" })
 ```
 
 ### Event Handling
+
 ```typescript
-renderer.keyInput.on("keypress", (key) => {})
-component.on(RenderableEvents.FOCUSED, () => {})
-component.on(InputRenderableEvents.CHANGE, (value) => {})
+renderer.keyInput.on('keypress', key => {});
+component.on(RenderableEvents.FOCUSED, () => {});
+component.on(InputRenderableEvents.CHANGE, value => {});
 ```
 
 ### Styling
+
 ```typescript
 {
   fg: "#FFFFFF",

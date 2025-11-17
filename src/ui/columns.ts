@@ -1,6 +1,6 @@
 /**
  * Column system for entry display
- * 
+ *
  * Provides a flexible, configurable column system for displaying entry information.
  * Similar to ls -l or ranger's column view.
  */
@@ -30,13 +30,17 @@ export interface Column {
 /**
  * Pad string to width with alignment
  */
-function padString(str: string, width: number, align: 'left' | 'right' | 'center' = 'left'): string {
+function padString(
+  str: string,
+  width: number,
+  align: 'left' | 'right' | 'center' = 'left'
+): string {
   if (str.length >= width) {
     return str.slice(0, width);
   }
 
   const padding = width - str.length;
-  
+
   switch (align) {
     case 'right':
       return ' '.repeat(padding) + str;
@@ -211,25 +215,19 @@ export function renderRow(entry: Entry, columns: Column[]): string {
  * Get total width of all visible columns
  */
 export function getTotalWidth(columns: Column[]): number {
-  return columns
-    .filter(col => col.visible)
-    .reduce((total, col) => total + (col.width || 0) + 1, 0); // +1 for spacing
+  return columns.filter(col => col.visible).reduce((total, col) => total + (col.width || 0) + 1, 0); // +1 for spacing
 }
 
 /**
  * Toggle column visibility
  */
 export function toggleColumn(columns: Column[], columnId: string): Column[] {
-  return columns.map(col =>
-    col.id === columnId ? { ...col, visible: !col.visible } : col
-  );
+  return columns.map(col => (col.id === columnId ? { ...col, visible: !col.visible } : col));
 }
 
 /**
  * Set column width
  */
 export function setColumnWidth(columns: Column[], columnId: string, width: number): Column[] {
-  return columns.map(col =>
-    col.id === columnId ? { ...col, width } : col
-  );
+  return columns.map(col => (col.id === columnId ? { ...col, width } : col));
 }

@@ -1,9 +1,9 @@
 /**
  * Custom React hook for navigation handlers
- * 
+ *
  * Encapsulates navigation logic (navigate into directory, go to parent, etc.)
  * and provides callbacks that can be used with React components.
- * 
+ *
  * Handles:
  * - Navigate into selected directory
  * - Navigate to parent directory
@@ -25,12 +25,12 @@ export interface UseNavigationHandlersReturn {
   navigateInto: () => Promise<void>;
   navigateUp: () => void;
   navigateToPath: (path: string) => Promise<void>;
-  
+
   // State queries
   getCurrentPath: () => string;
   getSelectedEntry: () => Entry | undefined;
   canNavigateUp: () => boolean;
-  
+
   // Status
   isNavigating: boolean;
   navigationError?: string;
@@ -49,11 +49,10 @@ export function useNavigationHandlers(
   bufferState: UseBufferStateReturn,
   config: NavigationConfig = {}
 ): UseNavigationHandlersReturn {
-  
   // Navigate into selected directory
   const navigateInto = useCallback(async () => {
     const selected = bufferState.getSelectedEntry();
-    
+
     if (!selected) {
       if (config.onErrorOccurred) {
         config.onErrorOccurred('No entry selected');
@@ -74,7 +73,7 @@ export function useNavigationHandlers(
       if (config.onLoadBuffer) {
         await config.onLoadBuffer(selected.path);
       }
-      
+
       if (config.onNavigationComplete) {
         config.onNavigationComplete();
       }
@@ -90,7 +89,7 @@ export function useNavigationHandlers(
   const navigateUp = useCallback(() => {
     const currentPath = bufferState.currentPath;
     const parts = currentPath.split('/').filter(p => p);
-    
+
     if (parts.length > 1) {
       // Remove last part to go up one level
       parts.pop();
@@ -104,22 +103,25 @@ export function useNavigationHandlers(
   }, [bufferState.currentPath, config]);
 
   // Navigate to a specific path
-  const navigateToPath = useCallback(async (path: string) => {
-    try {
-      if (config.onLoadBuffer) {
-        await config.onLoadBuffer(path);
+  const navigateToPath = useCallback(
+    async (path: string) => {
+      try {
+        if (config.onLoadBuffer) {
+          await config.onLoadBuffer(path);
+        }
+
+        if (config.onNavigationComplete) {
+          config.onNavigationComplete();
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (config.onErrorOccurred) {
+          config.onErrorOccurred(`Failed to navigate to path: ${message}`);
+        }
       }
-      
-      if (config.onNavigationComplete) {
-        config.onNavigationComplete();
-      }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (config.onErrorOccurred) {
-        config.onErrorOccurred(`Failed to navigate to path: ${message}`);
-      }
-    }
-  }, [config]);
+    },
+    [config]
+  );
 
   // Get current path
   const getCurrentPath = useCallback((): string => {

@@ -1,6 +1,6 @@
 /**
  * Error handling utilities
- * 
+ *
  * Custom error types for adapter operations
  */
 
@@ -11,11 +11,7 @@ export class AdapterError extends Error {
   readonly code: string;
   readonly isRetryable: boolean;
 
-  constructor(
-    message: string,
-    code: string = 'ADAPTER_ERROR',
-    isRetryable: boolean = false
-  ) {
+  constructor(message: string, code: string = 'ADAPTER_ERROR', isRetryable: boolean = false) {
     super(message);
     this.name = 'AdapterError';
     this.code = code;
@@ -45,11 +41,7 @@ export class NotFoundError extends AdapterError {
  */
 export class PermissionError extends AdapterError {
   constructor(path: string, operation: string = 'access') {
-    super(
-      `Permission denied: cannot ${operation} ${path}`,
-      'PERMISSION_DENIED',
-      false
-    );
+    super(`Permission denied: cannot ${operation} ${path}`, 'PERMISSION_DENIED', false);
     this.name = 'PermissionError';
   }
 }
@@ -87,11 +79,7 @@ export class TimeoutError extends AdapterError {
  */
 export class InvalidPathError extends AdapterError {
   constructor(path: string, reason: string = 'invalid format') {
-    super(
-      `Invalid path: ${path} (${reason})`,
-      'INVALID_PATH',
-      false
-    );
+    super(`Invalid path: ${path} (${reason})`, 'INVALID_PATH', false);
     this.name = 'InvalidPathError';
   }
 }
@@ -101,11 +89,7 @@ export class InvalidPathError extends AdapterError {
  */
 export class ConflictError extends AdapterError {
   constructor(path: string, reason: string = 'already exists') {
-    super(
-      `Conflict: ${path} ${reason}`,
-      'CONFLICT',
-      false
-    );
+    super(`Conflict: ${path} ${reason}`, 'CONFLICT', false);
     this.name = 'ConflictError';
   }
 }
@@ -117,11 +101,7 @@ export class OperationFailedError extends AdapterError {
   readonly originalError: Error;
 
   constructor(operation: string, originalError: Error) {
-    super(
-      `${operation} failed: ${originalError.message}`,
-      'OPERATION_FAILED',
-      false
-    );
+    super(`${operation} failed: ${originalError.message}`, 'OPERATION_FAILED', false);
     this.name = 'OperationFailedError';
     this.originalError = originalError;
   }
@@ -142,51 +122,54 @@ export function parseAwsError(error: unknown, operation: string = 'operation'): 
   const message = error.message || error.toString();
 
   // Check for region mismatch error (very common issue)
-  if (message.includes('bucket must be addressed using specified endpoint') ||
-      message.includes('PermanentRedirect') ||
-      message.includes('moved permanently') ||
-      (message.includes('region') && (message.includes('but client configured') || message.includes('Bucket in')))) {
+  if (
+    message.includes('bucket must be addressed using specified endpoint') ||
+    message.includes('PermanentRedirect') ||
+    message.includes('moved permanently') ||
+    (message.includes('region') &&
+      (message.includes('but client configured') || message.includes('Bucket in')))
+  ) {
     // Extract region from error message if available
     let suggestion = 'Bucket may be in a different region. ';
-    
+
     // Try to extract the correct region from error metadata (multiple patterns)
-    const regionMatch = message.match(/region[:\s]+([a-z0-9-]+)/i) ||
-                       message.match(/Bucket in region[:\s]+([a-z0-9-]+)/i);
+    const regionMatch =
+      message.match(/region[:\s]+([a-z0-9-]+)/i) ||
+      message.match(/Bucket in region[:\s]+([a-z0-9-]+)/i);
     if (regionMatch && regionMatch[1]) {
       suggestion += `Try: --region ${regionMatch[1]}`;
     } else {
-      suggestion += 'Try specifying the correct region with --region flag (e.g., us-west-2, eu-west-1)';
+      suggestion +=
+        'Try specifying the correct region with --region flag (e.g., us-west-2, eu-west-1)';
     }
-    
-    return new AdapterError(
-      `Region mismatch: ${suggestion}`,
-      'REGION_MISMATCH',
-      false
-    );
+
+    return new AdapterError(`Region mismatch: ${suggestion}`, 'REGION_MISMATCH', false);
   }
 
   // Check for specific AWS error codes
   if ('code' in error) {
     const awsCode = (error as any).code;
-    
+
     switch (awsCode) {
       case 'NoSuchKey':
       case 'NoSuchBucket':
-        return new NotFoundError((error as any).$metadata?.httpStatusCode === 404 ? 'S3 object' : 'bucket');
-      
+        return new NotFoundError(
+          (error as any).$metadata?.httpStatusCode === 404 ? 'S3 object' : 'bucket'
+        );
+
       case 'AccessDenied':
       case 'Forbidden':
         return new PermissionError('S3 resource', operation);
-      
+
       case 'ServiceUnavailable':
       case 'RequestTimeout':
       case 'SlowDown':
         return new NetworkError(awsCode);
-      
+
       case 'NetworkingError':
       case 'TimeoutError':
         return new NetworkError(message);
-      
+
       default:
         return new OperationFailedError(operation, error);
     }
@@ -198,7 +181,11 @@ export function parseAwsError(error: unknown, operation: string = 'operation'): 
   }
 
   // Check for not found patterns
-  if (message.includes('not found') || message.includes('NoSuchKey') || message.includes('NoSuchBucket')) {
+  if (
+    message.includes('not found') ||
+    message.includes('NoSuchKey') ||
+    message.includes('NoSuchBucket')
+  ) {
     return new NotFoundError('S3 object');
   }
 
@@ -212,17 +199,17 @@ export function parseAwsError(error: unknown, operation: string = 'operation'): 
  */
 export function formatErrorForDisplay(error: AdapterError | Error, maxLength: number = 80): string {
   const message = error instanceof AdapterError ? error.message : `Error: ${error.message}`;
-  
+
   // For shorter messages, just prefix with emoji
   if (message.length <= maxLength) {
     return `❌ ${message}`;
   }
-  
+
   // For longer messages, try to wrap at word boundaries
   const words = message.split(' ');
   const lines: string[] = [];
   let currentLine = '';
-  
+
   for (const word of words) {
     if ((currentLine + ' ' + word).length > maxLength) {
       if (currentLine) {
@@ -233,13 +220,13 @@ export function formatErrorForDisplay(error: AdapterError | Error, maxLength: nu
       currentLine = currentLine ? `${currentLine} ${word}` : word;
     }
   }
-  
+
   if (currentLine) {
     lines.push(currentLine);
   }
-  
+
   // Return first line with emoji, rest indented
-  return lines.map((line, i) => i === 0 ? `❌ ${line}` : `   ${line}`).join('\n');
+  return lines.map((line, i) => (i === 0 ? `❌ ${line}` : `   ${line}`)).join('\n');
 }
 
 /**

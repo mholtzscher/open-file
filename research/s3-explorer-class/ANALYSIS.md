@@ -87,6 +87,7 @@ private handleKeyPress(key: any): void {
 ### Mode-Specific Key Handlers
 
 #### Normal Mode Handler (Lines 132-294)
+
 - **Sort Menu**: Intercepts keys when menu is open
 - **Help Window**: Shows/hides help overlay
 - **Navigation**: `j/k` (up/down), `h` (parent), `l` (enter)
@@ -95,28 +96,33 @@ private handleKeyPress(key: any): void {
 - **Vim-style**: `gg` (top), `G` (bottom), `yy` (copy), `dd` (delete)
 
 **State mutations in Normal Mode:**
+
 ```typescript
-this.bufferState.moveCursorDown(pageSize);        // Move cursor
-this.bufferState.startVisualSelection();           // Enter visual mode
-this.bufferState.toggleHiddenFiles();              // Toggle filter
-this.render();                                      // Force re-render
+this.bufferState.moveCursorDown(pageSize); // Move cursor
+this.bufferState.startVisualSelection(); // Enter visual mode
+this.bufferState.toggleHiddenFiles(); // Toggle filter
+this.render(); // Force re-render
 ```
 
 #### Visual Mode Handler (Lines 299-317)
+
 - Extends selection up/down
 - Handles `d` to delete selected entries
 - Calls `this.render()` after each action
 
 #### Insert Mode Handler (Lines 322-355)
+
 - Accumulates characters: `addCharToInsertingName()`
 - Handles backspace: `removeCharFromInsertingName()`
 - Tab completion: `applyFirstTabCompletion()`
 - Confirmation: `confirmInsertEntry()`
 
 #### Edit Mode Handler (Lines 360-370)
+
 - Currently minimal - just handles escape to exit
 
 #### Search Mode Handler (Lines 375-417)
+
 - Accumulates search query: `updateSearchQuery()`
 - Navigation: `n` (next), `N` (previous)
 - Toggles: `C-c` (case), `C-r` (regex)
@@ -124,6 +130,7 @@ this.render();                                      // Force re-render
 ### Navigation Handlers
 
 #### Navigate Into Directory (Lines 422-436)
+
 ```typescript
 private async handleNavigate(): Promise<void> {
   const selected = this.bufferState.getSelectedEntry();
@@ -138,11 +145,13 @@ private async handleNavigate(): Promise<void> {
 ```
 
 #### Navigate Up (Lines 441-457)
+
 - Parses path, pops directory
 - Calls `loadBuffer()` with new path
 - Handles errors via status bar
 
 ### Save Handler (Lines 495-529)
+
 ```typescript
 private async handleSave(): Promise<void> {
   // 1. Detect changes
@@ -174,16 +183,16 @@ private async handleSave(): Promise<void> {
 
 ### Other Key Handlers
 
-| Handler | Mutation | Side Effects |
-|---------|----------|--------------|
-| `handleCopy()` | `copySelection()` | Show status |
-| `handlePasteAfter()` | `pasteAfterCursor()` | Save to history, show status |
+| Handler                   | Mutation                       | Side Effects                  |
+| ------------------------- | ------------------------------ | ----------------------------- |
+| `handleCopy()`            | `copySelection()`              | Show status                   |
+| `handlePasteAfter()`      | `pasteAfterCursor()`           | Save to history, show status  |
 | `handleDeleteSelection()` | `deleteEntry()` + save history | Exit visual mode, show status |
-| `handlePageDown()` | `pageDown()` | Update preview + scroll info |
-| `handlePageUp()` | `pageUp()` | Update preview + scroll info |
-| `handleTogglePreview()` | Toggle `previewPaneVisible` | Lazy-create PreviewPane |
-| `handleOpenSortMenu()` | Create/show FloatingWindow | Set `sortMenuOpen = true` |
-| `handleShowHelp()` | Create/show FloatingWindow | Lazy-create HelpWindow |
+| `handlePageDown()`        | `pageDown()`                   | Update preview + scroll info  |
+| `handlePageUp()`          | `pageUp()`                     | Update preview + scroll info  |
+| `handleTogglePreview()`   | Toggle `previewPaneVisible`    | Lazy-create PreviewPane       |
+| `handleOpenSortMenu()`    | Create/show FloatingWindow     | Set `sortMenuOpen = true`     |
+| `handleShowHelp()`        | Create/show FloatingWindow     | Lazy-create HelpWindow        |
 
 ---
 
@@ -241,6 +250,7 @@ render() [called after every action]
 ```
 
 **Problem**: This is **imperative cascading renders**. Every action calls `render()`, which:
+
 1. Checks if components exist (lazy creation)
 2. Calls `.render()` on each component
 3. Components use `@opentui/core` to manipulate TextRenderable directly
@@ -252,22 +262,26 @@ render() [called after every action]
 ## 4. Current Component Rendering Strategy
 
 ### BufferView Class
+
 - Receives `bufferState` in constructor
 - Takes `renderer` to manipulate OpenTUI directly
 - Has `updateState()` method to accept new state
 - Has `render()` method for imperative rendering
 
 ### StatusBar Class
+
 - Takes `renderer` and `bufferState`
 - Has setter methods: `setPath()`, `setMode()`, `setSearchQuery()`
 - Has `render()` method
 
 ### PreviewPane Class
+
 - Takes `renderer`, `adapter`, and config
 - Has async `previewEntry()` to load file content
 - Has `render()` method
 
 ### FloatingWindow Class
+
 - Takes `renderer` and options (width, height, title, colors)
 - Has `setContent()`, `show()`, `hide()`, `render()` methods
 - Used for help menu and sort menu
@@ -275,6 +289,7 @@ render() [called after every action]
 ### UI Component Instantiation Pattern
 
 **Current Pattern:**
+
 ```typescript
 // Lazy creation with caching
 if (!this.helpWindow) {
@@ -285,13 +300,15 @@ this.helpWindow.show();
 this.render();  // Force re-render
 ```
 
-**Problem**: 
+**Problem**:
+
 - Manual lifetime management
 - Imperative show/hide
 - Unclear data flow
 - Hard to test
 
 **React Solution:**
+
 ```typescript
 // Declarative state
 const [isHelpVisible, setIsHelpVisible] = useState(false);
@@ -383,27 +400,32 @@ OpenTUI TextRenderable components
 ## 6. Key Refactoring Points
 
 ### 1. **Create `useBufferState` Hook**
+
 - Move all BufferState mutations into reducer
 - Actions: `navigate()`, `copy()`, `paste()`, `delete()`, etc.
 - Effects: handle side-effects (confirm dialogs, async operations)
 
 ### 2. **Create `useKeyboardEvents` Hook**
+
 - Encapsulate all key handling logic
 - Return: handlers for each mode
 - Dispatch actions to bufferState
 
 ### 3. **Extract Modal/Dialog Components**
+
 - `ConfirmationDialog` → React component with declarative state
 - `HelpWindow` → React component
 - `SortMenu` → React component
 - Use state lifting instead of imperative show/hide
 
 ### 4. **Extract Composite Components**
+
 - `BufferViewComponent` → Props-based
 - `StatusBarComponent` → Props-based
 - `PreviewPaneComponent` → Props-based
 
 ### 5. **Separate Concerns**
+
 - **Adapter/IO**: Keep in classes (async operations)
 - **State**: Move to reducers/hooks
 - **Rendering**: Move to React components
@@ -437,16 +459,16 @@ src/ui/
 
 ## Summary Table: What Needs to Migrate
 
-| Category | Current Location | Current Pattern | Target Location | Target Pattern |
-|----------|------------------|-----------------|-----------------|-----------------|
-| **State** | `bufferState` property | Direct mutations | `useBufferState()` hook | Reducer actions |
-| **Input** | `setupEventHandlers()` | Event listener registration | `useKeyboardEvents()` hook | Hook callbacks |
-| **Rendering** | `render()` method | Imperative calls | React component tree | Declarative JSX |
-| **UI Components** | Class instances (BufferView, etc.) | Imperative lifecycle | React components | Props + state |
-| **Dialogs** | `FloatingWindow` class with show/hide | Manual visibility | React state + conditional render | Component mounting |
-| **Navigation** | `handleNavigate()`, `handleNavigateUp()` | Direct async + render | Actions + effects | useEffect with reducer |
-| **Configuration** | `ConfigManager` property | Kept as-is | Kept as-is | Pass via context |
-| **Adapter** | `adapter` property | Kept as-is | Pass via context/prop | Wrapped in hooks |
+| Category          | Current Location                         | Current Pattern             | Target Location                  | Target Pattern         |
+| ----------------- | ---------------------------------------- | --------------------------- | -------------------------------- | ---------------------- |
+| **State**         | `bufferState` property                   | Direct mutations            | `useBufferState()` hook          | Reducer actions        |
+| **Input**         | `setupEventHandlers()`                   | Event listener registration | `useKeyboardEvents()` hook       | Hook callbacks         |
+| **Rendering**     | `render()` method                        | Imperative calls            | React component tree             | Declarative JSX        |
+| **UI Components** | Class instances (BufferView, etc.)       | Imperative lifecycle        | React components                 | Props + state          |
+| **Dialogs**       | `FloatingWindow` class with show/hide    | Manual visibility           | React state + conditional render | Component mounting     |
+| **Navigation**    | `handleNavigate()`, `handleNavigateUp()` | Direct async + render       | Actions + effects                | useEffect with reducer |
+| **Configuration** | `ConfigManager` property                 | Kept as-is                  | Kept as-is                       | Pass via context       |
+| **Adapter**       | `adapter` property                       | Kept as-is                  | Pass via context/prop            | Wrapped in hooks       |
 
 ---
 
@@ -475,16 +497,19 @@ S3Explorer (Root Component)
 ## Testing Strategy After Refactoring
 
 ### Unit Tests
+
 - `useBufferState`: Test reducer logic with various actions
 - Individual component rendering with mock props
 - Keyboard event routing logic
 
 ### Integration Tests
+
 - Component tree with real state management
 - Dialog workflows (open → user action → close)
 - Multi-step operations (navigate → edit → save)
 
 ### E2E Tests
+
 - Full user workflows with test adapter
 - Keyboard sequences (gg, dd, yy)
 - Complex state transitions
@@ -504,25 +529,30 @@ S3Explorer (Root Component)
 ## Critical Implementation Notes
 
 ### 1. Keyboard Event Integration
+
 - Current: `renderer.keyInput.on('keypress', ...)`
 - After: React hook needs to attach to OpenTUI's renderer
 - Solution: useEffect to subscribe, cleanup to unsubscribe
 
 ### 2. Render Timing
+
 - Current: Explicit `render()` calls after every action
 - After: React's batched updates
 - Consideration: May need batching logic for large state changes
 
 ### 3. Preview Pane Loading
+
 - Current: Async `previewEntry()` updates internal state
 - After: useEffect for async loading based on selectedEntry
 
 ### 4. Undo/Redo
+
 - Current: Stored in BufferState.undoHistory
 - After: Can stay in BufferState or moved to separate hook
 - Ensure history cloning works correctly
 
 ### 5. Search Filter Application
+
 - Current: Applied during `getFilteredEntries()`
 - After: Same logic, but filtering happens during render
 - Ensure search results update immediately on query change
@@ -531,15 +561,14 @@ S3Explorer (Root Component)
 
 ## Code Metrics
 
-| Metric | Value |
-|--------|-------|
-| **Lines of Code** | 924 |
-| **Methods** | 25+ |
-| **State Variables** | 13 |
-| **UI Components Managed** | 7 |
-| **Edit Modes** | 5 |
-| **Key Sequences** | 10+ |
-| **Async Operations** | 3+ |
+| Metric                    | Value |
+| ------------------------- | ----- |
+| **Lines of Code**         | 924   |
+| **Methods**               | 25+   |
+| **State Variables**       | 13    |
+| **UI Components Managed** | 7     |
+| **Edit Modes**            | 5     |
+| **Key Sequences**         | 10+   |
+| **Async Operations**      | 3+    |
 
 **After Refactoring**: Expected reduction to ~100-150 lines in main component + distributed logic in hooks and components.
-

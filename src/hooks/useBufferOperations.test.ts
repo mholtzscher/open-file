@@ -1,6 +1,6 @@
 /**
  * Tests for useBufferOperations hook integration with buffer state
- * 
+ *
  * Note: React hooks can only be tested through a component. These tests focus on
  * verifying the buffer operations work correctly through the underlying useBufferState hook.
  * The useBufferOperations hook delegates to useBufferState methods.

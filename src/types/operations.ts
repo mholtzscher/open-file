@@ -61,11 +61,7 @@ export interface CopyOperation extends BaseOperation {
 /**
  * Union type of all operations
  */
-export type AdapterOperation =
-  | CreateOperation
-  | DeleteOperation
-  | MoveOperation
-  | CopyOperation;
+export type AdapterOperation = CreateOperation | DeleteOperation | MoveOperation | CopyOperation;
 
 /**
  * Operation plan - collection of operations to execute

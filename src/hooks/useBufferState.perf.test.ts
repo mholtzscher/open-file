@@ -1,6 +1,6 @@
 /**
  * Performance tests for React hooks and buffer state
- * 
+ *
  * Tests efficiency of operations and rendering with large datasets
  */
 
@@ -92,7 +92,7 @@ describe('Performance Optimization - React Version', () => {
       expect(true).toBe(true);
     });
 
-    it('undo history doesn\'t grow unbounded', () => {
+    it("undo history doesn't grow unbounded", () => {
       // Perform 100 operations
       // Undo history grows
       // But limited in size
@@ -155,7 +155,7 @@ describe('Performance Optimization - React Version', () => {
       expect(true).toBe(true);
     });
 
-    it('clipboard doesn\'t grow unbounded', () => {
+    it("clipboard doesn't grow unbounded", () => {
       // Copy large entries 1000 times
       // Only last copy stored
       // Previous copied cleared
@@ -169,7 +169,7 @@ describe('Performance Optimization - React Version', () => {
       expect(true).toBe(true);
     });
 
-    it('search results don\'t duplicate data', () => {
+    it("search results don't duplicate data", () => {
       // Search returns filtered view
       // Not copies of entries
       // Shares original data

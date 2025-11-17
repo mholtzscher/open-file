@@ -30,7 +30,7 @@ describe('BufferState', () => {
     it('should paste entries after cursor', () => {
       const id1 = generateEntryId();
       const id2 = generateEntryId();
-      
+
       const entries: Entry[] = [
         {
           id: id1,
@@ -48,10 +48,10 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       buffer.copySelection();
-      
+
       // Move cursor to second position
       buffer.moveCursorDown();
-      
+
       // Paste after cursor
       const pastedEntries = buffer.pasteAfterCursor();
 
@@ -63,7 +63,7 @@ describe('BufferState', () => {
     it('should paste entries before cursor', () => {
       const id1 = generateEntryId();
       const id2 = generateEntryId();
-      
+
       const entries: Entry[] = [
         {
           id: id1,
@@ -81,10 +81,10 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       buffer.copySelection();
-      
+
       // Move cursor to second position
       buffer.moveCursorDown();
-      
+
       // Paste before cursor
       const pastedEntries = buffer.pasteBeforeCursor();
 
@@ -105,7 +105,7 @@ describe('BufferState', () => {
       ];
 
       const buffer = new BufferState(entries);
-      
+
       // Try to paste without copying
       const pastedEntries = buffer.pasteAfterCursor();
 
@@ -125,15 +125,15 @@ describe('BufferState', () => {
       ];
 
       const buffer = new BufferState(entries);
-      
+
       expect(buffer.hasClipboardContent()).toBe(false);
-      
+
       buffer.copySelection();
-      
+
       expect(buffer.hasClipboardContent()).toBe(true);
-      
+
       buffer.clearClipboard();
-      
+
       expect(buffer.hasClipboardContent()).toBe(false);
     });
 
@@ -150,7 +150,7 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       const originalId = buffer.entries[0].id;
-      
+
       buffer.copySelection();
       const pastedEntries = buffer.pasteAfterCursor();
 
@@ -171,11 +171,11 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       buffer.copySelection();
-      
+
       expect(buffer.copyRegister.length).toBe(1);
-      
+
       buffer.clearClipboard();
-      
+
       expect(buffer.copyRegister.length).toBe(0);
     });
   });
@@ -192,15 +192,15 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       const pageSize = 10;
-      
+
       expect(buffer.scrollOffset).toBe(0);
-      
+
       buffer.pageDown(pageSize);
       expect(buffer.scrollOffset).toBe(10);
-      
+
       buffer.pageDown(pageSize);
       expect(buffer.scrollOffset).toBe(20);
-      
+
       // Should not scroll past end
       buffer.pageDown(pageSize);
       expect(buffer.scrollOffset).toBe(20);
@@ -216,15 +216,15 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       const pageSize = 10;
-      
+
       buffer.scrollOffset = 20;
-      
+
       buffer.pageUp(pageSize);
       expect(buffer.scrollOffset).toBe(10);
-      
+
       buffer.pageUp(pageSize);
       expect(buffer.scrollOffset).toBe(0);
-      
+
       // Should not scroll past beginning
       buffer.pageUp(pageSize);
       expect(buffer.scrollOffset).toBe(0);
@@ -240,11 +240,11 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       const pageSize = 10;
-      
+
       const visibleEntries = buffer.getVisibleEntries(pageSize);
       expect(visibleEntries.length).toBe(10);
       expect(visibleEntries[0].name).toBe('file1.txt');
-      
+
       buffer.scrollOffset = 10;
       const visibleEntries2 = buffer.getVisibleEntries(pageSize);
       expect(visibleEntries2[0].name).toBe('file11.txt');
@@ -260,16 +260,16 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       const pageSize = 10;
-      
+
       buffer.selection.cursorIndex = 0;
       expect(buffer.getVisibleCursorIndex(pageSize)).toBe(0);
-      
+
       buffer.selection.cursorIndex = 5;
       expect(buffer.getVisibleCursorIndex(pageSize)).toBe(5);
-      
+
       buffer.scrollOffset = 10;
       expect(buffer.getVisibleCursorIndex(pageSize)).toBe(0);
-      
+
       buffer.selection.cursorIndex = 15;
       expect(buffer.getVisibleCursorIndex(pageSize)).toBe(5);
     });
@@ -284,10 +284,10 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       const pageSize = 10;
-      
+
       buffer.selection.cursorIndex = 5;
       buffer.pageDown(pageSize);
-      
+
       // Cursor should be in visible range [10, 20)
       expect(buffer.selection.cursorIndex).toBeGreaterThanOrEqual(10);
       expect(buffer.selection.cursorIndex).toBeLessThan(20);
@@ -431,7 +431,7 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       const filtered = buffer.getFilteredEntries();
-      
+
       expect(filtered.length).toBe(2);
       expect(filtered).toEqual(entries);
     });
@@ -441,7 +441,7 @@ describe('BufferState', () => {
     it('should move cursor down', () => {
       const id1 = generateEntryId();
       const id2 = generateEntryId();
-      
+
       const entries: Entry[] = [
         {
           id: id1,
@@ -459,7 +459,7 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       expect(buffer.selection.cursorIndex).toBe(0);
-      
+
       buffer.moveCursorDown();
       expect(buffer.selection.cursorIndex).toBe(1);
     });
@@ -477,7 +477,7 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       const selected = buffer.getSelectedEntry();
-      
+
       expect(selected?.name).toBe('file1.txt');
     });
   });
@@ -496,7 +496,7 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       expect(buffer.canUndo()).toBe(false);
-      
+
       buffer.saveToHistory();
       expect(buffer.canUndo()).toBe(true);
     });
@@ -504,7 +504,7 @@ describe('BufferState', () => {
     it('should undo and restore previous state', () => {
       const id1 = generateEntryId();
       const id2 = generateEntryId();
-      
+
       const entries: Entry[] = [
         {
           id: id1,
@@ -516,7 +516,7 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       buffer.saveToHistory();
-      
+
       // Add an entry
       buffer.addEntry({
         id: id2,
@@ -524,9 +524,9 @@ describe('BufferState', () => {
         type: EntryType.File,
         path: 'file2.txt',
       });
-      
+
       expect(buffer.entries.length).toBe(2);
-      
+
       // Undo
       const didUndo = buffer.undo();
       expect(didUndo).toBe(true);
@@ -536,7 +536,7 @@ describe('BufferState', () => {
     it('should redo and restore next state', () => {
       const id1 = generateEntryId();
       const id2 = generateEntryId();
-      
+
       const entries: Entry[] = [
         {
           id: id1,
@@ -548,18 +548,18 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       buffer.saveToHistory();
-      
+
       buffer.addEntry({
         id: id2,
         name: 'file2.txt',
         type: EntryType.File,
         path: 'file2.txt',
       });
-      
+
       // Undo and then redo
       buffer.undo();
       expect(buffer.entries.length).toBe(1);
-      
+
       const didRedo = buffer.redo();
       expect(didRedo).toBe(true);
       expect(buffer.entries.length).toBe(2);
@@ -579,7 +579,7 @@ describe('BufferState', () => {
       const id1 = generateEntryId();
       const id2 = generateEntryId();
       const id3 = generateEntryId();
-      
+
       const entries: Entry[] = [
         {
           id: id1,
@@ -591,17 +591,17 @@ describe('BufferState', () => {
 
       const buffer = new BufferState(entries);
       buffer.saveToHistory();
-      
+
       buffer.addEntry({
         id: id2,
         name: 'file2.txt',
         type: EntryType.File,
         path: 'file2.txt',
       });
-      
+
       buffer.undo();
       expect(buffer.canRedo()).toBe(true);
-      
+
       // Make a new change
       buffer.addEntry({
         id: id3,
@@ -609,7 +609,7 @@ describe('BufferState', () => {
         type: EntryType.File,
         path: 'file3.txt',
       });
-      
+
       expect(buffer.canRedo()).toBe(false);
     });
   });

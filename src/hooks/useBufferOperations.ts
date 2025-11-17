@@ -1,6 +1,6 @@
 /**
  * Custom React hook for buffer operations
- * 
+ *
  * Encapsulates copy, paste, delete, and move operations on buffer entries.
  * Manages clipboard state and operation execution with proper error handling.
  */
@@ -14,19 +14,19 @@ export interface UseBufferOperationsReturn {
   copySelection: () => void;
   pasteAfter: () => Entry[];
   hasClipboard: () => boolean;
-  
+
   // Delete operations - marks entries for deletion (non-destructive)
   deleteEntry: (index: number) => void;
   deleteMultiple: (indices: number[]) => void;
   undeleteEntry: (index: number) => void;
-  
+
   // Clipboard management
   getClipboardCount: () => number;
 }
 
 /**
  * Custom hook for buffer operations on the buffer state
- * 
+ *
  * Handles:
  * - Copy: copies selected entries to clipboard via yy keybinding
  * - Paste: pastes entries after cursor position via p keybinding
@@ -34,7 +34,6 @@ export interface UseBufferOperationsReturn {
  * - Move: handles vim-style motions (j/k, gg, G, etc)
  */
 export function useBufferOperations(bufferState: UseBufferStateReturn): UseBufferOperationsReturn {
-  
   // Copy operations - uses current selection state
   const copySelection = useCallback(() => {
     bufferState.copySelection();
@@ -50,25 +49,34 @@ export function useBufferOperations(bufferState: UseBufferStateReturn): UseBuffe
   }, [bufferState]);
 
   // Delete operations - marks entries for deletion (soft delete, can be undone)
-  const deleteEntry = useCallback((index: number) => {
-    if (index >= 0 && index < bufferState.entries.length) {
-      // Move cursor away from deleted entry if it's selected
-      if (bufferState.selection.cursorIndex === index) {
-        bufferState.moveCursorDown(1);
+  const deleteEntry = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < bufferState.entries.length) {
+        // Move cursor away from deleted entry if it's selected
+        if (bufferState.selection.cursorIndex === index) {
+          bufferState.moveCursorDown(1);
+        }
+        // Entry is marked for deletion - actual deletion is handled by dd keybinding
       }
-      // Entry is marked for deletion - actual deletion is handled by dd keybinding
-    }
-  }, [bufferState]);
+    },
+    [bufferState]
+  );
 
-  const deleteMultiple = useCallback((indices: number[]) => {
-    for (const index of indices) {
-      deleteEntry(index);
-    }
-  }, [deleteEntry]);
+  const deleteMultiple = useCallback(
+    (indices: number[]) => {
+      for (const index of indices) {
+        deleteEntry(index);
+      }
+    },
+    [deleteEntry]
+  );
 
-  const undeleteEntry = useCallback((index: number) => {
-    // Undo with 'u' keybinding handles this
-  }, [bufferState]);
+  const undeleteEntry = useCallback(
+    (index: number) => {
+      // Undo with 'u' keybinding handles this
+    },
+    [bufferState]
+  );
 
   // Clipboard status queries
   const getClipboardCount = useCallback((): number => {
@@ -79,11 +87,11 @@ export function useBufferOperations(bufferState: UseBufferStateReturn): UseBuffe
     copySelection,
     pasteAfter,
     hasClipboard,
-    
+
     deleteEntry,
     deleteMultiple,
     undeleteEntry,
-    
+
     getClipboardCount,
   };
 }

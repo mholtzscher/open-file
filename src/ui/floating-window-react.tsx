@@ -1,6 +1,6 @@
 /**
  * FloatingWindow React component
- * 
+ *
  * Renders a floating dialog box with border and title
  */
 
@@ -53,13 +53,7 @@ export function FloatingWindow({
       title={title}
     >
       {content.map((line, idx) => (
-        <text
-          key={idx}
-          position="absolute"
-          left={2}
-          top={2 + idx}
-          fg={textColor}
-        >
+        <text key={idx} position="absolute" left={2} top={2 + idx} fg={textColor}>
           {line}
         </text>
       ))}

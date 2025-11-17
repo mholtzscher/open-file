@@ -1,6 +1,6 @@
 /**
  * Edit mode enumeration
- * 
+ *
  * Defines the different editing modes for the S3 explorer UI
  */
 

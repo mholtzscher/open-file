@@ -1,6 +1,6 @@
 /**
  * PreviewPane React component
- * 
+ *
  * Displays a preview of the currently selected file
  */
 
@@ -43,13 +43,7 @@ export function PreviewPane({
       title="Preview"
     >
       {lines.map((line, idx) => (
-        <text
-          key={idx}
-          position="absolute"
-          left={1}
-          top={1 + idx}
-          fg={CatppuccinMocha.text}
-        >
+        <text key={idx} position="absolute" left={1} top={1 + idx} fg={CatppuccinMocha.text}>
           {line.substring(0, width - 2)}
         </text>
       ))}

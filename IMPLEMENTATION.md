@@ -14,6 +14,7 @@ This document summarizes the implementation of `open-s3`, a Terminal User Interf
 ## Completed Features
 
 ### ✅ Core Architecture (5 commits)
+
 - [x] Project foundation with Bun runtime
 - [x] TypeScript configuration with strict mode
 - [x] Adapter pattern for pluggable backends
@@ -21,6 +22,7 @@ This document summarizes the implementation of `open-s3`, a Terminal User Interf
 - [x] MockAdapter for testing without S3 connection
 
 ### ✅ Storage Backends (1 commit)
+
 - [x] S3 adapter with AWS SDK v3 integration
 - [x] Virtual directory support (S3 prefixes)
 - [x] List operations with pagination
@@ -29,6 +31,7 @@ This document summarizes the implementation of `open-s3`, a Terminal User Interf
 - [x] Proper error handling and logging
 
 ### ✅ Buffer System (1 commit)
+
 - [x] BufferState class for editor state management
 - [x] Entry ID generation and tracking
 - [x] Change detection algorithm (creates, deletes, moves, renames)
@@ -36,6 +39,7 @@ This document summarizes the implementation of `open-s3`, a Terminal User Interf
 - [x] Support for normal, visual, and edit modes
 
 ### ✅ UI Components (1 commit)
+
 - [x] BufferView for rendering entries as editable buffer
 - [x] ConfirmationDialog for operation confirmations
 - [x] OpenTUI integration with full keyboard support
@@ -43,12 +47,14 @@ This document summarizes the implementation of `open-s3`, a Terminal User Interf
 - [x] Vim-style keybindings
 
 ### ✅ Testing (1 commit)
+
 - [x] Adapter interface tests (11 tests)
 - [x] Change detection tests (12 tests)
 - [x] All tests passing with proper assertions
 - [x] Edge case coverage
 
 ### ✅ Configuration & CLI (3 commits)
+
 - [x] Configuration file support (~/.open-s3rc.json)
 - [x] CLI argument parsing (bucket, adapter, credentials, endpoint)
 - [x] Help and version flags
@@ -57,6 +63,7 @@ This document summarizes the implementation of `open-s3`, a Terminal User Interf
 - [x] Display options (icons, sizes, dates)
 
 ### ✅ Documentation
+
 - [x] Comprehensive README.md
 - [x] Installation instructions
 - [x] Keybinding reference
@@ -96,7 +103,9 @@ src/
 ### Key Algorithms
 
 #### Change Detection
+
 The application detects changes between original and edited entry lists:
+
 - **Creates**: New entries with IDs not in original list
 - **Deletes**: Entries in original list but not in edited list
 - **Moves**: Entries with same ID but different path
@@ -109,13 +118,17 @@ const plan = buildOperationPlan(changes);
 ```
 
 #### Operation Sequencing
+
 Operations are sequenced to avoid dependency issues:
+
 1. **Creates** - New files/directories first
 2. **Moves** - Renames and relocations
 3. **Deletes** - Removals last (after dependencies resolved)
 
 #### Entry ID System
+
 Each entry has a unique ID that persists across buffer edits:
+
 - Format: `entry_<timestamp>_<random>`
 - Allows tracking renamed/moved entries
 - Enables proper change detection
@@ -159,6 +172,7 @@ The application supports three editing modes:
 ## Test Coverage
 
 ### Adapter Tests (11 tests)
+
 - List entries and sorting
 - Get metadata
 - Create files and directories
@@ -168,6 +182,7 @@ The application supports three editing modes:
 - Error handling for non-existent entries
 
 ### Change Detection Tests (12 tests)
+
 - Detect created entries
 - Detect deleted entries
 - Detect moved entries
@@ -180,6 +195,7 @@ The application supports three editing modes:
 ## Build & Deployment
 
 ### Development
+
 ```bash
 # Run in watch mode
 just dev
@@ -194,6 +210,7 @@ just check
 ```
 
 ### Production
+
 ```bash
 # Build executable
 just build
@@ -223,6 +240,7 @@ Users can configure the application via `~/.open-s3rc.json`:
 ```
 
 Or via CLI arguments:
+
 ```bash
 open-s3 --adapter s3 --region us-west-2 --bucket my-bucket
 ```
@@ -230,12 +248,14 @@ open-s3 --adapter s3 --region us-west-2 --bucket my-bucket
 ## AWS Integration
 
 The S3 adapter supports multiple credential methods:
+
 1. AWS SDK v3 default credential chain (IAM roles, ~/.aws/credentials)
 2. Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
 3. Configuration file (~/.open-s3rc.json)
 4. CLI arguments (--access-key, --secret-key)
 
 For development/testing, LocalStack is supported:
+
 ```bash
 open-s3 --endpoint http://localhost:4566 --adapter s3 test-bucket
 ```
@@ -273,24 +293,28 @@ While core functionality is complete, these features could enhance the applicati
 ## Architecture Decisions
 
 ### Why Bun?
+
 - Native TypeScript support (no build step for development)
 - Superior performance vs Node.js
 - Better ESM support
 - Built-in test runner
 
 ### Why Buffer-as-Editor?
+
 - Familiar paradigm (like oil.nvim for Vim)
 - Natural interface for file operations
 - Edit visualization shows exactly what will happen
 - Confirmation dialog prevents accidents
 
 ### Why Adapter Pattern?
+
 - Testability (MockAdapter for tests)
 - Extensibility (easy to add more backends)
 - Separation of concerns (UI independent of storage)
 - Future support for other backends (GCS, Azure, etc.)
 
 ### Why Entry IDs?
+
 - Tracks entries across renames and moves
 - Detects the difference between rename and create+delete
 - Enables proper change detection
@@ -337,6 +361,7 @@ The architecture supports these enhancements without major refactoring:
 The `open-s3` project provides a solid foundation for a modern S3 browser with a clean architecture, comprehensive testing, and well-documented code. The implementation demonstrates best practices for building TUI applications in TypeScript and can serve as a template for similar tools.
 
 Key achievements:
+
 - ✅ Full S3 integration with AWS SDK v3
 - ✅ Comprehensive change detection system
 - ✅ Clean adapter pattern for extensibility

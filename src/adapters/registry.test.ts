@@ -3,7 +3,13 @@
  */
 
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { AdapterRegistry, getAdapterRegistry, registerAdapter, getAdapter, registerS3 } from './registry.js';
+import {
+  AdapterRegistry,
+  getAdapterRegistry,
+  registerAdapter,
+  getAdapter,
+  registerS3,
+} from './registry.js';
 import { MockAdapter } from './mock-adapter.js';
 import { S3Adapter } from './s3-adapter.js';
 
@@ -25,7 +31,7 @@ describe('AdapterRegistry', () => {
     it('should register an adapter', () => {
       const adapter = new MockAdapter();
       registry.register('test', adapter);
-      
+
       expect(registry.hasAdapter('test')).toBe(true);
       expect(registry.getAdapter('test')).toBe(adapter);
     });
@@ -33,10 +39,10 @@ describe('AdapterRegistry', () => {
     it('should overwrite existing adapter', () => {
       const adapter1 = new MockAdapter();
       const adapter2 = new MockAdapter();
-      
+
       registry.register('test', adapter1);
       registry.register('test', adapter2);
-      
+
       expect(registry.getAdapter('test')).toBe(adapter2);
     });
   });
@@ -48,12 +54,12 @@ describe('AdapterRegistry', () => {
         bucket: 'test-bucket',
         credentials: {
           accessKeyId: 'test',
-          secretAccessKey: 'test'
-        }
+          secretAccessKey: 'test',
+        },
       };
-      
+
       registry.registerS3(config);
-      
+
       expect(registry.hasAdapter('s3')).toBe(true);
       expect(registry.getAdapter('s3')).toBeInstanceOf(S3Adapter);
     });
@@ -86,7 +92,7 @@ describe('AdapterRegistry', () => {
     it('should list all registered adapters', () => {
       registry.register('test1', new MockAdapter());
       registry.register('test2', new MockAdapter());
-      
+
       const adapters = registry.listAdapters();
       expect(adapters).toContain('mock');
       expect(adapters).toContain('test1');
@@ -113,7 +119,7 @@ describe('Global registry functions', () => {
     it('should create singleton registry', () => {
       const registry1 = getAdapterRegistry();
       const registry2 = getAdapterRegistry();
-      
+
       expect(registry1).toBe(registry2);
       expect(registry1).toBeInstanceOf(AdapterRegistry);
     });
@@ -128,7 +134,7 @@ describe('Global registry functions', () => {
     it('should register adapter globally', () => {
       const adapter = new MockAdapter();
       registerAdapter('global-test', adapter);
-      
+
       const registry = getAdapterRegistry();
       expect(registry.hasAdapter('global-test')).toBe(true);
       expect(registry.getAdapter('global-test')).toBe(adapter);
@@ -148,17 +154,17 @@ describe('Global registry functions', () => {
     });
   });
 
-   describe('registerS3', () => {
-     it('should register S3 adapter globally', () => {
-       const config = {
-         region: 'us-west-2',
-         bucket: 'test-bucket',
-         accessKeyId: 'test',
-         secretAccessKey: 'test'
-       };
-      
+  describe('registerS3', () => {
+    it('should register S3 adapter globally', () => {
+      const config = {
+        region: 'us-west-2',
+        bucket: 'test-bucket',
+        accessKeyId: 'test',
+        secretAccessKey: 'test',
+      };
+
       registerS3(config);
-      
+
       const registry = getAdapterRegistry();
       expect(registry.hasAdapter('s3')).toBe(true);
       expect(registry.getAdapter('s3')).toBeInstanceOf(S3Adapter);

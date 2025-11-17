@@ -53,26 +53,28 @@
 
 ## Timeline
 
-| Phase | Task | Duration | Status | Ready When |
-|-------|------|----------|--------|-----------|
-| 1a | bd-al9 (Profile detection) | 30 min | Ready now | - |
-| 1b | bd-8k3 (Region loading) | 30 min | Ready now | - |
-| 2 | bd-ams (S3Adapter) | 45 min | Blocked | After 1a, 1b complete |
-| 3 | bd-cvy (Region defaults) | 20 min | Blocked | After 2 completes |
-| 4 | bd-q3a (CLI flag) | 20 min | Blocked | After 3 completes |
-| 5 | bd-52s (Config file) | 15 min | Blocked | After 4 completes |
-| 6a | bd-6k9 (Docs) | 15 min | Blocked | After 5 completes |
-| 6b | bd-7sh (Tests) | 45 min | Blocked | After 5 completes |
+| Phase | Task                       | Duration | Status    | Ready When            |
+| ----- | -------------------------- | -------- | --------- | --------------------- |
+| 1a    | bd-al9 (Profile detection) | 30 min   | Ready now | -                     |
+| 1b    | bd-8k3 (Region loading)    | 30 min   | Ready now | -                     |
+| 2     | bd-ams (S3Adapter)         | 45 min   | Blocked   | After 1a, 1b complete |
+| 3     | bd-cvy (Region defaults)   | 20 min   | Blocked   | After 2 completes     |
+| 4     | bd-q3a (CLI flag)          | 20 min   | Blocked   | After 3 completes     |
+| 5     | bd-52s (Config file)       | 15 min   | Blocked   | After 4 completes     |
+| 6a    | bd-6k9 (Docs)              | 15 min   | Blocked   | After 5 completes     |
+| 6b    | bd-7sh (Tests)             | 45 min   | Blocked   | After 5 completes     |
 
 **Total Estimated Time: ~3.5 hours**
 
 ## Parallel Execution Opportunities
 
 ### Can Run in Parallel
+
 - **Phase 1**: bd-al9 and bd-8k3 can be worked on simultaneously by different people
 - **Phase 6**: bd-6k9 and bd-7sh can be worked on simultaneously
 
 ### Must Run Sequentially
+
 - Phases 2-5 each depend on the previous phase completing
 
 ## Ready Tasks (Start Here!)
@@ -112,11 +114,13 @@ bd dep cycles
 ## Priority When Starting
 
 **Recommended approach:**
+
 1. Start with **bd-al9** and **bd-8k3** (can both go immediately)
 2. Once those are complete, **bd-ams** becomes available
 3. Continue down the chain sequentially
 
 **Alternative approach (parallelization):**
+
 1. Person A: Works on **bd-al9** while Person B works on **bd-8k3**
 2. Both complete and coordinate to start **bd-ams**
 3. When **bd-52s** completes, Person A takes **bd-6k9** (docs), Person B takes **bd-7sh** (tests)
@@ -124,23 +128,28 @@ bd dep cycles
 ## Dependency Justification
 
 ### Why bd-ams depends on bd-al9 AND bd-8k3
+
 - Profile detection (bd-al9) provides the profile name to use
 - Region loading (bd-8k3) provides the region for that profile
 - S3Adapter (bd-ams) needs both to properly instantiate the client
 
 ### Why bd-cvy depends on bd-ams
+
 - Must update S3Adapter first before implementing region fallback logic
 - Ensures the adapter is ready to accept profile-based regions
 
 ### Why bd-q3a depends on bd-cvy
+
 - Region handling must be complete before adding CLI flag
 - CLI flag will use the new region resolution logic
 
 ### Why bd-52s depends on bd-q3a
+
 - Config file should support the new --profile flag
 - Config file format needs to align with CLI interface
 
 ### Why bd-6k9 and bd-7sh depend on bd-52s
+
 - Documentation should reference all implemented features
 - Tests should cover the complete feature set
 

@@ -33,12 +33,14 @@ This directory contains a comprehensive analysis of the dependency structure in 
 ## 🎯 Quick Summary
 
 ### Status
+
 - **Total Issues:** 77 (9 epics + 68 tasks)
 - **Current Dependencies:** 0 ❌
 - **Missing Dependencies:** ~122 ⚠️
 - **Circular Dependencies:** 0 ✓
 
 ### Top Issues
+
 1. ❌ ZERO parent-child relationships between epics and tasks (68 links missing)
 2. ❌ Save operation flow completely unordered (10+ tasks with no sequence)
 3. ❌ Type system not marked as foundation (14+ dependent tasks unlinked)
@@ -46,6 +48,7 @@ This directory contains a comprehensive analysis of the dependency structure in 
 5. ❌ S3 adapter foundation missing (6 methods with no setup prerequisite)
 
 ### Impact
+
 - `bd ready` shows all 68 tasks as ready (meaningless - should show ~10-15)
 - `bd blocked` shows nothing (should show ~40-50 blocked tasks)
 - Cannot identify critical paths or bottlenecks
@@ -57,18 +60,23 @@ This directory contains a comprehensive analysis of the dependency structure in 
 ## 🚀 Quick Start (Choose Your Path)
 
 ### 👀 "I want to understand the problem" (5 min read)
+
 → Read **QUICK_REFERENCE.md** sections: "Top 5 Critical Issues" + "Critical Task Sequences"
 
 ### 🎯 "I want to fix this" (30 min)
+
 → Read **QUICK_REFERENCE.md** + use the "Quick Implementation Checklist"
 
 ### 📊 "I want to see everything visually" (20 min read)
+
 → Read **VISUAL_SUMMARY.md** sections: "Current vs Target State" + "Critical Path Analysis"
 
 ### 🔬 "I want deep technical details" (45 min read)
+
 → Read **COMPLETE_ANALYSIS.md** from start to finish
 
 ### 🎓 "I want to present this to the team" (prep time)
+
 → Use diagrams from **VISUAL_SUMMARY.md** + key points from **QUICK_REFERENCE.md**
 
 ---
@@ -76,6 +84,7 @@ This directory contains a comprehensive analysis of the dependency structure in 
 ## 📊 Key Findings at a Glance
 
 ### Current Dependency Structure
+
 ```
 Total dependencies mapped:     0
 Tasks with dependencies:       0/68
@@ -86,6 +95,7 @@ RESULT: Completely disconnected (99.8% chaos metric)
 ```
 
 ### Target Dependency Structure
+
 ```
 Total dependencies needed:     122+
 Tasks with dependencies:       50+/68
@@ -100,9 +110,10 @@ RESULT: Clear critical paths (65% order metric)
 ## 🎯 Critical Dependencies (Tier 1 - MUST ADD)
 
 ### Type Foundation (Blocks 14+ Tasks)
+
 ```
 bd-2cl (Entry type) blocks:
-  bd-807, bd-0sv, bd-18l, bd-6g8, bd-7rr, 
+  bd-807, bd-0sv, bd-18l, bd-6g8, bd-7rr,
   bd-2fk, bd-bga, bd-pai, bd-wzn
 
 bd-38p (Adapter interface) blocks:
@@ -113,13 +124,15 @@ bd-pdh (Operations) blocks:
 ```
 
 ### Save Operation Sequence (Critical Linear Path)
+
 ```
 bd-2fk → bd-bga → bd-2pd → bd-19s → bd-0j3 → bd-ret
-  
+
 (Plus bd-56l separately but needed by bd-2pd)
 ```
 
 ### Epic-to-Task Links (68 Total)
+
 ```
 bd-467 → [bd-w9f, bd-ca3, bd-7j6, bd-4op, bd-6oo, bd-7qq]
 bd-txk → [bd-2cl, bd-38p, bd-pdh, bd-18l, bd-bb5, bd-hn3]
@@ -137,6 +150,7 @@ bd-fi2 → [bd-p8b, bd-afd, bd-gnm, bd-wg6, bd-3up]
 ## 📈 Implementation Effort
 
 ### Tier 1 (MUST DO FIRST - 2-3 hours)
+
 - [ ] Add 68 parent-child epic-task links
 - [ ] Add 14 type foundation blocks
 - [ ] Add 6 save flow sequence links
@@ -144,12 +158,14 @@ bd-fi2 → [bd-p8b, bd-afd, bd-gnm, bd-wg6, bd-3up]
 - **Result:** bd ready/blocked commands start working
 
 ### Tier 2 (HIGH PRIORITY - 1-2 hours)
+
 - [ ] Add 5 UI structure links
 - [ ] Add 8 navigation dependency links
 - [ ] Add 8 advanced UI dependencies
 - **Result:** Critical paths become visible
 
 ### Tier 3 (NICE TO HAVE - 1 hour)
+
 - [ ] Add 3-4 foundation sequencing links
 - [ ] Add 8 S3 feature dependencies
 - [ ] Add 5 testing dependencies
@@ -162,6 +178,7 @@ bd-fi2 → [bd-p8b, bd-afd, bd-gnm, bd-wg6, bd-3up]
 ## 🔍 Analysis Methodology
 
 ### What Was Analyzed
+
 1. All 77 issues (9 epics + 68 tasks)
 2. Epic descriptions and intended task hierarchy
 3. Task descriptions for logical dependencies
@@ -172,6 +189,7 @@ bd-fi2 → [bd-p8b, bd-afd, bd-gnm, bd-wg6, bd-3up]
 8. Navigation system structure (mode → keybindings)
 
 ### What Was Found
+
 - ✅ **Epics are well-defined** - clear scope and purpose
 - ✅ **Task descriptions are detailed** - good acceptance criteria
 - ✅ **No circular dependencies** - safe to add links
@@ -181,6 +199,7 @@ bd-fi2 → [bd-p8b, bd-afd, bd-gnm, bd-wg6, bd-3up]
 - ❌ **Type system not foundation** - nothing blocks on bd-2cl, bd-38p
 
 ### Verification
+
 - Dependencies manually traced through task descriptions
 - Logical sequencing validated against workflow
 - No circular dependencies found (verified acyclic)
@@ -236,21 +255,27 @@ $ bd stats
 ## 🤔 FAQ
 
 ### Q: Why are there NO dependencies currently?
+
 A: The project was created with epics defining logical groupings, but actual task-to-task dependencies weren't established. The "dependents" arrays in epics show which tasks they contain, but the child tasks don't link back (which is how bd tracks dependencies).
 
 ### Q: Is this a "soft" vs "hard" blocker issue?
+
 A: This is about completely missing relationships. The save flow, for example, is a strict sequence that MUST happen in order, but bd has no way to enforce or show this currently.
 
 ### Q: Should ALL tasks have dependencies?
+
 A: Not all - but most should. Tasks like bd-w9f (initialize project) legitimately have zero blockers. Tasks like bd-2pd should have blockers (bd-bga, bd-56l).
 
 ### Q: Why start with Tier 1?
+
 A: Tier 1 fixes the "meta" problem (epic-task hierarchy) and establishes type safety. Then Tier 2 structures the critical workflows. Tier 3 is polish.
 
 ### Q: Can we do this incrementally?
+
 A: Yes! Add parent-child links first (doesn't change anything but fixes visualization). Then add type foundation (this enables type-safety). Then add save flow. Incremental addition is fine.
 
 ### Q: What if we get dependencies wrong?
+
 A: Worst case: you can remove a dependency with `bd dep --delete`. The acyclic structure means you can always fix ordering issues. No risk of circular deadlocks.
 
 ---
@@ -258,16 +283,19 @@ A: Worst case: you can remove a dependency with `bd dep --delete`. The acyclic s
 ## 🎓 Learning Resources
 
 ### To Understand bd Dependency System
+
 - See: AGENTS.md in root project directory
 - Key concepts: blocks, parent-child, related, discovered-from
 - CLI reference: `bd dep --help`
 
 ### To Understand This Project
+
 - Epics overview: See "Epics Overview" in QUICK_REFERENCE.md
 - Critical path: See "SEQUENCE 1" in QUICK_REFERENCE.md
 - Workflow: See VISUAL_SUMMARY.md
 
 ### To Understand Software Architecture
+
 - This project follows: oil.nvim adapter pattern + OpenTUI component architecture
 - Read: research/oil.nvim/ and research/opentui/ directories for context
 
@@ -293,6 +321,7 @@ After implementing dependencies, verify with:
 ## 📞 Questions?
 
 If you have questions about specific dependencies or the analysis:
+
 1. Check the specific task ID in COMPLETE_ANALYSIS.md (search for "bd-XXXX")
 2. Look at QUICK_REFERENCE.md for the sequence it belongs to
 3. Check VISUAL_SUMMARY.md for how it fits in the bigger picture
@@ -315,4 +344,3 @@ If you have questions about specific dependencies or the analysis:
 **Project:** open-s3 (S3 TUI Explorer)  
 **Total Issues Analyzed:** 77 (9 epics + 68 tasks)  
 **Status:** Ready for implementation
-

@@ -273,9 +273,9 @@ describe('createDefaultKeybindings', () => {
     // But should have same bindings (compare keys and descriptions, not handlers)
     const actions1 = registry1.getActionsForMode(EditMode.Normal);
     const actions2 = registry2.getActionsForMode(EditMode.Normal);
-    
+
     expect(actions1).toHaveLength(actions2.length);
-    
+
     for (let i = 0; i < actions1.length; i++) {
       expect(actions1[i].key).toBe(actions2[i].key);
       expect(actions1[i].description).toBe(actions2[i].description);

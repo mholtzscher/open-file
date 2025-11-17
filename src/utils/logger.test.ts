@@ -83,7 +83,7 @@ describe('Logger', () => {
   it('should create log file', async () => {
     logger.info('Test message');
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     const logPath = logger.getLogFilePath();
     expect(existsSync(logPath)).toBe(true);
   });
@@ -117,10 +117,10 @@ describe('Log directory detection', () => {
   it('should identify correct directory for OS', () => {
     const logger = new Logger();
     const logDir = logger.getLogDirectoryPath();
-    
+
     // Should contain open-s3 in the path
     expect(logDir.includes('open-s3')).toBe(true);
-    
+
     // Should be under home directory or platform-specific locations
     const home = homedir();
     expect(logDir.includes(home) || logDir.includes('AppData')).toBe(true);

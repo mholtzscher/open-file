@@ -34,7 +34,7 @@ describe('g? Help Menu Sequence', () => {
   describe('key sequence detection', () => {
     it('should detect single g key', () => {
       const result = bufferState.handleKeyPress('g');
-      
+
       expect(result.handled).toBe(false);
       expect(result.sequence).toEqual(['g']);
     });
@@ -44,7 +44,7 @@ describe('g? Help Menu Sequence', () => {
       bufferState.handleKeyPress('g');
       // Then ?
       const result = bufferState.handleKeyPress('?');
-      
+
       expect(result.handled).toBe(true);
       expect(result.sequence).toEqual(['g', '?']);
       expect(result.action).toBe('help');
@@ -55,7 +55,7 @@ describe('g? Help Menu Sequence', () => {
       bufferState.handleKeyPress('g');
       // Then ?
       bufferState.handleKeyPress('?');
-      
+
       // Next key should start fresh
       const result = bufferState.handleKeyPress('j');
       expect(result.handled).toBe(false);
@@ -67,7 +67,7 @@ describe('g? Help Menu Sequence', () => {
       bufferState.handleKeyPress('g');
       const gg_result = bufferState.handleKeyPress('g');
       expect(gg_result.action).toBe('moveToTop');
-      
+
       // Now test g?
       bufferState.handleKeyPress('g');
       const gq_result = bufferState.handleKeyPress('?');
@@ -79,7 +79,7 @@ describe('g? Help Menu Sequence', () => {
     it('should trigger help action on g?', () => {
       bufferState.handleKeyPress('g');
       const result = bufferState.handleKeyPress('?');
-      
+
       expect(result.action).toBe('help');
     });
 
@@ -87,19 +87,19 @@ describe('g? Help Menu Sequence', () => {
       // Trigger help
       bufferState.handleKeyPress('g');
       bufferState.handleKeyPress('?');
-      
+
       // Try to trigger another sequence
       bufferState.handleKeyPress('d');
       const result = bufferState.handleKeyPress('d');
-      
+
       expect(result.action).toBe('delete');
     });
   });
 
   describe('edge cases', () => {
-    it('should handle timeout correctly', (done) => {
+    it('should handle timeout correctly', done => {
       bufferState.handleKeyPress('g');
-      
+
       // Wait for timeout
       setTimeout(() => {
         const result = bufferState.handleKeyPress('?');
@@ -112,7 +112,7 @@ describe('g? Help Menu Sequence', () => {
     it('should handle g followed by non-? key', () => {
       bufferState.handleKeyPress('g');
       const result = bufferState.handleKeyPress('j');
-      
+
       expect(result.handled).toBe(false);
       expect(result.sequence).toEqual(['g', 'j']);
     });

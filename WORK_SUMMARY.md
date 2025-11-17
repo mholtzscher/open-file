@@ -3,9 +3,11 @@
 ## Completed Tasks
 
 ### 1. Entry Creation with 'i' Key (bd-yyl) ✅
+
 **Status**: Completed and Committed
 
 **Changes**:
+
 - Added Insert mode to support creating new entries
 - Implemented character input, backspace, and Enter/ESC confirmation
 - Added tab completion suggestions based on existing entries
@@ -13,6 +15,7 @@
 - Display shows visual preview during input
 
 **Files Modified**:
+
 - `src/ui/buffer-state.ts` - Added entry creation methods
 - `src/index.ts` - Added Insert mode key handler
 - `src/ui/buffer-view.ts` - Display insert mode input
@@ -20,9 +23,11 @@
 **Tests**: All buffer-state tests pass (26 tests)
 
 ### 2. Entry Deletion with 'dd' (bd-8yn) ✅
+
 **Status**: Completed and Committed
 
 **Changes**:
+
 - Implemented soft deletion using 'dd' key sequence
 - Entries marked for deletion show '~' prefix
 - Support undo with 'u' before save
@@ -30,6 +35,7 @@
 - Visual selection deletion with 'd' in visual mode
 
 **Files Modified**:
+
 - `src/ui/buffer-state.ts` - Added deletion tracking
 - `src/index.ts` - Updated delete handlers
 - `src/ui/buffer-view.ts` - Added deleted entry display
@@ -37,9 +43,11 @@
 **Tests**: All buffer-state tests pass (26 tests)
 
 ### 3. Adapter Interface Tests (bd-afd) ✅
+
 **Status**: Completed with 25 Tests
 
 **Coverage**:
+
 - All adapter methods tested (list, getMetadata, create, delete, move, copy, exists)
 - Error handling tests (non-existent entries, invalid operations)
 - Pagination support tests
@@ -49,12 +57,15 @@
 **Test Results**: 25 tests, 33 expect() calls, 0 failures
 
 **Files Modified**:
+
 - `src/adapters/adapter.test.ts` - Expanded test suite
 
 ### 4. Change Detection Tests (bd-gnm) ✅
+
 **Status**: Completed with 15 Tests
 
 **Coverage**:
+
 - Create/delete/move/copy detection
 - Edge cases (same name different location)
 - Operation ordering (creates before deletes)
@@ -65,12 +76,15 @@
 **Test Results**: 15 tests, 39 expect() calls, 0 failures
 
 **Files Modified**:
+
 - `src/utils/change-detection.test.ts` - Added comprehensive edge case tests
 
 ### 5. User Documentation (bd-wg6) ✅
+
 **Status**: Completed - 609 lines of documentation
 
 **Content Added**:
+
 - ✅ Installation guide (2 methods)
 - ✅ First-time setup instructions
 - ✅ Quick start tutorial with examples
@@ -82,6 +96,7 @@
 - ✅ Performance tips
 
 **Files Modified**:
+
 - `README.md` - Expanded from 275 to 609 lines
 
 ## Commits Created
@@ -96,7 +111,7 @@
 
 ```
 Buffer State Tests:      26 pass, 0 fail
-Adapter Tests:          25 pass, 0 fail  
+Adapter Tests:          25 pass, 0 fail
 Change Detection Tests: 15 pass, 0 fail
 Total:                  66 pass, 0 fail
 ```
@@ -113,6 +128,7 @@ Total:                  66 pass, 0 fail
 ## Features Now Available
 
 ### Entry Management
+
 - ✅ Create entries with 'i' key with tab completion
 - ✅ Delete entries with 'dd' (single or visual selection)
 - ✅ Undo deletions before save with 'u'
@@ -120,12 +136,14 @@ Total:                  66 pass, 0 fail
 - ✅ Batch operations
 
 ### Navigation
+
 - ✅ Vim-style movement (j, k, gg, G)
 - ✅ Page navigation (n, p)
 - ✅ Visual selection (v)
 - ✅ Search mode (/)
 
 ### Operations
+
 - ✅ Create files/directories
 - ✅ Delete with confirmation
 - ✅ Move/rename detection
@@ -133,6 +151,7 @@ Total:                  66 pass, 0 fail
 - ✅ Undo/redo
 
 ### User Experience
+
 - ✅ Comprehensive documentation
 - ✅ Configuration file support
 - ✅ Color-coded display
@@ -141,13 +160,15 @@ Total:                  66 pass, 0 fail
 ## Next Steps (Remaining Ready Work)
 
 High Priority (P1):
+
 - S3 Backend Implementation (bd-zb6) - Epic
-- Navigation & Selection System (bd-zi0) - Epic  
+- Navigation & Selection System (bd-zi0) - Epic
 - Operations & Change Tracking (bd-bod) - Epic
 - Testing & Documentation (bd-fi2) - Epic
 - Configuration System (bd-3up) - Task
 
 Medium Priority (P2):
+
 - Advanced UI Features (bd-w0k) - Epic
 - S3-Specific Features (bd-8d0) - Epic
 - Progress Tracking (bd-f3t) - Task

@@ -1,6 +1,6 @@
 /**
  * OS-aware logging infrastructure
- * 
+ *
  * Writes logs to appropriate OS-specific directories:
  * - Linux: $XDG_STATE_HOME/open-s3/logs (or ~/.local/state/open-s3/logs)
  * - macOS: ~/Library/Logs/open-s3
@@ -30,7 +30,7 @@ export interface LoggerOptions {
  */
 function getLogDirectory(): string {
   const home = homedir();
-  
+
   switch (platform()) {
     case 'linux': {
       const xdgStateHome = process.env.XDG_STATE_HOME || join(home, '.local', 'state');
@@ -125,7 +125,7 @@ export class Logger {
     const timestamp = formatTimestamp();
     const levelStr = formatLevel(level);
     const logEntry = `[${timestamp}] ${levelStr} ${message}`;
-    
+
     if (data !== undefined) {
       this.queue.push(`${logEntry} ${JSON.stringify(data)}`);
     } else {
@@ -145,7 +145,7 @@ export class Logger {
 
     this.isWriting = true;
     const entry = this.queue.shift();
-    
+
     if (entry) {
       try {
         const writeStream = this.stream;
@@ -153,7 +153,7 @@ export class Logger {
           this.isWriting = false;
           return;
         }
-        
+
         writeStream.write(`${entry}\n`, (err: any) => {
           this.isWriting = false;
           if (err) {
@@ -229,7 +229,7 @@ export class Logger {
    * Close the logger
    */
   close(): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       if (this.stream) {
         this.stream.end(() => {
           this.stream = null;

@@ -33,29 +33,29 @@ Oil.nvim's adapter architecture is directly applicable:
 -- Minimal adapter interface (oil-style)
 local s3_adapter = {
   name = "s3",
-  
+
   -- List objects in bucket/prefix
   list = function(path, callback)
     -- path format: "s3://bucket/prefix/path"
     -- callback(err, entries)
     -- entries: [{id="...", name="...", type="file|dir", ...}]
   end,
-  
+
   -- Create object or prefix
   create = function(path, entry_type, callback)
     -- entry_type: "file" or "dir"
   end,
-  
+
   -- Delete object or prefix
   delete = function(path, callback)
     -- Recursive delete if directory
   end,
-  
+
   -- Move/copy objects
   move = function(src, dest, callback)
     -- Handles copy + delete pattern for S3
   end,
-  
+
   -- Get object metadata
   get_metadata = function(path, callback)
     -- Returns size, mtime, storage_class, etc.
@@ -104,17 +104,17 @@ local changes = {
   creates = {
     {path = "s3://bucket/new_file.json", type = "file"},
   },
-  
+
   -- Objects removed from buffer
   deletes = {
     {path = "s3://bucket/old_file.csv", type = "file"},
   },
-  
+
   -- Objects renamed/moved
   moves = {
     {from = "s3://bucket/file.txt", to = "s3://bucket/archive/file.txt"},
   },
-  
+
   -- Objects duplicated
   copies = {
     {from = "s3://bucket/file.txt", to = "s3://bucket/file_copy.txt"},
@@ -327,13 +327,13 @@ require("s3-explorer").setup({
   default_bucket = "my-bucket",
   aws_profile = "default",
   region = "us-east-1",
-  
+
   columns = {
     "icon",
     "size",
     "mtime",
   },
-  
+
   keymaps = {
     ["<CR>"] = "actions.select",
     ["<C-s>"] = { "actions.select", opts = { vertical = true } },
@@ -415,7 +415,7 @@ Oil loads only visible directory. S3 should do same:
 list_objects = function(bucket, prefix, limit)
   -- Return first `limit` objects
   -- Store continuation_token for next page
-  
+
   return {
     entries = [...],  -- first 100 objects
     continuation_token = "abc123",
@@ -531,6 +531,7 @@ end
 ## 7. Feature Roadmap (Based on Oil Patterns)
 
 ### Phase 1: Core (Oil Parity)
+
 - [x] Browse S3 buckets and prefixes
 - [x] Edit buffer (create/delete/rename/move objects)
 - [x] Confirmation dialogs
@@ -539,6 +540,7 @@ end
 - [x] Keybindings
 
 ### Phase 2: Enhanced (Oil+)
+
 - [ ] Preview object content
 - [ ] Floating window support
 - [ ] Search/filter objects
@@ -547,6 +549,7 @@ end
 - [ ] Trash/archive support
 
 ### Phase 3: S3-Specific
+
 - [ ] Versioning support
 - [ ] Object tags display/edit
 - [ ] Storage class indication
@@ -557,6 +560,7 @@ end
 - [ ] CloudFront invalidation
 
 ### Phase 4: Advanced
+
 - [ ] Cross-bucket operations (copy/sync)
 - [ ] Batch operations from CSV
 - [ ] Lambda integration
@@ -607,37 +611,37 @@ require("s3-explorer").setup({
   aws_profile = "default",
   region = "us-east-1",
   default_bucket = nil,
-  
+
   -- Display
   columns = {
     "icon",
     "size",
     "mtime",
   },
-  
+
   -- Buffer options
   buf_options = {
     buflisted = false,
     bufhidden = "hide",
   },
-  
+
   -- Window options
   win_options = {
     wrap = false,
     signcolumn = "no",
   },
-  
+
   -- S3-specific behavior
   show_incomplete_multiparts = false,
   delete_to_archive = false,  -- Move to special "archive" prefix instead of delete
-  
+
   -- Confirmation
   skip_confirm_for_simple_edits = false,
-  
+
   -- Performance
   cache_ttl_ms = 5000,
   max_items_per_request = 1000,
-  
+
   -- Keymaps (fully customizable)
   keymaps = {
     ["g?"] = "actions.show_help",
@@ -656,18 +660,18 @@ require("s3-explorer").setup({
 
 ## 10. Key Differences from Oil (for Implementation)
 
-| Oil | S3 Explorer |
-|-----|-------------|
-| Local/SSH filesystems | Only S3 (can extend later) |
-| Instant operations | Async with loading states |
-| No permission variations | Must show/respect S3 permissions |
-| Simple object types | Need versioning, tags, metadata |
-| Actual directories | Virtual prefixes (no real "directories") |
-| Unix permissions | S3 ACLs/bucket policies |
-| Simple deletion | Need archive/retention strategies |
-| Mv/cp are file ops | Need S3 CopyObject, multipart upload |
-| No cost consideration | Should warn about operation costs |
-| Local-only preview | Preview needs download/streaming |
+| Oil                      | S3 Explorer                              |
+| ------------------------ | ---------------------------------------- |
+| Local/SSH filesystems    | Only S3 (can extend later)               |
+| Instant operations       | Async with loading states                |
+| No permission variations | Must show/respect S3 permissions         |
+| Simple object types      | Need versioning, tags, metadata          |
+| Actual directories       | Virtual prefixes (no real "directories") |
+| Unix permissions         | S3 ACLs/bucket policies                  |
+| Simple deletion          | Need archive/retention strategies        |
+| Mv/cp are file ops       | Need S3 CopyObject, multipart upload     |
+| No cost consideration    | Should warn about operation costs        |
+| Local-only preview       | Preview needs download/streaming         |
 
 ---
 

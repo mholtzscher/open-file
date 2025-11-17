@@ -55,7 +55,7 @@ export interface ListResult {
 
 /**
  * Adapter interface - abstraction for different storage backends
- * 
+ *
  * Implementations: MockAdapter (in-memory), S3Adapter (AWS S3)
  */
 export interface Adapter {

@@ -1,6 +1,7 @@
 # S3Explorer Refactoring Guide: From Imperative to React
 
 ## Quick Navigation
+
 - [Data Flow Diagram](#data-flow-diagram)
 - [State Management Strategy](#state-management-strategy)
 - [Component Breakdown](#component-breakdown)
@@ -169,7 +170,7 @@ interface BufferStateWithUI extends BufferState {
 
 export function useBufferState(adapter: Adapter, configManager: ConfigManager) {
   const [state, dispatch] = useReducer(bufferReducer, initialState);
-  
+
   // Handle async operations
   useEffect(() => {
     // Navigate async
@@ -181,7 +182,7 @@ export function useBufferState(adapter: Adapter, configManager: ConfigManager) {
       })
     }
   }, [state.pendingNavigation])
-  
+
   return { state, dispatch }
 }
 
@@ -196,24 +197,24 @@ function bufferReducer(state: BufferStateWithUI, action: BufferAction) {
           cursorIndex: calculateNewCursorPosition(...)
         }
       }
-    
+
     case 'navigate':
       return {
         ...state,
         pendingNavigation: true,
         pendingPath: action.payload.path
       }
-    
+
     case 'navigationComplete':
       return action.payload.state
-    
+
     case 'save':
       return {
         ...state,
         showConfirmDialog: true,
         confirmDialogPlan: buildOperationPlan(...)
       }
-    
+
     case 'confirmSave':
       // This triggers a side-effect in useEffect
       return {
@@ -221,15 +222,15 @@ function bufferReducer(state: BufferStateWithUI, action: BufferAction) {
         pendingSaveExecution: true,
         showConfirmDialog: false
       }
-    
+
     case 'cancelSave':
       return {
         ...state,
         showConfirmDialog: false
       }
-    
+
     // ... more cases
-    
+
     default:
       return state
   }
@@ -243,6 +244,7 @@ function bufferReducer(state: BufferStateWithUI, action: BufferAction) {
 ### 1. BufferView Component (Main Content Area)
 
 **Current (Imperative)**
+
 ```typescript
 // ui/buffer-view.ts (imperative class)
 class BufferView {
@@ -251,11 +253,11 @@ class BufferView {
     this.state = state
     // ... setup
   }
-  
+
   updateState(state: BufferState) {
     this.state = state
   }
-  
+
   render() {
     // Imperative manipulation of OpenTUI renderables
     this.renderer.root.add(...)
@@ -265,6 +267,7 @@ class BufferView {
 ```
 
 **After (Declarative React)**
+
 ```typescript
 // ui/components/BufferView.tsx (React component)
 interface BufferViewProps {
@@ -291,12 +294,12 @@ export function BufferView({
     () => entries.filter(e => showHidden || !e.name.startsWith('.')),
     [entries, showHidden]
   )
-  
+
   const visibleEntries = useMemo(
     () => filteredEntries.slice(scrollOffset, scrollOffset + pageSize),
     [filteredEntries, scrollOffset, pageSize]
   )
-  
+
   return (
     <BufferLines>
       {visibleEntries.map((entry, index) => (
@@ -316,6 +319,7 @@ export function BufferView({
 ### 2. StatusBar Component
 
 **After (Declarative React)**
+
 ```typescript
 // ui/components/StatusBar.tsx
 interface StatusBarProps {
@@ -340,12 +344,12 @@ export function StatusBar({
   const modeStr = formatMode(mode)
   const pathStr = truncatePath(path, 60)
   const status = `${dirty ? '●' : ''} ${modeStr} ${pathStr}`
-  
+
   let rightContent = ''
   if (searchQuery) {
     rightContent = `/${searchQuery}${searchFlags ? ` ${searchFlags}` : ''}`
   }
-  
+
   return (
     <StatusLine
       left={status}
@@ -360,6 +364,7 @@ export function StatusBar({
 ### 3. HelpWindow Component
 
 **After (Declarative React)**
+
 ```typescript
 // ui/components/HelpWindow.tsx
 interface HelpWindowProps {
@@ -374,7 +379,7 @@ export function HelpWindow({ onClose }: HelpWindowProps) {
     // Subscribe to keyboard events
     return () => {}
   }, [onClose])
-  
+
   return (
     <FloatingWindowComponent
       width={80}
@@ -391,6 +396,7 @@ export function HelpWindow({ onClose }: HelpWindowProps) {
 ### 4. SortMenu Component
 
 **After (Declarative React)**
+
 ```typescript
 // ui/components/SortMenu.tsx
 interface SortMenuProps {
@@ -410,7 +416,7 @@ export function SortMenu({
     onSort({ field, order: currentOrder })
     onClose()
   }
-  
+
   return (
     <FloatingWindowComponent
       title="SORT OPTIONS"
@@ -428,6 +434,7 @@ export function SortMenu({
 ### 5. ConfirmationDialog Component
 
 **After (Declarative React)**
+
 ```typescript
 // ui/components/ConfirmationDialog.tsx
 interface ConfirmationDialogProps {
@@ -489,7 +496,7 @@ private handleNormalModeKey(key: any): void {
 export function useKeyboardEvents(dispatch: any, renderer: CliRenderer) {
   const normalModeHandler = useCallback((key: any) => {
     const keyName = normalizeKeyName(key)
-    
+
     // Sequence detection
     const result = handleKeySequence(keyName)
     if (result.handled) {
@@ -509,7 +516,7 @@ export function useKeyboardEvents(dispatch: any, renderer: CliRenderer) {
       }
       return
     }
-    
+
     // Single key handlers
     switch (keyName) {
       case 'j':
@@ -561,7 +568,7 @@ export function useKeyboardEvents(dispatch: any, renderer: CliRenderer) {
         break
     }
   }, [dispatch])
-  
+
   const visualModeHandler = useCallback((key: any) => {
     const keyName = normalizeKeyName(key)
     switch (keyName) {
@@ -579,7 +586,7 @@ export function useKeyboardEvents(dispatch: any, renderer: CliRenderer) {
         break
     }
   }, [dispatch])
-  
+
   const insertModeHandler = useCallback((key: any) => {
     const keyName = normalizeKeyName(key)
     switch (keyName) {
@@ -601,7 +608,7 @@ export function useKeyboardEvents(dispatch: any, renderer: CliRenderer) {
         }
     }
   }, [dispatch])
-  
+
   const searchModeHandler = useCallback((key: any) => {
     const keyName = normalizeKeyName(key)
     switch (keyName) {
@@ -629,7 +636,7 @@ export function useKeyboardEvents(dispatch: any, renderer: CliRenderer) {
         }
     }
   }, [dispatch])
-  
+
   const onKeyPress = useCallback((key: any) => {
     const mode = /* get current mode from state */
     switch (mode) {
@@ -647,7 +654,7 @@ export function useKeyboardEvents(dispatch: any, renderer: CliRenderer) {
         break
     }
   }, [normalModeHandler, visualModeHandler, insertModeHandler, searchModeHandler])
-  
+
   return { onKeyPress, normalModeHandler, visualModeHandler, insertModeHandler, searchModeHandler }
 }
 ```
@@ -659,32 +666,34 @@ export function useKeyboardEvents(dispatch: any, renderer: CliRenderer) {
 ### Save Operation Flow
 
 **Current (Blocking Dialog)**
+
 ```typescript
 private async handleSave(): Promise<void> {
   const changes = detectChanges(...)
   const plan = buildOperationPlan(changes)
-  
+
   // BLOCKS here waiting for user
   const dialog = new ConfirmationDialog(this.renderer, plan)
   const result = await dialog.show()
-  
+
   // Resumes after user confirms/cancels
   if (result.confirmed) {
     await this.executeOperationPlan(plan)
     await this.loadBuffer(this.currentPath)
   }
-  
+
   this.render()
 }
 ```
 
 **After (Declarative State)**
+
 ```typescript
 // In reducer
 case 'save': {
   const changes = detectChanges(...)
   const plan = buildOperationPlan(changes)
-  
+
   return {
     ...state,
     showConfirmDialog: true,
@@ -729,26 +738,27 @@ useEffect(() => {
 ### Navigation Async Flow
 
 **After: Async Navigation with Loading State**
+
 ```typescript
 useEffect(() => {
   if (state.pendingNavigation) {
     const loadEntries = async () => {
       try {
-        dispatch({ type: 'navigationStarted' })
-        const result = await adapter.list(state.pendingPath!)
+        dispatch({ type: 'navigationStarted' });
+        const result = await adapter.list(state.pendingPath!);
         dispatch({
           type: 'navigationComplete',
           entries: result.entries,
-          path: state.pendingPath!
-        })
+          path: state.pendingPath!,
+        });
       } catch (error) {
-        dispatch({ type: 'navigationError', error })
+        dispatch({ type: 'navigationError', error });
       }
-    }
-    
-    loadEntries()
+    };
+
+    loadEntries();
   }
-}, [state.pendingNavigation, state.pendingPath])
+}, [state.pendingNavigation, state.pendingPath]);
 ```
 
 ---
@@ -860,20 +870,20 @@ File Count: ~20 new files (3 hooks, 6 components, 2 state files, 9 tests)
 
 ## File Size Comparison
 
-| File | Current | After | Change |
-|------|---------|-------|--------|
-| s3-explorer-class.ts | 924 lines | 0 lines | Removed ✓ |
-| s3-explorer.tsx | 54 lines | ~150 lines | +96 (full logic) |
-| useBufferState.ts | - | ~400 lines | New hook |
-| useKeyboardEvents.ts | - | ~200 lines | New hook |
-| bufferReducer.ts | - | ~300 lines | New reducer |
-| BufferView.tsx | - | ~80 lines | New component |
-| StatusBar.tsx | - | ~50 lines | New component |
-| PreviewPane.tsx | - | ~100 lines | New component |
-| HelpWindow.tsx | - | ~80 lines | New component |
-| SortMenu.tsx | - | ~60 lines | New component |
-| ConfirmationDialog.tsx | - | ~90 lines | New component |
-| **Total** | **~1000** | **~1500** | Better organization |
+| File                   | Current   | After      | Change              |
+| ---------------------- | --------- | ---------- | ------------------- |
+| s3-explorer-class.ts   | 924 lines | 0 lines    | Removed ✓           |
+| s3-explorer.tsx        | 54 lines  | ~150 lines | +96 (full logic)    |
+| useBufferState.ts      | -         | ~400 lines | New hook            |
+| useKeyboardEvents.ts   | -         | ~200 lines | New hook            |
+| bufferReducer.ts       | -         | ~300 lines | New reducer         |
+| BufferView.tsx         | -         | ~80 lines  | New component       |
+| StatusBar.tsx          | -         | ~50 lines  | New component       |
+| PreviewPane.tsx        | -         | ~100 lines | New component       |
+| HelpWindow.tsx         | -         | ~80 lines  | New component       |
+| SortMenu.tsx           | -         | ~60 lines  | New component       |
+| ConfirmationDialog.tsx | -         | ~90 lines  | New component       |
+| **Total**              | **~1000** | **~1500**  | Better organization |
 
 Note: More lines but distributed, testable, and reusable.
 
@@ -881,13 +891,13 @@ Note: More lines but distributed, testable, and reusable.
 
 ## Migration Risks & Mitigations
 
-| Risk | Impact | Mitigation |
-|------|--------|-----------|
-| Lost functionality during refactor | High | Create parallel implementation, test thoroughly |
-| Keyboard shortcuts break | High | Extract tests early, verify all sequences |
-| Async operations behave differently | Medium | Use same adapter, compare behavior |
-| Performance regression | Medium | Profile both versions, benchmark key operations |
-| User confusion | Low | Backwards compatible, same keybindings |
+| Risk                                | Impact | Mitigation                                      |
+| ----------------------------------- | ------ | ----------------------------------------------- |
+| Lost functionality during refactor  | High   | Create parallel implementation, test thoroughly |
+| Keyboard shortcuts break            | High   | Extract tests early, verify all sequences       |
+| Async operations behave differently | Medium | Use same adapter, compare behavior              |
+| Performance regression              | Medium | Profile both versions, benchmark key operations |
+| User confusion                      | Low    | Backwards compatible, same keybindings          |
 
 ---
 

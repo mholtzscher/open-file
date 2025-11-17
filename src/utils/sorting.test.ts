@@ -3,14 +3,14 @@
  */
 
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { 
-  SortField, 
-  SortOrder, 
-  sortEntries, 
+import {
+  SortField,
+  SortOrder,
+  sortEntries,
   toggleSortOrder,
   formatSortField,
   formatSortOrder,
-  DEFAULT_SORT_CONFIG
+  DEFAULT_SORT_CONFIG,
 } from './sorting.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { generateEntryId } from './entry-id.js';

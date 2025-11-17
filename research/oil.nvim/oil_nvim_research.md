@@ -25,23 +25,23 @@ Oil.nvim is inspired by [vim-vinegar](https://github.com/tpope/vim-vinegar) and 
 
 ### 1.1 Core Capabilities
 
-| Feature | Description |
-|---------|-------------|
-| **Directory Editing** | Edit directory contents as a buffer, then save changes with `:w` |
-| **Direct File Operations** | Cut/paste (rename/move), copy, create new files/directories via buffer editing |
-| **Cross-Directory Operations** | Copy/move files between open directories in a single session |
-| **Floating Windows** | Can open in floating windows for non-intrusive browsing |
-| **SSH Support** | Browse remote filesystems via SSH adapter (URL format: `oil-ssh://[user@]host[:port]/path`) |
-| **Adapter Architecture** | Pluggable architecture allowing support for different filesystems (local, SSH, custom) |
-| **LSP Integration** | Respects LSP file operations (e.g., willRenameFiles callbacks) |
-| **Preview Windows** | Preview files/directories before opening (configurable auto-update) |
-| **Customizable Columns** | Display: icon, permissions, size, modification time, etc. |
-| **Sorting Options** | Sort by type, name, size, mtime (natural order support) |
-| **Hidden File Management** | Toggle visibility of hidden files; customizable hiding logic |
-| **Trash Support** | Send deleted files to trash instead of permanent deletion |
-| **Terminal Integration** | Open terminal in current directory |
-| **System Clipboard** | Copy/paste filenames to system clipboard |
-| **Confirmation Dialogs** | Review all changes before saving (configurable) |
+| Feature                        | Description                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------- |
+| **Directory Editing**          | Edit directory contents as a buffer, then save changes with `:w`                            |
+| **Direct File Operations**     | Cut/paste (rename/move), copy, create new files/directories via buffer editing              |
+| **Cross-Directory Operations** | Copy/move files between open directories in a single session                                |
+| **Floating Windows**           | Can open in floating windows for non-intrusive browsing                                     |
+| **SSH Support**                | Browse remote filesystems via SSH adapter (URL format: `oil-ssh://[user@]host[:port]/path`) |
+| **Adapter Architecture**       | Pluggable architecture allowing support for different filesystems (local, SSH, custom)      |
+| **LSP Integration**            | Respects LSP file operations (e.g., willRenameFiles callbacks)                              |
+| **Preview Windows**            | Preview files/directories before opening (configurable auto-update)                         |
+| **Customizable Columns**       | Display: icon, permissions, size, modification time, etc.                                   |
+| **Sorting Options**            | Sort by type, name, size, mtime (natural order support)                                     |
+| **Hidden File Management**     | Toggle visibility of hidden files; customizable hiding logic                                |
+| **Trash Support**              | Send deleted files to trash instead of permanent deletion                                   |
+| **Terminal Integration**       | Open terminal in current directory                                                          |
+| **System Clipboard**           | Copy/paste filenames to system clipboard                                                    |
+| **Confirmation Dialogs**       | Review all changes before saving (configurable)                                             |
 
 ### 1.2 Display and Rendering
 
@@ -54,6 +54,7 @@ Oil.nvim is inspired by [vim-vinegar](https://github.com/tpope/vim-vinegar) and 
 ```
 
 **Display Elements**:
+
 - File/directory icons (via mini.icons or nvim-web-devicons)
 - Type indicator (directory vs file)
 - Optional: permissions, size, modification time
@@ -64,6 +65,7 @@ Oil.nvim is inspired by [vim-vinegar](https://github.com/tpope/vim-vinegar) and 
 ### 1.3 Key Design Patterns
 
 **Buffer-as-Filesystem Pattern**:
+
 ```
 Before (:w):
 📁 lua/
@@ -81,6 +83,7 @@ After :w:
 ```
 
 **Change Tracking**:
+
 - Oil tracks modifications to the buffer
 - Confirmation window shows ALL planned operations:
   - Creates (new files/dirs)
@@ -94,30 +97,31 @@ After :w:
 
 ### 2.1 Default Keymaps
 
-| Key | Action | Mode | Description |
-|-----|--------|------|-------------|
-| `<CR>` | `actions.select` | n | Open file/directory at cursor |
-| `<C-s>` | `actions.select` (vertical) | n | Open in vertical split |
-| `<C-h>` | `actions.select` (horizontal) | n | Open in horizontal split |
-| `<C-t>` | `actions.select` (tab) | n | Open in new tab |
-| `<C-p>` | `actions.preview` | n | Preview file/directory |
-| `<C-c>` | `actions.close` | n | Close oil, restore previous buffer |
-| `<C-l>` | `actions.refresh` | n | Refresh current directory |
-| `-` | `actions.parent` | n | Go to parent directory |
-| `_` | `actions.open_cwd` | n | Open cwd in oil |
-| `` ` `` | `actions.cd` | n | :cd to current directory |
-| `~` | `actions.cd` (tab scope) | n | :tcd to current directory |
-| `gs` | `actions.change_sort` | n | Change sort order (interactive) |
-| `gx` | `actions.open_external` | n | Open in external program |
-| `g.` | `actions.toggle_hidden` | n | Toggle hidden files |
-| `g\` | `actions.toggle_trash` | n | Jump to/from trash |
-| `g?` | `actions.show_help` | n | Show keymaps help |
+| Key     | Action                        | Mode | Description                        |
+| ------- | ----------------------------- | ---- | ---------------------------------- |
+| `<CR>`  | `actions.select`              | n    | Open file/directory at cursor      |
+| `<C-s>` | `actions.select` (vertical)   | n    | Open in vertical split             |
+| `<C-h>` | `actions.select` (horizontal) | n    | Open in horizontal split           |
+| `<C-t>` | `actions.select` (tab)        | n    | Open in new tab                    |
+| `<C-p>` | `actions.preview`             | n    | Preview file/directory             |
+| `<C-c>` | `actions.close`               | n    | Close oil, restore previous buffer |
+| `<C-l>` | `actions.refresh`             | n    | Refresh current directory          |
+| `-`     | `actions.parent`              | n    | Go to parent directory             |
+| `_`     | `actions.open_cwd`            | n    | Open cwd in oil                    |
+| `` ` `` | `actions.cd`                  | n    | :cd to current directory           |
+| `~`     | `actions.cd` (tab scope)      | n    | :tcd to current directory          |
+| `gs`    | `actions.change_sort`         | n    | Change sort order (interactive)    |
+| `gx`    | `actions.open_external`       | n    | Open in external program           |
+| `g.`    | `actions.toggle_hidden`       | n    | Toggle hidden files                |
+| `g\`    | `actions.toggle_trash`        | n    | Jump to/from trash                 |
+| `g?`    | `actions.show_help`           | n    | Show keymaps help                  |
 
 ### 2.2 Buffer Editing Operations
 
 Oil supports standard Vim editing for filesystem operations:
 
 **Creating New File**:
+
 ```vim
 " Position cursor on empty line and type:
 new_file.txt
@@ -126,6 +130,7 @@ new_file.txt
 ```
 
 **Creating Directory**:
+
 ```vim
 " Type directory name with trailing slash:
 new_dir/
@@ -134,6 +139,7 @@ new_dir/
 ```
 
 **Deleting**:
+
 ```vim
 " Delete line with dd:
 :dd           " Deletes file/directory on disk when :w
@@ -144,6 +150,7 @@ new_dir/
 ```
 
 **Moving/Renaming**:
+
 ```vim
 " Rename by editing the name in the buffer:
 old_name.txt → new_name.txt
@@ -153,6 +160,7 @@ file.txt → subdir/file.txt
 ```
 
 **Copying**:
+
 ```vim
 " Duplicate the line (yy, p):
 :yy           " Yank line
@@ -162,6 +170,7 @@ file.txt → subdir/file.txt
 ```
 
 **System Clipboard Operations**:
+
 - `actions.copy_to_system_clipboard`: Copy filename to clipboard
 - `actions.paste_from_system_clipboard`: Paste files from clipboard
 
@@ -202,6 +211,7 @@ p              " Paste
 ### 3.1 Visual Representation
 
 **Column-Based Layout**:
+
 ```
 ID        | Icon | Name                | Type      | Size    | Mtime
 ----------|------|---------------------|-----------|---------|---------------
@@ -213,6 +223,7 @@ oil_id_5  |  📄  | .gitignore          | file      | 285 B   | 2025-01-05
 ```
 
 **Highlighting**:
+
 - `OilDir`: Directory names (normal)
 - `OilDirHidden`: Hidden directories (dimmed)
 - `OilFile`: File names (normal)
@@ -222,6 +233,7 @@ oil_id_5  |  📄  | .gitignore          | file      | 285 B   | 2025-01-05
 - `OilOrphanLink`: Broken links (highlighted as orphaned)
 
 **Path Indication**:
+
 - Winbar: Shows current path (e.g., `~/project/src`)
 - Buffer name: Full path or oil-specific identifier
 - Breadcrumb trail (via recipe)
@@ -229,6 +241,7 @@ oil_id_5  |  📄  | .gitignore          | file      | 285 B   | 2025-01-05
 ### 3.2 Window Management
 
 **Floating Window**:
+
 - Non-intrusive, centered by default
 - Configurable padding, width, height
 - Optional preview split (auto/left/right/above/below)
@@ -247,6 +260,7 @@ float = {
 ```
 
 **Split Management**:
+
 - `<CR>` opens in current window
 - `<C-s>` opens in vertical split
 - `<C-h>` opens in horizontal split
@@ -256,12 +270,14 @@ float = {
 ### 3.3 Confirmation and Safety
 
 **Confirmation Dialogs**:
+
 - Floating window displays all planned operations
 - Shows operation type (create/delete/move/copy) with paths
 - User confirms with `y` or cancels with `n`
 - Configurable to skip for "simple" operations (single action, no deletes, no cross-adapter moves)
 
 **Change Persistence**:
+
 - All changes held in buffer until `:w` is executed
 - Users can review changes before committing
 - `:q!` discards all changes
@@ -270,16 +286,19 @@ float = {
 ### 3.4 State Visualization
 
 **Current Entry Highlighting**:
+
 - Cursor line is highlighted
 - Entry ID appears implicitly (used for tracking changes)
 - Can configure constrain_cursor to keep cursor on valid entries
 
 **Search Highlighting**:
+
 - `/` pattern search works like normal buffer
 - Matches highlighted in results
 - Can integrate with quickfix list
 
 **Progress Indication**:
+
 - Floating progress window for long operations
 - Shows percentage complete
 - Minimizable border when minimized
@@ -291,6 +310,7 @@ float = {
 ### 4.1 Navigation Workflow
 
 **Basic Navigation**:
+
 ```vim
 :Oil ~/projects          " Open oil at specific directory
 j k                      " Move cursor up/down
@@ -304,6 +324,7 @@ _                        " Open current working directory
 ```
 
 **Multi-Directory Navigation**:
+
 ```vim
 :Oil ~/src               " Open first directory in split 1
 <C-s>                    " Open selected file in vertical split
@@ -314,6 +335,7 @@ j k                      " Navigate in second directory
 ### 4.2 File Operations Workflow
 
 **Creating New File**:
+
 ```vim
 :Oil ~/projects          " Open directory
 " Navigate to desired location
@@ -323,6 +345,7 @@ new_filename.txt         " Type filename
 ```
 
 **Copying File**:
+
 ```vim
 :Oil ~/projects          " Open source directory
 yy                       " Yank/copy line
@@ -332,6 +355,7 @@ p                        " Paste line
 ```
 
 **Moving/Renaming**:
+
 ```vim
 :Oil ~/projects          " Open directory
 " Rename entry directly in buffer:
@@ -340,6 +364,7 @@ old_name.txt → new_name.txt
 ```
 
 **Batch Operations**:
+
 ```vim
 :Oil ~/projects
 " Select multiple files
@@ -352,6 +377,7 @@ d                        " Delete marked lines
 ### 4.3 Advanced Workflows
 
 **Cross-Directory Operations**:
+
 ```vim
 " Split 1: :Oil ~/src
 " Split 2: :Oil ~/backup
@@ -364,6 +390,7 @@ p                        " Paste
 ```
 
 **SSH Browsing**:
+
 ```vim
 :Oil oil-ssh://user@host.com/var/www
 " Browse remote directory
@@ -375,6 +402,7 @@ p                        " Paste (copies via SCP)
 ```
 
 **Preview and Decision Making**:
+
 ```vim
 :Oil ~/projects
 <C-p>                    " Preview file under cursor
@@ -385,6 +413,7 @@ j                        " Move to next file
 ```
 
 **Filtering and Organization**:
+
 ```vim
 g.                       " Toggle hidden files
 gs                       " Change sort order
@@ -398,11 +427,13 @@ gs                       " Change sort order
 ### 4.4 Integration Patterns
 
 **LSP File Operations**:
+
 - Oil respects LSP `willRenameFiles` notifications
 - Can auto-save affected buffers
 - Timeout-aware (1 second default)
 
 **Git Integration** (via recipe):
+
 ```lua
 -- Hide gitignored files
 is_hidden_file = function(name, bufnr)
@@ -411,6 +442,7 @@ end
 ```
 
 **Quickfix Integration**:
+
 ```vim
 :Oil ~/projects
 " Select some files
@@ -428,7 +460,7 @@ send_to_qflist           " Send to quickfix list
 require("oil").setup({
   -- Replace netrw for directory buffers
   default_file_explorer = true,
-  
+
   -- Displayed columns
   columns = {
     "icon",
@@ -436,13 +468,13 @@ require("oil").setup({
     -- "size",
     -- "mtime",
   },
-  
+
   -- Window behavior
   buf_options = {
     buflisted = false,
     bufhidden = "hide",
   },
-  
+
   -- Visual options
   win_options = {
     wrap = false,
@@ -450,7 +482,7 @@ require("oil").setup({
     cursorcolumn = false,
     conceallevel = 3,
   },
-  
+
   -- Behavior
   delete_to_trash = false,
   skip_confirm_for_simple_edits = false,
@@ -509,6 +541,7 @@ view_options = {
 Oil abstracts filesystem operations through adapters:
 
 **Built-in Adapters**:
+
 1. **Files Adapter** (local filesystem)
    - Direct filesystem operations via Lua APIs
    - Full feature support
@@ -519,6 +552,7 @@ Oil abstracts filesystem operations through adapters:
    - Supports SCP for cross-adapter transfers
 
 **Custom Adapter Possibility**:
+
 - Implement adapter interface
 - Support operations: list, create, delete, move, copy
 - Return entries with metadata (name, type, id, etc.)
@@ -544,46 +578,46 @@ Oil abstracts filesystem operations through adapters:
 
 ### 7.1 Selection and Navigation
 
-| Action | Purpose |
-|--------|---------|
-| `actions.select` | Open entry (file/directory) |
-| `actions.preview` | Preview in split window |
-| `actions.parent` | Navigate to parent directory |
+| Action             | Purpose                        |
+| ------------------ | ------------------------------ |
+| `actions.select`   | Open entry (file/directory)    |
+| `actions.preview`  | Preview in split window        |
+| `actions.parent`   | Navigate to parent directory   |
 | `actions.open_cwd` | Open current working directory |
 
 ### 7.2 Directory Operations
 
-| Action | Purpose |
-|--------|---------|
-| `actions.refresh` | Reload directory from disk |
-| `actions.cd` | Change directory (`:cd`, `:tcd`, `:lcd`) |
-| `actions.change_sort` | Modify sort order |
-| `actions.toggle_hidden` | Show/hide dotfiles |
+| Action                  | Purpose                                  |
+| ----------------------- | ---------------------------------------- |
+| `actions.refresh`       | Reload directory from disk               |
+| `actions.cd`            | Change directory (`:cd`, `:tcd`, `:lcd`) |
+| `actions.change_sort`   | Modify sort order                        |
+| `actions.toggle_hidden` | Show/hide dotfiles                       |
 
 ### 7.3 External Integration
 
-| Action | Purpose |
-|--------|---------|
-| `actions.open_external` | Open with external program |
-| `actions.open_terminal` | Open terminal in directory |
-| `actions.open_cmdline` | Open cmdline with path argument |
-| `actions.copy_to_system_clipboard` | Copy filename to clipboard |
-| `actions.paste_from_system_clipboard` | Paste files from clipboard |
+| Action                                | Purpose                         |
+| ------------------------------------- | ------------------------------- |
+| `actions.open_external`               | Open with external program      |
+| `actions.open_terminal`               | Open terminal in directory      |
+| `actions.open_cmdline`                | Open cmdline with path argument |
+| `actions.copy_to_system_clipboard`    | Copy filename to clipboard      |
+| `actions.paste_from_system_clipboard` | Paste files from clipboard      |
 
 ### 7.4 File Management
 
-| Action | Purpose |
-|--------|---------|
+| Action                   | Purpose                     |
+| ------------------------ | --------------------------- |
 | `actions.send_to_qflist` | Send files to quickfix list |
-| `actions.yank_entry` | Yank filepath to register |
-| `actions.toggle_trash` | Jump to/from trash |
+| `actions.yank_entry`     | Yank filepath to register   |
+| `actions.toggle_trash`   | Jump to/from trash          |
 
 ### 7.5 UI Actions
 
-| Action | Purpose |
-|--------|---------|
+| Action              | Purpose             |
+| ------------------- | ------------------- |
 | `actions.show_help` | Display keymap help |
-| `actions.close` | Close oil buffer |
+| `actions.close`     | Close oil buffer    |
 
 ---
 
@@ -596,7 +630,7 @@ Oil abstracts filesystem operations through adapters:
    - No mode switching or command menus needed
 
 2. **Cross-Directory Operations**: Can copy/move between buckets in one session
-   - This is *very* useful for S3 (e.g., copy between bucket/prefix combinations)
+   - This is _very_ useful for S3 (e.g., copy between bucket/prefix combinations)
    - Not common in other file explorers
 
 3. **Adapter Architecture**: Multiple backend support built-in
@@ -614,7 +648,7 @@ Oil abstracts filesystem operations through adapters:
 6. **Preview Windows**: See content before opening
    - Valuable for S3 (preview object content without download)
 
-7. **Extensibility**: 
+7. **Extensibility**:
    - Custom keymaps, columns, sorting
    - Highlight groups for custom styling
 
@@ -641,6 +675,7 @@ Oil abstracts filesystem operations through adapters:
 ## 9. Recipes and Patterns
 
 ### 9.1 Toggle Detail View
+
 ```lua
 local detail = false
 require("oil").setup({
@@ -661,6 +696,7 @@ require("oil").setup({
 ```
 
 ### 9.2 Show CWD in Winbar
+
 ```lua
 function _G.get_oil_winbar()
   local dir = require("oil").get_current_dir(0)
@@ -679,6 +715,7 @@ require("oil").setup({
 ```
 
 ### 9.3 Hide Gitignored Files
+
 - Uses git commands to build cache of ignored vs tracked files
 - Customizes `is_hidden_file` function
 - Allows showing tracked hidden files while hiding gitignored ones

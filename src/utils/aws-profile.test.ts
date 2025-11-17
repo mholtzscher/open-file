@@ -83,7 +83,9 @@ region = eu-west-1
 role_arn = arn:aws:iam::123456789012:role/service-role=with=equals
 `;
       const parsed = parseAwsConfigFile(content);
-      expect(parsed.default.role_arn).toBe('arn:aws:iam::123456789012:role/service-role=with=equals');
+      expect(parsed.default.role_arn).toBe(
+        'arn:aws:iam::123456789012:role/service-role=with=equals'
+      );
     });
 
     it('should handle profile names with spaces in brackets', () => {

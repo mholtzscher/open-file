@@ -1,6 +1,6 @@
 /**
  * BufferView React component
- * 
+ *
  * Renders the entry list as a buffer that can be edited.
  * Similar to oil.nvim's approach - the buffer itself is the interface.
  */
@@ -49,7 +49,13 @@ function formatDate(date: Date | undefined): string {
 /**
  * Format an entry for display
  */
-function formatEntry(entry: Entry, _isSelected: boolean, showIcons: boolean, showSizes: boolean, showDates: boolean): string {
+function formatEntry(
+  entry: Entry,
+  _isSelected: boolean,
+  showIcons: boolean,
+  showSizes: boolean,
+  showDates: boolean
+): string {
   const parts: string[] = [];
 
   // Icon
@@ -110,8 +116,16 @@ export function BufferView({
         const isInVisualSelection =
           bufferState.selection.isActive &&
           bufferState.selection.selectionStart !== undefined &&
-          realIndex >= Math.min(bufferState.selection.selectionStart, bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart) &&
-          realIndex <= Math.max(bufferState.selection.selectionStart, bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart);
+          realIndex >=
+            Math.min(
+              bufferState.selection.selectionStart,
+              bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
+            ) &&
+          realIndex <=
+            Math.max(
+              bufferState.selection.selectionStart,
+              bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
+            );
 
         const cursor = isSelected ? '> ' : '  ';
         const content = cursor + formatEntry(entry, isSelected, showIcons, showSizes, showDates);

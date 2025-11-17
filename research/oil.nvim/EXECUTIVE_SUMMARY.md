@@ -42,6 +42,7 @@ Why? Because Vim users understand buffers.
 ### Implication for S3
 
 Users can:
+
 - List S3 objects like a directory
 - Edit entries (rename, move, copy)
 - Confirm operations before executing
@@ -80,16 +81,16 @@ PERFECT for S3: Just add S3 adapter without changing UI layer
 
 Oil has only **16 default keybindings** but they're strategically chosen:
 
-| Binding | Purpose | Why |
-|---------|---------|-----|
-| `-` | Parent directory | Iconic (vim-vinegar origin) |
-| `<CR>` | Open file | Universal convention |
-| `<C-s>` | Vertical split | Standard Ctrl+letter |
-| `j/k` | Navigate | Pure Vim |
-| `dd`, `p`, `yy` | Edit | Pure Vim |
-| `gs` | Change sort | Mnemonic (g=go, s=sort) |
-| `g.` | Show hidden | Mnemonic (. = dotfiles) |
-| `:w` | Save | Standard |
+| Binding         | Purpose          | Why                         |
+| --------------- | ---------------- | --------------------------- |
+| `-`             | Parent directory | Iconic (vim-vinegar origin) |
+| `<CR>`          | Open file        | Universal convention        |
+| `<C-s>`         | Vertical split   | Standard Ctrl+letter        |
+| `j/k`           | Navigate         | Pure Vim                    |
+| `dd`, `p`, `yy` | Edit             | Pure Vim                    |
+| `gs`            | Change sort      | Mnemonic (g=go, s=sort)     |
+| `g.`            | Show hidden      | Mnemonic (. = dotfiles)     |
+| `:w`            | Save             | Standard                    |
 
 **Principle**: Vim-familiar users immediately understand oil.
 
@@ -98,6 +99,7 @@ Oil has only **16 default keybindings** but they're strategically chosen:
 ## 4. UI/UX Patterns Worth Copying
 
 ### Visual Display
+
 ```
 📁 lua/          (icon + name + optional columns)
 📁 tests/
@@ -107,16 +109,19 @@ Oil has only **16 default keybindings** but they're strategically chosen:
 ```
 
 Columns are:
+
 - Icon (type indicator)
 - Name (editable)
 - Optional: size, mtime, permissions
 
 ### Floating Windows
+
 - Non-intrusive (centered, with padding)
 - Optional preview split
 - Easy to toggle on/off
 
 ### Confirmation Dialogs
+
 ```
 ┌─────────────────────────────┐
 │ Confirm Operations          │
@@ -136,6 +141,7 @@ Columns are:
 ## 5. Workflows That Work
 
 ### Browse and Navigate
+
 ```
 :Oil ~/projects    → Open directory
 j k                → Navigate
@@ -144,6 +150,7 @@ j k                → Navigate
 ```
 
 ### Create File
+
 ```
 1. Position cursor on empty line
 2. Type: new_file.txt
@@ -151,6 +158,7 @@ j k                → Navigate
 ```
 
 ### Batch Delete
+
 ```
 1. V (visual line mode)
 2. j j j (select 3 lines)
@@ -159,6 +167,7 @@ j k                → Navigate
 ```
 
 ### Copy Between Directories
+
 ```
 Window 1: :Oil ~/src
 Window 2: :Oil ~/backup
@@ -177,6 +186,7 @@ In Window 2:
 ## 6. What Makes Oil Extensible
 
 ### Configuration Options: 50+
+
 - Columns to display
 - Sort order
 - Hidden file rules
@@ -184,6 +194,7 @@ In Window 2:
 - Highlight groups
 
 ### Customization Examples
+
 ```lua
 -- Toggle detail view
 ["gd"] = function()
@@ -205,26 +216,31 @@ end
 ## 7. Critical Challenges for S3
 
 ### 1. Asynchronous Operations
+
 - **Oil**: Instant (local filesystem)
 - **S3**: Network latency required
 - **Solution**: Progress windows (oil already has them)
 
 ### 2. Virtual Directories
+
 - **Oil**: Real directories from filesystem
 - **S3**: Virtual prefixes (just text)
 - **Solution**: Treat prefixes as directories, display with trailing `/`
 
 ### 3. Metadata Model
+
 - **Oil**: File type, permissions, size, mtime
 - **S3**: ↑ plus version ID, storage class, encryption, tags, ACLs
 - **Solution**: Extensible columns system (already have it)
 
 ### 4. Permission Model
+
 - **Oil**: Unix rwx permissions
 - **S3**: Bucket policies, object ACLs, IAM
 - **Solution**: Simplified UI for Phase 1, defer complex editing to Phase 3+
 
 ### 5. Cost Awareness
+
 - **Oil**: No costs to list/delete files
 - **S3**: Every DELETE and LIST has cost implications
 - **Solution**: Show cost estimates in confirmation dialog
@@ -234,6 +250,7 @@ end
 ## 8. Implementation Roadmap
 
 ### Phase 1: Core (MVP - Oil Parity)
+
 - [x] Browse S3 buckets and prefixes
 - [x] Edit buffer (add/delete/rename objects)
 - [x] Confirmation dialogs
@@ -244,6 +261,7 @@ end
 **Effort**: ~2-3 weeks
 
 ### Phase 2: Enhanced (Oil Features)
+
 - [ ] Floating windows
 - [ ] Preview windows
 - [ ] Search/filter
@@ -253,6 +271,7 @@ end
 **Effort**: ~1-2 weeks
 
 ### Phase 3: S3-Specific
+
 - [ ] Versioning UI
 - [ ] Tag display/edit
 - [ ] Storage class indication
@@ -262,6 +281,7 @@ end
 **Effort**: ~2-3 weeks
 
 ### Phase 4: Advanced
+
 - [ ] Cross-bucket sync
 - [ ] Batch operations from CSV
 - [ ] Lambda integration
@@ -303,26 +323,31 @@ open-s3/
 ## 10. Critical Success Factors
 
 ### 1. Safety First
+
 - ✅ Always show confirmation before destructive ops
 - ✅ Estimate costs for delete operations
 - ✅ Support "archive to prefix" instead of delete
 
 ### 2. Async Done Right
+
 - ✅ Progress indication for network operations
 - ✅ Retry logic with exponential backoff
 - ✅ Timeout handling (critical for reliability)
 
 ### 3. Vim Philosophy
+
 - ✅ Respect keybinding conventions
 - ✅ All standard Vim operations work
 - ✅ No modal menus (use buffer editing)
 
 ### 4. Performance
+
 - ✅ Lazy load large buckets (pagination)
 - ✅ Cache listings with TTL
 - ✅ Connection pooling to S3
 
 ### 5. Extensibility
+
 - ✅ Customizable keymaps
 - ✅ Custom columns system
 - ✅ Highlight group overrides
@@ -331,26 +356,28 @@ open-s3/
 
 ## 11. Metrics for Success
 
-| Metric | Target | Status |
-|--------|--------|--------|
-| Lines of Code | <5,000 Lua | TBD |
-| Default Keybindings | 12-16 | TBD |
-| Configuration Options | 30+ | TBD |
-| Setup Time for Users | <5 minutes | TBD |
-| Time to Browse Bucket | <2 seconds | TBD |
-| Multi-bucket Copy | <5 keystrokes | TBD |
+| Metric                | Target        | Status |
+| --------------------- | ------------- | ------ |
+| Lines of Code         | <5,000 Lua    | TBD    |
+| Default Keybindings   | 12-16         | TBD    |
+| Configuration Options | 30+           | TBD    |
+| Setup Time for Users  | <5 minutes    | TBD    |
+| Time to Browse Bucket | <2 seconds    | TBD    |
+| Multi-bucket Copy     | <5 keystrokes | TBD    |
 
 ---
 
 ## 12. Documentation Generated
 
 ### 1. **oil_nvim_research.md** (728 lines)
+
 - Core philosophy, features, architecture
 - Complete keybinding reference
 - API documentation
 - Real-world workflow examples
 
 ### 2. **keybindings_ui_patterns.md** (661 lines)
+
 - Detailed keybinding design
 - UI pattern examples with ASCII diagrams
 - State machines for interactions
@@ -358,6 +385,7 @@ open-s3/
 - Design principles
 
 ### 3. **implementation_insights.md** (679 lines)
+
 - Adapter pattern for S3
 - Workflow implementations
 - Performance optimization strategies
@@ -366,6 +394,7 @@ open-s3/
 - Configuration templates
 
 ### 4. **README.md** (272 lines)
+
 - Document index and navigation
 - Quick reference summaries
 - Key concepts
@@ -378,6 +407,7 @@ open-s3/
 ## Key Recommendations
 
 ### For MVP (Phase 1)
+
 1. **Copy oil's adapter pattern exactly** - it works
 2. **Implement async with progress windows** - essential for S3
 3. **Make confirmation mandatory** - builds user trust
@@ -385,6 +415,7 @@ open-s3/
 5. **Use oil's column system** - proven and extensible
 
 ### For Long-Term
+
 1. **Extend adapter interface** for versioning, tags, metadata
 2. **Build custom highlight system** for S3-specific types
 3. **Add cost estimation** for budget-conscious users
@@ -392,6 +423,7 @@ open-s3/
 5. **Consider multi-cloud** (Azure, GCS) in architecture
 
 ### For Users
+
 1. **Read oil.nvim docs** - same keybindings work
 2. **Learn Vim motions** - they all work here too
 3. **Use floating window** for non-intrusive browsing
@@ -405,6 +437,7 @@ open-s3/
 **Oil.nvim is an exceptional reference implementation.** Its clean architecture, Vim-first philosophy, and proven UX patterns provide a strong foundation for open-s3.
 
 The main work is:
+
 1. **Adapter**: S3-specific list, create, delete, move, copy operations
 2. **Async**: Network calls require progress indication
 3. **Adaptation**: Virtual directories, metadata model, cost awareness

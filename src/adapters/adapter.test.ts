@@ -99,7 +99,7 @@ describe('MockAdapter', () => {
     it('should move a file', async () => {
       await adapter.create('test-bucket/source.txt', EntryType.File, 'content');
       await adapter.move('test-bucket/source.txt', 'test-bucket/dest.txt');
-      
+
       const exists1 = await adapter.exists('test-bucket/source.txt');
       const exists2 = await adapter.exists('test-bucket/dest.txt');
       expect(exists1).toBe(false);
@@ -111,7 +111,7 @@ describe('MockAdapter', () => {
     it('should copy a file', async () => {
       await adapter.create('test-bucket/original.txt', EntryType.File, 'content');
       await adapter.copy('test-bucket/original.txt', 'test-bucket/copy.txt');
-      
+
       const original = await adapter.getMetadata('test-bucket/original.txt');
       const copy = await adapter.getMetadata('test-bucket/copy.txt');
       expect(original.size).toBe(copy.size);

@@ -5,42 +5,45 @@ This directory contains comprehensive research on **oil.nvim**, a Neovim file ex
 ## Document Index
 
 ### 1. **oil_nvim_research.md** (Main Reference)
-   - **Overview**: Core philosophy and capabilities
-   - **Features**: Detailed breakdown of all features (13+ major capabilities)
-   - **Keybindings**: Complete default keymap reference with explanations
-   - **UI/UX Patterns**: Visual display, highlighting, window management
-   - **Workflows**: Complete examples of navigation, editing, and batch operations
-   - **Architecture**: Adapter pattern, buffer management, change tracking
-   - **API Reference**: All available actions and customization options
-   - **Takeaways**: 10 key lessons for S3 explorer design
 
-   **Best for**: Understanding what oil.nvim does and how it works
+- **Overview**: Core philosophy and capabilities
+- **Features**: Detailed breakdown of all features (13+ major capabilities)
+- **Keybindings**: Complete default keymap reference with explanations
+- **UI/UX Patterns**: Visual display, highlighting, window management
+- **Workflows**: Complete examples of navigation, editing, and batch operations
+- **Architecture**: Adapter pattern, buffer management, change tracking
+- **API Reference**: All available actions and customization options
+- **Takeaways**: 10 key lessons for S3 explorer design
+
+**Best for**: Understanding what oil.nvim does and how it works
 
 ### 2. **keybindings_ui_patterns.md** (Detailed Design)
-   - **Keybinding Philosophy**: 4 core design principles
-   - **Keymap Categories**: Navigation, file operations, utilities
-   - **Workflow Examples**: Step-by-step examples with ASCII diagrams
-   - **Visual Patterns**: Buffer layout, highlighting, floating windows
-   - **State Machines**: User interaction flows and state transitions
-   - **Customization**: Real examples of extending keymaps
-   - **Design Principles**: 8 core principles + Vim philosophy
-   - **Comparisons**: Oil vs. tree views vs. fuzzy finders
 
-   **Best for**: Understanding UI/UX design decisions and interaction patterns
+- **Keybinding Philosophy**: 4 core design principles
+- **Keymap Categories**: Navigation, file operations, utilities
+- **Workflow Examples**: Step-by-step examples with ASCII diagrams
+- **Visual Patterns**: Buffer layout, highlighting, floating windows
+- **State Machines**: User interaction flows and state transitions
+- **Customization**: Real examples of extending keymaps
+- **Design Principles**: 8 core principles + Vim philosophy
+- **Comparisons**: Oil vs. tree views vs. fuzzy finders
+
+**Best for**: Understanding UI/UX design decisions and interaction patterns
 
 ### 3. **implementation_insights.md** (Practical Application)
-   - **Adapter Pattern**: How to apply oil's architecture to S3
-   - **Core Workflows**: Implementation patterns for S3-specific workflows
-   - **S3 Considerations**: Virtual directories, metadata, async operations
-   - **API Design**: Recommended API structure (setup, commands, Lua API)
-   - **Performance**: Lazy loading, caching, connection pooling
-   - **Error Handling**: How to adapt oil's error patterns
-   - **Feature Roadmap**: 4-phase implementation plan
-   - **Code Organization**: Suggested directory structure
-   - **Configuration**: Template based on oil's setup style
-   - **Key Differences**: Oil vs. S3 reality check
 
-   **Best for**: Planning the open-s3 implementation
+- **Adapter Pattern**: How to apply oil's architecture to S3
+- **Core Workflows**: Implementation patterns for S3-specific workflows
+- **S3 Considerations**: Virtual directories, metadata, async operations
+- **API Design**: Recommended API structure (setup, commands, Lua API)
+- **Performance**: Lazy loading, caching, connection pooling
+- **Error Handling**: How to adapt oil's error patterns
+- **Feature Roadmap**: 4-phase implementation plan
+- **Code Organization**: Suggested directory structure
+- **Configuration**: Template based on oil's setup style
+- **Key Differences**: Oil vs. S3 reality check
+
+**Best for**: Planning the open-s3 implementation
 
 ## Quick Reference
 
@@ -75,36 +78,34 @@ This directory contains comprehensive research on **oil.nvim**, a Neovim file ex
 
 ## Oil.nvim Feature Matrix
 
-| Category | Feature | Complexity |
-|----------|---------|-----------|
-| **Navigation** | Browse single directory | ⭐ |
-| **Selection** | Open file/directory | ⭐ |
-| **Editing** | Direct buffer editing | ⭐⭐ |
-| **Operations** | Create/delete/move/copy | ⭐⭐ |
-| **Display** | Icons, columns, sorting | ⭐⭐ |
-| **Windows** | Float, splits, tabs | ⭐⭐ |
-| **Confirmation** | Operation preview + confirm | ⭐⭐⭐ |
-| **SSH** | Remote filesystem browsing | ⭐⭐⭐ |
-| **LSP Integration** | File operation callbacks | ⭐⭐⭐ |
-| **Adapters** | Backend abstraction | ⭐⭐⭐⭐ |
+| Category            | Feature                     | Complexity |
+| ------------------- | --------------------------- | ---------- |
+| **Navigation**      | Browse single directory     | ⭐         |
+| **Selection**       | Open file/directory         | ⭐         |
+| **Editing**         | Direct buffer editing       | ⭐⭐       |
+| **Operations**      | Create/delete/move/copy     | ⭐⭐       |
+| **Display**         | Icons, columns, sorting     | ⭐⭐       |
+| **Windows**         | Float, splits, tabs         | ⭐⭐       |
+| **Confirmation**    | Operation preview + confirm | ⭐⭐⭐     |
+| **SSH**             | Remote filesystem browsing  | ⭐⭐⭐     |
+| **LSP Integration** | File operation callbacks    | ⭐⭐⭐     |
+| **Adapters**        | Backend abstraction         | ⭐⭐⭐⭐   |
 
 ## Recommended Reading Order
 
 1. **Start here**: oil_nvim_research.md (sections 1-3)
    - Understand core philosophy and features
-   
 2. **Deep dive**: keybindings_ui_patterns.md (sections 1-4)
    - Learn UI/UX design patterns
-   
 3. **Plan implementation**: implementation_insights.md (sections 1-4)
    - Map oil patterns to S3
-   
 4. **Reference as needed**: Implementation sections for specific topics
    - Performance, error handling, configuration
 
 ## Key Concepts Summary
 
 ### Buffer-as-Filesystem Pattern
+
 ```
 Oil's Insight: "Treat filesystem as a buffer"
 
@@ -116,13 +117,14 @@ Implication for S3:
 ```
 
 ### Entry ID System
+
 ```
 Each file/directory gets unique ID during load:
 
   oil_id_1 | 📁 src/
   oil_id_2 | 📁 lua/
   oil_id_3 | 📄 README.md
-  
+
 When buffer edited:
   - New line → CREATE
   - Deleted line → DELETE
@@ -131,11 +133,13 @@ When buffer edited:
 ```
 
 ### State Transitions
+
 ```
 Browse → Edit → Review → Confirm → Execute → Browse (updated)
 ```
 
 ### Adapter Interface
+
 ```lua
 adapter.list(path)         -- Get entries
 adapter.create(path, type) -- Create entry
@@ -147,6 +151,7 @@ adapter.copy(src, dest)    -- Copy entry
 ## S3-Specific Adaptations Needed
 
 ### 1. Virtual Directories vs. Real Files
+
 ```
 S3 API returns:
 - Contents: actual objects
@@ -158,6 +163,7 @@ Must merge into unified listing:
 ```
 
 ### 2. Async Operations
+
 ```
 Local FS: Operations instant
 S3: Network operations require:
@@ -168,6 +174,7 @@ S3: Network operations require:
 ```
 
 ### 3. Permission Model
+
 ```
 Local: Unix permissions (rwx for user/group/other)
 S3: Bucket policies, object ACLs, IAM
@@ -177,6 +184,7 @@ Edit: Potentially complex (defer to Phase 3+)
 ```
 
 ### 4. Versioning
+
 ```
 Local: Single current version
 S3: Multiple versions per object (if enabled)
@@ -208,6 +216,7 @@ Oil.nvim's philosophy aligns perfectly with open-s3 goals:
 ## Notes for Implementation
 
 ### What to Copy Directly
+
 - Keybinding pattern (especially `-` for parent)
 - Floating window architecture
 - Confirmation dialog UI
@@ -215,18 +224,21 @@ Oil.nvim's philosophy aligns perfectly with open-s3 goals:
 - Sort/filter options
 
 ### What to Adapt
+
 - Adapter interface (add S3-specific methods)
 - Buffer entry system (include S3 metadata)
 - Change tracking (handle virtual directories)
 - Progress indication (mandatory for network ops)
 
 ### What to Skip (Initially)
+
 - SSH adapter (S3-only for now)
 - Tree view (single directory focus)
 - Advanced git integration
 - LSP file operations (not applicable to S3)
 
 ### What to Add
+
 - Bucket selection UI
 - Object metadata display
 - Version management

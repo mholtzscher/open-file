@@ -1,6 +1,6 @@
 /**
  * Custom React hook for handling keybindings
- * 
+ *
  * Provides declarative keybinding management with support for:
  * - Multi-key sequences (gg, dd, yy, etc.)
  * - Mode-aware key handling

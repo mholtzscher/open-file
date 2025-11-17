@@ -46,18 +46,18 @@ export function parseArgs(args: string[]): CliArgs {
         result.adapter = adapter;
       }
     } else if (arg === '--region' || arg === '-r') {
-       result.region = args[++i];
-     } else if (arg === '--profile' || arg === '-p') {
-       result.profile = args[++i];
-     } else if (arg === '--endpoint') {
-       result.endpoint = args[++i];
-     } else if (arg === '--access-key') {
-       result.accessKey = args[++i];
-     } else if (arg === '--secret-key') {
-       result.secretKey = args[++i];
-     } else if (arg === '--config' || arg === '-c') {
-       result.config = args[++i];
-     } else if (!arg.startsWith('-')) {
+      result.region = args[++i];
+    } else if (arg === '--profile' || arg === '-p') {
+      result.profile = args[++i];
+    } else if (arg === '--endpoint') {
+      result.endpoint = args[++i];
+    } else if (arg === '--access-key') {
+      result.accessKey = args[++i];
+    } else if (arg === '--secret-key') {
+      result.secretKey = args[++i];
+    } else if (arg === '--config' || arg === '-c') {
+      result.config = args[++i];
+    } else if (!arg.startsWith('-')) {
       // First non-flag argument is the bucket
       if (!result.bucket) {
         result.bucket = arg;

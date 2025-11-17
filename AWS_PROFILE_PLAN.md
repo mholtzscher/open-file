@@ -1,23 +1,29 @@
 # AWS Profile & Region Support Implementation Plan
 
 ## Overview
+
 Implement automatic detection and usage of the active AWS profile and its configured region for S3 authentication. This will allow users to run `open-s3 my-bucket` without needing to specify `--region` every time - it will use their AWS profile's settings instead.
 
 ## Problem Statement
+
 Currently, the application:
+
 - Uses hardcoded fallback region (`us-east-1`)
 - Requires explicit `--region` flag or `AWS_REGION` env var
 - Doesn't respect the user's active AWS profile
 - Doesn't read the profile's configured region from `~/.aws/config`
 
 ## Solution
+
 Integrate with AWS SDK v3's credential chain and profile loading to:
+
 1. Detect active AWS profile from `AWS_PROFILE` env var or `~/.aws/config`
 2. Load the profile's configured region from `~/.aws/config`
 3. Use AWS SDK's credential provider chain for automatic credential resolution
 4. Allow CLI flag override when needed
 
 ## Key Features
+
 - **Automatic profile detection**: Read `AWS_PROFILE` environment variable
 - **Region from profile**: Extract region from `~/.aws/config` for the active profile
 - **Credential chain**: Use AWS SDK v3's built-in credential providers
@@ -28,64 +34,74 @@ Integrate with AWS SDK v3's credential chain and profile loading to:
 ## Tickets Created
 
 ### Epic: bd-5qq
+
 **Use active AWS profile and its region for authentication**
+
 - Priority: High (1)
 - Status: Open
 
 ### Subtasks
 
-| ID | Title | Priority | Status |
-|---|---|---|---|
-| bd-al9 | Detect active AWS profile from environment | 1 | Open |
-| bd-8k3 | Load region from AWS profile config | 1 | Open |
-| bd-ams | Update S3Adapter to use AWS SDK credential chain | 1 | Open |
-| bd-cvy | Replace hardcoded region defaults with profile region | 1 | Open |
-| bd-q3a | Add --profile CLI flag for profile override | 1 | Open |
-| bd-52s | Update config file to support AWS profile setting | 1 | Open |
-| bd-6k9 | Update CLI help and documentation | 2 | Open |
-| bd-7sh | Add tests for AWS profile detection | 2 | Open |
+| ID     | Title                                                 | Priority | Status |
+| ------ | ----------------------------------------------------- | -------- | ------ |
+| bd-al9 | Detect active AWS profile from environment            | 1        | Open   |
+| bd-8k3 | Load region from AWS profile config                   | 1        | Open   |
+| bd-ams | Update S3Adapter to use AWS SDK credential chain      | 1        | Open   |
+| bd-cvy | Replace hardcoded region defaults with profile region | 1        | Open   |
+| bd-q3a | Add --profile CLI flag for profile override           | 1        | Open   |
+| bd-52s | Update config file to support AWS profile setting     | 1        | Open   |
+| bd-6k9 | Update CLI help and documentation                     | 2        | Open   |
+| bd-7sh | Add tests for AWS profile detection                   | 2        | Open   |
 
 ## Technical Approach
 
 ### 1. Profile Detection (bd-al9)
+
 - Create utility function `getActiveAwsProfile()` in `src/utils/aws-profile.ts`
 - Check `AWS_PROFILE` environment variable first
 - Default to 'default' profile if not set
 - Handle missing profile gracefully
 
 ### 2. Region Loading (bd-8k3)
+
 - Parse `~/.aws/config` file format
 - Extract region for specified profile
 - Create `loadProfileRegion(profile: string)` utility function
 - Support both named profiles and default profile
 
 ### 3. S3Adapter Credential Chain (bd-ams)
+
 - Update `S3AdapterConfig` to accept `profile` parameter
 - Use AWS SDK v3's `fromSharedConfigFiles()` or credential chain
 - Remove hardcoded credential logic when profile is provided
 - Maintain backward compatibility with explicit credentials
 
 ### 4. Region Handling (bd-cvy)
+
 - Priority order: CLI --region > config file region > profile region > us-east-1
 - Update S3Adapter constructor to use profile region
 - Pass region from profile to S3Client config
 
 ### 5. CLI Changes (bd-q3a)
+
 - Add `--profile` or `-p` flag to CLI args parser
 - Update help documentation with profile examples
 - Parse profile argument in `parseArgs()`
 
 ### 6. Config File Updates (bd-52s)
+
 - Add optional `profile` field to config schema
 - Update `ConfigManager` to read/write profile setting
 - Support config file at `~/.open-s3rc.json`
 
 ### 7. Documentation (bd-6k9)
+
 - Update help text with profile usage examples
 - Document AWS credentials resolution order
 - Add examples for different AWS credential scenarios
 
 ### 8. Testing (bd-7sh)
+
 - Unit tests for profile detection
 - Tests for region loading from config
 - Integration tests with mock AWS configs
@@ -115,6 +131,7 @@ open-s3
 ```
 
 ## Implementation Order
+
 1. **bd-al9**: Implement profile detection utility
 2. **bd-8k3**: Implement region loading from config
 3. **bd-ams**: Update S3Adapter to use credential chain
@@ -125,11 +142,13 @@ open-s3
 8. **bd-7sh**: Add comprehensive tests
 
 ## Dependencies
+
 - AWS SDK v3 already installed (`@aws-sdk/client-s3`)
 - No additional dependencies needed
 - Standard Node.js `fs` module for reading config files
 
 ## Acceptance Criteria
+
 - ✅ Active AWS profile automatically detected
 - ✅ Profile's configured region used by default
 - ✅ CLI `--profile` flag works for override
@@ -157,10 +176,12 @@ bd-8k3 (Region loading)            ┘
 ```
 
 ### Ready Tasks (No Blockers)
+
 - ✅ bd-al9 - Can start immediately
 - ✅ bd-8k3 - Can start immediately (can work in parallel with bd-al9)
 
 ### Workflow
+
 1. Complete bd-al9 and bd-8k3 (can do in parallel)
 2. Then bd-ams becomes ready
 3. Then bd-cvy becomes ready
@@ -169,6 +190,7 @@ bd-8k3 (Region loading)            ┘
 6. Finally bd-6k9 and bd-7sh (can do in parallel)
 
 ### Handy Commands
+
 ```bash
 # Check what's ready to work on
 bd ready --json
@@ -185,4 +207,3 @@ bd dep tree bd-ams
 # View blocked tasks
 bd blocked --json
 ```
-

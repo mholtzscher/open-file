@@ -57,7 +57,7 @@ describe('gg/G Motions', () => {
   describe('key sequence detection', () => {
     it('should detect single g key', () => {
       const result = bufferState.handleKeyPress('g');
-      
+
       expect(result.handled).toBe(false);
       expect(result.sequence).toEqual(['g']);
     });
@@ -67,7 +67,7 @@ describe('gg/G Motions', () => {
       bufferState.handleKeyPress('g');
       // Second g
       const result = bufferState.handleKeyPress('g');
-      
+
       expect(result.handled).toBe(true);
       expect(result.sequence).toEqual(['g', 'g']);
       expect(result.action).toBe('moveToTop');
@@ -75,15 +75,15 @@ describe('gg/G Motions', () => {
 
     it('should detect G key', () => {
       const result = bufferState.handleKeyPress('G');
-      
+
       expect(result.handled).toBe(true);
       expect(result.sequence).toEqual(['G']);
       expect(result.action).toBe('moveToBottom');
     });
 
-    it('should clear sequence after timeout', (done) => {
+    it('should clear sequence after timeout', done => {
       bufferState.handleKeyPress('g');
-      
+
       // Wait for timeout (500ms + small buffer)
       setTimeout(() => {
         const result = bufferState.handleKeyPress('j');
@@ -96,7 +96,7 @@ describe('gg/G Motions', () => {
     it('should clear sequence on non-g key', () => {
       bufferState.handleKeyPress('g');
       const result = bufferState.handleKeyPress('j');
-      
+
       expect(result.handled).toBe(false);
       // When a non-g key follows a single g, it should return the sequence that was there
       expect(result.sequence).toEqual(['g', 'j']);
@@ -108,43 +108,43 @@ describe('gg/G Motions', () => {
       // Simulate gg sequence
       bufferState.handleKeyPress('g');
       bufferState.handleKeyPress('g');
-      
+
       expect(bufferState.selection.cursorIndex).toBe(0);
     });
 
     it('should move to bottom on G', () => {
       bufferState.handleKeyPress('G');
-      
+
       expect(bufferState.selection.cursorIndex).toBe(4); // Last index
     });
 
     it('should work from any cursor position', () => {
       // Move to bottom first
       bufferState.selection.cursorIndex = 4;
-      
+
       // Then gg to top
       bufferState.handleKeyPress('g');
       bufferState.handleKeyPress('g');
-      
+
       expect(bufferState.selection.cursorIndex).toBe(0);
     });
 
     it('should work when already at top', () => {
       // Already at top
       bufferState.selection.cursorIndex = 0;
-      
+
       bufferState.handleKeyPress('g');
       bufferState.handleKeyPress('g');
-      
+
       expect(bufferState.selection.cursorIndex).toBe(0);
     });
 
     it('should work when already at bottom', () => {
       // Already at bottom
       bufferState.selection.cursorIndex = 4;
-      
+
       bufferState.handleKeyPress('G');
-      
+
       expect(bufferState.selection.cursorIndex).toBe(4);
     });
   });
@@ -152,11 +152,11 @@ describe('gg/G Motions', () => {
   describe('edge cases', () => {
     it('should handle empty buffer', () => {
       const emptyBuffer = new BufferState([]);
-      
+
       // Test that moveCursorToBottom works on empty buffer
       emptyBuffer.moveCursorToBottom();
       expect(emptyBuffer.selection.cursorIndex).toBe(0);
-      
+
       // Create fresh buffer for G test
       const freshBuffer = new BufferState([]);
       const resultG = freshBuffer.handleKeyPress('G');
@@ -168,12 +168,12 @@ describe('gg/G Motions', () => {
     it('should handle single entry buffer', () => {
       const singleBuffer = new BufferState([entries[0]]);
       singleBuffer.selection.cursorIndex = 0;
-      
+
       // gg should keep at 0
       singleBuffer.handleKeyPress('g');
       singleBuffer.handleKeyPress('g');
       expect(singleBuffer.selection.cursorIndex).toBe(0);
-      
+
       // G should keep at 0
       singleBuffer.handleKeyPress('G');
       expect(singleBuffer.selection.cursorIndex).toBe(0);
@@ -182,7 +182,7 @@ describe('gg/G Motions', () => {
     it('should ignore extra g keys after gg', () => {
       bufferState.handleKeyPress('g');
       bufferState.handleKeyPress('g');
-      
+
       // Third g should be treated as new sequence start
       const result = bufferState.handleKeyPress('g');
       expect(result.handled).toBe(false);

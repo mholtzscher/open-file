@@ -1,6 +1,6 @@
 /**
  * AWS Profile Detection and Configuration
- * 
+ *
  * Utilities for detecting and loading AWS profile configuration,
  * including credentials and region from AWS config files.
  */
@@ -28,12 +28,12 @@ export interface AwsProfileConfig {
 
 /**
  * Get the active AWS profile from environment
- * 
+ *
  * Priority order:
  * 1. AWS_PROFILE environment variable
  * 2. AWS CLI profile set in ~/.aws/config
  * 3. Default 'default' profile
- * 
+ *
  * @returns Active AWS profile name
  */
 export function getActiveAwsProfile(): string {
@@ -49,16 +49,16 @@ export function getActiveAwsProfile(): string {
 
 /**
  * Parse AWS config file format
- * 
+ *
  * Format:
  * [profile-name]
  * region = us-east-1
  * ...
- * 
+ *
  * The 'default' profile has no prefix:
  * [default]
  * region = us-west-2
- * 
+ *
  * @param configContent Raw content of ~/.aws/config file
  * @returns Parsed profiles with their settings
  */
@@ -102,17 +102,19 @@ export function parseAwsConfigFile(configContent: string): Record<string, Record
 
 /**
  * Parse AWS credentials file format
- * 
+ *
  * Format:
  * [profile-name]
  * aws_access_key_id = AKIAIOSFODNN7EXAMPLE
  * aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
  * aws_session_token = optional-session-token
- * 
+ *
  * @param credentialsContent Raw content of ~/.aws/credentials file
  * @returns Parsed profiles with their credentials
  */
-export function parseAwsCredentialsFile(credentialsContent: string): Record<string, Record<string, string>> {
+export function parseAwsCredentialsFile(
+  credentialsContent: string
+): Record<string, Record<string, string>> {
   const profiles: Record<string, Record<string, string>> = {};
   let currentProfile = '';
 
@@ -152,11 +154,11 @@ export function parseAwsCredentialsFile(credentialsContent: string): Record<stri
 
 /**
  * Load AWS profile configuration from files
- * 
+ *
  * Reads from:
  * - ~/.aws/config (for region and other settings)
  * - ~/.aws/credentials (for access keys)
- * 
+ *
  * @param profileName Name of the profile to load
  * @returns AWS profile configuration or undefined if not found
  */
@@ -216,7 +218,7 @@ export function loadAwsProfile(profileName: string): AwsProfileConfig | undefine
 
 /**
  * Load active AWS profile with its full configuration
- * 
+ *
  * @returns Active AWS profile configuration
  */
 export function loadActiveAwsProfile(): AwsProfileConfig {
@@ -227,7 +229,7 @@ export function loadActiveAwsProfile(): AwsProfileConfig {
 
 /**
  * Get region from active profile
- * 
+ *
  * @returns AWS region for active profile, or undefined if not configured
  */
 export function getActiveAwsRegion(): string | undefined {

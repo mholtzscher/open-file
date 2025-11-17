@@ -1,6 +1,6 @@
 /**
  * ConfirmationDialog React component
- * 
+ *
  * Displays a modal dialog for confirming operations
  */
 
@@ -67,12 +67,7 @@ export function ConfirmationDialog({
       backgroundColor={CatppuccinMocha.base}
       title={title}
     >
-      <text
-        position="absolute"
-        left={2}
-        top={1}
-        fg={CatppuccinMocha.text}
-      >
+      <text position="absolute" left={2} top={1} fg={CatppuccinMocha.text}>
         The following operations will be performed:
       </text>
 
@@ -88,12 +83,7 @@ export function ConfirmationDialog({
         </text>
       ))}
 
-      <text
-        position="absolute"
-        left={2}
-        bottom={2}
-        fg={CatppuccinMocha.overlay0}
-      >
+      <text position="absolute" left={2} bottom={2} fg={CatppuccinMocha.overlay0}>
         Press y to confirm, n to cancel
       </text>
     </box>

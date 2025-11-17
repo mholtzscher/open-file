@@ -72,13 +72,13 @@ async function main() {
       console.error('[MAIN] Initializing S3 adapter...');
       // Get S3 config from CLI args or config file
       const s3Config = configManager.getS3Config();
-      logger.debug('S3 config from configManager', { 
+      logger.debug('S3 config from configManager', {
         region: s3Config.region,
         bucket: s3Config.bucket,
         profile: s3Config.profile,
         endpoint: s3Config.endpoint,
       });
-      
+
       // Determine region priority: CLI > config file > active profile > us-east-1
       let region = cliArgs.region || s3Config.region;
       logger.debug('Region resolution', {
@@ -86,7 +86,7 @@ async function main() {
         configRegion: s3Config.region,
         selected: region,
       });
-      
+
       if (!region) {
         const profileRegion = getActiveAwsRegion();
         region = profileRegion || process.env.AWS_REGION || 'us-east-1';
@@ -96,7 +96,7 @@ async function main() {
           final: region,
         });
       }
-      
+
       const finalS3Config = {
         region,
         bucket: cliArgs.bucket || s3Config.bucket || 'my-bucket',
@@ -106,7 +106,7 @@ async function main() {
         secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
       };
 
-      logger.debug('Final S3 config before adapter creation', { 
+      logger.debug('Final S3 config before adapter creation', {
         region: finalS3Config.region,
         bucket: finalS3Config.bucket,
         profile: finalS3Config.profile,
@@ -114,14 +114,14 @@ async function main() {
         hasAccessKey: !!finalS3Config.accessKeyId,
         hasSecretKey: !!finalS3Config.secretAccessKey,
       });
-      
+
       console.error('[MAIN] Creating S3Adapter...');
       adapter = new S3Adapter(finalS3Config);
       console.error('[MAIN] S3Adapter created successfully');
-      logger.info('S3 adapter initialized successfully', { 
-        region: finalS3Config.region, 
+      logger.info('S3 adapter initialized successfully', {
+        region: finalS3Config.region,
         bucket: finalS3Config.bucket,
-        profile: finalS3Config.profile || 'default'
+        profile: finalS3Config.profile || 'default',
       });
     } else {
       console.error('[MAIN] Initializing mock adapter');
@@ -192,19 +192,18 @@ async function main() {
   }
 }
 
-main()
-  .catch(async (error) => {
-    console.error('Fatal error:', error);
-    const logger = getLogger();
-    try {
-      logger.error('Fatal error occurred', error);
-    } catch (logError) {
-      console.error('Error logging fatal error:', logError);
-    }
-    try {
-      await shutdownLogger();
-    } catch (shutdownError) {
-      console.error('Error shutting down logger:', shutdownError);
-    }
-    process.exit(1);
-  });
+main().catch(async error => {
+  console.error('Fatal error:', error);
+  const logger = getLogger();
+  try {
+    logger.error('Fatal error occurred', error);
+  } catch (logError) {
+    console.error('Error logging fatal error:', logError);
+  }
+  try {
+    await shutdownLogger();
+  } catch (shutdownError) {
+    console.error('Error shutting down logger:', shutdownError);
+  }
+  process.exit(1);
+});

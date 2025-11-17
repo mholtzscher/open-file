@@ -1,6 +1,6 @@
 /**
  * Configuration system for open-s3
- * 
+ *
  * Manages user preferences, keybindings, and S3 settings
  * Config file: ~/.open-s3rc.json
  */
@@ -17,17 +17,17 @@ export interface KeybindingConfig {
   moveDown?: string[];
   moveTop?: string[];
   moveBottom?: string[];
-  
+
   // Operations
   openEntry?: string[];
   openParent?: string[];
   enter?: string[];
-  
+
   // Modes
   normalMode?: string[];
   visualMode?: string[];
   editMode?: string[];
-  
+
   // Actions
   delete?: string[];
   rename?: string[];
@@ -223,33 +223,33 @@ export class ConfigManager {
     return this.config.s3 || {};
   }
 
-   /**
-    * Set S3 configuration
-    */
-   setS3Config(s3: S3Config): void {
-     this.config.s3 = s3;
-   }
+  /**
+   * Set S3 configuration
+   */
+  setS3Config(s3: S3Config): void {
+    this.config.s3 = s3;
+  }
 
-   /**
-    * Get AWS profile from config
-    */
-   getAwsProfile(): string | undefined {
-     return this.config.s3?.profile;
-   }
+  /**
+   * Get AWS profile from config
+   */
+  getAwsProfile(): string | undefined {
+    return this.config.s3?.profile;
+  }
 
-   /**
-    * Set AWS profile in config
-    */
-   setAwsProfile(profile: string): void {
-     if (!this.config.s3) {
-       this.config.s3 = {};
-     }
-     this.config.s3.profile = profile;
-   }
+  /**
+   * Set AWS profile in config
+   */
+  setAwsProfile(profile: string): void {
+    if (!this.config.s3) {
+      this.config.s3 = {};
+    }
+    this.config.s3.profile = profile;
+  }
 
-   /**
-    * Get display configuration
-    */
+  /**
+   * Get display configuration
+   */
   getDisplayConfig(): DisplayConfig {
     return this.config.display || this.getDefaultDisplayConfig();
   }
@@ -257,16 +257,16 @@ export class ConfigManager {
   /**
    * Get default display configuration
    */
-   private getDefaultDisplayConfig(): DisplayConfig {
-     return {
-       showIcons: true,
-       showSizes: true,
-       showDates: false,
-       dateFormat: 'YYYY-MM-DD HH:mm',
-       defaultSort: 'name',
-       showHiddenFiles: false,
-     };
-   }
+  private getDefaultDisplayConfig(): DisplayConfig {
+    return {
+      showIcons: true,
+      showSizes: true,
+      showDates: false,
+      dateFormat: 'YYYY-MM-DD HH:mm',
+      defaultSort: 'name',
+      showHiddenFiles: false,
+    };
+  }
 
   /**
    * Set display configuration

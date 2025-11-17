@@ -1,6 +1,6 @@
 /**
  * Change detection and operation planning
- * 
+ *
  * Compares original and edited entry lists to detect changes:
  * - New entries (creates)
  * - Removed entries (deletes)
@@ -68,7 +68,7 @@ export function detectChanges(
     if (!originalById.has(entry.id)) {
       // This is a new entry - check if it's a copy
       const originalAtPath = originalByPath.get(entry.path);
-      
+
       if (originalAtPath && originalAtPath.type === entry.type) {
         // Same path and type suggests a copy operation
         // (e.g., user duplicated a file in the UI and it got a new ID)
@@ -121,7 +121,7 @@ export function detectChanges(
 
 /**
  * Convert detected changes to an executable operation plan
- * 
+ *
  * Order matters:
  * 1. Creates (new files/directories)
  * 2. Moves (renames, relocations)
@@ -196,7 +196,7 @@ export function buildOperationPlan(
 
 /**
  * Validate an operation plan
- * 
+ *
  * Checks for:
  * - Circular dependencies
  * - Invalid paths

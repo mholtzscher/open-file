@@ -1,18 +1,18 @@
 /**
  * LocalStack Integration Tests for S3Adapter
- * 
+ *
  * These tests verify that the S3Adapter works correctly with LocalStack,
  * a local AWS service emulator. To run these tests:
- * 
+ *
  * 1. Install LocalStack:
  *    pip install localstack
- * 
+ *
  * 2. Start LocalStack in a terminal:
  *    localstack start
- * 
+ *
  * 3. Run the tests:
  *    bun test src/adapters/s3-adapter.localstack.test.ts
- * 
+ *
  * The tests verify all adapter operations (list, create, delete, move, copy)
  * work correctly with a real S3-compatible endpoint.
  */
@@ -20,11 +20,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'bun:test';
 import { S3Adapter, S3AdapterConfig } from './s3-adapter.js';
 import { EntryType } from '../types/entry.js';
-import { 
-  S3Client, 
-  CreateBucketCommand, 
-  DeleteBucketCommand 
-} from '@aws-sdk/client-s3';
+import { S3Client, CreateBucketCommand, DeleteBucketCommand } from '@aws-sdk/client-s3';
 
 // LocalStack configuration
 const LOCALSTACK_ENDPOINT = 'http://localhost:4566';
@@ -153,7 +149,7 @@ describe.if(await isLocalStackAvailable())('S3Adapter with LocalStack', () => {
     it('should create a file', async () => {
       const fileName = 'integration-test.txt';
       await adapter.create(fileName, EntryType.File, 'integration test content');
-      
+
       const exists = await adapter.exists(fileName);
       expect(exists).toBe(true);
     });
@@ -161,7 +157,7 @@ describe.if(await isLocalStackAvailable())('S3Adapter with LocalStack', () => {
     it('should create a directory', async () => {
       const dirName = 'integration-dir/';
       await adapter.create(dirName, EntryType.Directory);
-      
+
       const exists = await adapter.exists(dirName);
       expect(exists).toBe(true);
     });
@@ -169,7 +165,7 @@ describe.if(await isLocalStackAvailable())('S3Adapter with LocalStack', () => {
     it('should create a file in a directory', async () => {
       const filePath = 'integration-dir/nested-file.txt';
       await adapter.create(filePath, EntryType.File, 'nested content');
-      
+
       const exists = await adapter.exists(filePath);
       expect(exists).toBe(true);
     });
@@ -179,7 +175,7 @@ describe.if(await isLocalStackAvailable())('S3Adapter with LocalStack', () => {
     it('should delete a file', async () => {
       await adapter.create('to-delete.txt', EntryType.File, 'delete me');
       expect(await adapter.exists('to-delete.txt')).toBe(true);
-      
+
       await adapter.delete('to-delete.txt');
       expect(await adapter.exists('to-delete.txt')).toBe(false);
     });
@@ -187,9 +183,9 @@ describe.if(await isLocalStackAvailable())('S3Adapter with LocalStack', () => {
     it('should delete a directory recursively', async () => {
       await adapter.create('to-delete-dir/', EntryType.Directory);
       await adapter.create('to-delete-dir/file.txt', EntryType.File, 'content');
-      
+
       expect(await adapter.exists('to-delete-dir/')).toBe(true);
-      
+
       await adapter.delete('to-delete-dir/', true);
       expect(await adapter.exists('to-delete-dir/')).toBe(false);
     });
@@ -199,7 +195,7 @@ describe.if(await isLocalStackAvailable())('S3Adapter with LocalStack', () => {
     it('should move a file', async () => {
       await adapter.create('source.txt', EntryType.File, 'move me');
       await adapter.move('source.txt', 'destination.txt');
-      
+
       expect(await adapter.exists('source.txt')).toBe(false);
       expect(await adapter.exists('destination.txt')).toBe(true);
     });
@@ -207,9 +203,9 @@ describe.if(await isLocalStackAvailable())('S3Adapter with LocalStack', () => {
     it('should move a file to a directory', async () => {
       await adapter.create('move-me.txt', EntryType.File, 'content');
       await adapter.create('target-dir/', EntryType.Directory);
-      
+
       await adapter.move('move-me.txt', 'target-dir/move-me.txt');
-      
+
       expect(await adapter.exists('move-me.txt')).toBe(false);
       expect(await adapter.exists('target-dir/move-me.txt')).toBe(true);
     });
@@ -219,7 +215,7 @@ describe.if(await isLocalStackAvailable())('S3Adapter with LocalStack', () => {
     it('should copy a file', async () => {
       await adapter.create('original.txt', EntryType.File, 'original content');
       await adapter.copy('original.txt', 'copy.txt');
-      
+
       expect(await adapter.exists('original.txt')).toBe(true);
       expect(await adapter.exists('copy.txt')).toBe(true);
     });
@@ -227,9 +223,9 @@ describe.if(await isLocalStackAvailable())('S3Adapter with LocalStack', () => {
     it('should copy a file to a directory', async () => {
       await adapter.create('file-to-copy.txt', EntryType.File, 'copy me');
       await adapter.create('copy-dest-dir/', EntryType.Directory);
-      
+
       await adapter.copy('file-to-copy.txt', 'copy-dest-dir/file-to-copy.txt');
-      
+
       expect(await adapter.exists('file-to-copy.txt')).toBe(true);
       expect(await adapter.exists('copy-dest-dir/file-to-copy.txt')).toBe(true);
     });
@@ -239,7 +235,7 @@ describe.if(await isLocalStackAvailable())('S3Adapter with LocalStack', () => {
     it('should get metadata for a file', async () => {
       await adapter.create('metadata-test.txt', EntryType.File, 'test');
       const entry = await adapter.getMetadata('metadata-test.txt');
-      
+
       expect(entry.name).toBe('metadata-test.txt');
       expect(entry.type.toString()).toBe('file');
     });

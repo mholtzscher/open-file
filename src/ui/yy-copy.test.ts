@@ -41,7 +41,7 @@ describe('yy Copy Motion', () => {
   describe('key sequence detection', () => {
     it('should detect single y key', () => {
       const result = bufferState.handleKeyPress('y');
-      
+
       expect(result.handled).toBe(false);
       expect(result.sequence).toEqual(['y']);
     });
@@ -51,7 +51,7 @@ describe('yy Copy Motion', () => {
       bufferState.handleKeyPress('y');
       // Second y
       const result = bufferState.handleKeyPress('y');
-      
+
       expect(result.handled).toBe(true);
       expect(result.sequence).toEqual(['y', 'y']);
       expect(result.action).toBe('copy');
@@ -60,7 +60,7 @@ describe('yy Copy Motion', () => {
     it('should clear sequence on non-y key after y', () => {
       bufferState.handleKeyPress('y');
       const result = bufferState.handleKeyPress('j');
-      
+
       expect(result.handled).toBe(false);
       expect(result.sequence).toEqual(['y', 'j']);
     });
@@ -69,14 +69,14 @@ describe('yy Copy Motion', () => {
   describe('copy register', () => {
     it('should copy current entry to clipboard on yy', () => {
       bufferState.selection.cursorIndex = 1;
-      
+
       // Simulate yy sequence
       bufferState.handleKeyPress('y');
       bufferState.handleKeyPress('y');
-      
+
       // Copy should have been registered
       bufferState.copySelection();
-      
+
       expect(bufferState.copyRegister.length).toBe(1);
       expect(bufferState.copyRegister[0].name).toBe('file2.txt');
     });
@@ -86,7 +86,7 @@ describe('yy Copy Motion', () => {
       bufferState.selection.cursorIndex = 0;
       bufferState.handleKeyPress('y');
       bufferState.handleKeyPress('y');
-      
+
       bufferState.copySelection();
       expect(bufferState.copyRegister[0].name).toBe('file1.txt');
     });
@@ -95,10 +95,10 @@ describe('yy Copy Motion', () => {
   describe('edge cases', () => {
     it('should handle empty buffer', () => {
       const emptyBuffer = new BufferState([]);
-      
+
       const result = emptyBuffer.handleKeyPress('y');
       expect(result.handled).toBe(false);
-      
+
       const result2 = emptyBuffer.handleKeyPress('y');
       expect(result2.handled).toBe(true);
       expect(result2.action).toBe('copy');
@@ -106,10 +106,10 @@ describe('yy Copy Motion', () => {
 
     it('should handle single entry buffer', () => {
       const singleBuffer = new BufferState([entries[0]]);
-      
+
       singleBuffer.handleKeyPress('y');
       const result = singleBuffer.handleKeyPress('y');
-      
+
       expect(result.handled).toBe(true);
       expect(result.action).toBe('copy');
     });

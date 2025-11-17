@@ -1,6 +1,6 @@
 /**
  * Custom React hook for managing buffer state
- * 
+ *
  * Replaces the BufferState class with React hooks for state management.
  * This hook manages entries, cursor, selection, and edit modes.
  */
@@ -29,12 +29,12 @@ export interface UseBufferStateReturn {
   scrollOffset: number;
   copyRegister: Entry[];
   viewportHeight: number;
-  
+
   // Buffer data operations
   setEntries: (entries: Entry[]) => void;
   setCurrentPath: (path: string) => void;
   setViewportHeight: (height: number) => void;
-  
+
   // Cursor/Selection operations
   moveCursorDown: (amount: number) => void;
   moveCursorUp: (amount: number) => void;
@@ -43,7 +43,7 @@ export interface UseBufferStateReturn {
   startVisualSelection: () => void;
   extendVisualSelection: (direction: 'up' | 'down') => void;
   exitVisualSelection: () => void;
-  
+
   // Mode operations
   setMode: (mode: EditMode) => void;
   enterInsertMode: () => void;
@@ -52,21 +52,21 @@ export interface UseBufferStateReturn {
   exitEditMode: () => void;
   enterSearchMode: () => void;
   exitSearchMode: () => void;
-  
+
   // Sorting
   setSortConfig: (config: SortConfig) => void;
-  
+
   // Search
   updateSearchQuery: (query: string) => void;
-  
+
   // Display options
   toggleHiddenFiles: () => void;
-  
+
   // Copy/paste
   copySelection: () => void;
   hasClipboardContent: () => boolean;
   pasteAfterCursor: () => Entry[];
-  
+
   // Getting data
   getSelectedEntry: () => Entry | undefined;
   getSelectedEntries: () => Entry[];
@@ -75,7 +75,10 @@ export interface UseBufferStateReturn {
 /**
  * Custom hook for buffer state management
  */
-export function useBufferState(initialEntries: Entry[] = [], initialPath: string = ''): UseBufferStateReturn {
+export function useBufferState(
+  initialEntries: Entry[] = [],
+  initialPath: string = ''
+): UseBufferStateReturn {
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
   const [originalEntries] = useState<Entry[]>(JSON.parse(JSON.stringify(initialEntries)));
   const [currentPath, setCurrentPath] = useState<string>(initialPath);
@@ -89,57 +92,69 @@ export function useBufferState(initialEntries: Entry[] = [], initialPath: string
   const [viewportHeight, setViewportHeight] = useState(20);
 
   // Helper function to ensure cursor is within bounds
-  const constrainCursor = useCallback((index: number): number => {
-    return Math.max(0, Math.min(index, entries.length - 1));
-  }, [entries.length]);
+  const constrainCursor = useCallback(
+    (index: number): number => {
+      return Math.max(0, Math.min(index, entries.length - 1));
+    },
+    [entries.length]
+  );
 
   // Update scroll offset to keep cursor visible
-  const updateScrollOffset = useCallback((cursorIndex: number) => {
-    setScrollOffset((prevOffset) => {
-      // If cursor is above viewport, scroll up
-      if (cursorIndex < prevOffset) {
-        return cursorIndex;
-      }
-      // If cursor is below viewport, scroll down
-      if (cursorIndex >= prevOffset + viewportHeight) {
-        return cursorIndex - viewportHeight + 1;
-      }
-      // Cursor is visible, no scroll needed
-      return prevOffset;
-    });
-  }, [viewportHeight]);
+  const updateScrollOffset = useCallback(
+    (cursorIndex: number) => {
+      setScrollOffset(prevOffset => {
+        // If cursor is above viewport, scroll up
+        if (cursorIndex < prevOffset) {
+          return cursorIndex;
+        }
+        // If cursor is below viewport, scroll down
+        if (cursorIndex >= prevOffset + viewportHeight) {
+          return cursorIndex - viewportHeight + 1;
+        }
+        // Cursor is visible, no scroll needed
+        return prevOffset;
+      });
+    },
+    [viewportHeight]
+  );
 
   // Cursor movement
-  const moveCursorDown = useCallback((amount: number = 1) => {
-    setSelection((prev) => {
-      const newIndex = constrainCursor(prev.cursorIndex + amount);
-      updateScrollOffset(newIndex);
-      return {
-        ...prev,
-        cursorIndex: newIndex,
-      };
-    });
-  }, [constrainCursor, updateScrollOffset]);
+  const moveCursorDown = useCallback(
+    (amount: number = 1) => {
+      setSelection(prev => {
+        const newIndex = constrainCursor(prev.cursorIndex + amount);
+        updateScrollOffset(newIndex);
+        return {
+          ...prev,
+          cursorIndex: newIndex,
+        };
+      });
+    },
+    [constrainCursor, updateScrollOffset]
+  );
 
-  const moveCursorUp = useCallback((amount: number = 1) => {
-    setSelection((prev) => {
-      const newIndex = constrainCursor(prev.cursorIndex - amount);
-      updateScrollOffset(newIndex);
-      return {
-        ...prev,
-        cursorIndex: newIndex,
-      };
-    });
-  }, [constrainCursor, updateScrollOffset]);
+  const moveCursorUp = useCallback(
+    (amount: number = 1) => {
+      setSelection(prev => {
+        const newIndex = constrainCursor(prev.cursorIndex - amount);
+        updateScrollOffset(newIndex);
+        return {
+          ...prev,
+          cursorIndex: newIndex,
+        };
+      });
+    },
+    [constrainCursor, updateScrollOffset]
+  );
 
   const cursorToTop = useCallback(() => {
-    setSelection((prev) => ({ ...prev, cursorIndex: 0 }));
+    setSelection(prev => ({ ...prev, cursorIndex: 0 }));
     setScrollOffset(0);
   }, []);
 
   const cursorToBottom = useCallback(() => {
     const newIndex = Math.max(0, entries.length - 1);
-    setSelection((prev) => ({
+    setSelection(prev => ({
       ...prev,
       cursorIndex: newIndex,
     }));
@@ -148,7 +163,7 @@ export function useBufferState(initialEntries: Entry[] = [], initialPath: string
 
   // Visual selection
   const startVisualSelection = useCallback(() => {
-    setSelection((prev) => ({
+    setSelection(prev => ({
       ...prev,
       selectionStart: prev.cursorIndex,
       selectionEnd: prev.cursorIndex,
@@ -157,23 +172,26 @@ export function useBufferState(initialEntries: Entry[] = [], initialPath: string
     setMode(EditMode.Visual);
   }, []);
 
-  const extendVisualSelection = useCallback((direction: 'up' | 'down') => {
-    setSelection((prev) => {
-      if (!prev.isActive || prev.selectionStart === undefined) return prev;
+  const extendVisualSelection = useCallback(
+    (direction: 'up' | 'down') => {
+      setSelection(prev => {
+        if (!prev.isActive || prev.selectionStart === undefined) return prev;
 
-      const newEnd = direction === 'up' ? prev.cursorIndex - 1 : prev.cursorIndex + 1;
-      const newIndex = constrainCursor(newEnd);
-      updateScrollOffset(newIndex);
-      return {
-        ...prev,
-        selectionEnd: newIndex,
-        cursorIndex: newIndex,
-      };
-    });
-  }, [constrainCursor, updateScrollOffset]);
+        const newEnd = direction === 'up' ? prev.cursorIndex - 1 : prev.cursorIndex + 1;
+        const newIndex = constrainCursor(newEnd);
+        updateScrollOffset(newIndex);
+        return {
+          ...prev,
+          selectionEnd: newIndex,
+          cursorIndex: newIndex,
+        };
+      });
+    },
+    [constrainCursor, updateScrollOffset]
+  );
 
   const exitVisualSelection = useCallback(() => {
-    setSelection((prev) => ({
+    setSelection(prev => ({
       ...prev,
       isActive: false,
       selectionStart: undefined,
@@ -214,7 +232,7 @@ export function useBufferState(initialEntries: Entry[] = [], initialPath: string
   // Sorting
   const setSortConfig = useCallback((config: SortConfig) => {
     setSortConfigState(config);
-    setEntries((prev) => sortEntries([...prev], config));
+    setEntries(prev => sortEntries([...prev], config));
   }, []);
 
   // Search
@@ -224,7 +242,7 @@ export function useBufferState(initialEntries: Entry[] = [], initialPath: string
 
   // Display options
   const toggleHiddenFiles = useCallback(() => {
-    setShowHiddenFiles((prev) => !prev);
+    setShowHiddenFiles(prev => !prev);
   }, []);
 
   // Getting data
@@ -238,8 +256,14 @@ export function useBufferState(initialEntries: Entry[] = [], initialPath: string
       return entry ? [entry] : [];
     }
 
-    const start = Math.min(selection.selectionStart, selection.selectionEnd ?? selection.selectionStart);
-    const end = Math.max(selection.selectionStart, selection.selectionEnd ?? selection.selectionStart);
+    const start = Math.min(
+      selection.selectionStart,
+      selection.selectionEnd ?? selection.selectionStart
+    );
+    const end = Math.max(
+      selection.selectionStart,
+      selection.selectionEnd ?? selection.selectionStart
+    );
     return entries.slice(start, end + 1);
   }, [selection, entries]);
 
@@ -256,12 +280,12 @@ export function useBufferState(initialEntries: Entry[] = [], initialPath: string
 
   const pasteAfterCursor = useCallback(() => {
     if (copyRegister.length === 0) return [];
-    
+
     const insertIndex = selection.cursorIndex + 1;
     const newEntries = [...entries];
     newEntries.splice(insertIndex, 0, ...copyRegister);
     setEntries(newEntries);
-    
+
     return copyRegister;
   }, [copyRegister, selection.cursorIndex, entries]);
 

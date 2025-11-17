@@ -49,9 +49,13 @@ check:
 check-jsx:
     bun run --no-install tsc --noEmit --skipLibCheck
 
-# Format code (placeholder for when we add prettier)
+# Format code with Prettier
 fmt:
-    @echo "Code formatting not yet configured"
+    bun run prettier --write .
+
+# Check code formatting with Prettier
+fmt-check:
+    bun run prettier --check .
 
 # Run tests
 test:

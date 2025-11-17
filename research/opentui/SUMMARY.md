@@ -5,6 +5,7 @@
 **OpenTUI** is a modern, TypeScript-first framework for building terminal user interfaces (TUIs). It's designed to be the foundational framework for building sophisticated command-line applications with a component-based architecture, flexible layouts, and interactive features.
 
 **Quick Facts:**
+
 - Created by: SST (Serverless Stack Toolkit)
 - Language: TypeScript + Zig (performance-critical parts)
 - Status: Active development (v0.1.44, November 2025)
@@ -18,18 +19,21 @@
 ## Core Strengths
 
 ### 1. Modern Architecture
+
 - **Component-based** - Build UIs from reusable components
 - **Declarative options** - Use React/SolidJS or imperative API
 - **TypeScript-first** - Full type safety throughout
 - **Flexbox layout** - CSS-like responsive layouts via Yoga
 
 ### 2. High Performance
+
 - **Zig-powered rendering** - Native performance for terminal output
 - **Passive rendering mode** - Only render when state changes
 - **Optimized framebuffer** - Dirty cell tracking, minimal terminal writes
 - **Alpha blending support** - Advanced visual effects
 
 ### 3. Comprehensive Components
+
 - **Text** - Styled text with colors and attributes
 - **Box** - Bordered containers
 - **Input** - Text input with cursor support
@@ -40,12 +44,14 @@
 - **ASCIIFont** - ASCII art text
 
 ### 4. Flexible Event System
+
 - **Keyboard input** - Full keyboard event handling
 - **Component events** - Focus, blur, mount/unmount
 - **EventEmitter pattern** - Familiar event architecture
 - **Keyboard shortcut management** - Global and component-specific
 
 ### 5. Multiple Rendering Options
+
 - **Passive mode** (default) - CPU efficient, render on change only
 - **Live mode** - Continuous rendering for animations
 - **Configurable FPS** - Adjustable rendering target
@@ -87,6 +93,7 @@
 ## When to Use OpenTUI
 
 ### Ideal Use Cases
+
 ✅ Interactive CLI tools with complex UIs
 ✅ Dashboard applications
 ✅ File managers and editors
@@ -97,6 +104,7 @@
 ✅ Monitoring and observability tools
 
 ### Not Ideal For
+
 ❌ Simple command-line scripts (use Commander or similar)
 ❌ Text-only output (use plain console.log)
 ❌ Web applications (not its purpose)
@@ -108,34 +116,37 @@
 ## Getting Started
 
 ### 1. Installation
+
 ```bash
 bun install @opentui/core
 ```
 
 ### 2. Minimal Application
+
 ```typescript
-import { createCliRenderer, TextRenderable } from "@opentui/core"
+import { createCliRenderer, TextRenderable } from '@opentui/core';
 
 async function main() {
-  const renderer = await createCliRenderer()
-  
+  const renderer = await createCliRenderer();
+
   const text = new TextRenderable(renderer, {
-    id: "hello",
-    content: "Hello, OpenTUI!",
-    fg: "#00FF00",
-    position: "absolute",
+    id: 'hello',
+    content: 'Hello, OpenTUI!',
+    fg: '#00FF00',
+    position: 'absolute',
     left: 5,
     top: 2,
-  })
-  
-  renderer.root.add(text)
-  renderer.start()
+  });
+
+  renderer.root.add(text);
+  renderer.start();
 }
 
-main()
+main();
 ```
 
 ### 3. Run with Bun
+
 ```bash
 bun main.ts
 ```
@@ -145,20 +156,21 @@ bun main.ts
 ## Key Patterns
 
 ### Application Shell
+
 ```typescript
 class Application {
   async start() {
-    this.renderer = await createCliRenderer()
-    this.setupEventHandlers()
-    this.render()
+    this.renderer = await createCliRenderer();
+    this.setupEventHandlers();
+    this.render();
   }
-  
+
   private setupEventHandlers() {
-    this.renderer.keyInput.on("keypress", (key) => {
-      this.handleKeyPress(key)
-    })
+    this.renderer.keyInput.on('keypress', key => {
+      this.handleKeyPress(key);
+    });
   }
-  
+
   private render() {
     // Build UI
   }
@@ -166,33 +178,36 @@ class Application {
 ```
 
 ### Screen Navigation
+
 ```typescript
 class ScreenManager {
   navigateTo(screen: string) {
-    this.currentScreen = screen
-    this.renderer.root.removeAll()
-    this.renderScreen()
+    this.currentScreen = screen;
+    this.renderer.root.removeAll();
+    this.renderScreen();
   }
 }
 ```
 
 ### Focus Management
+
 ```typescript
 class FocusNavigator {
   nextFocus() {
-    this.components[current]?.blur()
-    this.components[next]?.focus()
+    this.components[current]?.blur();
+    this.components[next]?.focus();
   }
 }
 ```
 
 ### Form with Validation
+
 ```typescript
 class Form {
   setValue(field: string, value: any) {
-    this.values[field] = value
-    const error = this.validate(field, value)
-    this.errors[field] = error
+    this.values[field] = value;
+    const error = this.validate(field, value);
+    this.errors[field] = error;
   }
 }
 ```
@@ -202,68 +217,72 @@ class Form {
 ## Component Examples
 
 ### Text Display
+
 ```typescript
 const text = new TextRenderable(renderer, {
-  id: "title",
-  content: "Welcome",
-  fg: "#00FF00",
+  id: 'title',
+  content: 'Welcome',
+  fg: '#00FF00',
   attributes: TextAttributes.BOLD,
-})
+});
 ```
 
 ### Form Input
+
 ```typescript
 const input = new InputRenderable(renderer, {
-  id: "email",
-  placeholder: "Enter email...",
-  backgroundColor: "#1a1a2e",
-  focusedBackgroundColor: "#2d3748",
-  cursorColor: "#FFFF00",
-})
+  id: 'email',
+  placeholder: 'Enter email...',
+  backgroundColor: '#1a1a2e',
+  focusedBackgroundColor: '#2d3748',
+  cursorColor: '#FFFF00',
+});
 
-input.on(InputRenderableEvents.CHANGE, (value) => {
-  console.log("Email:", value)
-})
+input.on(InputRenderableEvents.CHANGE, value => {
+  console.log('Email:', value);
+});
 
-input.focus()
+input.focus();
 ```
 
 ### Menu Selection
+
 ```typescript
 const menu = new SelectRenderable(renderer, {
-  id: "main-menu",
+  id: 'main-menu',
   options: [
-    { name: "New File", description: "Create new", value: "new" },
-    { name: "Open File", description: "Open existing", value: "open" },
-    { name: "Exit", description: "Exit app", value: "exit" },
+    { name: 'New File', description: 'Create new', value: 'new' },
+    { name: 'Open File', description: 'Open existing', value: 'open' },
+    { name: 'Exit', description: 'Exit app', value: 'exit' },
   ],
   showDescription: true,
   width: 40,
   height: 12,
-})
+});
 
 menu.on(SelectRenderableEvents.ITEM_SELECTED, (index, option) => {
-  console.log("Selected:", option.value)
-})
+  console.log('Selected:', option.value);
+});
 ```
 
 ### Flex Layout
+
 ```typescript
 const container = new GroupRenderable(renderer, {
-  id: "layout",
-  flexDirection: "column",
-  width: "100%",
-  height: "100%",
+  id: 'layout',
+  flexDirection: 'column',
+  width: '100%',
+  height: '100%',
   gap: 1,
-})
+});
 
-const header = new BoxRenderable(renderer, { id: "header", height: 3 })
-const content = new BoxRenderable(renderer, { id: "content", flexGrow: 1 })
-const footer = new BoxRenderable(renderer, { id: "footer", height: 2 })
+const header = new BoxRenderable(renderer, { id: 'header', height: 3 });
+const content = new BoxRenderable(renderer, { id: 'content', flexGrow: 1 });
+const footer = new BoxRenderable(renderer, { id: 'footer', height: 2 });
 
-container.add(header)
-container.add(content)
-container.add(footer)
+container.add(header);
+container.add(content);
+container.add(footer);
 ```
 
 ---
@@ -271,40 +290,42 @@ container.add(footer)
 ## Event Handling
 
 ### Keyboard Events
+
 ```typescript
-renderer.keyInput.on("keypress", (key) => {
+renderer.keyInput.on('keypress', key => {
   // key.name: "a", "escape", "up", "f1", etc.
   // key.ctrl: boolean
   // key.shift: boolean
   // key.meta: boolean (Alt/Option)
   // key.sequence: raw sequence
-  
-  if (key.name === "escape") {
-    process.exit(0)
+
+  if (key.name === 'escape') {
+    process.exit(0);
   }
-  
-  if (key.ctrl && key.name === "s") {
-    save()
+
+  if (key.ctrl && key.name === 's') {
+    save();
   }
-})
+});
 ```
 
 ### Component Events
+
 ```typescript
 // Universal events
-component.on(RenderableEvents.FOCUSED, () => {})
-component.on(RenderableEvents.BLURRED, () => {})
-component.on(RenderableEvents.MOUNTED, () => {})
-component.on(RenderableEvents.UNMOUNTED, () => {})
+component.on(RenderableEvents.FOCUSED, () => {});
+component.on(RenderableEvents.BLURRED, () => {});
+component.on(RenderableEvents.MOUNTED, () => {});
+component.on(RenderableEvents.UNMOUNTED, () => {});
 
 // Input events
-input.on(InputRenderableEvents.INPUT, (value) => {})      // Real-time
-input.on(InputRenderableEvents.CHANGE, (value) => {})     // On submit
-input.on(InputRenderableEvents.ENTER, (value) => {})      // On Enter
+input.on(InputRenderableEvents.INPUT, value => {}); // Real-time
+input.on(InputRenderableEvents.CHANGE, value => {}); // On submit
+input.on(InputRenderableEvents.ENTER, value => {}); // On Enter
 
 // Select events
-select.on(SelectRenderableEvents.ITEM_SELECTED, (idx, opt) => {})
-select.on(SelectRenderableEvents.SELECTION_CHANGED, (idx, opt) => {})
+select.on(SelectRenderableEvents.ITEM_SELECTED, (idx, opt) => {});
+select.on(SelectRenderableEvents.SELECTION_CHANGED, (idx, opt) => {});
 ```
 
 ---
@@ -324,20 +345,26 @@ select.on(SelectRenderableEvents.SELECTION_CHANGED, (idx, opt) => {})
 ## Framework Integrations
 
 ### Pure TypeScript (@opentui/core)
+
 Best for: Maximum control, minimal overhead
+
 ```typescript
-import { createCliRenderer, TextRenderable } from "@opentui/core"
+import { createCliRenderer, TextRenderable } from '@opentui/core';
 ```
 
 ### SolidJS (@opentui/solid)
+
 Best for: Reactive, fine-grained updates
+
 ```typescript
 import { render } from "@opentui/solid"
 render(() => <box>Hello</box>)
 ```
 
 ### React (@opentui/react)
+
 Best for: Familiar patterns if you know React
+
 ```typescript
 import { render } from "@opentui/react"
 render(<Box>Hello</Box>)
@@ -353,23 +380,23 @@ OpenTUI uses **Yoga** for CSS Flexbox-like layouts:
 {
   // Direction
   flexDirection: "row" | "column",
-  
+
   // Main axis alignment
-  justifyContent: "flex-start" | "center" | "flex-end" | 
+  justifyContent: "flex-start" | "center" | "flex-end" |
                   "space-between" | "space-around",
-  
+
   // Cross axis alignment
   alignItems: "flex-start" | "center" | "flex-end" | "stretch",
-  
+
   // Spacing
   gap: 2,
   padding: { top: 1, left: 2, right: 2, bottom: 1 },
-  
+
   // Sizing
   width: 40 | "100%",
   height: 10,
   flexGrow: 1,      // Grow to fill space
-  
+
   // Positioning
   position: "absolute",
   left: 10,
@@ -385,20 +412,20 @@ Common pattern for managing application state:
 
 ```typescript
 class Store {
-  private state: AppState
-  private listeners: Array<(state: AppState) => void> = []
+  private state: AppState;
+  private listeners: Array<(state: AppState) => void> = [];
 
   dispatch(action: Action) {
-    this.state = reduce(this.state, action)
-    this.notifyListeners()
+    this.state = reduce(this.state, action);
+    this.notifyListeners();
   }
 
   subscribe(listener: (state: AppState) => void) {
-    this.listeners.push(listener)
+    this.listeners.push(listener);
   }
 
   private notifyListeners() {
-    this.listeners.forEach(l => l(this.state))
+    this.listeners.forEach(l => l(this.state));
   }
 }
 ```
@@ -420,15 +447,15 @@ class Store {
 
 ## Comparison with Alternatives
 
-| Feature | OpenTUI | Ink | Blessed | Oclif |
-|---------|---------|-----|---------|-------|
-| Layout System | Yoga Flexbox | Flexbox | Manual | Table |
-| TypeScript | First-class | Yes | No | Yes |
-| Learning Curve | Moderate | Low | High | Low |
-| Performance | Excellent | Good | Good | Very Good |
-| Animations | Yes | Yes | Limited | No |
-| Active Dev | Yes | Moderate | Low | Moderate |
-| Use Case | Complex UIs | React patterns | Full control | CLI commands |
+| Feature        | OpenTUI      | Ink            | Blessed      | Oclif        |
+| -------------- | ------------ | -------------- | ------------ | ------------ |
+| Layout System  | Yoga Flexbox | Flexbox        | Manual       | Table        |
+| TypeScript     | First-class  | Yes            | No           | Yes          |
+| Learning Curve | Moderate     | Low            | High         | Low          |
+| Performance    | Excellent    | Good           | Good         | Very Good    |
+| Animations     | Yes          | Yes            | Limited      | No           |
+| Active Dev     | Yes          | Moderate       | Low          | Moderate     |
+| Use Case       | Complex UIs  | React patterns | Full control | CLI commands |
 
 ---
 
@@ -447,15 +474,18 @@ class Store {
 ## Resources
 
 ### Official
+
 - **Repository**: https://github.com/sst/opentui
 - **Homepage**: https://opentui.com
 - **Examples**: In repo at `packages/core/src/examples/`
 
 ### Community
+
 - **Awesome OpenTUI**: https://github.com/msmps/awesome-opentui
 - **Create-TUI**: https://github.com/msmps/create-tui (Quick start template)
 
 ### Related Projects
+
 - **opencode**: https://opencode.ai (IDE built with OpenTUI)
 - **terminal.shop**: https://terminal.shop (Commerce built with OpenTUI)
 

@@ -5,7 +5,9 @@ This directory contains comprehensive research and documentation on the **OpenTU
 ## Contents
 
 ### 1. **comprehensive-guide.md** - Main Reference
+
 The complete guide covering:
+
 - Core architecture (CliRenderer, rendering system, layout engine)
 - Available UI components (Text, Box, Input, Select, TabSelect, Group, ASCIIFont, FrameBuffer)
 - Event handling & keybinding system
@@ -18,7 +20,9 @@ The complete guide covering:
 **Start here for:** Understanding OpenTUI fundamentals and component APIs
 
 ### 2. **implementation-patterns.md** - Practical Patterns
+
 Real-world implementation patterns including:
+
 - Application Shell Pattern
 - Screen Manager Pattern
 - Focus Navigation Pattern
@@ -32,7 +36,9 @@ Real-world implementation patterns including:
 **Start here for:** Implementing common TUI patterns and solving typical problems
 
 ### 3. **architecture-guide.md** - Deep Dives
+
 Advanced architectural topics:
+
 - Rendering pipeline phases
 - Component lifecycle and events
 - Layout system (Yoga/Flexbox)
@@ -48,25 +54,28 @@ Advanced architectural topics:
 ## Quick Start
 
 ### Installation
+
 ```bash
 bun install @opentui/core
 ```
 
 ### Minimal Example
-```typescript
-import { createCliRenderer, TextRenderable } from "@opentui/core"
 
-const renderer = await createCliRenderer()
+```typescript
+import { createCliRenderer, TextRenderable } from '@opentui/core';
+
+const renderer = await createCliRenderer();
 const text = new TextRenderable(renderer, {
-  id: "hello",
-  content: "Hello, OpenTUI!",
-  fg: "#00FF00",
-})
-renderer.root.add(text)
-renderer.start()
+  id: 'hello',
+  content: 'Hello, OpenTUI!',
+  fg: '#00FF00',
+});
+renderer.root.add(text);
+renderer.start();
 ```
 
 ### Run Examples
+
 ```bash
 # From OpenTUI repo
 bun create tui        # Quick start
@@ -77,7 +86,9 @@ bun run src/examples/input-demo.ts
 ## Key Concepts
 
 ### Renderables
+
 Low-level building blocks that can be positioned, styled, and nested:
+
 - **TextRenderable** - Display text
 - **BoxRenderable** - Containers with borders
 - **InputRenderable** - Text input fields
@@ -86,19 +97,24 @@ Low-level building blocks that can be positioned, styled, and nested:
 - **FrameBufferRenderable** - Custom graphics
 
 ### Layout System
+
 Uses Yoga (CSS Flexbox-like):
+
 - Flex layouts with direction, justify, align
 - Absolute positioning
 - Responsive sizing with percentages
 - Gap and padding support
 
 ### Event System
+
 EventEmitter-based architecture:
+
 - Global keyboard input: `renderer.keyInput.on("keypress", ...)`
 - Component events: `component.on(RenderableEvents.FOCUSED, ...)`
 - Custom events on any component
 
 ### Rendering Modes
+
 - **Passive** (default) - Only render when tree changes, CPU efficient
 - **Live** - Continuous rendering loop via `renderer.start()`
 
@@ -152,38 +168,42 @@ EventEmitter-based architecture:
 ## Common Patterns
 
 ### Multi-Screen Application
+
 ```typescript
 class ScreenManager {
   navigateTo(screen: ScreenName) {
-    this.currentScreen = screen
-    renderer.root.removeAll()
-    this.renderScreen()
+    this.currentScreen = screen;
+    renderer.root.removeAll();
+    this.renderScreen();
   }
 }
 ```
 
 ### Form with Validation
+
 ```typescript
 class Form {
   setValue(field: string, value: any) {
-    this.values[field] = value
-    const error = this.validate(field, value)
-    this.errors[field] = error
+    this.values[field] = value;
+    const error = this.validate(field, value);
+    this.errors[field] = error;
   }
 }
 ```
 
 ### Focus Navigation
+
 ```typescript
 class FocusManager {
   nextFocus() {
-    this.components[current]?.blur()
-    this.components[next]?.focus()
+    this.components[current]?.blur();
+    this.components[next]?.focus();
   }
 }
 ```
 
 ### Async Data Loading
+
 ```typescript
 class DataLoader {
   async load() {
@@ -210,6 +230,7 @@ class DataLoader {
 - **@opentui/react** - React integration (hooks)
 
 Choose based on your preference:
+
 - **Core** - Maximum control, minimal overhead
 - **Solid** - Reactive, lightweight
 - **React** - Familiar patterns, larger bundle
@@ -225,6 +246,7 @@ Choose based on your preference:
 ## Quick Reference
 
 ### Component Creation
+
 ```typescript
 // Text
 new TextRenderable(renderer, { id: "text", content: "Hello" })
@@ -243,6 +265,7 @@ new GroupRenderable(renderer, { id: "group", flexDirection: "column" })
 ```
 
 ### Styling
+
 ```typescript
 {
   fg: "#FFFFFF",                    // Text color
@@ -256,29 +279,30 @@ new GroupRenderable(renderer, { id: "group", flexDirection: "column" })
 ```
 
 ### Event Handling
+
 ```typescript
 // Keyboard
-renderer.keyInput.on("keypress", (key) => {
-  if (key.name === "escape") exit()
-})
+renderer.keyInput.on('keypress', key => {
+  if (key.name === 'escape') exit();
+});
 
 // Component
-component.on(RenderableEvents.FOCUSED, () => {})
-component.on(InputRenderableEvents.CHANGE, (value) => {})
+component.on(RenderableEvents.FOCUSED, () => {});
+component.on(InputRenderableEvents.CHANGE, value => {});
 ```
 
 ## Comparison: OpenTUI vs Other TUI Frameworks
 
-| Feature | OpenTUI | Ink (React) | Blessed | Oclif |
-|---------|---------|------------|---------|-------|
-| **Language** | TypeScript | TypeScript | JavaScript | TypeScript |
-| **API Style** | Imperative/Reactive | React | jQuery-like | CLI focused |
-| **Layout System** | Yoga Flexbox | Flexbox | Manual | Table-based |
-| **Animation** | Yes | Yes | Limited | No |
-| **State Mgmt** | Custom/External | React hooks | Manual | Custom |
-| **Learning Curve** | Moderate | Shallow (if React) | Steep | Shallow |
-| **Performance** | Excellent | Good | Good | Very Good |
-| **Active Development** | Yes | Moderate | Low | Moderate |
+| Feature                | OpenTUI             | Ink (React)        | Blessed     | Oclif       |
+| ---------------------- | ------------------- | ------------------ | ----------- | ----------- |
+| **Language**           | TypeScript          | TypeScript         | JavaScript  | TypeScript  |
+| **API Style**          | Imperative/Reactive | React              | jQuery-like | CLI focused |
+| **Layout System**      | Yoga Flexbox        | Flexbox            | Manual      | Table-based |
+| **Animation**          | Yes                 | Yes                | Limited     | No          |
+| **State Mgmt**         | Custom/External     | React hooks        | Manual      | Custom      |
+| **Learning Curve**     | Moderate            | Shallow (if React) | Steep       | Shallow     |
+| **Performance**        | Excellent           | Good               | Good        | Very Good   |
+| **Active Development** | Yes                 | Moderate           | Low         | Moderate    |
 
 ## Development Tips
 

@@ -1,6 +1,7 @@
 # Dependency Analysis - Quick Reference Guide
 
 ## Current Status
+
 - **Total Issues:** 77 (9 epics + 68 tasks)
 - **Dependencies Currently Linked:** 0
 - **Missing Dependencies:** ~122
@@ -9,30 +10,35 @@
 ## Top 5 Critical Issues to Fix
 
 ### 1. ZERO Epic→Task Relationships ⚠️ CRITICAL
+
 - **Current State:** Tasks don't link to their epics
 - **Tasks Affected:** All 68 tasks
 - **Impact:** HIGH - bd ready/blocked commands won't work
 - **Fix:** Add parent-child link from each task to epic
 
-### 2. Save Operation Flow Unordered ⚠️ CRITICAL  
+### 2. Save Operation Flow Unordered ⚠️ CRITICAL
+
 - **Current State:** 10 tasks with ZERO dependencies
 - **Tasks:** bd-bga, bd-56l, bd-2pd, bd-19s, bd-0j3, bd-ret, etc.
 - **Impact:** CRITICAL - entire save system blocked
 - **Fix:** Add linear sequence: bd-2fk → bd-bga → bd-2pd → bd-19s → bd-0j3 → bd-ret
 
 ### 3. Type System Not Foundation ⚠️ CRITICAL
+
 - **Current State:** bd-2cl (Entry) and bd-38p (Adapter) have zero active dependencies
 - **Should Block:** 14+ tasks that depend on these types
 - **Impact:** HIGH - could implement dependent before dependency
 - **Fix:** bd-2cl blocks [bd-807, bd-0sv, bd-18l, bd-6g8, bd-7rr, bd-2fk, bd-bga...]
 
 ### 4. UI Structure Missing ⚠️ HIGH
+
 - **Current State:** 9 UI tasks appear completely independent
 - **Should Be:** bd-xxq → bd-807, bd-0sv, bd-ziy (hierarchical)
 - **Impact:** HIGH - component dependencies unclear
 - **Fix:** Link app shell to core components, then cascade down
 
 ### 5. S3 Adapter Foundation Missing ⚠️ HIGH
+
 - **Current State:** 9 S3 methods independent
 - **Should Depend On:** bd-0fg (setup) and bd-3sd (error handling)
 - **Impact:** MEDIUM - could implement methods before setup
@@ -43,6 +49,7 @@
 ## Critical Task Sequences (Must Be Added)
 
 ### SEQUENCE 1: Save Operation (Linear Chain)
+
 ```
 1. bd-2fk (Entry ID generation)          ← No deps
 2. bd-bga (Change detection)             ← blocks by bd-2fk
@@ -52,9 +59,11 @@
 6. bd-0j3 (Save operation :w)            ← blocks by bd-19s
 7. bd-ret (Execute operations)           ← blocks by bd-0j3
 ```
+
 **Status:** MUST ADD - This is the core save workflow
 
 ### SEQUENCE 2: Type Foundation (Fan-Out)
+
 ```
 bd-2cl (Entry type) blocks:
 ├─ bd-807 (BufferState)
@@ -78,9 +87,11 @@ bd-pdh (Operations) blocks:
 ├─ bd-2pd (Build plan)
 └─ bd-ret (Execute)
 ```
+
 **Status:** MUST ADD - Types are foundation to everything
 
 ### SEQUENCE 3: UI Structure (Hierarchical)
+
 ```
 bd-xxq (App shell) blocks:
 ├─ bd-807 (BufferState)
@@ -95,9 +106,11 @@ bd-0sv (BufferView) blocks:
 ├─ bd-pai (Column system)
 └─ bd-jv7 (Syntax highlighting)
 ```
+
 **Status:** MUST ADD - UI hierarchy critical
 
 ### SEQUENCE 4: S3 Adapter Foundation
+
 ```
 bd-0fg (S3 setup) blocks all:
 ├─ bd-6g8 (list)
@@ -110,9 +123,11 @@ bd-0fg (S3 setup) blocks all:
 bd-3sd (Error handling) blocks:
 ├─ bd-6g8, bd-7y0, bd-8f8, bd-2c9, bd-ffh, bd-uyq
 ```
+
 **Status:** HIGH PRIORITY - S3 operations can't work without this
 
 ### SEQUENCE 5: Navigation System
+
 ```
 bd-ycl (Mode system) blocks:
 ├─ bd-ser (j/k movement)
@@ -131,6 +146,7 @@ bd-ser (Basic movement) blocks:
 ├─ bd-2h3 (Advanced: Ctrl+D/U)
 └─ bd-0r2 (Advanced: Search)
 ```
+
 **Status:** HIGH PRIORITY - Navigation has implicit sequence
 
 ---
@@ -138,18 +154,21 @@ bd-ser (Basic movement) blocks:
 ## Quick Implementation Checklist
 
 ### TIER 1 - MUST DO FIRST (Blocks everything else)
+
 - [ ] Add parent-child: all 68 tasks → their 9 epics (68 links)
 - [ ] Add bd-2cl "blocks" 9+ dependent tasks (9 links)
 - [ ] Add bd-38p "blocks" 5 dependent tasks (5 links)
 - [ ] Add bd-pdh "blocks" 4 dependent tasks (4 links)
 
 ### TIER 2 - HIGH PRIORITY (Core functionality)
+
 - [ ] Add save flow sequence (6-8 links)
 - [ ] Add S3 adapter foundation (12 links)
 - [ ] Add UI structure hierarchy (5 links)
 - [ ] Add navigation dependencies (8 links)
 
 ### TIER 3 - MEDIUM PRIORITY (Nice to have)
+
 - [ ] Add foundation sequencing (3-4 links)
 - [ ] Add advanced UI dependencies (5 links)
 - [ ] Add S3 feature dependencies (8 links)
@@ -164,60 +183,69 @@ bd-ser (Basic movement) blocks:
 ## All 68 Tasks by Epic (For Parent-Child Links)
 
 ### bd-467 (Project Foundation) - 6 tasks
+
 ```
 bd-467 should have parent-child to:
 - bd-w9f, bd-ca3, bd-7j6, bd-4op, bd-6oo, bd-7qq
 ```
 
 ### bd-txk (Core Architecture) - 6 tasks
+
 ```
 bd-txk should have parent-child to:
 - bd-2cl, bd-38p, bd-pdh, bd-18l, bd-bb5, bd-hn3
 ```
 
 ### bd-oy5 (UI Layer) - 9 tasks
+
 ```
 bd-oy5 should have parent-child to:
-- bd-xxq, bd-807, bd-0sv, bd-2fk, bd-7rr, bd-pai, 
+- bd-xxq, bd-807, bd-0sv, bd-2fk, bd-7rr, bd-pai,
   bd-jv7, bd-ziy, bd-wzn
 ```
 
 ### bd-zi0 (Navigation) - 8 tasks
+
 ```
 bd-zi0 should have parent-child to:
-- bd-ycl, bd-ser, bd-9zz, bd-04c, bd-2cx, bd-e2s, 
+- bd-ycl, bd-ser, bd-9zz, bd-04c, bd-2cx, bd-e2s,
   bd-2h3, bd-0r2
 ```
 
 ### bd-bod (Operations) - 10 tasks
+
 ```
 bd-bod should have parent-child to:
-- bd-bga, bd-56l, bd-2pd, bd-19s, bd-0j3, bd-ret, 
+- bd-bga, bd-56l, bd-2pd, bd-19s, bd-0j3, bd-ret,
   bd-8yn, bd-yyl, bd-btp, bd-wu6
 ```
 
 ### bd-zb6 (S3 Backend) - 9 tasks
+
 ```
 bd-zb6 should have parent-child to:
-- bd-0fg, bd-6g8, bd-7y0, bd-8f8, bd-2c9, bd-ffh, 
+- bd-0fg, bd-6g8, bd-7y0, bd-8f8, bd-2c9, bd-ffh,
   bd-uyq, bd-3sd, bd-f3t
 ```
 
 ### bd-8d0 (S3 Features) - 10 tasks
+
 ```
 bd-8d0 should have parent-child to:
-- bd-smx, bd-siq, bd-pcy, bd-am4, bd-on7, bd-aif, 
+- bd-smx, bd-siq, bd-pcy, bd-am4, bd-on7, bd-aif,
   bd-8vp, bd-4fs, bd-cad, bd-nab
 ```
 
 ### bd-w0k (Advanced UI) - 8 tasks
+
 ```
 bd-w0k should have parent-child to:
-- bd-79e, bd-bqd, bd-e0x, bd-qfo, bd-e57, bd-qje, 
+- bd-79e, bd-bqd, bd-e0x, bd-qfo, bd-e57, bd-qje,
   bd-wco, bd-8jy
 ```
 
 ### bd-fi2 (Testing & Docs) - 5 tasks
+
 ```
 bd-fi2 should have parent-child to:
 - bd-p8b, bd-afd, bd-gnm, bd-wg6, bd-3up
@@ -228,19 +256,23 @@ bd-fi2 should have parent-child to:
 ## Most Critical Task IDs (Remember These!)
 
 ### Foundation Tasks
+
 - bd-2cl (Entry type) - BLOCKS 9+ tasks
 - bd-38p (Adapter interface) - BLOCKS 5+ tasks
 - bd-0fg (S3 setup) - BLOCKS 6 S3 methods
 
 ### Save Flow (Sequential)
+
 - bd-2fk → bd-bga → bd-2pd → bd-19s → bd-0j3 → bd-ret
 
 ### UI Structure
+
 - bd-xxq (App shell) - BLOCKS UI components
 - bd-807 (BufferState) - BLOCKS buffer operations
 - bd-0sv (BufferView) - BLOCKS display
 
 ### Navigation Foundation
+
 - bd-ycl (Mode system) - BLOCKS all keybindings
 - bd-2cx (Keybinding registry) - BLOCKS navigation commands
 
@@ -249,6 +281,7 @@ bd-fi2 should have parent-child to:
 ## Expected Behavior After Fixes
 
 ### After Adding Parent-Child Epic Links
+
 ```bash
 $ bd list -s blocked
 # Should show many blocked tasks (currently shows 0)
@@ -258,6 +291,7 @@ $ bd ready
 ```
 
 ### After Adding Critical Path Dependencies
+
 ```bash
 $ bd blocked
 # Should clearly show save flow sequence as chain of blockers
@@ -267,6 +301,7 @@ $ bd show bd-2pd
 ```
 
 ### After Adding Type Foundation
+
 ```bash
 $ bd show bd-0sv
 # Should show dependency: bd-2cl (Entry type)
@@ -279,20 +314,21 @@ $ bd show bd-bga
 
 ## Key Statistics After Implementation
 
-| Metric | Before | After | Expected |
-|--------|--------|-------|----------|
-| Total dependencies | 0 | 122+ | ✓ |
-| Issues with deps | 0 | 60+ | ✓ |
-| Circular deps | 0 | 0 | ✓ |
-| Blocked issues | 0 | 40-50 | ✓ |
-| Ready issues | 68 | 10-15 | ✓ |
-| Epic-task links | 0 | 68 | ✓ |
+| Metric             | Before | After | Expected |
+| ------------------ | ------ | ----- | -------- |
+| Total dependencies | 0      | 122+  | ✓        |
+| Issues with deps   | 0      | 60+   | ✓        |
+| Circular deps      | 0      | 0     | ✓        |
+| Blocked issues     | 0      | 40-50 | ✓        |
+| Ready issues       | 68     | 10-15 | ✓        |
+| Epic-task links    | 0      | 68    | ✓        |
 
 ---
 
 ## Implementation Notes
 
 ### Adding Dependencies via bd Command
+
 ```bash
 # Add a blocks dependency
 bd dep --from bd-2fk --to bd-bga --type blocks
@@ -305,6 +341,7 @@ bd show bd-bga  # Should show bd-2fk in dependencies
 ```
 
 ### Verification Commands
+
 ```bash
 # Check all dependencies added correctly
 bd list -s blocked | wc -l
@@ -338,4 +375,3 @@ bd list | grep -E '"dependencies": \[\]'
 3. 🔄 Add dependencies using bd commands
 4. ✅ Verify with bd ready/blocked/show
 5. 📊 Monitor bd stats for progress
-

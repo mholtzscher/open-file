@@ -7,12 +7,14 @@ The open-s3 project is now a fully functional S3 TUI explorer with a solid found
 ### Completed Features
 
 #### Core Architecture (100%)
+
 - ✅ **Adapter Pattern** - Pluggable backend system
 - ✅ **MockAdapter** - In-memory testing adapter
 - ✅ **S3Adapter** - Full AWS S3 SDK v3 integration
 - ✅ **AdapterRegistry** - Dynamic adapter management
 
 #### UI/UX (80%)
+
 - ✅ **Buffer-as-Editor** - Vim-inspired interaction model
 - ✅ **Syntax Highlighting** - Color-coded entries (directories vs files)
 - ✅ **Column System** - Configurable display columns (icon, name, size, date)
@@ -24,6 +26,7 @@ The open-s3 project is now a fully functional S3 TUI explorer with a solid found
 - ⏳ **Search/Filter** - Planned for future
 
 #### Operations (90%)
+
 - ✅ **Change Detection** - Detect creates, deletes, moves, renames
 - ✅ **Operation Planning** - Build executable plans with correct ordering
 - ✅ **Confirmation Dialog** - Preview operations before commit
@@ -31,12 +34,14 @@ The open-s3 project is now a fully functional S3 TUI explorer with a solid found
 - ⏳ **Copy/Paste** - Planned for future
 
 #### Error Handling (100%)
+
 - ✅ **Custom Error Types** - NotFoundError, PermissionError, NetworkError, etc.
 - ✅ **AWS Error Parsing** - Translate S3 errors to application errors
 - ✅ **Retry Detection** - Identify retryable errors
 - ✅ **User-Friendly Messages** - Formatted error display
 
 #### Testing (90%)
+
 - ✅ **Adapter Tests** - 11 comprehensive tests for MockAdapter
 - ✅ **Change Detection Tests** - 12 tests for operation planning
 - ✅ **23/23 Tests Passing** - 100% pass rate
@@ -44,6 +49,7 @@ The open-s3 project is now a fully functional S3 TUI explorer with a solid found
 - ⏳ **UI Tests** - Planned for future
 
 #### Development Tools (100%)
+
 - ✅ **Bun Runtime** - TypeScript-native execution
 - ✅ **Build System** - Optimized bundling
 - ✅ **Justfile** - Common development commands
@@ -51,6 +57,7 @@ The open-s3 project is now a fully functional S3 TUI explorer with a solid found
 - ✅ **TypeScript** - Strict mode with full type safety
 
 #### Documentation (100%)
+
 - ✅ **README.md** - Comprehensive user guide
 - ✅ **Keybinding Reference** - All bindings documented
 - ✅ **Configuration Guide** - JSON config file format
@@ -149,4 +156,4 @@ bun build src/index.ts --outdir dist --target bun
 
 ---
 
-*Last Updated: 2025-11-15*
+_Last Updated: 2025-11-15_

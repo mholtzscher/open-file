@@ -1,6 +1,6 @@
 /**
  * Tests for useNavigationHandlers hook integration
- * 
+ *
  * Note: React hooks can only be tested through a component context.
  * These tests document the hook's API and expected behavior.
  */

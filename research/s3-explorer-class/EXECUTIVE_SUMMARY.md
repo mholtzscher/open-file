@@ -34,14 +34,14 @@ The `s3-explorer-class.ts` file (924 lines) contains **ALL application logic in 
 
 ## Quick Stats
 
-| Metric | Value |
-|--------|-------|
-| **Current Code** | 924 lines (1 monolithic class) |
-| **New Structure** | ~1500 lines (11 modular files) |
-| **Improvements** | 10x better testability, 5x easier to understand |
-| **Migration Time** | ~5 weeks (5 phases) |
-| **Risk Level** | Low (parallel implementation, backward compatible) |
-| **Test Coverage Target** | >90% (vs ~30% currently) |
+| Metric                   | Value                                              |
+| ------------------------ | -------------------------------------------------- |
+| **Current Code**         | 924 lines (1 monolithic class)                     |
+| **New Structure**        | ~1500 lines (11 modular files)                     |
+| **Improvements**         | 10x better testability, 5x easier to understand    |
+| **Migration Time**       | ~5 weeks (5 phases)                                |
+| **Risk Level**           | Low (parallel implementation, backward compatible) |
+| **Test Coverage Target** | >90% (vs ~30% currently)                           |
 
 ---
 
@@ -100,8 +100,8 @@ const { state, dispatch } = useBufferState(adapter, configManager);
 // - showHelp, showSort, showConfirmDialog (UI toggles)
 // - pendingNavigation, pendingSaveExecution (async flags)
 
-const [showHelp, setShowHelp] = useState(false);      // React useState
-const [showSort, setShowSort] = useState(false);      // React useState
+const [showHelp, setShowHelp] = useState(false); // React useState
+const [showSort, setShowSort] = useState(false); // React useState
 ```
 
 ---
@@ -114,7 +114,7 @@ const [showSort, setShowSort] = useState(false);      // React useState
 private handleNormalModeKey(key: any): void {
   // 160+ lines of complex nested switches
   // - Sort menu intercepts
-  // - Help window intercepts  
+  // - Help window intercepts
   // - Key sequences (gg, yy, dd, G, g?)
   // - Individual key handlers
   // - Inline render() calls scattered throughout
@@ -128,7 +128,7 @@ private handleNormalModeKey(key: any): void {
 
 const normalModeHandler = useCallback((key) => {
   const keyName = normalizeKeyName(key)
-  
+
   // Simple, clear dispatch calls
   if (keyName === 'j') dispatch({ type: 'moveCursor', direction: 'down' })
   if (keyName === 'v') dispatch({ type: 'startVisualSelection' })
@@ -148,6 +148,7 @@ const searchModeHandler = useCallback((key) => { ... }, [dispatch])
 ### Example 1: BufferView (Main Content Area)
 
 **Current**
+
 ```typescript
 // Class with imperative rendering
 class BufferView {
@@ -159,12 +160,13 @@ class BufferView {
 ```
 
 **After**
+
 ```typescript
 // Functional component, pure props
 function BufferView({ entries, cursorIndex, scrollOffset, ... }) {
   const filtered = entries.filter(...)
   const visible = filtered.slice(scrollOffset, scrollOffset + pageSize)
-  
+
   return (
     <BufferLines>
       {visible.map((entry, i) => (
@@ -178,6 +180,7 @@ function BufferView({ entries, cursorIndex, scrollOffset, ... }) {
 ### Example 2: HelpWindow (Dialog)
 
 **Current**
+
 ```typescript
 // Imperative show/hide
 if (!this.helpWindow) {
@@ -189,6 +192,7 @@ this.render()  // Must call render manually
 ```
 
 **After**
+
 ```typescript
 // Declarative state-based rendering
 {showHelp && (
@@ -199,11 +203,12 @@ this.render()  // Must call render manually
 ### Example 3: Save Dialog (Async Flow)
 
 **Current**
+
 ```typescript
 private async handleSave(): Promise<void> {
   const dialog = new ConfirmationDialog(...)
   const result = await dialog.show()  // BLOCKS execution
-  
+
   if (result.confirmed) {
     await this.executeOperationPlan(plan)
     await this.loadBuffer(this.currentPath)
@@ -212,6 +217,7 @@ private async handleSave(): Promise<void> {
 ```
 
 **After**
+
 ```typescript
 // Non-blocking: dispatch action → reducer updates state → dialog appears
 dispatch({ type: 'save' })
@@ -240,18 +246,21 @@ useEffect(() => {
 ## Key Features of New Architecture
 
 ### 1. **useBufferState Hook**
+
 - Wraps BufferState in a reducer
 - Actions: `navigate`, `moveCursor`, `copy`, `paste`, `delete`, `save`, etc.
 - Handles side-effects (async operations) with useEffect
 - Single source of truth for all app state
 
-### 2. **useKeyboardEvents Hook**  
+### 2. **useKeyboardEvents Hook**
+
 - Encapsulates all key handling logic
 - Separate handlers for each mode (Normal, Visual, Insert, Search)
 - Dispatches actions to useBufferState
 - Testable independently
 
 ### 3. **React Components**
+
 - BufferView - Main file list display
 - StatusBar - Status line
 - PreviewPane - File preview
@@ -260,6 +269,7 @@ useEffect(() => {
 - ConfirmationDialog - Confirmation overlay
 
 ### 4. **State Reducer (bufferReducer)**
+
 - Pure function: `(state, action) => newState`
 - All action types centralized
 - Full test coverage possible
@@ -303,26 +313,32 @@ Phase 5: Deprecation (Week 5)
 ## What Gets Better
 
 ### Testability
+
 - ❌ Current: 30% test coverage (only easy stuff)
 - ✅ After: >90% test coverage (all logic testable)
 
 ### Code Organization
+
 - ❌ Current: 924 lines in one file
 - ✅ After: 1500 lines in 11 focused files
 
 ### Debugging
+
 - ❌ Current: Step through monolithic class, hard to isolate
 - ✅ After: Each hook/component has clear responsibility
 
 ### Performance
+
 - ❌ Current: Full re-render of everything after each action
 - ✅ After: React memoization, only changed components re-render
 
 ### Reusability
+
 - ❌ Current: Components tightly coupled to class
 - ✅ After: Can use BufferView, StatusBar elsewhere
 
 ### Developer Experience
+
 - ❌ Current: "Where does this state come from? Where is it mutated?"
 - ✅ After: "Dispatch action → reducer processes → component re-renders"
 
@@ -358,17 +374,18 @@ This folder contains:
 
 ## Quick Reference: What Each File Currently Does
 
-| File | Lines | Current Role | What It Does |
-|------|-------|--------------|-------------|
-| s3-explorer-class.ts | 924 | Monolithic | Everything (setup, events, rendering, dialogs) |
-| buffer-state.ts | 1037 | State | Manages entries, selection, modes, undo/redo |
-| buffer-view.ts | ? | Component | Renders file list to OpenTUI |
-| status-bar.ts | ? | Component | Renders status line to OpenTUI |
-| preview-pane.ts | ? | Component | Shows file preview to OpenTUI |
-| floating-window.ts | ? | Component | Renders floating dialog boxes |
-| confirmation-dialog.ts | ? | Component | Shows confirmation dialog |
+| File                   | Lines | Current Role | What It Does                                   |
+| ---------------------- | ----- | ------------ | ---------------------------------------------- |
+| s3-explorer-class.ts   | 924   | Monolithic   | Everything (setup, events, rendering, dialogs) |
+| buffer-state.ts        | 1037  | State        | Manages entries, selection, modes, undo/redo   |
+| buffer-view.ts         | ?     | Component    | Renders file list to OpenTUI                   |
+| status-bar.ts          | ?     | Component    | Renders status line to OpenTUI                 |
+| preview-pane.ts        | ?     | Component    | Shows file preview to OpenTUI                  |
+| floating-window.ts     | ?     | Component    | Renders floating dialog boxes                  |
+| confirmation-dialog.ts | ?     | Component    | Shows confirmation dialog                      |
 
 **After refactoring:**
+
 - s3-explorer-class.ts → DELETED ✓
 - buffer-state.ts → Logic moved to useBufferState + bufferReducer
 - Components → Converted to React functional components
@@ -379,6 +396,7 @@ This folder contains:
 ## Next Steps
 
 ### To Get Started:
+
 1. **Read ANALYSIS.md** - Understand the current architecture deeply
 2. **Read REFACTORING_GUIDE.md** - Learn the proposed new architecture
 3. **Create Phase 1 tasks** in bd:
@@ -387,6 +405,7 @@ This folder contains:
    - Ensure no behavioral changes
 
 ### For Questions:
+
 - "What state do I need?" → See ANALYSIS.md section 1
 - "How do events flow?" → See REFACTORING_GUIDE.md data flow diagram
 - "What does component X do?" → See component breakdown sections
@@ -404,6 +423,7 @@ The refactoring isn't about **rewriting everything**. It's about:
 4. **Declarativizing** the UI rendering (let React handle lifecycle)
 
 The **business logic stays the same**. We're just reorganizing for:
+
 - Better testability
 - Clearer code flow
 - Easier debugging
@@ -422,5 +442,4 @@ After refactoring, verify:
 ✅ Each component is independently testable  
 ✅ State flow is traceable (action → reducer → render)  
 ✅ Dialogs are non-blocking  
-✅ Code is reviewable and understandable  
-
+✅ Code is reviewable and understandable

@@ -1,6 +1,6 @@
 /**
  * Catppuccin Mocha Theme
- * 
+ *
  * A warm, fluffy dark theme based on Catppuccin's Mocha variant.
  * https://github.com/catppuccin/catppuccin
  */
@@ -11,38 +11,38 @@
  */
 export const CatppuccinMocha = {
   // Base colors
-  base: '#1e1e2e',      // Dark base
-  mantle: '#181825',    // Darker mantle
-  crust: '#11111b',     // Darkest crust
-  
+  base: '#1e1e2e', // Dark base
+  mantle: '#181825', // Darker mantle
+  crust: '#11111b', // Darkest crust
+
   // Surface colors
-  surface0: '#313244',  // Subtle backgrounds
-  surface1: '#45475a',  // Default surface
-  surface2: '#585b70',  // Hover/focus state
-  
+  surface0: '#313244', // Subtle backgrounds
+  surface1: '#45475a', // Default surface
+  surface2: '#585b70', // Hover/focus state
+
   // Main accent colors
-  lavender: '#b4befe',  // Primary accent - bright lavender
-  blue: '#89b4fa',      // Soft blue
-  sapphire: '#74c7ec',  // Bright cyan-blue
-  sky: '#89dceb',       // Sky cyan
-  teal: '#94e2d5',      // Teal
-  green: '#a6e3a1',     // Green
-  yellow: '#f9e2af',    // Mellow yellow
-  peach: '#fab387',     // Warm peach
-  maroon: '#eba0ac',    // Deep rose
-  red: '#f38ba8',       // Red
-  mauve: '#cba6f7',     // Purple
-  pink: '#f5c2e7',      // Pink
-  flamingo: '#f2cdcd',  // Light red
+  lavender: '#b4befe', // Primary accent - bright lavender
+  blue: '#89b4fa', // Soft blue
+  sapphire: '#74c7ec', // Bright cyan-blue
+  sky: '#89dceb', // Sky cyan
+  teal: '#94e2d5', // Teal
+  green: '#a6e3a1', // Green
+  yellow: '#f9e2af', // Mellow yellow
+  peach: '#fab387', // Warm peach
+  maroon: '#eba0ac', // Deep rose
+  red: '#f38ba8', // Red
+  mauve: '#cba6f7', // Purple
+  pink: '#f5c2e7', // Pink
+  flamingo: '#f2cdcd', // Light red
   rosewater: '#f5e0dc', // Light rose
-  
+
   // Text colors
-  text: '#cdd6f4',      // Primary text - light lavender
-  subtext1: '#bac2de',  // Secondary text
-  subtext0: '#a6adc8',  // Tertiary text
-  overlay2: '#9399b2',  // Overlay text
-  overlay1: '#7f849c',  // More subtle overlay
-  overlay0: '#6c7086',  // Subtle text
+  text: '#cdd6f4', // Primary text - light lavender
+  subtext1: '#bac2de', // Secondary text
+  subtext0: '#a6adc8', // Tertiary text
+  overlay2: '#9399b2', // Overlay text
+  overlay1: '#7f849c', // More subtle overlay
+  overlay0: '#6c7086', // Subtle text
 } as const;
 
 /**
@@ -209,10 +209,13 @@ export class Theme {
   /**
    * Get style for entry based on type and selection state
    */
-  static getEntryStyle(type: 'file' | 'directory', isSelected: boolean, isInVisualSelection: boolean): TextStyle {
-    const baseStyle = type === 'directory' 
-      ? Theme.getDirectoryStyle(isSelected)
-      : Theme.getFileStyle(isSelected);
+  static getEntryStyle(
+    type: 'file' | 'directory',
+    isSelected: boolean,
+    isInVisualSelection: boolean
+  ): TextStyle {
+    const baseStyle =
+      type === 'directory' ? Theme.getDirectoryStyle(isSelected) : Theme.getFileStyle(isSelected);
 
     if (isInVisualSelection) {
       return {

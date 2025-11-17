@@ -52,6 +52,7 @@ PREVIEW NAVIGATION
 ```
 
 **Design Notes**:
+
 - `-` (minus) is iconic for "go up" and was popularized by vim-vinegar
 - `~` (tilde) for tab-level directory change is mnemonic (home directory symbol)
 - `` ` `` (backtick) for `:cd` (Vim's mark notation connection)
@@ -77,6 +78,7 @@ GAS KEYBINDINGS (custom actions)
 ```
 
 **Design Notes**:
+
 - `g` prefix follows Vim convention for extended commands (like `gj`, `gk`)
 - `s` for sort is mnemonic (though not standard Vim)
 - `.` for hidden files recalls Unix dotfile convention
@@ -110,7 +112,7 @@ LICENSE
 2. Type: new_feature.lua
 3. Press <Esc> (exit insert mode)
 4. Buffer now shows:
-   
+
    src/
      main.lua
      utils.lua
@@ -138,7 +140,7 @@ LICENSE
 4. Position below src/ line
 5. p (paste)
 6. Buffer now shows:
-   
+
    src/
    main.lua
    LICENSE
@@ -163,7 +165,7 @@ src/                           backup/
 3. Move to Window 2
 4. p (paste below any entry)
 5. Window 2 now shows:
-   
+
    backup/
      config.lua            <- new entry (pending)
      config.lua
@@ -190,10 +192,10 @@ CONTRIBUTING.md
 3. j j (select down 2 lines) → selects README, CHANGELOG, LICENSE
 4. d (delete visual selection)
 5. Buffer shows:
-   
+
    AUTHORS
    CONTRIBUTING.md
-   
+
    (README, CHANGELOG, LICENSE grayed out or removed from buffer)
 
 6. :w (save)
@@ -232,7 +234,7 @@ CONTRIBUTING.md
    - Uses `fnamemodify(dir, ":~")` for tilde expansion
    - Helps user know "where they are"
 
-2. **Icon Column**: 
+2. **Icon Column**:
    - 📁 for directories
    - 📄 for files
    - 🔗 for symlinks
@@ -300,6 +302,7 @@ float = {
 #### Visual Layout Examples
 
 **Centered Float (default)**:
+
 ```
 ┌──────────────────────────────────────────────┐
 │                                              │
@@ -316,6 +319,7 @@ float = {
 ```
 
 **Float with Preview (preview_split = "right")**:
+
 ```
 ┌──────────────────────────────────────────────┐
 │  ┌──────────────────┐  ┌──────────────────┐  │
@@ -385,6 +389,7 @@ local operations = {
 ```
 
 **Features**:
+
 - Progress bar percentage
 - Current file being processed
 - Total progress (bytes/files)
@@ -533,10 +538,10 @@ require("oil").setup({
     -- Override defaults
     ["<CR>"] = "actions.select",
     ["-"] = { "actions.parent", mode = "n" },
-    
+
     -- Disable defaults
     ["gx"] = false,
-    
+
     -- Add custom
     ["<leader>gd"] = {
       callback = function()
@@ -544,11 +549,11 @@ require("oil").setup({
       end,
       desc = "Toggle detail view",
     },
-    
+
     -- Vim-style split navigation
     ["<C-w>v"] = { "actions.select", opts = { vertical = true } },
     ["<C-w>s"] = { "actions.select", opts = { horizontal = true } },
-    
+
     -- Custom navigation
     ["<leader>o"] = {
       "actions.open_external",
@@ -592,16 +597,16 @@ require("oil").setup({
 
 ### 7.1 Core Principles
 
-| Principle | Implementation |
-|-----------|-----------------|
-| **Vim-First** | All operations composable with standard Vim motions |
-| **Discoverability** | Help system built-in; sensible defaults |
-| **Safety** | Confirmation dialogs for destructive ops; preview windows |
-| **Efficiency** | Single-key access to common operations |
-| **Flexibility** | Highly customizable keymaps, columns, highlighting |
-| **Clarity** | Clear visual distinction between files/dirs/links |
-| **Responsiveness** | Progress indication for long operations |
-| **Reversibility** | Changes held until `:w`; can discard with `:q!` |
+| Principle           | Implementation                                            |
+| ------------------- | --------------------------------------------------------- |
+| **Vim-First**       | All operations composable with standard Vim motions       |
+| **Discoverability** | Help system built-in; sensible defaults                   |
+| **Safety**          | Confirmation dialogs for destructive ops; preview windows |
+| **Efficiency**      | Single-key access to common operations                    |
+| **Flexibility**     | Highly customizable keymaps, columns, highlighting        |
+| **Clarity**         | Clear visual distinction between files/dirs/links         |
+| **Responsiveness**  | Progress indication for long operations                   |
+| **Reversibility**   | Changes held until `:w`; can discard with `:q!`           |
 
 ### 7.2 Vim Philosophy Integration
 
@@ -633,24 +638,24 @@ Oil.nvim deeply respects Vim philosophy:
 
 ### Oil.nvim vs. Tree View Plugins
 
-| Aspect | Oil.nvim | Tree View (neo-tree, etc.) |
-|--------|----------|---------------------------|
-| **Paradigm** | Edit filesystem as buffer | Graphical tree navigation |
-| **Multi-Directory** | Excellent (split/tab support) | Limited (single tree) |
-| **Learning Curve** | Low (Vim native ops) | Medium (new abstractions) |
-| **Performance** | Good (single directory focus) | Varies (whole tree loaded) |
-| **Bulk Operations** | Excellent (visual selection) | Good (but menu-driven) |
-| **Keyboard-First** | Yes (100% keyboard) | Partial (often mouse-friendly) |
+| Aspect              | Oil.nvim                      | Tree View (neo-tree, etc.)     |
+| ------------------- | ----------------------------- | ------------------------------ |
+| **Paradigm**        | Edit filesystem as buffer     | Graphical tree navigation      |
+| **Multi-Directory** | Excellent (split/tab support) | Limited (single tree)          |
+| **Learning Curve**  | Low (Vim native ops)          | Medium (new abstractions)      |
+| **Performance**     | Good (single directory focus) | Varies (whole tree loaded)     |
+| **Bulk Operations** | Excellent (visual selection)  | Good (but menu-driven)         |
+| **Keyboard-First**  | Yes (100% keyboard)           | Partial (often mouse-friendly) |
 
 ### Oil.nvim vs. Fuzzy Finders
 
-| Aspect | Oil.nvim | Fuzzy Finders (fzf, telescope) |
-|--------|----------|--------------------------------|
-| **Browse Mode** | Primary | Secondary (search-focused) |
-| **Create Operations** | Native (edit buffer) | Limited (scripted) |
-| **Directory Structure** | Visible (single dir) | Hidden (search results) |
-| **Folder Navigation** | Natural | By path search |
-| **Bulk Operations** | Native | Limited |
+| Aspect                  | Oil.nvim             | Fuzzy Finders (fzf, telescope) |
+| ----------------------- | -------------------- | ------------------------------ |
+| **Browse Mode**         | Primary              | Secondary (search-focused)     |
+| **Create Operations**   | Native (edit buffer) | Limited (scripted)             |
+| **Directory Structure** | Visible (single dir) | Hidden (search results)        |
+| **Folder Navigation**   | Natural              | By path search                 |
+| **Bulk Operations**     | Native               | Limited                        |
 
 ---
 
