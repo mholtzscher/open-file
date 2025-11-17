@@ -167,11 +167,16 @@ export class S3Adapter implements Adapter {
    * Normalize path to S3 prefix format
    * - Remove leading slash
    * - Ensure trailing slash for directories
+   * - Root path should be empty string, not "/"
    */
   private normalizePath(path: string, isDirectory: boolean = false): string {
     let normalized = path.replace(/^\//, '').replace(/\/+/g, '/');
-    if (isDirectory && !normalized.endsWith('/')) {
+    if (isDirectory && !normalized.endsWith('/') && normalized !== '') {
       normalized += '/';
+    }
+    // Don't return "/" for root - S3 expects empty string for root prefix
+    if (normalized === '/') {
+      normalized = '';
     }
     return normalized;
   }
