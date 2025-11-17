@@ -17,6 +17,7 @@ import { StatusBar } from './status-bar-react.js';
 import { ConfirmationDialog } from './confirmation-dialog-react.js';
 import { HelpDialog } from './help-dialog-react.js';
 import { CatppuccinMocha } from './theme.js';
+import { ErrorDialog } from './error-dialog-react.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { setGlobalKeyboardDispatcher } from '../index.tsx';
 import { detectChanges, buildOperationPlan } from '../utils/change-detection.js';
@@ -237,12 +238,19 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   // Register global keyboard dispatcher on mount
   useEffect(() => {
     setGlobalKeyboardDispatcher((key: any) => {
-      // Handle help dialog keyboard shortcuts
+      // Help dialog shortcuts
       if (showHelpDialog) {
         if (key.name === '?' || key.name === 'escape') {
           setShowHelpDialog(false);
           return;
         }
+      } else if (
+        statusMessageColor === CatppuccinMocha.red &&
+        (key.name === 'enter' || key.name === 'return')
+      ) {
+        // Acknowledge error by Enter
+        setStatusMessage('');
+        return;
       } else if (key.name === '?') {
         setShowHelpDialog(true);
         return;
@@ -255,7 +263,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     return () => {
       setGlobalKeyboardDispatcher(null);
     };
-  }, [handleKeyDown, showHelpDialog]);
+  }, [handleKeyDown, showHelpDialog, statusMessage, statusMessageColor]);
 
   // Initialize data from adapter
   useEffect(() => {
@@ -327,12 +335,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     );
   }
 
-  // Show error panel if there's an error message
-  const showErrorPanel = statusMessage && statusMessageColor === CatppuccinMocha.red;
-  const errorPanelHeight = showErrorPanel ? 6 : 0;
-  const adjustedContentHeight = showErrorPanel
-    ? layout.contentHeight - errorPanelHeight
-    : layout.contentHeight;
+  // Show error dialog if there's an error message
+  const showErrorDialog = statusMessage && statusMessageColor === CatppuccinMocha.red;
 
   return (
     <>
@@ -341,31 +345,15 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         open-s3: {bucket} ({terminalSize.width}x{terminalSize.height})
       </text>
 
-      {/* Error Panel - shows when there's an error */}
-      {showErrorPanel && (
-        <box
-          position="absolute"
-          left={2}
-          top={layout.headerHeight}
-          width={terminalSize.width - 4}
-          height={errorPanelHeight}
-          borderStyle="rounded"
-          borderColor={CatppuccinMocha.red}
-          backgroundColor={CatppuccinMocha.base}
-          title="ERROR"
-        >
-          <text position="absolute" left={2} top={1} right={2} fg={CatppuccinMocha.red}>
-            {statusMessage}
-          </text>
-        </box>
-      )}
+      {/* Error Dialog - shows when there's an error */}
+      {showErrorDialog && <ErrorDialog visible={true} message={statusMessage} />}
 
       {/* Buffer View - responsive to terminal size */}
       <BufferView
         bufferState={bufferState}
         left={2}
-        top={layout.headerHeight + errorPanelHeight}
-        height={adjustedContentHeight}
+        top={layout.headerHeight}
+        height={layout.contentHeight}
         showIcons={!terminalSize.isSmall}
         showSizes={!terminalSize.isSmall}
         showDates={!terminalSize.isMedium}
@@ -375,7 +363,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       <StatusBar
         path={bufferState.currentPath}
         mode={bufferState.mode}
-        message={statusMessage && !showErrorPanel ? statusMessage : undefined}
+        message={statusMessage && !showErrorDialog ? statusMessage : undefined}
         messageColor={statusMessageColor}
         searchQuery={bufferState.searchQuery}
         commandBuffer={bufferState.editBuffer}
