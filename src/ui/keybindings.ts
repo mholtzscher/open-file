@@ -4,7 +4,7 @@
  * Centralized management of keybindings for different modes
  */
 
-import { EditMode } from './buffer-state.js';
+import { EditMode } from '../types/edit-mode.js';
 
 /**
  * Key action handler

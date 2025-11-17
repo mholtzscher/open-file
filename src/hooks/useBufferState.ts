@@ -29,11 +29,19 @@ export interface UseBufferStateReturn {
   scrollOffset: number;
   copyRegister: Entry[];
   viewportHeight: number;
+  editBuffer: string; // Buffer for edit/insert mode
 
   // Buffer data operations
   setEntries: (entries: Entry[]) => void;
   setCurrentPath: (path: string) => void;
   setViewportHeight: (height: number) => void;
+
+  // Edit buffer operations
+  getEditBuffer: () => string;
+  setEditBuffer: (text: string) => void;
+  appendToEditBuffer: (char: string) => void;
+  backspaceEditBuffer: () => void;
+  clearEditBuffer: () => void;
 
   // Cursor/Selection operations
   moveCursorDown: (amount: number) => void;
@@ -90,6 +98,7 @@ export function useBufferState(
   const [scrollOffset, setScrollOffset] = useState(0);
   const [copyRegister, setCopyRegister] = useState<Entry[]>([]);
   const [viewportHeight, setViewportHeight] = useState(20);
+  const [editBuffer, setEditBuffer] = useState<string>('');
 
   // Helper function to ensure cursor is within bounds
   const constrainCursor = useCallback(
@@ -289,6 +298,21 @@ export function useBufferState(
     return copyRegister;
   }, [copyRegister, selection.cursorIndex, entries]);
 
+  // Edit buffer operations
+  const getEditBuffer = useCallback(() => editBuffer, [editBuffer]);
+
+  const appendToEditBuffer = useCallback((char: string) => {
+    setEditBuffer(prev => prev + char);
+  }, []);
+
+  const backspaceEditBuffer = useCallback(() => {
+    setEditBuffer(prev => prev.slice(0, -1));
+  }, []);
+
+  const clearEditBuffer = useCallback(() => {
+    setEditBuffer('');
+  }, []);
+
   return {
     entries,
     originalEntries,
@@ -301,10 +325,17 @@ export function useBufferState(
     scrollOffset,
     copyRegister,
     viewportHeight,
+    editBuffer,
 
     setEntries,
     setCurrentPath,
     setViewportHeight,
+
+    getEditBuffer,
+    setEditBuffer,
+    appendToEditBuffer,
+    backspaceEditBuffer,
+    clearEditBuffer,
 
     moveCursorDown,
     moveCursorUp,

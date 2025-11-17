@@ -18,6 +18,8 @@ import { ConfirmationDialog } from './confirmation-dialog-react.js';
 import { CatppuccinMocha } from './theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { setGlobalKeyboardDispatcher } from '../index.tsx';
+import { detectChanges, buildOperationPlan } from '../utils/change-detection.js';
+import { EntryIdMap } from '../utils/entry-id.js';
 
 interface S3ExplorerProps {
   bucket?: string;
@@ -36,6 +38,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [pendingOperations, setPendingOperations] = useState<any[]>([]);
+  const [originalEntries, setOriginalEntries] = useState<any[]>([]);
+  const [isExecuting, setIsExecuting] = useState(false);
 
   // Track terminal size for responsive layout
   const terminalSize = useTerminalSize();
@@ -64,6 +68,9 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           // Create a new array to ensure React detects the change
           bufferState.setEntries([...result.entries]);
           bufferState.setCurrentPath(path);
+
+          // Save original entries for change detection
+          setOriginalEntries([...result.entries]);
 
           // Reset cursor to top of new directory
           bufferState.cursorToTop();
@@ -147,10 +154,36 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       },
       onPageDown: () => bufferState.moveCursorDown(10),
       onPageUp: () => bufferState.moveCursorUp(10),
+      onSave: () => {
+        // Detect changes between original and edited entries
+        const changes = detectChanges(originalEntries, bufferState.entries, {} as EntryIdMap);
+
+        // Build operation plan from changes
+        const plan = buildOperationPlan(changes);
+
+        // Check if there are any operations to execute
+        if (plan.operations.length === 0) {
+          setStatusMessage('No changes to save');
+          setStatusMessageColor(CatppuccinMocha.text);
+          return;
+        }
+
+        // Show confirmation dialog with operations
+        setPendingOperations(
+          plan.operations.map(op => ({
+            id: op.id,
+            type: op.type,
+            path: (op as any).path || (op as any).destination,
+            source: (op as any).source,
+            destination: (op as any).destination,
+          }))
+        );
+        setShowConfirmDialog(true);
+      },
       onQuit: () => process.exit(0),
       onShowHelp: () => setShowHelpDialog(!showHelpDialog),
     }),
-    [navigationHandlers, bufferState, bucket, showHelpDialog, setBucket]
+    [navigationHandlers, bufferState, bucket, showHelpDialog, setBucket, originalEntries]
   );
 
   // Setup keyboard events
@@ -293,18 +326,66 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
         <ConfirmationDialog
-          title="Confirm Delete"
-          operations={pendingOperations.map((entry: any) => ({
-            id: entry.id,
-            type: 'delete' as const,
-            path: entry.path,
-          }))}
+          title="Confirm Operations"
+          operations={pendingOperations}
           visible={showConfirmDialog}
-          onConfirm={() => {
-            setStatusMessage('Operations completed');
-            setStatusMessageColor(CatppuccinMocha.green);
-            setShowConfirmDialog(false);
-            setPendingOperations([]);
+          onConfirm={async () => {
+            setIsExecuting(true);
+            try {
+              // Execute each operation in order
+              let successCount = 0;
+              for (const op of pendingOperations) {
+                try {
+                  switch (op.type) {
+                    case 'create': {
+                      await adapter.create(op.path, op.entryType || 'file');
+                      successCount++;
+                      break;
+                    }
+                    case 'delete': {
+                      await adapter.delete(op.path, true);
+                      successCount++;
+                      break;
+                    }
+                    case 'move': {
+                      await adapter.move(op.source, op.destination);
+                      successCount++;
+                      break;
+                    }
+                    case 'copy': {
+                      await adapter.copy(op.source, op.destination);
+                      successCount++;
+                      break;
+                    }
+                  }
+                } catch (opError) {
+                  console.error(`Failed to execute ${op.type} operation:`, opError);
+                  const parsedError = parseAwsError(opError, `Failed to ${op.type}`);
+                  setStatusMessage(`Operation failed: ${formatErrorForDisplay(parsedError, 70)}`);
+                  setStatusMessageColor(CatppuccinMocha.red);
+                }
+              }
+
+              // Reload buffer after operations complete
+              if (successCount > 0) {
+                try {
+                  const result = await adapter.list(bufferState.currentPath);
+                  bufferState.setEntries([...result.entries]);
+                  setOriginalEntries([...result.entries]);
+                  setStatusMessage(`${successCount} operation(s) completed successfully`);
+                  setStatusMessageColor(CatppuccinMocha.green);
+                } catch (reloadError) {
+                  console.error('Failed to reload buffer:', reloadError);
+                  setStatusMessage('Operations completed but failed to reload buffer');
+                  setStatusMessageColor(CatppuccinMocha.yellow);
+                }
+              }
+
+              setShowConfirmDialog(false);
+              setPendingOperations([]);
+            } finally {
+              setIsExecuting(false);
+            }
           }}
           onCancel={() => {
             setShowConfirmDialog(false);

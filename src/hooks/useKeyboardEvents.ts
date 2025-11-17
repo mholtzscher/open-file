@@ -11,6 +11,7 @@
 
 import { useCallback, useRef, useEffect } from 'react';
 import { EditMode } from '../types/edit-mode.js';
+import { EntryType } from '../types/entry.js';
 import { UseBufferStateReturn } from './useBufferState.js';
 
 export interface KeyboardEvent {
@@ -216,19 +217,46 @@ export function useKeyboardEvents(
     (key: string, char?: string) => {
       switch (key) {
         case 'escape':
+          bufferState.clearEditBuffer();
           bufferState.exitInsertMode();
           break;
-        case 'enter':
-          // Confirm entry creation - to be implemented
+        case 'enter': {
+          // Confirm entry creation
+          const entryName = bufferState.getEditBuffer().trim();
+          if (entryName) {
+            // Create new entry with the name
+            const currentPath = bufferState.currentPath;
+            const entryPath = currentPath ? `${currentPath}${entryName}` : entryName;
+            const isDirectory = entryName.endsWith('/');
+
+            // Add new entry to buffer
+            const newEntry = {
+              id: Math.random().toString(36),
+              name: entryName.replace(/\/$/, ''),
+              type: isDirectory ? EntryType.Directory : EntryType.File,
+              path: entryPath,
+              modified: new Date(),
+            };
+
+            const currentEntries = bufferState.entries;
+            bufferState.setEntries([...currentEntries, newEntry]);
+            bufferState.clearEditBuffer();
+            bufferState.exitInsertMode();
+          }
           break;
+        }
         case 'tab':
-          // Apply tab completion - to be implemented
+          // Apply first matching completion (if any)
+          // For now, just accept what's in the buffer
           break;
         case 'backspace':
-          // Remove last character - to be implemented
+          bufferState.backspaceEditBuffer();
           break;
         default:
-          // Add character to entry name if printable - to be implemented
+          // Add character to entry name if printable
+          if (char && char.length === 1 && char.match(/[a-zA-Z0-9._\-\s/]/)) {
+            bufferState.appendToEditBuffer(char);
+          }
           break;
       }
     },
@@ -294,12 +322,56 @@ export function useKeyboardEvents(
         case EditMode.Search:
           handleSearchMode(key, event.char);
           break;
-        case EditMode.Edit:
-          // Edit mode - just handle escape
-          if (key === 'escape') {
-            bufferState.exitEditMode();
+        case EditMode.Edit: {
+          // Edit mode - edit the current entry name
+          switch (key) {
+            case 'escape':
+              bufferState.clearEditBuffer();
+              bufferState.exitEditMode();
+              break;
+            case 'enter': {
+              // Confirm entry edit/rename
+              const newName = bufferState.getEditBuffer().trim();
+              if (newName && newName.length > 0) {
+                const currentEntry = bufferState.getSelectedEntry();
+                if (currentEntry) {
+                  // Update the entry with the new name
+                  const currentEntries = bufferState.entries;
+                  const updatedEntries = currentEntries.map(entry => {
+                    if (entry.id === currentEntry.id) {
+                      const isDirectory = newName.endsWith('/');
+                      const cleanName = newName.replace(/\/$/, '');
+                      const currentPath = bufferState.currentPath;
+                      const newPath = currentPath ? `${currentPath}${cleanName}` : cleanName;
+
+                      return {
+                        ...entry,
+                        name: cleanName,
+                        path: newPath,
+                        type: isDirectory ? EntryType.Directory : EntryType.File,
+                      };
+                    }
+                    return entry;
+                  });
+                  bufferState.setEntries(updatedEntries);
+                }
+              }
+              bufferState.clearEditBuffer();
+              bufferState.exitEditMode();
+              break;
+            }
+            case 'backspace':
+              bufferState.backspaceEditBuffer();
+              break;
+            default:
+              // Add character to edit buffer if printable
+              if (event.char && event.char.length === 1 && event.char.match(/[a-zA-Z0-9._\-\s/]/)) {
+                bufferState.appendToEditBuffer(event.char);
+              }
+              break;
           }
           break;
+        }
         case EditMode.Visual:
           // Visual mode - handle selection extension
           if (key === 'escape') {
