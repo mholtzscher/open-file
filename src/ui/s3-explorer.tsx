@@ -578,7 +578,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           top={layout.headerHeight}
           width={
             showPreview
-              ? Math.floor(terminalSize.size.width * 0.55) - 2
+              ? Math.floor(terminalSize.size.width * 0.5)
               : Math.max(terminalSize.size.width - 4, 40)
           }
           height={layout.contentHeight}
@@ -682,9 +682,9 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       {showPreview && !multiPaneLayout.isMultiPaneMode && (
         <PreviewPane
           content={previewContent}
-          left={Math.floor(terminalSize.size.width * 0.55)}
+          left={Math.floor(terminalSize.size.width * 0.5) + 4}
           top={layout.headerHeight}
-          width={Math.floor(terminalSize.size.width * 0.45) - 2}
+          width={Math.floor(terminalSize.size.width * 0.5) - 6}
           height={layout.contentHeight}
           visible={true}
         />
