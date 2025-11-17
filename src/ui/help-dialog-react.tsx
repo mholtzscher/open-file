@@ -5,6 +5,7 @@
  */
 
 import { CatppuccinMocha } from './theme.js';
+import { useTerminalSize } from '../hooks/useTerminalSize.js';
 
 interface KeybindingItem {
   keys: string;
@@ -26,6 +27,10 @@ interface HelpDialogProps {
  */
 export function HelpDialog({ visible }: HelpDialogProps) {
   if (!visible) return null;
+
+  const terminalSize = useTerminalSize();
+  const dialogWidth = 70;
+  const centerLeft = Math.floor((terminalSize.width - dialogWidth) / 2);
 
   const keybindings: HelpItem[] = [
     { section: 'NAVIGATION' },
@@ -58,9 +63,9 @@ export function HelpDialog({ visible }: HelpDialogProps) {
   return (
     <box
       position="absolute"
-      left={5}
+      left={centerLeft}
       top={1}
-      width={70}
+      width={dialogWidth}
       borderStyle="rounded"
       borderColor={CatppuccinMocha.yellow}
       backgroundColor={CatppuccinMocha.base}
