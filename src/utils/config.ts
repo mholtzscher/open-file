@@ -54,6 +54,7 @@ export interface ColorScheme {
  */
 export interface S3Config {
   region?: string;
+  profile?: string; // AWS profile name
   endpoint?: string;
   accessKeyId?: string;
   secretAccessKey?: string;
@@ -222,16 +223,33 @@ export class ConfigManager {
     return this.config.s3 || {};
   }
 
-  /**
-   * Set S3 configuration
-   */
-  setS3Config(s3: S3Config): void {
-    this.config.s3 = s3;
-  }
+   /**
+    * Set S3 configuration
+    */
+   setS3Config(s3: S3Config): void {
+     this.config.s3 = s3;
+   }
 
-  /**
-   * Get display configuration
-   */
+   /**
+    * Get AWS profile from config
+    */
+   getAwsProfile(): string | undefined {
+     return this.config.s3?.profile;
+   }
+
+   /**
+    * Set AWS profile in config
+    */
+   setAwsProfile(profile: string): void {
+     if (!this.config.s3) {
+       this.config.s3 = {};
+     }
+     this.config.s3.profile = profile;
+   }
+
+   /**
+    * Get display configuration
+    */
   getDisplayConfig(): DisplayConfig {
     return this.config.display || this.getDefaultDisplayConfig();
   }

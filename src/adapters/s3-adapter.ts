@@ -23,10 +23,11 @@ import {
   _Object,
 } from '@aws-sdk/client-s3';
 import { Adapter, ListOptions, ListResult, OperationOptions } from './adapter.js';
-import { Entry, EntryType, EntryMetadata } from '../types/entry.js';
+import { Entry, EntryType } from '../types/entry.js';
 import { generateEntryId } from '../utils/entry-id.js';
 import { retryWithBackoff, getS3RetryConfig } from '../utils/retry.js';
 import { parseAwsError } from '../utils/errors.js';
+import { loadAwsProfile, getActiveAwsProfile, getActiveAwsRegion } from '../utils/aws-profile.js';
 
 /**
  * Configuration for S3 adapter
@@ -63,10 +64,29 @@ export class S3Adapter implements Adapter {
     this.bucket = config.bucket;
 
     // Initialize S3 client with flexible configuration
-    const clientConfig: any = {
-      // Region: use config, then AWS_REGION env var, then default
-      region: config.region || process.env.AWS_REGION || 'us-east-1',
-    };
+    const clientConfig: any = {};
+
+    // Determine which profile to use
+    const profileName = config.profile || getActiveAwsProfile();
+
+    // Load profile configuration if specified or AWS_PROFILE is set
+    let profileConfig = undefined;
+    if (config.profile || process.env.AWS_PROFILE) {
+      profileConfig = loadAwsProfile(profileName);
+    }
+
+    // Region priority: explicit config > profile region > AWS_REGION env > us-east-1
+    if (config.region) {
+      clientConfig.region = config.region;
+    } else if (profileConfig?.region) {
+      clientConfig.region = profileConfig.region;
+    } else if (process.env.AWS_REGION) {
+      clientConfig.region = process.env.AWS_REGION;
+    } else {
+      // Try to get region from active profile if AWS_PROFILE is set
+      const activeRegion = getActiveAwsRegion();
+      clientConfig.region = activeRegion || 'us-east-1';
+    }
 
     // Custom endpoint (for LocalStack, MinIO, etc.)
     if (config.endpoint) {
@@ -75,12 +95,21 @@ export class S3Adapter implements Adapter {
       clientConfig.forcePathStyle = config.forcePathStyle ?? true;
     }
 
-    // Credentials: explicit credentials take precedence over environment
+    // Credentials priority:
+    // 1. Explicit credentials in config
+    // 2. Profile credentials
+    // 3. AWS SDK default chain (env vars, instance metadata, etc.)
     if (config.accessKeyId && config.secretAccessKey) {
       clientConfig.credentials = {
         accessKeyId: config.accessKeyId,
         secretAccessKey: config.secretAccessKey,
         ...(config.sessionToken && { sessionToken: config.sessionToken }),
+      };
+    } else if (profileConfig?.accessKeyId && profileConfig?.secretAccessKey) {
+      clientConfig.credentials = {
+        accessKeyId: profileConfig.accessKeyId,
+        secretAccessKey: profileConfig.secretAccessKey,
+        ...(profileConfig.sessionToken && { sessionToken: profileConfig.sessionToken }),
       };
     }
     // If no explicit credentials, AWS SDK will use:

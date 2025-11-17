@@ -9,6 +9,7 @@ import { S3Adapter } from './adapters/s3-adapter.js';
 import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 import { getLogger, shutdownLogger, LogLevel } from './utils/logger.js';
+import { getActiveAwsRegion } from './utils/aws-profile.js';
 
 // Global keyboard event dispatcher - exported at module level
 export let globalKeyboardDispatcher: ((key: any) => void) | null = null;
@@ -59,25 +60,44 @@ async function main() {
   let adapter: Adapter;
   const adapterType = cliArgs.adapter || configManager.getAdapter();
 
-  if (adapterType === 's3') {
-    // Get S3 config from CLI args or config file
-    const s3Config = configManager.getS3Config();
-    const finalS3Config = {
-      region: cliArgs.region || s3Config.region || 'us-east-1',
-      bucket: cliArgs.bucket || s3Config.bucket || 'my-bucket',
-      endpoint: cliArgs.endpoint || s3Config.endpoint,
-      accessKeyId: cliArgs.accessKey || s3Config.accessKeyId,
-      secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
-    };
+   if (adapterType === 's3') {
+     // Get S3 config from CLI args or config file
+     const s3Config = configManager.getS3Config();
+     
+     // Determine region priority: CLI > config file > active profile > us-east-1
+     let region = cliArgs.region || s3Config.region;
+     if (!region) {
+       const profileRegion = getActiveAwsRegion();
+       region = profileRegion || process.env.AWS_REGION || 'us-east-1';
+     }
+     
+     const finalS3Config = {
+       region,
+       bucket: cliArgs.bucket || s3Config.bucket || 'my-bucket',
+       profile: cliArgs.profile,
+       endpoint: cliArgs.endpoint || s3Config.endpoint,
+       accessKeyId: cliArgs.accessKey || s3Config.accessKeyId,
+       secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
+     };
 
-    logger.debug('Initializing S3 adapter', { config: { ...finalS3Config, secretAccessKey: '***' } });
-    adapter = new S3Adapter(finalS3Config);
-    logger.info('S3 adapter initialized', { region: finalS3Config.region, bucket: finalS3Config.bucket });
-  } else {
-    logger.debug('Initializing mock adapter');
-    adapter = new MockAdapter();
-    logger.info('Mock adapter initialized');
-  }
+     logger.debug('Initializing S3 adapter', { 
+       config: { 
+         ...finalS3Config, 
+         secretAccessKey: '***',
+         profile: finalS3Config.profile || 'default'
+       } 
+     });
+     adapter = new S3Adapter(finalS3Config);
+     logger.info('S3 adapter initialized', { 
+       region: finalS3Config.region, 
+       bucket: finalS3Config.bucket,
+       profile: finalS3Config.profile || 'default'
+     });
+   } else {
+     logger.debug('Initializing mock adapter');
+     adapter = new MockAdapter();
+     logger.info('Mock adapter initialized');
+   }
 
   // Get bucket name
   const bucket = cliArgs.bucket || configManager.getS3Config().bucket || 'test-bucket';
