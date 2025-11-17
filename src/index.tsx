@@ -35,9 +35,7 @@ async function main() {
   try {
     // Parse CLI arguments first to check for debug flag
     const args = Bun.argv.slice(2);
-    console.error('[MAIN] Parsed CLI args:', args);
     const cliArgs = parseArgs(args);
-    console.error('[MAIN] CLI args parsed:', cliArgs);
 
     // Initialize logger with appropriate level
     const logLevel = cliArgs.debug ? LogLevel.Debug : LogLevel.Info;
@@ -45,7 +43,6 @@ async function main() {
     // Ensure log level is set in case logger was already initialized
     setLogLevel(logLevel);
     logger.info('Application starting', { args, debug: cliArgs.debug });
-    console.error('[MAIN] Logger initialized with level:', logLevel);
 
     // Handle help and version flags
     if (cliArgs.help) {
@@ -59,17 +56,14 @@ async function main() {
     }
 
     // Create config manager
-    console.error('[MAIN] Creating config manager...');
     const configManager = new ConfigManager(cliArgs.config);
     logger.debug('Config manager initialized');
 
     // Determine adapter
     let adapter: Adapter;
     const adapterType = cliArgs.adapter || configManager.getAdapter();
-    console.error('[MAIN] Adapter type:', adapterType);
 
     if (adapterType === 's3') {
-      console.error('[MAIN] Initializing S3 adapter...');
       // Get S3 config from CLI args or config file
       const s3Config = configManager.getS3Config();
       logger.debug('S3 config from configManager', {
@@ -115,16 +109,13 @@ async function main() {
         hasSecretKey: !!finalS3Config.secretAccessKey,
       });
 
-      console.error('[MAIN] Creating S3Adapter...');
       adapter = new S3Adapter(finalS3Config);
-      console.error('[MAIN] S3Adapter created successfully');
       logger.info('S3 adapter initialized successfully', {
         region: finalS3Config.region,
         bucket: finalS3Config.bucket,
         profile: finalS3Config.profile || 'default',
       });
     } else {
-      console.error('[MAIN] Initializing mock adapter');
       logger.debug('Initializing mock adapter');
       adapter = new MockAdapter();
       logger.info('Mock adapter initialized');
@@ -139,21 +130,17 @@ async function main() {
     });
 
     // Create and start renderer
-    console.error('[MAIN] Creating CLI renderer...');
     let renderer: any;
     try {
       renderer = await createCliRenderer({
         exitOnCtrlC: true,
       });
-      console.error('[MAIN] CLI renderer created successfully');
     } catch (rendererError) {
-      console.error('[MAIN] ERROR creating CLI renderer:', rendererError);
       logger.error('Failed to create CLI renderer', rendererError);
       throw rendererError;
     }
 
     // Setup keyboard event handling
-    console.error('[MAIN] Setting up keyboard event handling...');
     try {
       renderer.keyInput.on('keypress', (key: any) => {
         if (globalKeyboardDispatcher) {
@@ -168,28 +155,21 @@ async function main() {
           globalKeyboardDispatcher(normalizedKey);
         }
       });
-      console.error('[MAIN] Keyboard event handler attached');
     } catch (keyError) {
-      console.error('[MAIN] ERROR setting up keyboard handler:', keyError);
       logger.error('Failed to setup keyboard handler', keyError);
       throw keyError;
     }
 
     // Create and render app
-    console.error('[MAIN] Creating root and rendering S3Explorer...');
     try {
       const root = createRoot(renderer);
-      console.error('[MAIN] Root created, calling render()...');
       root.render(<S3Explorer bucket={bucket} adapter={adapter} configManager={configManager} />);
-      console.error('[MAIN] Render called, app should be running');
       logger.info('App rendered successfully');
     } catch (renderError) {
-      console.error('[MAIN] ERROR during render:', renderError);
       logger.error('Failed to render app', renderError);
       throw renderError;
     }
   } catch (error) {
-    console.error('[MAIN] Caught error in main:', error);
     const logger = getLogger();
     logger.error('Error in main', error);
     throw error;
