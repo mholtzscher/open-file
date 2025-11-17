@@ -64,7 +64,7 @@ export function useKeyboardEvents(
   }, []);
 
   // Handle multi-key sequences (gg, dd, yy, etc.)
-  const handleKeySequence = useCallback((key: string): { handled: boolean; sequence: string[] } => {
+  const handleKeySequence = useCallback((key: string, shift: boolean = false): { handled: boolean; sequence: string[] } => {
     keySequenceRef.current.push(key);
 
     // Clear existing timeout
@@ -86,6 +86,11 @@ export function useKeyboardEvents(
       keySequenceRef.current = [];
       handled = true;
     } else if (sequence === 'G' || (keySequenceRef.current.length === 1 && keySequenceRef.current[0] === 'G')) {
+      bufferState.cursorToBottom();
+      keySequenceRef.current = [];
+      handled = true;
+    } else if (shift && key === 'g' && keySequenceRef.current.length === 1) {
+      // Handle Shift+g (when terminal sends 'g' with shift modifier instead of 'G')
       bufferState.cursorToBottom();
       keySequenceRef.current = [];
       handled = true;
@@ -124,8 +129,8 @@ export function useKeyboardEvents(
   }, [bufferState, handlers]);
 
   // Handle keyboard events in normal mode
-  const handleNormalMode = useCallback((key: string) => {
-    const seqResult = handleKeySequence(key);
+  const handleNormalMode = useCallback((key: string, shift: boolean = false) => {
+    const seqResult = handleKeySequence(key, shift);
     
     // If sequence was handled, don't process further
     if (seqResult.handled) {
@@ -162,7 +167,12 @@ export function useKeyboardEvents(
           // dd sequence - wait for second d
           break;
         case 'g':
-          // gg or G sequence - wait for second key
+          // gg sequence - wait for second g
+          break;
+        case 'G':
+          // Shift+G - go to bottom (handled in sequence but add here as fallback)
+          bufferState.cursorToBottom();
+          keySequenceRef.current = [];
           break;
         case 'p':
           if (handlers.onPaste) handlers.onPaste();
@@ -257,7 +267,7 @@ export function useKeyboardEvents(
     // Route to appropriate mode handler
     switch (bufferState.mode) {
       case EditMode.Normal:
-        handleNormalMode(key);
+        handleNormalMode(key, event.shift);
         break;
       case EditMode.Insert:
         handleInsertMode(key, event.char);
