@@ -14,6 +14,7 @@ export interface CliArgs {
   accessKey?: string;
   secretKey?: string;
   config?: string;
+  debug?: boolean;
   help?: boolean;
   version?: boolean;
 }
@@ -31,6 +32,8 @@ export function parseArgs(args: string[]): CliArgs {
       result.help = true;
     } else if (arg === '--version' || arg === '-v') {
       result.version = true;
+    } else if (arg === '--debug') {
+      result.debug = true;
     } else if (arg === '--mock') {
       result.mock = true;
       result.adapter = 'mock';
@@ -76,16 +79,17 @@ ARGUMENTS:
   BUCKET              S3 bucket to open (default: from config)
 
 OPTIONS:
-  -b, --bucket NAME       S3 bucket name
-  --mock                  Use mock adapter for testing (no AWS required)
-  -a, --adapter TYPE      Adapter type: mock or s3 (default: s3)
-  -r, --region REGION     AWS region (default: us-east-1)
-  --endpoint URL          Custom S3 endpoint (for LocalStack, etc.)
-  --access-key KEY        AWS access key
-  --secret-key KEY        AWS secret key
-  -c, --config FILE       Config file path (default: ~/.open-s3rc.json)
-  -h, --help              Show this help message
-  -v, --version           Show version
+   -b, --bucket NAME       S3 bucket name
+   --mock                  Use mock adapter for testing (no AWS required)
+   -a, --adapter TYPE      Adapter type: mock or s3 (default: s3)
+   -r, --region REGION     AWS region (default: us-east-1)
+   --endpoint URL          Custom S3 endpoint (for LocalStack, etc.)
+   --access-key KEY        AWS access key
+   --secret-key KEY        AWS secret key
+   -c, --config FILE       Config file path (default: ~/.open-s3rc.json)
+   --debug                 Enable debug logging to file
+   -h, --help              Show this help message
+   -v, --version           Show version
 
 EXAMPLES:
   # Open bucket using AWS credentials from environment

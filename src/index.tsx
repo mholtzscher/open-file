@@ -8,6 +8,7 @@ import { MockAdapter } from './adapters/mock-adapter.js';
 import { S3Adapter } from './adapters/s3-adapter.js';
 import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
+import { getLogger, shutdownLogger, LogLevel } from './utils/logger.js';
 
 // Global keyboard event dispatcher - exported at module level
 export let globalKeyboardDispatcher: ((key: any) => void) | null = null;
@@ -30,9 +31,14 @@ export function getGlobalKeyboardDispatcher() {
  * Main entry point for open-s3 application
  */
 async function main() {
-  // Parse CLI arguments (skip 'bun' and script name)
+  // Parse CLI arguments first to check for debug flag
   const args = Bun.argv.slice(2);
   const cliArgs = parseArgs(args);
+
+  // Initialize logger with appropriate level
+  const logLevel = cliArgs.debug ? LogLevel.Debug : LogLevel.Info;
+  const logger = getLogger({ level: logLevel });
+  logger.info('Application starting', { args, debug: cliArgs.debug });
 
   // Handle help and version flags
   if (cliArgs.help) {
@@ -47,6 +53,7 @@ async function main() {
 
   // Create config manager
   const configManager = new ConfigManager(cliArgs.config);
+  logger.debug('Config manager initialized');
 
   // Determine adapter
   let adapter: Adapter;
@@ -63,14 +70,18 @@ async function main() {
       secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
     };
 
+    logger.debug('Initializing S3 adapter', { config: { ...finalS3Config, secretAccessKey: '***' } });
     adapter = new S3Adapter(finalS3Config);
+    logger.info('S3 adapter initialized', { region: finalS3Config.region, bucket: finalS3Config.bucket });
   } else {
-    // Use mock adapter
+    logger.debug('Initializing mock adapter');
     adapter = new MockAdapter();
+    logger.info('Mock adapter initialized');
   }
 
   // Get bucket name
   const bucket = cliArgs.bucket || configManager.getS3Config().bucket || 'test-bucket';
+  logger.debug('Starting S3 Explorer', { bucket, adapterType });
 
   // Create and start renderer
   const renderer = await createCliRenderer({
@@ -97,7 +108,15 @@ async function main() {
   root.render(<S3Explorer bucket={bucket} adapter={adapter} configManager={configManager} />);
 }
 
-main().catch((error) => {
-  console.error('Fatal error:', error);
-  process.exit(1);
-});
+main()
+  .catch(async (error) => {
+    console.error('Fatal error:', error);
+    const logger = getLogger();
+    logger.error('Fatal error occurred', error);
+    await shutdownLogger();
+    process.exit(1);
+  })
+  .finally(async () => {
+    // Ensure logger is shut down on normal exit
+    await shutdownLogger();
+  });
