@@ -117,6 +117,11 @@ export class Logger {
       return;
     }
 
+    // Don't write if stream is closed
+    if (!this.stream) {
+      return;
+    }
+
     const timestamp = formatTimestamp();
     const levelStr = formatLevel(level);
     const logEntry = `[${timestamp}] ${levelStr} ${message}`;
@@ -142,15 +147,23 @@ export class Logger {
     const entry = this.queue.shift();
     
     if (entry) {
-      this.stream.write(`${entry}\n`, (err: any) => {
+      try {
+        this.stream.write(`${entry}\n`, (err: any) => {
+          this.isWriting = false;
+          if (err) {
+            // Silently ignore write errors (stream might be closed)
+            if (err.code !== 'ERR_STREAM_DESTROYED') {
+              console.error('Failed to write log:', err);
+            }
+          }
+          if (this.queue.length > 0 && this.stream) {
+            this.flush();
+          }
+        });
+      } catch (error) {
+        // Silently ignore write errors during shutdown
         this.isWriting = false;
-        if (err) {
-          console.error('Failed to write log:', err);
-        }
-        if (this.queue.length > 0) {
-          this.flush();
-        }
-      });
+      }
     }
   }
 
