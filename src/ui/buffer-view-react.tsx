@@ -60,21 +60,39 @@ function formatEntry(
 
   // Icon
   if (showIcons) {
-    parts.push(entry.type === EntryType.Directory ? '📁  ' : '📄  ');
+    let icon = '📄  ';
+    if (entry.type === EntryType.Directory) {
+      icon = '📁  ';
+    } else if (entry.type === EntryType.Bucket) {
+      icon = '🪣  ';
+    }
+    parts.push(icon);
   }
 
   // Name with directory suffix
-  const suffix = entry.type === EntryType.Directory ? '/' : '';
+  let suffix = '';
+  if (entry.type === EntryType.Directory) {
+    suffix = '/';
+  }
   parts.push((entry.name + suffix).padEnd(30));
 
-  // Size
-  if (showSizes) {
+  // For bucket entries, show region instead of size
+  if (entry.type === EntryType.Bucket) {
+    const region = entry.metadata?.region || '-';
+    parts.push(region.padEnd(12));
+  } else if (showSizes) {
+    // Size for regular entries
     parts.push(formatSize(entry.size).padEnd(12));
   }
 
   // Date
   if (showDates) {
-    parts.push(formatDate(entry.modified).padEnd(12));
+    if (entry.type === EntryType.Bucket) {
+      // For buckets, show creation date
+      parts.push(formatDate(entry.metadata?.createdAt || entry.modified).padEnd(12));
+    } else {
+      parts.push(formatDate(entry.modified).padEnd(12));
+    }
   }
 
   return parts.join('');
@@ -85,6 +103,9 @@ function formatEntry(
  */
 function getEntryColor(entry: Entry, isSelected: boolean): string {
   if (entry.type === EntryType.Directory) {
+    return Theme.getDirectoryColor(isSelected);
+  } else if (entry.type === EntryType.Bucket) {
+    // Buckets get directory color (highlight color)
     return Theme.getDirectoryColor(isSelected);
   }
   return Theme.getFileColor(isSelected);

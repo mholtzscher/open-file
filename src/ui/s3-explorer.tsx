@@ -28,7 +28,8 @@ interface S3ExplorerProps {
 /**
  * Main S3Explorer component - declarative React implementation
  */
-export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) {
+export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3ExplorerProps) {
+  const [bucket, setBucket] = useState<string | undefined>(initialBucket);
   const [isInitialized, setIsInitialized] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [statusMessageColor, setStatusMessageColor] = useState<string>(CatppuccinMocha.text);
@@ -90,8 +91,29 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   // Note: j/k/v navigation is handled directly by useKeyboardEvents
   const keyboardHandlers = useMemo(
     () => ({
-      onNavigateInto: () => navigationHandlers.navigateInto(),
+      onNavigateInto: async () => {
+        // Check if we're navigating into a bucket from root view
+        if (!bucket && bufferState.entries.length > 0) {
+          const currentEntry = bufferState.entries[bufferState.selection.cursorIndex];
+          if (currentEntry && currentEntry.type === 'bucket') {
+            // EntryType.Bucket
+            // Navigate into this bucket
+            const bucketName = currentEntry.name;
+            setBucket(bucketName);
+            return;
+          }
+        }
+        // Otherwise, normal directory navigation
+        await navigationHandlers.navigateInto();
+      },
       onNavigateUp: async () => {
+        // If we're in root view mode (no bucket set), can't navigate up
+        if (!bucket) {
+          setStatusMessage('Already at root');
+          setStatusMessageColor(CatppuccinMocha.text);
+          return;
+        }
+
         const currentPath = bufferState.currentPath;
         const parts = currentPath.split('/').filter(p => p);
 
@@ -101,6 +123,9 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
           // If no parts left, we're going to root (empty path)
           const parentPath = parts.length > 0 ? parts.join('/') + '/' : '';
           await navigationHandlers.navigateToPath(parentPath);
+        } else {
+          // At bucket root, go back to bucket list
+          setBucket(undefined);
         }
       },
       onDelete: () => {
@@ -115,7 +140,7 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
       onQuit: () => process.exit(0),
       onShowHelp: () => setShowHelpDialog(!showHelpDialog),
     }),
-    [navigationHandlers, bufferState, showHelpDialog]
+    [navigationHandlers, bufferState, bucket, showHelpDialog, setBucket]
   );
 
   // Setup keyboard events
@@ -192,7 +217,7 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
 
     console.error(`[S3Explorer] useEffect triggered`);
     initializeData();
-  }, [bucket, adapter, bufferState.currentPath, bufferState.setEntries]);
+  }, [bucket, adapter, bufferState.setEntries]);
 
   if (!isInitialized) {
     return (
