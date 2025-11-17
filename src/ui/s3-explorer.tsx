@@ -15,7 +15,7 @@ import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.j
 import { BufferView } from './buffer-view-react.js';
 import { StatusBar } from './status-bar-react.js';
 import { ConfirmationDialog } from './confirmation-dialog-react.js';
-import { FloatingWindow } from './floating-window-react.js';
+import { HelpDialog } from './help-dialog-react.js';
 import { CatppuccinMocha } from './theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { setGlobalKeyboardDispatcher } from '../index.tsx';
@@ -454,45 +454,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       )}
 
       {/* Help Dialog */}
-      {showHelpDialog && (
-        <FloatingWindow
-          title="Help"
-          width={70}
-          height={23}
-          left={5}
-          top={1}
-          borderColor={CatppuccinMocha.yellow}
-          textColor={CatppuccinMocha.text}
-          visible={true}
-          content={[
-            'NAVIGATION',
-            '  j/k       Move cursor down/up',
-            '  gg/G      Go to top/bottom',
-            '  Ctrl+N/P  Page down/up',
-            '  h/-       Navigate to parent',
-            '  l/Enter   Open directory/bucket',
-            '',
-            'SELECTION & EDIT',
-            '  v         Visual selection mode',
-            '  i         Insert (create entry)',
-            '  a         Edit (rename entry)',
-            '  ESC       Exit mode',
-            '',
-            'OPERATIONS',
-            '  dd        Delete',
-            '  yy        Copy',
-            '  p         Paste',
-            '  w         Save changes',
-            '',
-            'SEARCH & COMMANDS',
-            '  /         Search mode',
-            '  n/N       Next/prev match',
-            '  :         Command mode',
-            '',
-            '  ?/g?      Toggle help  |  q  Quit',
-          ]}
-        />
-      )}
+      <HelpDialog visible={showHelpDialog} />
     </>
   );
 }
