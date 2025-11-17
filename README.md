@@ -103,15 +103,28 @@ After installing open-s3, follow these steps to get started:
 
 ## Quick Start Tutorial
 
-### Navigating Buckets
+### Bucket Root View
 
-When you start open-s3, you'll see a list of entries (files and directories) in your bucket. Here's how to navigate:
+When you start open-s3 without specifying a bucket, you'll see a list of all S3 buckets in your AWS account. This is the root view where you can:
+
+1. **Browse buckets** - Use `j` and `k` to move cursor down and up
+2. **Enter a bucket** - Press `Enter` or `l` to open a bucket and view its contents
+3. **See bucket metadata** - Each bucket shows:
+   - **Name** - The bucket identifier
+   - **Region** - Where the bucket is located
+   - **Creation Date** - When the bucket was created
+   - **Size** - Total size of objects in the bucket (if enabled)
+
+### Navigating Within a Bucket
+
+Once you've entered a bucket, you'll see a list of entries (files and directories). Here's how to navigate:
 
 1. **Move around** - Use `j` and `k` to move cursor down and up
 2. **Enter a directory** - Press `Enter` or `l` to open a directory
 3. **Go back** - Press `h` or `Backspace` to go to the parent directory
-4. **Jump to top** - Press `gg` (press 'g' twice) to jump to the top
-5. **Jump to bottom** - Press `G` (capital G) to jump to the bottom
+4. **Return to bucket root** - Press `~` to go back to the bucket listing
+5. **Jump to top** - Press `gg` (press 'g' twice) to jump to the top
+6. **Jump to bottom** - Press `G` (capital G) to jump to the bottom
 
 ### Creating Entries
 
@@ -157,27 +170,28 @@ After making changes (creates, deletes, moves), you must save them:
 
 ### Normal Mode
 
-| Key               | Action                            |
-| ----------------- | --------------------------------- |
-| `j`               | Move cursor down                  |
-| `k`               | Move cursor up                    |
-| `gg`              | Move to top                       |
-| `G`               | Move to bottom                    |
-| `n`               | Page down (next page)             |
-| `p`               | Page up (previous page)           |
-| `Enter` / `l`     | Open file/directory               |
-| `h` / `Backspace` | Go to parent directory            |
-| `i`               | **Create new entry**              |
-| `a`               | Edit mode                         |
-| `dd`              | **Delete entry at cursor**        |
-| `v`               | Start visual selection            |
-| `c`               | Copy selected entry to clipboard  |
-| `P`               | Paste after cursor                |
-| `w`               | Save changes (confirm operations) |
-| `/`               | Enter search mode                 |
-| `u`               | Undo last change                  |
-| `Ctrl+r`          | Redo last change                  |
-| `q`               | Quit application                  |
+| Key               | Action                                 |
+| ----------------- | -------------------------------------- |
+| `j`               | Move cursor down                       |
+| `k`               | Move cursor up                         |
+| `gg`              | Move to top                            |
+| `G`               | Move to bottom                         |
+| `n`               | Page down (next page)                  |
+| `p`               | Page up (previous page)                |
+| `Enter` / `l`     | Open file/directory or select bucket   |
+| `h` / `Backspace` | Go to parent directory                 |
+| `~`               | Go to bucket root (from within bucket) |
+| `i`               | **Create new entry**                   |
+| `a`               | Edit mode                              |
+| `dd`              | **Delete entry at cursor**             |
+| `v`               | Start visual selection                 |
+| `c`               | Copy selected entry to clipboard       |
+| `P`               | Paste after cursor                     |
+| `w`               | Save changes (confirm operations)      |
+| `/`               | Enter search mode                      |
+| `u`               | Undo last change                       |
+| `Ctrl+r`          | Redo last change                       |
+| `q`               | Quit application                       |
 
 ### Visual Mode
 
@@ -253,9 +267,22 @@ The configuration file allows you to customize how open-s3 behaves and appears. 
 }
 ```
 
+**Note:** The `bucket` field is now optional. If omitted, open-s3 will start at the bucket root view, allowing you to browse and select from all available buckets in your AWS account.
+
 ### Configuration Examples
 
-#### Minimal Configuration (Uses All Defaults)
+#### Bucket Root View (Start with Bucket Selection)
+
+```json
+{
+  "adapter": "s3",
+  "s3": {
+    "region": "us-east-1"
+  }
+}
+```
+
+#### Minimal Configuration with Specific Bucket
 
 ```json
 {

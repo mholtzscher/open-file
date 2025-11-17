@@ -16,7 +16,31 @@ bun run src/index.tsx --mock
 
 This runs the app with mock data for testing the UI. No AWS credentials needed!
 
-### Option 2: Real S3 Bucket
+### Option 2: Browse All Buckets (Bucket Root View)
+
+```bash
+bun run src/index.tsx
+```
+
+Or using the config file (`~/.open-s3rc.json`):
+
+```json
+{
+  "adapter": "s3",
+  "s3": {
+    "region": "us-east-1"
+  }
+}
+```
+
+This starts open-s3 at the bucket root view, showing all S3 buckets in your AWS account. Use `j`/`k` to navigate and `Enter` to enter a bucket.
+
+**Prerequisites:**
+
+- AWS credentials configured (via `~/.aws/credentials` or environment variables)
+- IAM permissions: `s3:ListAllMyBuckets`
+
+### Option 3: Open Specific Bucket
 
 ```bash
 just s3 YOUR-BUCKET-NAME
@@ -33,7 +57,7 @@ just s3 my-bucket us-west-2
 - AWS credentials configured (via `~/.aws/credentials` or environment variables)
 - Appropriate S3 permissions for the bucket
 
-### Option 3: LocalStack (Local S3 Testing)
+### Option 4: LocalStack (Local S3 Testing)
 
 ```bash
 just localstack test-bucket
@@ -50,9 +74,10 @@ bun run src/index.tsx --endpoint http://localhost:4566 --bucket test-bucket
 ### Navigation
 
 - `j` / `k` - Move down/up
-- `g` / `G` - Go to top/bottom
-- `Enter` / `l` - Open directory or file
+- `gg` / `G` - Go to top/bottom
+- `Enter` / `l` - Open directory, file, or select bucket
 - `h` / `Backspace` - Go to parent directory
+- `~` - Go to bucket root (when inside a bucket)
 - `Ctrl+N` / `Ctrl+P` - Page down/up
 
 ### Selection & Operations
@@ -65,6 +90,7 @@ bun run src/index.tsx --endpoint http://localhost:4566 --bucket test-bucket
 
 - `[NORMAL]` - Normal navigation mode
 - `[VISUAL]` - Visual selection mode
+- `[ROOT]` - Bucket root view (showing all buckets)
 
 ## Status Bar
 
@@ -75,17 +101,28 @@ The bottom of the screen shows:
 
 ## Examples
 
-### Browse your S3 bucket
+### Explore all your S3 buckets
+
+```bash
+bun run src/index.tsx
+```
+
+1. See all buckets in your account with creation date and region
+2. Use `j/k` to move up and down through buckets
+3. Press `Enter` to enter a bucket
+
+### Browse a specific S3 bucket
 
 ```bash
 ./run-s3.sh my-photos us-east-1
 ```
 
-### Navigate the file tree
+### Navigate the file tree within a bucket
 
 1. Use `j/k` to move up and down
 2. Press `Enter` to open a directory
 3. Press `h` to go back to parent
+4. Press `~` to go back to bucket root
 
 ### Delete files
 
