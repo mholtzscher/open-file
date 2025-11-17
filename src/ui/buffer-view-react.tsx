@@ -74,7 +74,11 @@ function formatEntry(
   if (entry.type === EntryType.Directory) {
     suffix = '/';
   }
-  parts.push((entry.name + suffix).padEnd(30));
+  const nameWithSuffix = entry.name + suffix;
+  // Truncate if too long, then pad to fixed width
+  const truncatedName =
+    nameWithSuffix.length > 30 ? nameWithSuffix.slice(0, 27) + '...' : nameWithSuffix;
+  parts.push(truncatedName.padEnd(30));
 
   // For bucket entries, show region instead of size
   if (entry.type === EntryType.Bucket) {

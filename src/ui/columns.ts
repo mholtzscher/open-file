@@ -101,8 +101,10 @@ export class NameColumn implements Column {
       suffix = '';
     }
     const name = entry.name + suffix;
+    // Truncate if too long to prevent overflow
+    const truncatedName = name.length > this.width ? name.slice(0, this.width - 3) + '...' : name;
     // Add extra space after column
-    return padString(name, this.width, this.align) + '  ';
+    return padString(truncatedName, this.width, this.align) + '  ';
   }
 }
 

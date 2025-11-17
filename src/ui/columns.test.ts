@@ -75,11 +75,48 @@ describe('NameColumn', () => {
       id: generateEntryId('x'),
       name: 'x',
       type: EntryType.File,
+      path: '/x',
     };
 
     const result = column.render(entry);
     // Width is 35 + 2 extra spaces
     expect(result.length).toBeGreaterThanOrEqual(35);
+  });
+
+  it('should truncate long filenames with ellipsis', () => {
+    const column = new NameColumn();
+    const entry: Entry = {
+      id: generateEntryId('very-long-filename'),
+      name: 'fantasy-draft-implementation-plan.md',
+      type: EntryType.File,
+      path: '/fantasy-draft-implementation-plan.md',
+    };
+
+    const result = column.render(entry);
+    // Should be truncated to width (35) + 2 extra spaces = 37
+    expect(result.length).toBe(37);
+    // Should contain ellipsis
+    expect(result).toContain('...');
+    // Should start with the beginning of the filename
+    expect(result).toMatch(/^fantasy-draft-implementation/);
+  });
+
+  it('should not truncate filenames at exactly the width', () => {
+    const column = new NameColumn();
+    // Create a name that's exactly 35 chars
+    const exactName = 'a'.repeat(35);
+    const entry: Entry = {
+      id: generateEntryId(exactName),
+      name: exactName,
+      type: EntryType.File,
+      path: `/${exactName}`,
+    };
+
+    const result = column.render(entry);
+    // Should be padded to 35 + 2 spaces = 37
+    expect(result.length).toBe(37);
+    // Should NOT contain ellipsis
+    expect(result).not.toContain('...');
   });
 });
 
