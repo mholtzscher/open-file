@@ -17,19 +17,19 @@ export interface HeaderProps {
  * Displays "open-s3" in the title border and bucket info inside the box.
  * Uses padding to keep content inside the bordered box.
  */
-export function Header({ bucket, height = 1 }: HeaderProps) {
+export function Header({ bucket }: HeaderProps) {
   const bucketText = bucket || 'none';
   const bucketColor = bucket ? CatppuccinMocha.text : CatppuccinMocha.overlay0;
 
   return (
     <box
       width="100%"
-      height={height}
       flexShrink={0}
       borderStyle="rounded"
       borderColor={CatppuccinMocha.mauve}
       title="open-s3"
-      padding={1}
+      paddingLeft={1}
+      paddingRight={1}
       flexDirection="row"
       alignItems="center"
     >
