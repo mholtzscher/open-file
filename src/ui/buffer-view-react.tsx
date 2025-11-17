@@ -136,8 +136,9 @@ export function BufferView({
           realIndex <= Math.max(bufferState.selection.selectionStart, bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart);
 
         const cursor = isSelected ? '> ' : '  ';
-        // Use column system for rendering
-        const rowContent = renderRow(entry, activeColumns);
+        
+        // Use legacy format function for now (column system needs work)
+        const content = formatEntry(entry, isSelected, showIcons, showSizes, showDates);
         
         // Get style for entry
         const style = Theme.getEntryStyle(
@@ -147,7 +148,7 @@ export function BufferView({
         );
 
         // Apply text styling only to content, not cursor
-        const styledContent = applyTextStyle(rowContent, style.bold);
+        const styledContent = applyTextStyle(content, style.bold);
 
         return (
           <text
