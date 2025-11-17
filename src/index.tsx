@@ -196,11 +196,15 @@ main()
   .catch(async (error) => {
     console.error('Fatal error:', error);
     const logger = getLogger();
-    logger.error('Fatal error occurred', error);
-    await shutdownLogger();
+    try {
+      logger.error('Fatal error occurred', error);
+    } catch (logError) {
+      console.error('Error logging fatal error:', logError);
+    }
+    try {
+      await shutdownLogger();
+    } catch (shutdownError) {
+      console.error('Error shutting down logger:', shutdownError);
+    }
     process.exit(1);
-  })
-  .finally(async () => {
-    // Ensure logger is shut down on normal exit
-    await shutdownLogger();
   });

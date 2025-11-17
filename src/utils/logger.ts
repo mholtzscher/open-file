@@ -148,15 +148,22 @@ export class Logger {
     
     if (entry) {
       try {
-        this.stream.write(`${entry}\n`, (err: any) => {
+        const writeStream = this.stream;
+        if (!writeStream || writeStream.destroyed) {
+          this.isWriting = false;
+          return;
+        }
+        
+        writeStream.write(`${entry}\n`, (err: any) => {
           this.isWriting = false;
           if (err) {
-            // Silently ignore write errors (stream might be closed)
-            if (err.code !== 'ERR_STREAM_DESTROYED') {
-              console.error('Failed to write log:', err);
+            // Silently ignore write errors - stream might be closing
+            // Only log if it's not a stream destroyed/closed error
+            if (err.code && !err.code.includes('STREAM')) {
+              // Don't use console.error to avoid recursion
             }
           }
-          if (this.queue.length > 0 && this.stream) {
+          if (this.queue.length > 0 && this.stream && !this.stream.destroyed) {
             this.flush();
           }
         });
