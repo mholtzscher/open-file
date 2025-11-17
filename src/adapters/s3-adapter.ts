@@ -28,6 +28,7 @@ import { generateEntryId } from '../utils/entry-id.js';
 import { retryWithBackoff, getS3RetryConfig } from '../utils/retry.js';
 import { parseAwsError } from '../utils/errors.js';
 import { loadAwsProfile, getActiveAwsProfile, getActiveAwsRegion } from '../utils/aws-profile.js';
+import { getLogger } from '../utils/logger.js';
 
 /**
  * Configuration for S3 adapter
@@ -61,38 +62,64 @@ export class S3Adapter implements Adapter {
   private prefix: string = '';
 
   constructor(config: S3AdapterConfig) {
+    const logger = getLogger();
     this.bucket = config.bucket;
+
+    logger.debug('S3Adapter constructor called', {
+      bucket: config.bucket,
+      region: config.region,
+      profile: config.profile,
+      endpoint: config.endpoint,
+      hasAccessKey: !!config.accessKeyId,
+      hasSecretKey: !!config.secretAccessKey,
+    });
 
     // Initialize S3 client with flexible configuration
     const clientConfig: any = {};
 
     // Determine which profile to use
     const profileName = config.profile || getActiveAwsProfile();
+    logger.debug('Active AWS profile', { profileName, env: process.env.AWS_PROFILE });
 
     // Load profile configuration if specified or AWS_PROFILE is set
     let profileConfig = undefined;
     if (config.profile || process.env.AWS_PROFILE) {
       profileConfig = loadAwsProfile(profileName);
+      logger.debug('Loaded AWS profile config', {
+        profile: profileConfig?.profile,
+        region: profileConfig?.region,
+        hasCredentials: !!(profileConfig?.accessKeyId),
+      });
     }
 
     // Region priority: explicit config > profile region > AWS_REGION env > us-east-1
     if (config.region) {
       clientConfig.region = config.region;
+      logger.debug('Using explicit region from config', { region: config.region });
     } else if (profileConfig?.region) {
       clientConfig.region = profileConfig.region;
+      logger.debug('Using region from profile', { region: profileConfig.region });
     } else if (process.env.AWS_REGION) {
       clientConfig.region = process.env.AWS_REGION;
+      logger.debug('Using region from AWS_REGION env', { region: process.env.AWS_REGION });
     } else {
       // Try to get region from active profile if AWS_PROFILE is set
       const activeRegion = getActiveAwsRegion();
       clientConfig.region = activeRegion || 'us-east-1';
+      logger.debug('Using region from active profile or default', { 
+        region: clientConfig.region,
+        fromProfile: !!activeRegion,
+      });
     }
 
     // Custom endpoint (for LocalStack, MinIO, etc.)
     if (config.endpoint) {
       clientConfig.endpoint = config.endpoint;
-      // Force path style for S3-compatible services
       clientConfig.forcePathStyle = config.forcePathStyle ?? true;
+      logger.debug('Using custom endpoint', { 
+        endpoint: config.endpoint,
+        forcePathStyle: clientConfig.forcePathStyle,
+      });
     }
 
     // Credentials priority:
@@ -105,12 +132,16 @@ export class S3Adapter implements Adapter {
         secretAccessKey: config.secretAccessKey,
         ...(config.sessionToken && { sessionToken: config.sessionToken }),
       };
+      logger.debug('Using explicit credentials from config');
     } else if (profileConfig?.accessKeyId && profileConfig?.secretAccessKey) {
       clientConfig.credentials = {
         accessKeyId: profileConfig.accessKeyId,
         secretAccessKey: profileConfig.secretAccessKey,
         ...(profileConfig.sessionToken && { sessionToken: profileConfig.sessionToken }),
       };
+      logger.debug('Using credentials from AWS profile', { profile: profileName });
+    } else {
+      logger.debug('Using AWS SDK default credential chain');
     }
     // If no explicit credentials, AWS SDK will use:
     // 1. Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
@@ -118,7 +149,18 @@ export class S3Adapter implements Adapter {
     // 3. EC2 instance metadata / ECS task role
     // 4. Other AWS credential providers
 
+    logger.debug('S3Client configuration', {
+      region: clientConfig.region,
+      endpoint: clientConfig.endpoint,
+      hasCredentials: !!clientConfig.credentials,
+    });
+
     this.client = new S3Client(clientConfig);
+    logger.info('S3Adapter initialized', {
+      bucket: this.bucket,
+      region: clientConfig.region,
+      profile: profileName,
+    });
   }
 
   /**
@@ -184,6 +226,7 @@ export class S3Adapter implements Adapter {
    * List entries at a given path
    */
   async list(path: string, options?: ListOptions): Promise<ListResult> {
+    const logger = getLogger();
     const prefix = this.normalizePath(path, true);
 
     const params: ListObjectsV2CommandInput = {
@@ -194,18 +237,33 @@ export class S3Adapter implements Adapter {
       ContinuationToken: options?.continuationToken,
     };
 
-    console.error(`DEBUG S3Adapter.list: bucket=${this.bucket}, prefix="${prefix}"`);
+    logger.debug('S3Adapter.list called', {
+      bucket: this.bucket,
+      path,
+      prefix,
+      delimiter: '/',
+      limit: options?.limit,
+      hasContinuationToken: !!options?.continuationToken,
+    });
 
     try {
+      logger.debug('Sending ListObjectsV2Command', params);
+      
       const response = await retryWithBackoff(
         () => {
+          logger.debug('Executing ListObjectsV2Command...');
           const command = new ListObjectsV2Command(params);
           return this.client.send(command);
         },
         getS3RetryConfig()
       );
 
-      console.error(`DEBUG S3: CommonPrefixes=${response.CommonPrefixes?.length || 0}, Contents=${response.Contents?.length || 0}`);
+      logger.debug('ListObjectsV2 response received', {
+        commonPrefixesCount: response.CommonPrefixes?.length || 0,
+        contentsCount: response.Contents?.length || 0,
+        isTruncated: response.IsTruncated,
+        nextContinuationToken: !!response.NextContinuationToken,
+      });
 
       const entries: Entry[] = [];
 
@@ -247,15 +305,27 @@ export class S3Adapter implements Adapter {
         return a.name.localeCompare(b.name);
       });
 
-      return {
-        entries,
-        continuationToken: response.NextContinuationToken,
-        hasMore: response.IsTruncated ?? false,
-      };
-    } catch (error) {
-      console.error('Failed to list S3 objects:', error);
-      throw parseAwsError(error, 'list');
-    }
+       logger.debug('Parsed entries', {
+         count: entries.length,
+         directories: entries.filter(e => e.type === EntryType.Directory).length,
+         files: entries.filter(e => e.type === EntryType.File).length,
+       });
+
+       return {
+         entries,
+         continuationToken: response.NextContinuationToken,
+         hasMore: response.IsTruncated ?? false,
+       };
+     } catch (error) {
+       logger.error('Failed to list S3 objects', error);
+       const parsedError = parseAwsError(error, 'list');
+       logger.error('Parsed error', {
+         code: (error as any)?.Code,
+         message: (error as any)?.message,
+         statusCode: (error as any)?.$metadata?.httpStatusCode,
+       });
+       throw parsedError;
+     }
   }
 
   /**
