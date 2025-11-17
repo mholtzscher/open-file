@@ -11,9 +11,6 @@ import { Theme, CatppuccinMocha } from './theme.js';
 
 export interface BufferViewProps {
   bufferState: UseBufferStateReturn;
-  left?: number;
-  top?: number;
-  height?: number;
   showIcons?: boolean;
   showSizes?: boolean;
   showDates?: boolean;
@@ -120,9 +117,6 @@ function getEntryColor(entry: Entry, isSelected: boolean): string {
  */
 export function BufferView({
   bufferState,
-  left = 2,
-  top = 3,
-  height = 20,
   showIcons = true,
   showSizes = true,
   showDates = false,
@@ -136,10 +130,14 @@ export function BufferView({
   const cursorIndex = bufferState.selection.cursorIndex;
 
   // Get visible entries (with scroll offset)
-  const visibleEntries = entries.slice(bufferState.scrollOffset, bufferState.scrollOffset + height);
+  const viewportHeight = bufferState.viewportHeight;
+  const visibleEntries = entries.slice(
+    bufferState.scrollOffset,
+    bufferState.scrollOffset + viewportHeight
+  );
 
   return (
-    <>
+    <box flexDirection="column" width="100%" height="100%">
       {visibleEntries.map((entry, idx) => {
         const realIndex = bufferState.scrollOffset + idx;
         const isSelected = realIndex === cursorIndex;
@@ -164,9 +162,6 @@ export function BufferView({
         return (
           <text
             key={entry.id}
-            position="absolute"
-            left={left}
-            top={top + idx}
             fg={color}
             bg={isInVisualSelection ? CatppuccinMocha.surface0 : undefined}
           >
@@ -174,6 +169,6 @@ export function BufferView({
           </text>
         );
       })}
-    </>
+    </box>
   );
 }

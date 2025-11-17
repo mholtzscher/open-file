@@ -5,10 +5,9 @@
  * Handles pane creation, activation, and layout calculations.
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import type { MutableRefObject } from 'react';
 import type { UseBufferStateReturn } from './useBufferState.js';
-import type { LayoutDimensions, TerminalSize } from './useTerminalSize.js';
 
 export interface Pane {
   id: string;
@@ -22,18 +21,10 @@ interface InternalPane {
   isActive: boolean;
 }
 
-export interface PaneDimensions {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
-
 export interface MultiPaneLayout {
   panes: Pane[];
   activePaneId: string | null;
   isMultiPaneMode: boolean;
-  paneDimensions: PaneDimensions[];
   addPane: (bufferStateRef: MutableRefObject<UseBufferStateReturn>) => void;
   removePane: (paneId: string) => void;
   activatePane: (paneId: string) => void;
@@ -44,43 +35,10 @@ export interface MultiPaneLayout {
 /**
  * Hook to manage multi-pane layout state
  */
-export function useMultiPaneLayout(
-  terminalSize: TerminalSize,
-  layout: LayoutDimensions
-): MultiPaneLayout {
+export function useMultiPaneLayout(): MultiPaneLayout {
   const [panes, setPanes] = useState<InternalPane[]>([]);
   const [activePaneId, setActivePaneId] = useState<string | null>(null);
   const [isMultiPaneMode, setIsMultiPaneMode] = useState(false);
-
-  // Calculate pane dimensions based on terminal size and number of panes
-  const paneDimensions = useMemo((): PaneDimensions[] => {
-    if (!isMultiPaneMode || panes.length <= 1) {
-      // Single pane mode - use full width
-      return [
-        {
-          left: 2,
-          top: layout.headerHeight,
-          width: Math.max(terminalSize.width - 4, 40),
-          height: layout.contentHeight,
-        },
-      ];
-    }
-
-    // Multi-pane mode - split horizontally
-    const paneWidth = Math.floor((terminalSize.width - 4) / panes.length);
-    return panes.map((_, index) => ({
-      left: 2 + index * paneWidth,
-      top: layout.headerHeight,
-      width: paneWidth - 1, // Account for border
-      height: layout.contentHeight,
-    }));
-  }, [
-    isMultiPaneMode,
-    panes.length,
-    terminalSize.width,
-    layout.headerHeight,
-    layout.contentHeight,
-  ]);
 
   // Add a new pane
   const addPane = useCallback((bufferStateRef: MutableRefObject<UseBufferStateReturn>) => {
@@ -152,7 +110,6 @@ export function useMultiPaneLayout(
     })),
     activePaneId,
     isMultiPaneMode,
-    paneDimensions,
     addPane,
     removePane,
     activatePane,

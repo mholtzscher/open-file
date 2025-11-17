@@ -8,11 +8,10 @@ import { CatppuccinMocha } from './theme.js';
 
 export interface PreviewPaneProps {
   content?: string;
-  left?: number;
-  top?: number;
-  width?: number;
-  height?: number;
   visible?: boolean;
+  flexGrow?: number;
+  flexShrink?: number;
+  flexBasis?: number;
 }
 
 /**
@@ -20,40 +19,32 @@ export interface PreviewPaneProps {
  */
 export function PreviewPane({
   content = '',
-  left = 60,
-  top = 4,
-  width = 20,
-  height = 20,
   visible = true,
+  flexGrow = 1,
+  flexShrink = 1,
+  flexBasis = 0,
 }: PreviewPaneProps) {
   if (!visible || !content) return null;
 
-  // Reserve space for border (2 chars) and padding (2 chars)
-  const maxLineWidth = width - 4;
-  const maxLines = height - 2; // Reserve space for top/bottom border
-
-  const lines = content.split('\n').slice(0, maxLines);
-  const totalLines = content.split('\n').length;
-  const truncated = totalLines > maxLines;
+  const lines = content.split('\n');
+  const totalLines = lines.length;
 
   return (
     <box
-      position="absolute"
-      left={left}
-      top={top}
-      width={width}
-      height={height}
+      flexGrow={flexGrow}
+      flexShrink={flexShrink}
+      flexBasis={flexBasis}
       borderStyle="rounded"
       borderColor={CatppuccinMocha.blue}
-      backgroundColor={CatppuccinMocha.base}
-      title={truncated ? `Preview (${totalLines} lines)` : 'Preview'}
+      title={`Preview (${totalLines} lines)`}
       flexDirection="column"
       paddingLeft={1}
-      paddingTop={1}
+      paddingRight={1}
+      overflow="hidden"
     >
       {lines.map((line, idx) => (
         <text key={idx} fg={CatppuccinMocha.text}>
-          {line.substring(0, maxLineWidth)}
+          {line}
         </text>
       ))}
     </box>

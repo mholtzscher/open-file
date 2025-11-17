@@ -12,99 +12,69 @@ import { CatppuccinMocha } from './theme.js';
 export interface PaneProps {
   id: string;
   bufferState: UseBufferStateReturn;
-  left: number;
-  top: number;
-  width: number;
-  height: number;
   isActive: boolean;
   title?: string;
   showHeader?: boolean;
   showIcons?: boolean;
   showSizes?: boolean;
   showDates?: boolean;
+  flexGrow?: number;
+  flexShrink?: number;
+  flexBasis?: number;
 }
 
 /**
  * Pane React component
  *
  * Renders a single pane with its buffer view, optional header,
- * and visual indicators for active state.
+ * and visual indicators for active state using flexbox layout.
  */
 export function Pane({
   id: _paneId,
   bufferState,
-  left,
-  top,
-  width,
-  height,
   isActive,
   title,
   showHeader = true,
   showIcons = true,
   showSizes = true,
   showDates = false,
+  flexGrow = 1,
+  flexShrink = 1,
+  flexBasis = 0,
 }: PaneProps) {
-  const headerHeight = showHeader ? 1 : 0;
-  const contentHeight = height - headerHeight;
-  const contentTop = top + headerHeight;
-
-  // Truncate title to fit pane width
-  const truncatedTitle = title
-    ? title.length > width - 4
-      ? title.substring(0, width - 7) + '...'
-      : title
-    : '';
-
   return (
-    <>
-      {/* Pane border - show for active pane */}
-      {isActive && (
-        <>
-          {/* Top border */}
-          <text position="absolute" left={left - 1} top={top - 1} fg={CatppuccinMocha.blue}>
-            {'┌' + '─'.repeat(width + 1) + '┐'}
-          </text>
-
-          {/* Bottom border */}
-          <text position="absolute" left={left - 1} top={top + height} fg={CatppuccinMocha.blue}>
-            {'└' + '─'.repeat(width + 1) + '┘'}
-          </text>
-
-          {/* Left border */}
-          <text position="absolute" left={left - 1} top={top} fg={CatppuccinMocha.blue}>
-            {Array.from({ length: height }, () => '│').join('\n')}
-          </text>
-
-          {/* Right border */}
-          <text position="absolute" left={left + width} top={top} fg={CatppuccinMocha.blue}>
-            {Array.from({ length: height }, () => '│').join('\n')}
-          </text>
-        </>
-      )}
-
+    <box
+      flexGrow={flexGrow}
+      flexShrink={flexShrink}
+      flexBasis={flexBasis}
+      flexDirection="column"
+      borderStyle={isActive ? 'rounded' : undefined}
+      borderColor={isActive ? CatppuccinMocha.blue : undefined}
+      paddingLeft={1}
+      paddingRight={1}
+      overflow="hidden"
+    >
       {/* Pane header */}
-      {showHeader && (
-        <text
-          position="absolute"
-          left={left}
-          top={top}
-          fg={isActive ? CatppuccinMocha.blue : CatppuccinMocha.subtext1}
-          bg={isActive ? CatppuccinMocha.surface0 : undefined}
-        >
-          {truncatedTitle.padEnd(width)}
-        </text>
+      {showHeader && title && (
+        <box height={1} flexShrink={0}>
+          <text
+            fg={isActive ? CatppuccinMocha.blue : CatppuccinMocha.subtext1}
+            bg={isActive ? CatppuccinMocha.surface0 : undefined}
+          >
+            {title}
+          </text>
+        </box>
       )}
 
       {/* Buffer View */}
-      <BufferView
-        bufferState={bufferState}
-        left={left}
-        top={contentTop}
-        height={contentHeight}
-        showIcons={showIcons}
-        showSizes={showSizes}
-        showDates={showDates}
-      />
-    </>
+      <box flexGrow={1} overflow="hidden">
+        <BufferView
+          bufferState={bufferState}
+          showIcons={showIcons}
+          showSizes={showSizes}
+          showDates={showDates}
+        />
+      </box>
+    </box>
   );
 }

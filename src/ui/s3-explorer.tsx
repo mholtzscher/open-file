@@ -109,7 +109,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   bufferStateRef.current = bufferState;
 
   // Initialize multi-pane layout
-  const multiPaneLayout = useMultiPaneLayout(terminalSize.size, layout);
+  const multiPaneLayout = useMultiPaneLayout();
 
   // Add initial pane if none exist - only run once on mount
   useEffect(() => {
@@ -542,68 +542,74 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
   return (
     <>
-      {/* Header */}
+      {/* Header - absolute positioned */}
       <text position="absolute" left={2} top={0} fg={CatppuccinMocha.blue}>
         open-s3: {bucket}
       </text>
 
-      {/* Error Dialog - shows when there's an error */}
-      {showErrorDialog && <ErrorDialog visible={true} message={statusMessage} />}
+      {/* Main content area with panes - flex layout */}
+      <box
+        position="absolute"
+        left={0}
+        top={layout.headerHeight}
+        width="100%"
+        height={layout.contentHeight}
+        flexDirection="row"
+        gap={1}
+      >
+        {multiPaneLayout.isMultiPaneMode && multiPaneLayout.panes.length > 1 ? (
+          // Multi-pane mode
+          multiPaneLayout.panes.map(pane => {
+            const paneTitle = bucket
+              ? `${bucket}${pane.bufferState.currentPath ? ':' + pane.bufferState.currentPath : ''}`
+              : `Buckets`;
 
-      {/* Multi-pane layout or single pane */}
-      {multiPaneLayout.isMultiPaneMode && multiPaneLayout.panes.length > 1 ? (
-        // Multi-pane mode
-        multiPaneLayout.panes.map((pane, index) => {
-          const dimensions =
-            multiPaneLayout.paneDimensions[index] || multiPaneLayout.paneDimensions[0];
-          const paneTitle = bucket
-            ? `${bucket}${pane.bufferState.currentPath ? ':' + pane.bufferState.currentPath : ''}`
-            : `Buckets`;
-
-          return (
+            return (
+              <Pane
+                key={pane.id}
+                id={pane.id}
+                bufferState={pane.bufferState}
+                isActive={pane.isActive}
+                title={paneTitle}
+                showIcons={!terminalSize.isSmall}
+                showSizes={!terminalSize.isSmall}
+                showDates={!terminalSize.isMedium}
+                flexGrow={1}
+                flexShrink={1}
+                flexBasis={0}
+              />
+            );
+          })
+        ) : (
+          // Single pane mode - use main buffer state directly
+          <>
             <Pane
-              key={pane.id}
-              id={pane.id}
-              bufferState={pane.bufferState}
-              left={dimensions.left}
-              top={dimensions.top}
-              width={dimensions.width}
-              height={dimensions.height}
-              isActive={pane.isActive}
-              title={paneTitle}
+              id="main-pane"
+              bufferState={bufferState}
+              isActive={true}
+              title={
+                bucket
+                  ? `${bucket}${bufferState.currentPath ? ':' + bufferState.currentPath : ''}`
+                  : `Buckets`
+              }
+              showHeader={false}
               showIcons={!terminalSize.isSmall}
               showSizes={!terminalSize.isSmall}
               showDates={!terminalSize.isMedium}
+              flexGrow={previewEnabled ? 1 : 1}
+              flexShrink={1}
+              flexBasis={previewEnabled ? 0 : 0}
             />
-          );
-        })
-      ) : (
-        // Single pane mode - use main buffer state directly
-        <Pane
-          id="main-pane"
-          bufferState={bufferState}
-          left={2}
-          top={layout.headerHeight}
-          width={
-            previewEnabled
-              ? Math.floor(terminalSize.size.width * 0.5)
-              : Math.max(terminalSize.size.width - 4, 40)
-          }
-          height={layout.contentHeight}
-          isActive={true}
-          title={
-            bucket
-              ? `${bucket}${bufferState.currentPath ? ':' + bufferState.currentPath : ''}`
-              : `Buckets`
-          }
-          showHeader={false}
-          showIcons={!terminalSize.isSmall}
-          showSizes={!terminalSize.isSmall}
-          showDates={!terminalSize.isMedium}
-        />
-      )}
 
-      {/* Status Bar */}
+            {/* Preview Pane - only in single pane mode when enabled */}
+            {previewEnabled && previewContent && (
+              <PreviewPane content={previewContent} visible={true} />
+            )}
+          </>
+        )}
+      </box>
+
+      {/* Status Bar - absolute positioned at bottom */}
       <StatusBar
         path={activeBufferState.currentPath}
         mode={activeBufferState.mode}
@@ -613,6 +619,11 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         commandBuffer={activeBufferState.editBuffer}
         bucket={bucket}
       />
+
+      {/* Overlays - positioned absolutely */}
+
+      {/* Error Dialog - shows when there's an error */}
+      {showErrorDialog && <ErrorDialog visible={true} message={statusMessage} />}
 
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
@@ -683,18 +694,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
             setShowConfirmDialog(false);
             setPendingOperations([]);
           }}
-        />
-      )}
-
-      {/* Preview Pane - only in single pane mode when enabled */}
-      {previewEnabled && !multiPaneLayout.isMultiPaneMode && previewContent && (
-        <PreviewPane
-          content={previewContent}
-          left={Math.floor(terminalSize.size.width * 0.5) + 4}
-          top={layout.headerHeight}
-          width={Math.floor(terminalSize.size.width * 0.5) - 6}
-          height={layout.contentHeight}
-          visible={true}
         />
       )}
 

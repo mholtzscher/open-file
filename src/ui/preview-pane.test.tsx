@@ -21,10 +21,6 @@ describe('PreviewPane', () => {
     const result = PreviewPane({
       visible: true,
       content,
-      left: 10,
-      top: 5,
-      width: 40,
-      height: 20,
     });
     expect(result).not.toBeNull();
   });
@@ -35,8 +31,6 @@ describe('PreviewPane', () => {
     const result = PreviewPane({
       visible: true,
       content,
-      width: 40,
-      height: 20,
     });
     expect(result).not.toBeNull();
     // The component should show line count in the title
@@ -47,8 +41,6 @@ describe('PreviewPane', () => {
     const result = PreviewPane({
       visible: true,
       content,
-      width: 40,
-      height: 10,
     });
     expect(result).not.toBeNull();
   });
