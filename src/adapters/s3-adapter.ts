@@ -11,6 +11,7 @@ import {
   GetObjectCommand,
   PutObjectCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   CopyObjectCommand,
   HeadObjectCommand,
   GetObjectTaggingCommand,
@@ -479,55 +480,86 @@ export class S3Adapter implements Adapter {
   /**
    * Delete a file or directory
    */
-  async delete(path: string, recursive?: boolean, _options?: OperationOptions): Promise<void> {
+  async delete(path: string, recursive?: boolean, options?: OperationOptions): Promise<void> {
     const normalized = this.normalizePath(path);
 
     try {
       if (recursive) {
-        // Delete directory and all contents
+        // Delete directory and all contents using batch delete
         const prefix = normalized.endsWith('/') ? normalized : normalized + '/';
+        const objectsToDelete: { Key: string }[] = [];
         
-        const response = await retryWithBackoff(
-          () => {
-            const listCommand = new ListObjectsV2Command({
-              Bucket: this.bucket,
-              Prefix: prefix,
+        // List all objects with pagination
+        let continuationToken: string | undefined;
+        do {
+          const response = await retryWithBackoff(
+            () => {
+              const listCommand = new ListObjectsV2Command({
+                Bucket: this.bucket,
+                Prefix: prefix,
+                ContinuationToken: continuationToken,
+              });
+              return this.client.send(listCommand);
+            },
+            getS3RetryConfig()
+          );
+
+          // Collect objects to delete
+          if (response.Contents) {
+            for (const obj of response.Contents) {
+              if (obj.Key) {
+                objectsToDelete.push({ Key: obj.Key });
+              }
+            }
+          }
+
+          continuationToken = response.NextContinuationToken;
+        } while (continuationToken);
+
+        // Batch delete objects (max 1000 per request)
+        const BATCH_SIZE = 1000;
+        for (let i = 0; i < objectsToDelete.length; i += BATCH_SIZE) {
+          const batch = objectsToDelete.slice(i, i + BATCH_SIZE);
+          
+          await retryWithBackoff(
+            () => {
+              const deleteCommand = new DeleteObjectsCommand({
+                Bucket: this.bucket,
+                Delete: {
+                  Objects: batch,
+                  Quiet: true, // Don't return list of deleted objects
+                },
+              });
+              return this.client.send(deleteCommand);
+            },
+            getS3RetryConfig()
+          );
+
+          // Report progress
+          if (options?.onProgress) {
+            const deletedCount = Math.min(i + BATCH_SIZE, objectsToDelete.length);
+            options.onProgress({
+              operation: 'Deleting objects',
+              bytesTransferred: deletedCount,
+              totalBytes: objectsToDelete.length,
+              percentage: Math.round((deletedCount / objectsToDelete.length) * 100),
+              currentFile: path,
             });
-            return this.client.send(listCommand);
+          }
+        }
+      } else {
+        // Delete single object
+        await retryWithBackoff(
+          () => {
+            const command = new DeleteObjectCommand({
+              Bucket: this.bucket,
+              Key: normalized,
+            });
+            return this.client.send(command);
           },
           getS3RetryConfig()
         );
-
-        // Delete all objects in the directory
-        if (response.Contents) {
-          for (const obj of response.Contents) {
-            if (obj.Key) {
-              await retryWithBackoff(
-                () => {
-                  const deleteCommand = new DeleteObjectCommand({
-                    Bucket: this.bucket,
-                    Key: obj.Key,
-                  });
-                  return this.client.send(deleteCommand);
-                },
-                getS3RetryConfig()
-              );
-            }
-          }
-        }
       }
-
-      // Delete the object itself
-      await retryWithBackoff(
-        () => {
-          const command = new DeleteObjectCommand({
-            Bucket: this.bucket,
-            Key: normalized,
-          });
-          return this.client.send(command);
-        },
-        getS3RetryConfig()
-      );
     } catch (error) {
       console.error(`Failed to delete ${path}:`, error);
       throw error;
