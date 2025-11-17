@@ -6,9 +6,11 @@
 
 ```bash
 ./run-demo.sh
+# Or directly:
+bun run src/index.tsx --mock
 ```
 
-This runs the app with mock data for testing the UI.
+This runs the app with mock data for testing the UI. No AWS credentials needed!
 
 ### Option 2: Real S3 Bucket
 

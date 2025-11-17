@@ -8,6 +8,7 @@
 export interface CliArgs {
   bucket?: string;
   adapter?: 'mock' | 's3';
+  mock?: boolean; // Shorthand for --adapter mock
   region?: string;
   endpoint?: string;
   accessKey?: string;
@@ -30,6 +31,9 @@ export function parseArgs(args: string[]): CliArgs {
       result.help = true;
     } else if (arg === '--version' || arg === '-v') {
       result.version = true;
+    } else if (arg === '--mock') {
+      result.mock = true;
+      result.adapter = 'mock';
     } else if (arg === '--bucket' || arg === '-b') {
       result.bucket = args[++i];
     } else if (arg === '--adapter' || arg === '-a') {
@@ -73,6 +77,7 @@ ARGUMENTS:
 
 OPTIONS:
   -b, --bucket NAME       S3 bucket name
+  --mock                  Use mock adapter for testing (no AWS required)
   -a, --adapter TYPE      Adapter type: mock or s3 (default: s3)
   -r, --region REGION     AWS region (default: us-east-1)
   --endpoint URL          Custom S3 endpoint (for LocalStack, etc.)
@@ -83,11 +88,11 @@ OPTIONS:
   -v, --version           Show version
 
 EXAMPLES:
-  # Open bucket using config
+  # Open bucket using AWS credentials from environment
   open-s3 my-bucket
 
-  # Use mock adapter for testing
-  open-s3 --adapter mock
+  # Use mock adapter for testing (no AWS required)
+  open-s3 --mock
 
   # Use custom endpoint (LocalStack)
   open-s3 --endpoint http://localhost:4566 test-bucket
