@@ -5,7 +5,7 @@
  * Declarative React component that uses hooks for state management and rendering.
  */
 
-import { useEffect, useState, useRef, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Adapter } from '../adapters/adapter.js';
 import { ConfigManager } from '../utils/config.js';
 import { useBufferState } from '../hooks/useBufferState.js';
@@ -35,8 +35,6 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [pendingOperations, setPendingOperations] = useState<any[]>([]);
-  const [, forceRender] = useState(0); // Force re-render trigger
-  const keyboardHandlersRef = useRef<any>(null);
 
   // Track terminal size for responsive layout
   const terminalSize = useTerminalSize();
@@ -47,39 +45,39 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
   // Initialize buffer state
   const bufferState = useBufferState([], currentPath);
 
-   // Setup navigation handlers
-   const navigationHandlers = useNavigationHandlers(bufferState, {
+  // Setup navigation handlers config - memoized to prevent recreation
+  const navigationConfig = useMemo(
+    () => ({
       onLoadBuffer: async (path: string) => {
         try {
           const result = await adapter.list(path);
           
           // Update buffer state with new entries and current path
-          const currentEntries = bufferState.entries;
-          currentEntries.length = 0;
-          currentEntries.push(...result.entries);
-          
-          // Update current path in buffer state
-          bufferState.currentPath = path;
+          // Create a new array to ensure React detects the change
+          bufferState.setEntries([...result.entries]);
+          bufferState.setCurrentPath(path);
           
           // Reset cursor to top of new directory
           bufferState.cursorToTop();
           
           setStatusMessage(`Navigated to ${path}`);
           setStatusMessageColor(CatppuccinMocha.green);
-          
-          // Force re-render to show new entries
-          forceRender(prev => prev + 1);
         } catch (err) {
           const parsedError = parseAwsError(err, 'Navigation failed');
           setStatusMessage(parsedError.message);
           setStatusMessageColor(CatppuccinMocha.red);
         }
       },
-     onErrorOccurred: (error: string) => {
-       setStatusMessage(error);
-       setStatusMessageColor(CatppuccinMocha.red);
-     },
-   });
+      onErrorOccurred: (error: string) => {
+        setStatusMessage(error);
+        setStatusMessageColor(CatppuccinMocha.red);
+      },
+    }),
+    [adapter, bufferState.setEntries, bufferState.setCurrentPath, bufferState.cursorToTop]
+  );
+
+  // Setup navigation handlers
+  const navigationHandlers = useNavigationHandlers(bufferState, navigationConfig);
 
   // Setup keyboard event handlers - memoized to prevent stale closure
   // Note: j/k/v navigation is handled directly by useKeyboardEvents
@@ -98,7 +96,7 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
       onQuit: () => process.exit(0),
       onShowHelp: () => setShowHelpDialog(!showHelpDialog),
     }),
-    [navigationHandlers, bufferState]
+    [navigationHandlers, bufferState, showHelpDialog]
   );
 
   // Setup keyboard events
@@ -122,10 +120,7 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
          const result = await adapter.list(currentPath);
          
          // Load entries into buffer state
-         // Clear existing entries and add new ones
-         const currentEntries = bufferState.entries;
-         currentEntries.length = 0;
-         currentEntries.push(...result.entries);
+         bufferState.setEntries([...result.entries]);
          
          setStatusMessage(`Loaded ${result.entries.length} items`);
          setStatusMessageColor(CatppuccinMocha.green);
@@ -138,7 +133,7 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
      };
 
      initializeData();
-   }, [bucket, adapter, currentPath, bufferState]);
+   }, [bucket, adapter, currentPath, bufferState.setEntries]);
 
   if (!isInitialized) {
     return (

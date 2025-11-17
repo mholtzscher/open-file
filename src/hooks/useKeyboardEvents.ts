@@ -149,6 +149,7 @@ export function useKeyboardEvents(
           break;
         case 'l':
         case 'enter':
+        case 'return':
           if (handlers.onNavigateInto) handlers.onNavigateInto();
           break;
         case 'v':

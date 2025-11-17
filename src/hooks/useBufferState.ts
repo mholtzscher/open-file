@@ -29,6 +29,10 @@ export interface UseBufferStateReturn {
   scrollOffset: number;
   copyRegister: Entry[];
   
+  // Buffer data operations
+  setEntries: (entries: Entry[]) => void;
+  setCurrentPath: (path: string) => void;
+  
   // Cursor/Selection operations
   moveCursorDown: (amount: number) => void;
   moveCursorUp: (amount: number) => void;
@@ -72,6 +76,7 @@ export interface UseBufferStateReturn {
 export function useBufferState(initialEntries: Entry[] = [], initialPath: string = ''): UseBufferStateReturn {
   const [entries, setEntries] = useState<Entry[]>(initialEntries);
   const [originalEntries] = useState<Entry[]>(JSON.parse(JSON.stringify(initialEntries)));
+  const [currentPath, setCurrentPath] = useState<string>(initialPath);
   const [mode, setMode] = useState<EditMode>(EditMode.Normal);
   const [selection, setSelection] = useState<SelectionState>({ cursorIndex: 0, isActive: false });
   const [sortConfig, setSortConfigState] = useState<SortConfig>(DEFAULT_SORT_CONFIG);
@@ -233,12 +238,15 @@ export function useBufferState(initialEntries: Entry[] = [], initialPath: string
     originalEntries,
     mode,
     selection,
-    currentPath: initialPath,
+    currentPath,
     sortConfig,
     showHiddenFiles,
     searchQuery,
     scrollOffset,
     copyRegister,
+
+    setEntries,
+    setCurrentPath,
 
     moveCursorDown,
     moveCursorUp,
