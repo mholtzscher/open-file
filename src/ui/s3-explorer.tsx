@@ -326,6 +326,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         messageColor={statusMessageColor}
         searchQuery={bufferState.searchQuery}
         commandBuffer={bufferState.editBuffer}
+        bucket={bucket}
       />
 
       {/* Confirmation Dialog */}

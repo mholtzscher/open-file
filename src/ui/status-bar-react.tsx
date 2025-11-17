@@ -14,6 +14,7 @@ interface StatusBarProps {
   messageColor?: string;
   searchQuery?: string;
   commandBuffer?: string;
+  bucket?: string;
 }
 
 /**
@@ -39,6 +40,22 @@ function getModeString(mode: EditMode): string {
 }
 
 /**
+ * Format breadcrumb path showing current location
+ * - If no bucket: shows "Buckets (root)"
+ * - If bucket with no path: shows "bucket-name/"
+ * - If bucket with path: shows "bucket-name/path/to/dir"
+ */
+function formatBreadcrumb(bucket: string | undefined, path: string): string {
+  if (!bucket) {
+    return 'Buckets (root)';
+  }
+
+  // Build the full path with bucket name
+  const fullPath = path ? `${bucket}/${path}` : `${bucket}/`;
+  return fullPath;
+}
+
+/**
  * StatusBar React component
  */
 export function StatusBar({
@@ -48,9 +65,11 @@ export function StatusBar({
   messageColor = CatppuccinMocha.overlay1,
   searchQuery = '',
   commandBuffer = '',
+  bucket,
 }: StatusBarProps) {
   // Left side: path and mode
-  const pathText = `📂 ${path}`;
+  const breadcrumb = formatBreadcrumb(bucket, path);
+  const pathText = `📂 ${breadcrumb}`;
   const modeText = `[${getModeString(mode)}]`;
   const searchText = mode === EditMode.Search ? ` /${searchQuery}` : '';
   const commandText = mode === EditMode.Command ? ` ${commandBuffer}` : '';
