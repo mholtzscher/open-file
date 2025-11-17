@@ -295,20 +295,31 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   // Setup keyboard events - use active buffer state
   const { handleKeyDown } = useKeyboardEvents(activeBufferState, keyboardHandlers);
 
+  // Show error dialog if there's an error message
+  const showErrorDialog = statusMessage && statusMessageColor === CatppuccinMocha.red;
+
   // Register global keyboard dispatcher on mount
   useEffect(() => {
     setGlobalKeyboardDispatcher((key: any) => {
+      // Error dialog - block all input except escape
+      if (showErrorDialog) {
+        if (key.name === 'escape') {
+          setStatusMessage('');
+          setStatusMessageColor(CatppuccinMocha.text);
+        }
+        return; // Block all other keys when error is shown
+      }
+
       // Help dialog shortcuts
       if (showHelpDialog) {
         if (key.name === '?' || key.name === 'escape') {
           setShowHelpDialog(false);
           return;
         }
-      } else if (statusMessageColor === CatppuccinMocha.red && key.name === 'escape') {
-        // Acknowledge error by Escape
-        setStatusMessage('');
-        return;
-      } else if (key.name === '?') {
+        return; // Block other keys when help is shown
+      }
+
+      if (key.name === '?') {
         setShowHelpDialog(true);
         return;
       }
@@ -320,7 +331,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     return () => {
       setGlobalKeyboardDispatcher(null);
     };
-  }, [handleKeyDown, showHelpDialog, statusMessage, statusMessageColor]);
+  }, [handleKeyDown, showHelpDialog, showErrorDialog, statusMessage, statusMessageColor]);
 
   // Initialize data from adapter
   useEffect(() => {
@@ -383,7 +394,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
     console.error(`[S3Explorer] useEffect triggered`);
     initializeData();
-  }, [bucket, adapter, bufferState.setEntries, multiPaneLayout]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bucket, adapter]);
 
   if (!isInitialized) {
     return (
@@ -392,9 +404,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       </text>
     );
   }
-
-  // Show error dialog if there's an error message
-  const showErrorDialog = statusMessage && statusMessageColor === CatppuccinMocha.red;
 
   return (
     <>
