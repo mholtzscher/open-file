@@ -169,27 +169,38 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     () => ({
       onNavigateInto: async () => {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        // Check if we're navigating into a bucket from root view
-        if (!bucket && currentBufferState.entries.length > 0) {
-          const currentEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
-          if (currentEntry && currentEntry.type === 'bucket') {
-            // EntryType.Bucket
-            // Navigate into this bucket
-            const bucketName = currentEntry.name;
-            const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
+        const currentEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
 
-            // Update adapter bucket and region context before changing UI state
-            const s3Adapter = adapter as any;
-            if (s3Adapter.setBucket) {
-              s3Adapter.setBucket(bucketName);
-            }
-            if (s3Adapter.setRegion) {
-              s3Adapter.setRegion(bucketRegion);
-            }
-            setBucket(bucketName);
-            return;
+        if (!currentEntry) return;
+
+        // Check if we're navigating into a bucket from root view
+        if (!bucket && currentEntry.type === 'bucket') {
+          // Navigate into this bucket
+          const bucketName = currentEntry.name;
+          const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
+
+          // Update adapter bucket and region context before changing UI state
+          const s3Adapter = adapter as any;
+          if (s3Adapter.setBucket) {
+            s3Adapter.setBucket(bucketName);
           }
+          if (s3Adapter.setRegion) {
+            s3Adapter.setRegion(bucketRegion);
+          }
+          setBucket(bucketName);
+          return;
         }
+
+        // If it's a file, enable preview mode instead of showing error
+        if (currentEntry.type === 'file') {
+          if (!previewEnabled) {
+            setPreviewEnabled(true);
+            setStatusMessage('Preview enabled');
+            setStatusMessageColor(CatppuccinMocha.blue);
+          }
+          return;
+        }
+
         // Otherwise, normal directory navigation
         await navigationHandlers.navigateInto();
       },
