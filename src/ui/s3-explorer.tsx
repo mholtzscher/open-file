@@ -45,6 +45,7 @@ function isPreviewableFile(entry: any): boolean {
     '.json',
     '.yaml',
     '.yml',
+    '.toml',
     '.xml',
     '.csv',
     '.log',
