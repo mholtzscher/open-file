@@ -708,6 +708,7 @@ export class S3Adapter implements Adapter {
     const srcNormalized = this.normalizePath(source);
     // Support both old targetBucket parameter and new OperationOptions
     const targetBucket = typeof optionsOrBucket === 'string' ? optionsOrBucket : undefined;
+    const options = typeof optionsOrBucket === 'object' ? optionsOrBucket : undefined;
     const destBucket = targetBucket || this.bucket;
     const destNormalized = this.normalizePath(
       destination,
@@ -718,7 +719,7 @@ export class S3Adapter implements Adapter {
       // Check if source is a directory
       if (source.endsWith('/')) {
         // Copy directory recursively
-        await this.copyDirectory(srcNormalized, destNormalized, destBucket);
+        await this.copyDirectory(srcNormalized, destNormalized, destBucket, options);
       } else {
         // Copy single file
         await this.copySingleFile(srcNormalized, destNormalized, destBucket);
@@ -750,39 +751,69 @@ export class S3Adapter implements Adapter {
   /**
    * Copy a directory recursively
    */
-  private async copyDirectory(source: string, destination: string, targetBucket: string): Promise<void> {
-    // List all objects in the source directory
-    const response = await retryWithBackoff(
-      () => {
-        const command = new ListObjectsV2Command({
-          Bucket: this.bucket,
-          Prefix: source,
-        });
-        return this.client.send(command);
-      },
-      getS3RetryConfig()
-    );
+  private async copyDirectory(
+    source: string,
+    destination: string,
+    targetBucket: string,
+    options?: OperationOptions
+  ): Promise<void> {
+    const objectsToCopy: string[] = [];
+    
+    // List all objects with pagination
+    let continuationToken: string | undefined;
+    do {
+      const response = await retryWithBackoff(
+        () => {
+          const command = new ListObjectsV2Command({
+            Bucket: this.bucket,
+            Prefix: source,
+            ContinuationToken: continuationToken,
+          });
+          return this.client.send(command);
+        },
+        getS3RetryConfig()
+      );
+
+      // Collect objects to copy
+      if (response.Contents) {
+        for (const obj of response.Contents) {
+          if (obj.Key && obj.Key !== source) { // Skip the directory marker itself
+            objectsToCopy.push(obj.Key);
+          }
+        }
+      }
+
+      continuationToken = response.NextContinuationToken;
+    } while (continuationToken);
 
     // Copy each object
-    if (response.Contents) {
-      for (const obj of response.Contents) {
-        if (obj.Key && obj.Key !== source) { // Skip the directory marker itself
-          const relativePath = obj.Key.substring(source.length);
-          const destKey = destination + relativePath;
-          
-          await retryWithBackoff(
-            () => {
-              const command = new CopyObjectCommand({
-                Bucket: targetBucket,
-                CopySource: `${this.bucket}/${obj.Key}`,
-                Key: destKey,
-                MetadataDirective: 'COPY', // Preserve metadata
-              });
-              return this.client.send(command);
-            },
-            getS3RetryConfig()
-          );
-        }
+    for (let i = 0; i < objectsToCopy.length; i++) {
+      const srcKey = objectsToCopy[i];
+      const relativePath = srcKey.substring(source.length);
+      const destKey = destination + relativePath;
+
+      await retryWithBackoff(
+        () => {
+          const command = new CopyObjectCommand({
+            Bucket: targetBucket,
+            CopySource: `${this.bucket}/${srcKey}`,
+            Key: destKey,
+            MetadataDirective: 'COPY', // Preserve metadata
+          });
+          return this.client.send(command);
+        },
+        getS3RetryConfig()
+      );
+
+      // Report progress
+      if (options?.onProgress) {
+        options.onProgress({
+          operation: 'Copying objects',
+          bytesTransferred: i + 1,
+          totalBytes: objectsToCopy.length,
+          percentage: Math.round(((i + 1) / objectsToCopy.length) * 100),
+          currentFile: srcKey,
+        });
       }
     }
   }
