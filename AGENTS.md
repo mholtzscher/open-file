@@ -124,17 +124,57 @@ history/
 - ✅ Preserves planning history for archeological research
 - ✅ Reduces noise when browsing the project
 
+### Managing Dependencies
+
+Use the `bd dep` command to set up task workflows:
+
+```bash
+# Add a dependency: task-b depends on task-a
+bd dep add task-a task-b --json
+
+# View dependency tree
+bd dep tree --json
+
+# Detect circular dependencies
+bd dep cycles --json
+
+# Remove a dependency
+bd dep remove task-a task-b --json
+```
+
+**Dependency workflow example:**
+
+```bash
+# Create epic
+EPIC=$(bd create "Feature X" -t epic -p 1 --json | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+
+# Create foundational tasks
+TASK1=$(bd create "Foundation task 1" -t task -p 1 --json | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+TASK2=$(bd create "Foundation task 2" -t task -p 1 --json | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+
+# Create dependent tasks
+TASK3=$(bd create "Depends on 1&2" -t task -p 1 --json | grep -o '"id":"[^"]*"' | cut -d'"' -f4)
+
+# Link them
+bd dep add $EPIC $TASK1 --json
+bd dep add $EPIC $TASK2 --json
+bd dep add $TASK1 $TASK3 --json
+bd dep add $TASK2 $TASK3 --json
+```
+
 ### Important Rules
 
 - ✅ Use bd for ALL task tracking
 - ✅ Always use `--json` flag for programmatic use
 - ✅ Link discovered work with `discovered-from` dependencies
+- ✅ Use `bd dep add` to manage task dependencies and workflows
 - ✅ Check `bd ready` before asking "what should I work on?"
 - ✅ Store AI planning docs in `history/` directory
 - ❌ Do NOT create markdown TODO lists
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
 - ❌ Do NOT clutter repo root with planning documents
+- ❌ **NEVER manually edit `.beads/beads.jsonl`** - Always use bd commands
 - ❌ Do NOT directly read issues.json always use the mcp server.
 
 For more details, see README.md and QUICKSTART.md.
