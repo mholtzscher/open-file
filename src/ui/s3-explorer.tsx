@@ -167,37 +167,67 @@ export function S3Explorer({ bucket, adapter, configManager }: S3ExplorerProps) 
     );
   }
 
-  return (
-    <>
-      {/* Header */}
-      <text
-        position="absolute"
-        left={2}
-        top={0}
-        fg={CatppuccinMocha.blue}
-      >
-        open-s3: {bucket} ({terminalSize.width}x{terminalSize.height})
-      </text>
+   // Show error panel if there's an error message
+   const showErrorPanel = statusMessage && statusMessageColor === CatppuccinMocha.red;
+   const errorPanelHeight = showErrorPanel ? 6 : 0;
+   const adjustedContentHeight = showErrorPanel ? layout.contentHeight - errorPanelHeight : layout.contentHeight;
 
-      {/* Buffer View - responsive to terminal size */}
-      <BufferView
-        bufferState={bufferState}
-        left={2}
-        top={layout.headerHeight}
-        height={layout.contentHeight}
-        showIcons={!terminalSize.isSmall}
-        showSizes={!terminalSize.isSmall}
-        showDates={!terminalSize.isMedium}
-      />
+   return (
+     <>
+       {/* Header */}
+       <text
+         position="absolute"
+         left={2}
+         top={0}
+         fg={CatppuccinMocha.blue}
+       >
+         open-s3: {bucket} ({terminalSize.width}x{terminalSize.height})
+       </text>
 
-      {/* Status Bar */}
-      <StatusBar
-        path={bufferState.currentPath}
-        mode={bufferState.mode}
-        message={statusMessage}
-        messageColor={statusMessageColor}
-        searchQuery={bufferState.searchQuery}
-      />
+       {/* Error Panel - shows when there's an error */}
+       {showErrorPanel && (
+         <box
+           position="absolute"
+           left={2}
+           top={layout.headerHeight}
+           width={terminalSize.width - 4}
+           height={errorPanelHeight}
+           borderStyle="rounded"
+           borderColor={CatppuccinMocha.red}
+           backgroundColor={CatppuccinMocha.base}
+           title="ERROR"
+         >
+           <text
+             position="absolute"
+             left={2}
+             top={1}
+             right={2}
+             fg={CatppuccinMocha.red}
+           >
+             {statusMessage}
+           </text>
+         </box>
+       )}
+
+       {/* Buffer View - responsive to terminal size */}
+       <BufferView
+         bufferState={bufferState}
+         left={2}
+         top={layout.headerHeight + errorPanelHeight}
+         height={adjustedContentHeight}
+         showIcons={!terminalSize.isSmall}
+         showSizes={!terminalSize.isSmall}
+         showDates={!terminalSize.isMedium}
+       />
+
+       {/* Status Bar */}
+       <StatusBar
+         path={bufferState.currentPath}
+         mode={bufferState.mode}
+         message={statusMessage && !showErrorPanel ? statusMessage : undefined}
+         messageColor={statusMessageColor}
+         searchQuery={bufferState.searchQuery}
+       />
 
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
