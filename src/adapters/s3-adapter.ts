@@ -13,6 +13,7 @@ import {
   DeleteObjectCommand,
   CopyObjectCommand,
   HeadObjectCommand,
+  GetObjectTaggingCommand,
   ListObjectsV2CommandInput,
   _Object,
 } from '@aws-sdk/client-s3';
@@ -217,6 +218,39 @@ export class S3Adapter implements Adapter {
       const isDirectory = normalized.endsWith('/') ||
         response.ContentType === 'application/x-directory';
 
+      // Fetch tags if available
+      const custom: Record<string, string> = {};
+      
+      // Add version-id if available
+      if (response.VersionId) {
+        custom.versionId = response.VersionId;
+      }
+
+      // Try to fetch tags (may fail if bucket doesn't have tagging enabled)
+      try {
+        const tagsResponse = await retryWithBackoff(
+          () => {
+            const command = new GetObjectTaggingCommand({
+              Bucket: this.bucket,
+              Key: normalized,
+              ...(response.VersionId && { VersionId: response.VersionId }),
+            });
+            return this.client.send(command);
+          },
+          getS3RetryConfig()
+        );
+
+        if (tagsResponse.TagSet && tagsResponse.TagSet.length > 0) {
+          for (const tag of tagsResponse.TagSet) {
+            if (tag.Key && tag.Value) {
+              custom[`tag:${tag.Key}`] = tag.Value;
+            }
+          }
+        }
+      } catch (error) {
+        // Ignore tagging errors - bucket may not have tagging enabled
+      }
+
       return {
         id: generateEntryId(),
         name: normalized.split('/').filter(p => p).pop() || normalized,
@@ -228,6 +262,7 @@ export class S3Adapter implements Adapter {
           contentType: response.ContentType,
           etag: response.ETag,
           storageClass: response.StorageClass,
+          ...(Object.keys(custom).length > 0 && { custom }),
         },
       };
     } catch (error) {
