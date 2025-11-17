@@ -6,12 +6,19 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
+import type { MutableRefObject } from 'react';
 import type { UseBufferStateReturn } from './useBufferState.js';
 import type { LayoutDimensions, TerminalSize } from './useTerminalSize.js';
 
 export interface Pane {
   id: string;
   bufferState: UseBufferStateReturn;
+  isActive: boolean;
+}
+
+interface InternalPane {
+  id: string;
+  bufferStateRef: MutableRefObject<UseBufferStateReturn>;
   isActive: boolean;
 }
 
@@ -27,7 +34,7 @@ export interface MultiPaneLayout {
   activePaneId: string | null;
   isMultiPaneMode: boolean;
   paneDimensions: PaneDimensions[];
-  addPane: (bufferState: UseBufferStateReturn) => void;
+  addPane: (bufferStateRef: MutableRefObject<UseBufferStateReturn>) => void;
   removePane: (paneId: string) => void;
   activatePane: (paneId: string) => void;
   toggleMultiPaneMode: () => void;
@@ -41,7 +48,7 @@ export function useMultiPaneLayout(
   terminalSize: TerminalSize,
   layout: LayoutDimensions
 ): MultiPaneLayout {
-  const [panes, setPanes] = useState<Pane[]>([]);
+  const [panes, setPanes] = useState<InternalPane[]>([]);
   const [activePaneId, setActivePaneId] = useState<string | null>(null);
   const [isMultiPaneMode, setIsMultiPaneMode] = useState(false);
 
@@ -76,17 +83,17 @@ export function useMultiPaneLayout(
   ]);
 
   // Add a new pane
-  const addPane = useCallback((bufferState: UseBufferStateReturn) => {
+  const addPane = useCallback((bufferStateRef: MutableRefObject<UseBufferStateReturn>) => {
     const newPaneId = `pane-${Date.now()}`;
-    const newPane: Pane = {
+    const newPane: InternalPane = {
       id: newPaneId,
-      bufferState,
+      bufferStateRef,
       isActive: true,
     };
 
     setPanes(prevPanes => {
       // Deactivate all existing panes
-      const updatedPanes = prevPanes.map((p: Pane) => ({ ...p, isActive: false }));
+      const updatedPanes = prevPanes.map((p: InternalPane) => ({ ...p, isActive: false }));
       return [...updatedPanes, newPane];
     });
 
@@ -97,11 +104,11 @@ export function useMultiPaneLayout(
   const removePane = useCallback(
     (paneId: string) => {
       setPanes(prevPanes => {
-        const filtered = prevPanes.filter((p: Pane) => p.id !== paneId);
+        const filtered = prevPanes.filter((p: InternalPane) => p.id !== paneId);
 
         // If we removed the active pane, activate the first remaining pane
         if (paneId === activePaneId && filtered.length > 0) {
-          const updatedPanes = filtered.map((p: Pane, idx: number) => ({
+          const updatedPanes = filtered.map((p: InternalPane, idx: number) => ({
             ...p,
             isActive: idx === 0,
           }));
@@ -118,7 +125,7 @@ export function useMultiPaneLayout(
   // Activate a specific pane
   const activatePane = useCallback((paneId: string) => {
     setPanes(prevPanes =>
-      prevPanes.map((p: Pane) => ({
+      prevPanes.map((p: InternalPane) => ({
         ...p,
         isActive: p.id === paneId,
       }))
@@ -133,13 +140,14 @@ export function useMultiPaneLayout(
 
   // Get the active buffer state
   const getActiveBufferState = useCallback((): UseBufferStateReturn | null => {
-    const activePane = panes.find((p: Pane) => p.id === activePaneId);
-    return activePane?.bufferState || null;
+    const activePane = panes.find((p: InternalPane) => p.id === activePaneId);
+    return activePane?.bufferStateRef.current || null;
   }, [panes, activePaneId]);
 
   return {
-    panes: panes.map((p: Pane) => ({
-      ...p,
+    panes: panes.map((p: InternalPane) => ({
+      id: p.id,
+      bufferState: p.bufferStateRef.current,
       isActive: p.id === activePaneId,
     })),
     activePaneId,

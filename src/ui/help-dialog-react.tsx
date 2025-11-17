@@ -62,37 +62,53 @@ export function HelpDialog({ visible }: HelpDialogProps) {
     { keys: 'q', description: 'Quit' },
   ];
 
+  const dialogHeight = keybindings.length + 4; // Add padding for border and title
+
   return (
-    <box
-      position="absolute"
-      left={centerLeft}
-      top={1}
-      width={dialogWidth}
-      borderStyle="rounded"
-      borderColor={CatppuccinMocha.yellow}
-      backgroundColor={CatppuccinMocha.base}
-      title="Help"
-      flexDirection="column"
-      paddingLeft={2}
-      paddingTop={1}
-      paddingBottom={1}
-    >
-      {keybindings.map((item, idx) => {
-        if ('section' in item) {
+    <>
+      {/* Background overlay to block content behind */}
+      <box
+        position="absolute"
+        left={centerLeft}
+        top={1}
+        width={dialogWidth}
+        height={dialogHeight}
+        backgroundColor={CatppuccinMocha.base}
+        zIndex={999}
+      />
+      {/* Dialog with border and content */}
+      <box
+        position="absolute"
+        left={centerLeft}
+        top={1}
+        width={dialogWidth}
+        height={dialogHeight}
+        borderStyle="rounded"
+        borderColor={CatppuccinMocha.yellow}
+        title="Help"
+        flexDirection="column"
+        paddingLeft={2}
+        paddingTop={1}
+        paddingBottom={1}
+        zIndex={1000}
+      >
+        {keybindings.map((item, idx) => {
+          if ('section' in item) {
+            return (
+              <text key={idx} fg={CatppuccinMocha.text} width={66}>
+                {item.section}
+              </text>
+            );
+          }
+          const keyText = `  ${item.keys}`.padEnd(12);
+          const fullText = `${keyText}${item.description}`;
           return (
-            <text key={idx} fg={CatppuccinMocha.text} width={66}>
-              {item.section}
+            <text key={idx} fg={CatppuccinMocha.subtext0} width={66}>
+              {fullText}
             </text>
           );
-        }
-        const keyText = `  ${item.keys}`.padEnd(12);
-        const fullText = `${keyText}${item.description}`;
-        return (
-          <text key={idx} fg={CatppuccinMocha.subtext0} width={66}>
-            {fullText}
-          </text>
-        );
-      })}
-    </box>
+        })}
+      </box>
+    </>
   );
 }

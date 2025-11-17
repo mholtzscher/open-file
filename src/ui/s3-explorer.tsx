@@ -5,7 +5,7 @@
  * Declarative React component that uses hooks for state management and rendering.
  */
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Adapter } from '../adapters/adapter.js';
 import { ConfigManager } from '../utils/config.js';
 import { useBufferState } from '../hooks/useBufferState.js';
@@ -55,6 +55,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
   // Initialize buffer state
   const bufferState = useBufferState([], initialPath);
+  const bufferStateRef = useRef(bufferState);
+  bufferStateRef.current = bufferState;
 
   // Initialize multi-pane layout
   const multiPaneLayout = useMultiPaneLayout(terminalSize.size, layout);
@@ -62,7 +64,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   // Add initial pane if none exist - only run once on mount
   useEffect(() => {
     if (multiPaneLayout.panes.length === 0) {
-      multiPaneLayout.addPane(bufferState);
+      multiPaneLayout.addPane(bufferStateRef);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
