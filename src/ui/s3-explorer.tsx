@@ -237,13 +237,25 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   // Register global keyboard dispatcher on mount
   useEffect(() => {
     setGlobalKeyboardDispatcher((key: any) => {
+      // Handle help dialog keyboard shortcuts
+      if (showHelpDialog) {
+        if (key.name === '?' || key.name === 'escape') {
+          setShowHelpDialog(false);
+          return;
+        }
+      } else if (key.name === '?') {
+        setShowHelpDialog(true);
+        return;
+      }
+
+      // Pass to normal keyboard handler
       handleKeyDown(key);
     });
 
     return () => {
       setGlobalKeyboardDispatcher(null);
     };
-  }, [handleKeyDown]);
+  }, [handleKeyDown, showHelpDialog]);
 
   // Initialize data from adapter
   useEffect(() => {
