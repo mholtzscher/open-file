@@ -8,8 +8,8 @@ import { CatppuccinMocha } from './theme.js';
 
 export interface Operation {
   id: string;
-  type: 'create' | 'delete' | 'move';
-  path: string;
+  type: 'create' | 'delete' | 'move' | 'copy' | 'download' | 'upload';
+  path?: string;
   source?: string;
   destination?: string;
 }
@@ -33,8 +33,14 @@ function formatOperation(op: Operation): string {
       return `Delete: ${op.path}`;
     case 'move':
       return `Move: ${op.source} -> ${op.destination}`;
+    case 'copy':
+      return `Copy: ${op.source} -> ${op.destination}`;
+    case 'download':
+      return `Download: ${op.source} -> ${op.destination}`;
+    case 'upload':
+      return `Upload: ${op.source} -> ${op.destination}`;
     default:
-      return `Unknown: ${op.path}`;
+      return `Unknown: ${op.path || 'unknown'}`;
   }
 }
 

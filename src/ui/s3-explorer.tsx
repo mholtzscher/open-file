@@ -26,6 +26,7 @@ import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { setGlobalKeyboardDispatcher } from '../index.tsx';
 import { detectChanges, buildOperationPlan } from '../utils/change-detection.js';
 import { EntryIdMap } from '../utils/entry-id.js';
+import { DownloadOperation, UploadOperation } from '../types/operations.js';
 
 interface S3ExplorerProps {
   bucket?: string;
@@ -249,18 +250,12 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           setShowConfirmDialog(true);
         }
       },
-      onDownload: async () => {
+      onDownload: () => {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         const currentEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
 
         if (!currentEntry) {
           setStatusMessage('No entry selected');
-          setStatusMessageColor(CatppuccinMocha.red);
-          return;
-        }
-
-        if (currentEntry.type === 'directory' || currentEntry.type === 'bucket') {
-          setStatusMessage('Cannot download directories yet - select a file');
           setStatusMessageColor(CatppuccinMocha.red);
           return;
         }
@@ -271,27 +266,26 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           return;
         }
 
-        try {
-          setStatusMessage(`Downloading ${currentEntry.name}...`);
-          setStatusMessageColor(CatppuccinMocha.yellow);
+        // Build full S3 path
+        const s3Path = currentBufferState.currentPath
+          ? `${currentBufferState.currentPath}${currentEntry.name}`
+          : currentEntry.name;
 
-          // Build full S3 path
-          const s3Path = currentBufferState.currentPath
-            ? `${currentBufferState.currentPath}${currentEntry.name}`
-            : currentEntry.name;
+        // Download to current working directory with same filename
+        const localPath = currentEntry.name;
 
-          // Download to current working directory with same filename
-          const localPath = currentEntry.name;
+        // Create download operation
+        const operation = {
+          id: Math.random().toString(36),
+          type: 'download' as const,
+          source: s3Path,
+          destination: localPath,
+          entry: currentEntry,
+          recursive: currentEntry.type === 'directory',
+        };
 
-          await adapter.downloadToLocal(s3Path, localPath, false);
-
-          setStatusMessage(`✓ Downloaded ${currentEntry.name} to ./${localPath}`);
-          setStatusMessageColor(CatppuccinMocha.green);
-        } catch (err) {
-          const error = err as Error;
-          setStatusMessage(`✗ Download failed: ${error.message}`);
-          setStatusMessageColor(CatppuccinMocha.red);
-        }
+        setPendingOperations([operation]);
+        setShowConfirmDialog(true);
       },
       onUpload: async () => {
         // For now, show help message about how to upload
@@ -704,6 +698,28 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
                     case 'copy': {
                       await adapter.copy(op.source, op.destination);
                       successCount++;
+                      break;
+                    }
+                    case 'download': {
+                      if (adapter.downloadToLocal) {
+                        await adapter.downloadToLocal(
+                          op.source,
+                          op.destination,
+                          op.recursive || false
+                        );
+                        successCount++;
+                      }
+                      break;
+                    }
+                    case 'upload': {
+                      if (adapter.uploadFromLocal) {
+                        await adapter.uploadFromLocal(
+                          op.source,
+                          op.destination,
+                          op.recursive || false
+                        );
+                        successCount++;
+                      }
                       break;
                     }
                   }

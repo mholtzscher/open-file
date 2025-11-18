@@ -202,6 +202,8 @@ export function useKeyboardEvents(
             break;
           case 'D':
             if (handlers.onDownload) handlers.onDownload();
+            // Clear the pending 'd' sequence since we got 'D'
+            keySequenceRef.current = [];
             break;
           case 'U':
             if (handlers.onUpload) handlers.onUpload();
@@ -228,6 +230,10 @@ export function useKeyboardEvents(
             if (handlers.onQuit) handlers.onQuit();
             break;
         }
+      } else if (key === 'D') {
+        // Allow D (uppercase) even when waiting for d sequence (e.g., after 'd' press)
+        if (handlers.onDownload) handlers.onDownload();
+        keySequenceRef.current = [];
       }
     },
     [bufferState, handleKeySequence, handlers]
