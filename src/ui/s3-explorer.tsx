@@ -759,9 +759,21 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
             setStatusMessageColor(CatppuccinMocha.red);
           }
         } else {
-          // Bucket folder view - reload current path
+          // Bucket folder view - reload current path with refresh message
           const currentPath = currentBufferState.currentPath;
-          navigationHandlers.navigateToPath(currentPath);
+          adapter
+            .list(currentPath)
+            .then(result => {
+              currentBufferState.setEntries([...result.entries]);
+              setOriginalEntries([...result.entries]);
+              setStatusMessage('Refreshed');
+              setStatusMessageColor(CatppuccinMocha.green);
+            })
+            .catch((err: any) => {
+              const parsedError = parseAwsError(err, 'Refresh failed');
+              setStatusMessage(formatErrorForDisplay(parsedError, 70));
+              setStatusMessageColor(CatppuccinMocha.red);
+            });
         }
         return;
       }
