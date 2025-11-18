@@ -1,11 +1,12 @@
 /**
  * PreviewPane React component
  *
- * Displays a preview of the currently selected file
+ * Displays a preview of the currently selected file using Tree-sitter syntax highlighting
  */
 
+import { useMemo } from 'react';
 import { CatppuccinMocha, Theme } from './theme.js';
-import { highlightCode } from '../utils/syntax-highlighting.js';
+import { createTreeSitterStyle, detectTreeSitterFiletype } from '../utils/treesitter-theme.js';
 
 export interface PreviewPaneProps {
   content?: string;
@@ -27,6 +28,14 @@ export function PreviewPane({
   flexShrink = 1,
   flexBasis = 0,
 }: PreviewPaneProps) {
+  // Create syntax style once (memoized to avoid recreating on every render)
+  const syntaxStyle = useMemo(() => createTreeSitterStyle(), []);
+
+  // Detect filetype from filename
+  const filetype = useMemo(() => {
+    return filename ? detectTreeSitterFiletype(filename) : undefined;
+  }, [filename]);
+
   if (!visible) return null;
 
   // If no content, show empty indicator
@@ -49,15 +58,7 @@ export function PreviewPane({
     );
   }
 
-  // Apply syntax highlighting if filename is available
-  let lines: Array<{ segments: Array<{ text: string; color?: string }> }>;
-  if (filename) {
-    lines = highlightCode(content, filename);
-  } else {
-    lines = content.split('\n').map(text => ({ segments: [{ text }] }));
-  }
-
-  const totalLines = lines.length;
+  const totalLines = content.split('\n').length;
 
   return (
     <box
@@ -72,15 +73,15 @@ export function PreviewPane({
       paddingRight={1}
       overflow="hidden"
     >
-      {lines.map((line, lineIdx) => (
-        <box key={lineIdx} flexDirection="row">
-          {line.segments.map((segment, segIdx) => (
-            <text key={segIdx} fg={segment.color || CatppuccinMocha.text}>
-              {segment.text}
-            </text>
-          ))}
-        </box>
-      ))}
+      <code
+        content={content}
+        filetype={filetype}
+        syntaxStyle={syntaxStyle}
+        flexGrow={1}
+        selectable={true}
+        wrapMode="none"
+        fg={CatppuccinMocha.text}
+      />
     </box>
   );
 }

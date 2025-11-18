@@ -1,0 +1,230 @@
+/**
+ * Tree-sitter syntax style configuration for CodeRenderable
+ *
+ * Maps Catppuccin Mocha theme colors to Tree-sitter token types
+ */
+
+import { SyntaxStyle, parseColor } from '@opentui/core';
+import { CatppuccinMocha } from '../ui/theme.js';
+
+/**
+ * Helper to convert hex color strings to RGBA for Tree-sitter
+ */
+const c = (hex: string) => parseColor(hex);
+
+/**
+ * Create a SyntaxStyle for Tree-sitter from Catppuccin Mocha theme
+ *
+ * Tree-sitter uses semantic token types like "keyword", "function", "string", etc.
+ * These are different from highlight.js class names.
+ *
+ * @see https://tree-sitter.github.io/tree-sitter/syntax-highlighting
+ */
+export function createTreeSitterStyle(): SyntaxStyle {
+  return SyntaxStyle.fromStyles({
+    // Keywords and control flow
+    keyword: { fg: c(CatppuccinMocha.mauve), bold: true },
+    'keyword.control': { fg: c(CatppuccinMocha.mauve), bold: true },
+    'keyword.function': { fg: c(CatppuccinMocha.mauve), bold: true },
+    'keyword.return': { fg: c(CatppuccinMocha.mauve), bold: true },
+    'keyword.operator': { fg: c(CatppuccinMocha.sky) },
+
+    // Functions and methods
+    function: { fg: c(CatppuccinMocha.blue) },
+    'function.call': { fg: c(CatppuccinMocha.blue) },
+    'function.method': { fg: c(CatppuccinMocha.blue) },
+    'function.builtin': { fg: c(CatppuccinMocha.yellow) },
+    method: { fg: c(CatppuccinMocha.blue) },
+
+    // Variables and identifiers
+    variable: { fg: c(CatppuccinMocha.text) },
+    'variable.builtin': { fg: c(CatppuccinMocha.red) },
+    'variable.parameter': { fg: c(CatppuccinMocha.maroon) },
+    parameter: { fg: c(CatppuccinMocha.maroon) },
+    property: { fg: c(CatppuccinMocha.text) },
+
+    // Types and classes
+    type: { fg: c(CatppuccinMocha.yellow) },
+    'type.builtin': { fg: c(CatppuccinMocha.yellow) },
+    class: { fg: c(CatppuccinMocha.yellow) },
+    interface: { fg: c(CatppuccinMocha.yellow) },
+    struct: { fg: c(CatppuccinMocha.yellow) },
+    enum: { fg: c(CatppuccinMocha.yellow) },
+
+    // Constants and literals
+    constant: { fg: c(CatppuccinMocha.peach) },
+    'constant.builtin': { fg: c(CatppuccinMocha.peach) },
+    'constant.numeric': { fg: c(CatppuccinMocha.peach) },
+    number: { fg: c(CatppuccinMocha.peach) },
+    boolean: { fg: c(CatppuccinMocha.peach) },
+    float: { fg: c(CatppuccinMocha.peach) },
+
+    // Strings
+    string: { fg: c(CatppuccinMocha.green) },
+    'string.special': { fg: c(CatppuccinMocha.teal) },
+    'string.escape': { fg: c(CatppuccinMocha.pink) },
+    'string.regex': { fg: c(CatppuccinMocha.pink) },
+    character: { fg: c(CatppuccinMocha.green) },
+
+    // Comments
+    comment: { fg: c(CatppuccinMocha.overlay0), italic: true },
+    'comment.documentation': { fg: c(CatppuccinMocha.overlay1), italic: true },
+
+    // Operators and punctuation
+    operator: { fg: c(CatppuccinMocha.sky) },
+    punctuation: { fg: c(CatppuccinMocha.overlay2) },
+    'punctuation.bracket': { fg: c(CatppuccinMocha.overlay2) },
+    'punctuation.delimiter': { fg: c(CatppuccinMocha.overlay2) },
+
+    // Tags (HTML/XML/JSX)
+    tag: { fg: c(CatppuccinMocha.mauve) },
+    'tag.attribute': { fg: c(CatppuccinMocha.yellow) },
+    'tag.delimiter': { fg: c(CatppuccinMocha.overlay2) },
+
+    // Attributes
+    attribute: { fg: c(CatppuccinMocha.yellow) },
+
+    // Namespace and modules
+    namespace: { fg: c(CatppuccinMocha.yellow) },
+    module: { fg: c(CatppuccinMocha.yellow) },
+
+    // Labels
+    label: { fg: c(CatppuccinMocha.sapphire) },
+
+    // Macros and preprocessor
+    macro: { fg: c(CatppuccinMocha.mauve) },
+    'macro.builtin': { fg: c(CatppuccinMocha.red) },
+
+    // Special constructs
+    constructor: { fg: c(CatppuccinMocha.sapphire) },
+    decorator: { fg: c(CatppuccinMocha.pink) },
+    annotation: { fg: c(CatppuccinMocha.pink) },
+
+    // Markup (Markdown, etc.)
+    'markup.heading': { fg: c(CatppuccinMocha.blue), bold: true },
+    'markup.bold': { bold: true },
+    'markup.italic': { italic: true },
+    'markup.link': { fg: c(CatppuccinMocha.blue), underline: true },
+    'markup.quote': { fg: c(CatppuccinMocha.overlay1), italic: true },
+    'markup.raw': { fg: c(CatppuccinMocha.green) },
+    'markup.list': { fg: c(CatppuccinMocha.mauve) },
+
+    // Embedded code
+    embedded: { fg: c(CatppuccinMocha.text) },
+
+    // Errors and warnings
+    error: { fg: c(CatppuccinMocha.red), bold: true },
+    warning: { fg: c(CatppuccinMocha.yellow), bold: true },
+
+    // Special
+    text: { fg: c(CatppuccinMocha.text) },
+    emphasis: { italic: true },
+    strong: { bold: true },
+    underline: { underline: true },
+
+    // Git diff
+    'diff.plus': { fg: c(CatppuccinMocha.green) },
+    'diff.minus': { fg: c(CatppuccinMocha.red) },
+    'diff.delta': { fg: c(CatppuccinMocha.blue) },
+  });
+}
+
+/**
+ * Detect Tree-sitter filetype from filename
+ *
+ * Tree-sitter uses different language identifiers than highlight.js
+ */
+export function detectTreeSitterFiletype(filename: string): string | undefined {
+  const ext = filename.toLowerCase().split('.').pop();
+  if (!ext) return undefined;
+
+  const filetypeMap: Record<string, string> = {
+    // JavaScript/TypeScript
+    js: 'javascript',
+    jsx: 'javascript',
+    mjs: 'javascript',
+    cjs: 'javascript',
+    ts: 'typescript',
+    tsx: 'tsx',
+    mts: 'typescript',
+    cts: 'typescript',
+
+    // Web
+    html: 'html',
+    htm: 'html',
+    css: 'css',
+    scss: 'scss',
+    sass: 'scss',
+    less: 'css',
+    json: 'json',
+    jsonc: 'json',
+    json5: 'json',
+
+    // Python
+    py: 'python',
+    pyw: 'python',
+    pyi: 'python',
+
+    // Rust
+    rs: 'rust',
+
+    // Go
+    go: 'go',
+
+    // C/C++
+    c: 'c',
+    h: 'c',
+    cpp: 'cpp',
+    cc: 'cpp',
+    cxx: 'cpp',
+    hpp: 'cpp',
+    hxx: 'cpp',
+    hh: 'cpp',
+
+    // Java
+    java: 'java',
+
+    // Shell
+    sh: 'bash',
+    bash: 'bash',
+    zsh: 'bash',
+    fish: 'bash',
+
+    // Config files
+    yaml: 'yaml',
+    yml: 'yaml',
+    toml: 'toml',
+    xml: 'xml',
+    ini: 'ini',
+
+    // Markdown
+    md: 'markdown',
+    markdown: 'markdown',
+    mdx: 'markdown',
+
+    // SQL
+    sql: 'sql',
+
+    // Ruby
+    rb: 'ruby',
+    rake: 'ruby',
+
+    // PHP
+    php: 'php',
+
+    // Lua
+    lua: 'lua',
+
+    // Other common languages
+    vim: 'vim',
+    dockerfile: 'dockerfile',
+    makefile: 'make',
+    cmake: 'cmake',
+    proto: 'proto',
+    graphql: 'graphql',
+    gql: 'graphql',
+    regex: 'regex',
+  };
+
+  return filetypeMap[ext];
+}
