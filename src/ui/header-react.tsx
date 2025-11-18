@@ -42,7 +42,7 @@ export function Header({ bucket }: HeaderProps) {
         <text fg={bucketColor}>{bucketText}</text>
       </box>
       <box flexDirection="row" alignItems="center">
-        <text fg={CatppuccinMocha.mauve}>aws: </text>
+        <text fg={CatppuccinMocha.mauve}>profile: </text>
         <text fg={CatppuccinMocha.text}>{awsProfile}</text>
       </box>
     </box>
