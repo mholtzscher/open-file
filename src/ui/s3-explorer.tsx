@@ -30,6 +30,7 @@ import { setGlobalKeyboardDispatcher } from '../index.tsx';
 import { detectChanges, buildOperationPlan } from '../utils/change-detection.js';
 import { EntryIdMap } from '../utils/entry-id.js';
 import { DownloadOperation, UploadOperation } from '../types/operations.js';
+import { Entry, EntryType } from '../types/entry.js';
 import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
 import { UploadQueue } from '../utils/upload-queue.js';
 import { getDialogHandler } from '../hooks/useDialogKeyboard.js';
@@ -1032,13 +1033,33 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           setShowUploadDialog(false);
           // Create upload operations from selected files
           const currentPath = activeBufferState.currentPath;
-          const newOperations = selectedFiles.map((filePath, index) => ({
-            id: `upload-${index}`,
-            type: 'upload' as const,
-            source: filePath,
-            destination: currentPath,
-            recursive: false,
-          }));
+          const newOperations = selectedFiles.map((filePath, index) => {
+            // Extract filename from full path
+            const filename = filePath.split('/').pop() || filePath;
+
+            // Build S3 destination path (bucket + prefix + filename)
+            const s3Destination = currentPath ? `${currentPath}${filename}` : filename;
+
+            // Create entry object for display
+            const entry: Entry = {
+              id: `local-${index}`,
+              name: filename,
+              path: filePath,
+              type: EntryType.File,
+              size: undefined,
+              modified: undefined,
+              metadata: undefined,
+            };
+
+            return {
+              id: `upload-${index}`,
+              type: 'upload' as const,
+              source: filePath,
+              destination: s3Destination,
+              entry,
+              recursive: false,
+            };
+          });
           setPendingOperations(newOperations);
           setShowConfirmDialog(true);
         }}

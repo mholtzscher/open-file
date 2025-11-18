@@ -1333,17 +1333,18 @@ export class S3Adapter implements Adapter {
     options?: OperationOptions
   ): Promise<void> {
     const logger = getLogger();
-    const s3Normalized = this.normalizePath(s3Path, true);
 
     try {
       // Check if local path is a directory
       const stats = await fs.stat(localPath);
 
       if (stats.isDirectory() && recursive) {
-        // Upload directory recursively
+        // Upload directory recursively - normalize as directory (with trailing slash)
+        const s3Normalized = this.normalizePath(s3Path, true);
         await this.uploadDirectoryToS3(localPath, s3Normalized, options);
       } else if (stats.isFile()) {
-        // Upload single file
+        // Upload single file - normalize as file (no trailing slash)
+        const s3Normalized = this.normalizePath(s3Path, false);
         await this.uploadSingleFileToS3(localPath, s3Normalized, options);
       } else {
         throw new Error(`Invalid path: ${localPath} is not a file or directory`);
