@@ -50,11 +50,11 @@ export function PreviewPane({
   }
 
   // Apply syntax highlighting if filename is available
-  let lines: Array<{ text: string; color?: string }>;
+  let lines: Array<{ segments: Array<{ text: string; color?: string }> }>;
   if (filename) {
     lines = highlightCode(content, filename);
   } else {
-    lines = content.split('\n').map(text => ({ text }));
+    lines = content.split('\n').map(text => ({ segments: [{ text }] }));
   }
 
   const totalLines = lines.length;
@@ -72,10 +72,14 @@ export function PreviewPane({
       paddingRight={1}
       overflow="hidden"
     >
-      {lines.map((line, idx) => (
-        <text key={idx} fg={line.color || CatppuccinMocha.text}>
-          {line.text}
-        </text>
+      {lines.map((line, lineIdx) => (
+        <box key={lineIdx} flexDirection="row">
+          {line.segments.map((segment, segIdx) => (
+            <text key={segIdx} fg={segment.color || CatppuccinMocha.text}>
+              {segment.text}
+            </text>
+          ))}
+        </box>
       ))}
     </box>
   );

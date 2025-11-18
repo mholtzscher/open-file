@@ -80,22 +80,31 @@ function mapHighlightColor(hlToken: string): string {
 }
 
 /**
- * Highlighted line representation
+ * Segment of text with optional color
  */
-export interface HighlightedLine {
+export interface TextSegment {
   text: string;
   color?: string;
 }
 
 /**
+ * Highlighted line representation - contains multiple colored segments
+ */
+export interface HighlightedLine {
+  segments: TextSegment[];
+}
+
+/**
  * Highlight code with syntax highlighting
- * Returns lines with color information
+ * Returns lines with color information for each segment
  */
 export function highlightCode(code: string, filename: string): HighlightedLine[] {
   const language = detectLanguage(filename);
   if (!language) {
     // No highlighting for unsupported types
-    return code.split('\n').map(line => ({ text: line }));
+    return code.split('\n').map(line => ({
+      segments: [{ text: line }],
+    }));
   }
 
   try {
@@ -110,46 +119,87 @@ export function highlightCode(code: string, filename: string): HighlightedLine[]
       highlighted = result.value;
     }
 
-    // Parse HTML tags to extract text and colors
-    let currentLine = '';
+    // Helper to decode HTML entities
+    const decodeHtml = (html: string): string => {
+      return html
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'");
+    };
+
+    // Parse HTML into lines with colored segments
+    // We'll use a state machine to properly handle nested spans
+    const lines: HighlightedLine[] = [];
+    let currentSegments: TextSegment[] = [];
+
+    let pos = 0;
     let currentColor: string | undefined = undefined;
+    const colorStack: string[] = [];
 
-    // Simple parser for HTML span tags from highlight.js
-    const regex = /<span class="([^"]*)">(.*?)<\/span>|([^<]+)|<br\/?>|(?:.)/g;
-    let match;
-
-    while ((match = regex.exec(highlighted)) !== null) {
-      if (match[1]) {
-        // Span tag with class
-        const className = match[1];
-        const text = match[2];
+    while (pos < highlighted.length) {
+      // Check for opening span tag
+      const openMatch = highlighted.slice(pos).match(/^<span class="([^"]*)">/);
+      if (openMatch) {
+        const className = openMatch[1];
         const color = mapHighlightColor(className);
+        colorStack.push(color);
+        currentColor = color;
+        pos += openMatch[0].length;
+        continue;
+      }
 
-        // For now, just accumulate text with the color
-        // In a more sophisticated implementation, we'd track per-character colors
-        if (text) {
-          currentLine += text;
-          currentColor = color;
-        }
-      } else if (match[2]) {
-        // This shouldn't happen but handle it
-        currentLine += match[2];
-      } else if (match[3]) {
-        // Regular text without tags
-        currentLine += match[3];
+      // Check for closing span tag
+      const closeMatch = highlighted.slice(pos).match(/^<\/span>/);
+      if (closeMatch) {
+        colorStack.pop();
+        currentColor = colorStack.length > 0 ? colorStack[colorStack.length - 1] : undefined;
+        pos += closeMatch[0].length;
+        continue;
+      }
+
+      // Check for newline
+      if (highlighted[pos] === '\n') {
+        lines.push({ segments: currentSegments.length > 0 ? currentSegments : [{ text: '' }] });
+        currentSegments = [];
+        pos++;
+        continue;
+      }
+
+      // Regular character - accumulate text until next tag or newline
+      let text = '';
+      while (pos < highlighted.length && highlighted[pos] !== '\n' && highlighted[pos] !== '<') {
+        text += highlighted[pos];
+        pos++;
+      }
+
+      if (text) {
+        text = decodeHtml(text);
+        currentSegments.push({
+          text,
+          color: currentColor || CatppuccinMocha.text,
+        });
       }
     }
 
-    // Split by newlines and create line objects
-    const finalLines = currentLine.split('\n');
-    return finalLines.map(line => ({
-      text: line || '',
-      color: currentColor,
-    }));
+    // Push final line if there are remaining segments
+    if (currentSegments.length > 0) {
+      lines.push({ segments: currentSegments });
+    }
+
+    // Ensure we have at least one line
+    if (lines.length === 0) {
+      lines.push({ segments: [{ text: '' }] });
+    }
+
+    return lines;
   } catch (err) {
     // If highlighting fails, return plain text
     console.error('Syntax highlighting failed:', err);
-    return code.split('\n').map(line => ({ text: line }));
+    return code.split('\n').map(line => ({
+      segments: [{ text: line }],
+    }));
   }
 }
 
