@@ -20,6 +20,7 @@ import { ConfirmationDialog } from './confirmation-dialog-react.js';
 import { HelpDialog } from './help-dialog-react.js';
 import { PreviewPane } from './preview-pane-react.js';
 import { ProgressWindow } from './progress-window-react.js';
+import { UploadDialog } from './upload-dialog-react.js';
 import { Header } from './header-react.js';
 import { SortMenu } from './sort-menu-react.js';
 import { CatppuccinMocha } from './theme.js';
@@ -30,6 +31,7 @@ import { detectChanges, buildOperationPlan } from '../utils/change-detection.js'
 import { EntryIdMap } from '../utils/entry-id.js';
 import { DownloadOperation, UploadOperation } from '../types/operations.js';
 import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
+import { UploadQueue } from '../utils/upload-queue.js';
 
 interface S3ExplorerProps {
   bucket?: string;
@@ -109,6 +111,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   const [progressCurrentNum, setProgressCurrentNum] = useState(0);
   const [progressTotalNum, setProgressTotalNum] = useState(0);
   const [progressCancellable, setProgressCancellable] = useState(true);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
 
   // Track abort controller for cancelling operations
   const operationAbortControllerRef = useRef<AbortController | null>(null);
@@ -674,6 +677,12 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         return;
       }
 
+      // Upload dialog shortcut (press 'u' to upload)
+      if (key.name === 'u') {
+        setShowUploadDialog(true);
+        return;
+      }
+
       // Sort menu shortcut (press 'o' to open)
       if (key.name === 'o') {
         setShowSortMenu(!showSortMenu);
@@ -997,6 +1006,27 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
       {/* Help Dialog */}
       <HelpDialog visible={showHelpDialog} />
+
+      {/* Upload Dialog */}
+      <UploadDialog
+        visible={showUploadDialog}
+        destinationPath={activeBufferState.currentPath}
+        onConfirm={selectedFiles => {
+          setShowUploadDialog(false);
+          // Create upload operations from selected files
+          const currentPath = activeBufferState.currentPath;
+          const newOperations = selectedFiles.map((filePath, index) => ({
+            id: `upload-${index}`,
+            type: 'upload' as const,
+            source: filePath,
+            destination: currentPath,
+            recursive: false,
+          }));
+          setPendingOperations(newOperations);
+          setShowConfirmDialog(true);
+        }}
+        onCancel={() => setShowUploadDialog(false)}
+      />
 
       {/* Progress Window */}
       <ProgressWindow
