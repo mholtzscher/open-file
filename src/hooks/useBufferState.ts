@@ -81,6 +81,13 @@ export interface UseBufferStateReturn {
   getSelectedEntry: () => Entry | undefined;
   getSelectedEntries: () => Entry[];
   getFilteredEntries: () => Entry[];
+
+  // Undo/redo
+  undo: () => boolean;
+  redo: () => boolean;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  saveSnapshot: () => void;
 }
 
 /**
@@ -102,6 +109,8 @@ export function useBufferState(
   const [copyRegister, setCopyRegister] = useState<Entry[]>([]);
   const [viewportHeight, setViewportHeight] = useState(20);
   const [editBuffer, setEditBuffer] = useState<string>('');
+  const [undoHistory, setUndoHistory] = useState<Entry[][]>([]);
+  const [redoHistory, setRedoHistory] = useState<Entry[][]>([]);
 
   // Helper function to ensure cursor is within bounds
   const constrainCursor = useCallback(
@@ -337,6 +346,48 @@ export function useBufferState(
     setEditBuffer('');
   }, []);
 
+  // Undo/redo operations
+  const undo = useCallback((): boolean => {
+    if (undoHistory.length === 0) return false;
+
+    // Save current state to redo history
+    setRedoHistory(prev => [...prev, entries]);
+
+    // Restore previous state
+    const previousEntries = undoHistory[undoHistory.length - 1];
+    setEntries([...previousEntries]);
+    setUndoHistory(prev => prev.slice(0, -1));
+
+    return true;
+  }, [undoHistory, entries]);
+
+  const redo = useCallback((): boolean => {
+    if (redoHistory.length === 0) return false;
+
+    // Save current state to undo history
+    setUndoHistory(prev => [...prev, entries]);
+
+    // Restore next state
+    const nextEntries = redoHistory[redoHistory.length - 1];
+    setEntries([...nextEntries]);
+    setRedoHistory(prev => prev.slice(0, -1));
+
+    return true;
+  }, [redoHistory, entries]);
+
+  const canUndo = useCallback((): boolean => {
+    return undoHistory.length > 0;
+  }, [undoHistory.length]);
+
+  const canRedo = useCallback((): boolean => {
+    return redoHistory.length > 0;
+  }, [redoHistory.length]);
+
+  const saveSnapshot = useCallback((): void => {
+    setUndoHistory(prev => [...prev, entries]);
+    setRedoHistory([]);
+  }, [entries]);
+
   return {
     entries,
     originalEntries,
@@ -390,5 +441,11 @@ export function useBufferState(
     getSelectedEntry,
     getSelectedEntries,
     getFilteredEntries,
+
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    saveSnapshot,
   };
 }

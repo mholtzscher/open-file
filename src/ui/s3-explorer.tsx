@@ -618,6 +618,32 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         return;
       }
 
+      // Undo (press 'u' to undo)
+      if (key.name === 'u') {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        if (currentBufferState.undo()) {
+          setStatusMessage('Undo');
+          setStatusMessageColor(CatppuccinMocha.green);
+        } else {
+          setStatusMessage('Nothing to undo');
+          setStatusMessageColor(CatppuccinMocha.yellow);
+        }
+        return;
+      }
+
+      // Redo (press 'Ctrl+r' or 'R' to redo)
+      if (key.name === 'r' && key.ctrl) {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        if (currentBufferState.redo()) {
+          setStatusMessage('Redo');
+          setStatusMessageColor(CatppuccinMocha.green);
+        } else {
+          setStatusMessage('Nothing to redo');
+          setStatusMessageColor(CatppuccinMocha.yellow);
+        }
+        return;
+      }
+
       // Pass to normal keyboard handler
       handleKeyDown(key);
     });
