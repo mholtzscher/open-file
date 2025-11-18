@@ -68,7 +68,7 @@ export function SortMenu({ visible, currentField, currentOrder }: SortMenuProps)
       <text fg={CatppuccinMocha.text}>{formatSortOrder(currentOrder)}</text>
 
       {/* Help text */}
-      <text fg={CatppuccinMocha.overlay2}>Keys: 1-4=field, Space=toggle, Esc=close</text>
+      <text fg={CatppuccinMocha.overlay2}>Keys: 1-4=field, Space=toggle, Esc/q=close</text>
     </box>
   );
 }

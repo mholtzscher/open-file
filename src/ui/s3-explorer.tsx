@@ -544,7 +544,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         const currentSortConfig = currentBufferState.sortConfig;
 
-        if (key.name === 'escape') {
+        if (key.name === 'escape' || key.name === 'q') {
           setShowSortMenu(false);
           return;
         }
