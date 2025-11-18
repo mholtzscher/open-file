@@ -24,25 +24,44 @@ export interface ConfirmationDialogProps {
 }
 
 /**
- * Format operation for display
+ * Get just the filename from a path
  */
-function formatOperation(op: Operation): string {
+function getBasename(path: string): string {
+  return path.split('/').pop() || path;
+}
+
+/**
+ * Format operation for display with truncation
+ */
+function formatOperation(op: Operation, maxWidth: number = 50): string {
+  let text = '';
   switch (op.type) {
     case 'create':
-      return `Create: ${op.path}`;
+      text = `Create: ${getBasename(op.path!)}`;
+      break;
     case 'delete':
-      return `Delete: ${op.path}`;
+      text = `Delete: ${getBasename(op.path!)}`;
+      break;
     case 'move':
-      return `Move: ${op.source} -> ${op.destination}`;
+      text = `Move: ${getBasename(op.source!)} → ${getBasename(op.destination!)}`;
+      break;
     case 'copy':
-      return `Copy: ${op.source} -> ${op.destination}`;
+      text = `Copy: ${getBasename(op.source!)} → ${getBasename(op.destination!)}`;
+      break;
     case 'download':
-      return `Download: ${op.source} -> ${op.destination}`;
+      text = `Download: ${getBasename(op.source!)} → ${getBasename(op.destination!)}`;
+      break;
     case 'upload':
-      return `Upload: ${op.source} -> ${op.destination}`;
+      text = `Upload: ${getBasename(op.source!)} → ${getBasename(op.destination!)}`;
+      break;
     default:
-      return `Unknown: ${op.path || 'unknown'}`;
+      text = `Unknown: ${op.path || 'unknown'}`;
   }
+  // Truncate if needed, without the > character
+  if (text.length > maxWidth) {
+    return text.substring(0, maxWidth - 1);
+  }
+  return text;
 }
 
 /**
@@ -88,9 +107,9 @@ export function ConfirmationDialog({
         <text
           key={op.id}
           fg={op.type === 'delete' ? CatppuccinMocha.red : CatppuccinMocha.green}
-          width={66}
+          width={64}
         >
-          • {formatOperation(op)}
+          • {formatOperation(op, 60)}
         </text>
       ))}
 
