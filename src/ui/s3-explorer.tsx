@@ -608,6 +608,16 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         return;
       }
 
+      // Hidden files toggle (press 'H' to toggle)
+      if (key.name === 'H' || key.name === 'shift+h') {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        currentBufferState.toggleHiddenFiles();
+        const state = currentBufferState.showHiddenFiles;
+        setStatusMessage(state ? 'Showing hidden files' : 'Hiding hidden files');
+        setStatusMessageColor(CatppuccinMocha.green);
+        return;
+      }
+
       // Pass to normal keyboard handler
       handleKeyDown(key);
     });
