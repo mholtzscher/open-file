@@ -275,9 +275,9 @@ export function UploadDialog({
           </text>
         )}
 
-        {/* Help text */}
+        {/* Help text - compact and single line */}
         <text fg={CatppuccinMocha.overlay0} width={Math.max(20, windowWidth - 6)}>
-          j/k: navigate | space: toggle | enter: open | c: confirm | esc: cancel
+          {`j/k↕ space☑ enter→ c✓ esc✕`.substring(0, Math.max(20, windowWidth - 6))}
         </text>
       </box>
     </>
