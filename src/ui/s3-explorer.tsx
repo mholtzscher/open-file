@@ -20,6 +20,7 @@ import { ConfirmationDialog } from './confirmation-dialog-react.js';
 import { HelpDialog } from './help-dialog-react.js';
 import { PreviewPane } from './preview-pane-react.js';
 import { Header } from './header-react.js';
+import { SortMenu } from './sort-menu-react.js';
 import { CatppuccinMocha } from './theme.js';
 import { ErrorDialog } from './error-dialog-react.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
@@ -27,6 +28,7 @@ import { setGlobalKeyboardDispatcher } from '../index.tsx';
 import { detectChanges, buildOperationPlan } from '../utils/change-detection.js';
 import { EntryIdMap } from '../utils/entry-id.js';
 import { DownloadOperation, UploadOperation } from '../types/operations.js';
+import { SortField, SortOrder } from '../utils/sorting.js';
 
 interface S3ExplorerProps {
   bucket?: string;
@@ -91,6 +93,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   const [statusMessageColor, setStatusMessageColor] = useState<string>(CatppuccinMocha.text);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
+  const [showSortMenu, setShowSortMenu] = useState(false);
   const [pendingOperations, setPendingOperations] = useState<any[]>([]);
   const [originalEntries, setOriginalEntries] = useState<any[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
@@ -536,6 +539,55 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         return; // Block all other keys when error is shown
       }
 
+      // Sort menu shortcuts
+      if (showSortMenu) {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        const currentSortConfig = currentBufferState.sortConfig;
+
+        if (key.name === 'escape') {
+          setShowSortMenu(false);
+          return;
+        }
+
+        // Number keys: 1=Name, 2=Size, 3=Modified, 4=Type
+        const fieldMap: { [key: string]: SortField } = {
+          '1': SortField.Name,
+          '2': SortField.Size,
+          '3': SortField.Modified,
+          '4': SortField.Type,
+        };
+
+        if (fieldMap[key.name]) {
+          const newConfig = {
+            ...currentSortConfig,
+            field: fieldMap[key.name],
+          };
+          currentBufferState.setSortConfig(newConfig);
+          setStatusMessage(`Sorted by ${key.name}`);
+          setStatusMessageColor(CatppuccinMocha.green);
+          return;
+        }
+
+        // Space or Enter to toggle order
+        if (key.name === ' ' || key.name === 'enter') {
+          const newOrder =
+            currentSortConfig.order === SortOrder.Ascending
+              ? SortOrder.Descending
+              : SortOrder.Ascending;
+          const newConfig = {
+            ...currentSortConfig,
+            order: newOrder,
+          };
+          currentBufferState.setSortConfig(newConfig);
+          const orderStr = newOrder === SortOrder.Ascending ? 'ascending' : 'descending';
+          setStatusMessage(`Sort order: ${orderStr}`);
+          setStatusMessageColor(CatppuccinMocha.green);
+          return;
+        }
+
+        return; // Block other keys when sort menu is shown
+      }
+
       // Help dialog shortcuts
       if (showHelpDialog) {
         if (key.name === '?' || key.name === 'escape' || key.name === 'q') {
@@ -550,6 +602,12 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         return;
       }
 
+      // Sort menu shortcut (press 'o' to open)
+      if (key.name === 'o') {
+        setShowSortMenu(!showSortMenu);
+        return;
+      }
+
       // Pass to normal keyboard handler
       handleKeyDown(key);
     });
@@ -557,7 +615,14 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     return () => {
       setGlobalKeyboardDispatcher(null);
     };
-  }, [handleKeyDown, showHelpDialog, showErrorDialog, statusMessage, statusMessageColor]);
+  }, [
+    handleKeyDown,
+    showHelpDialog,
+    showErrorDialog,
+    showSortMenu,
+    statusMessage,
+    statusMessageColor,
+  ]);
 
   // Initialize data from adapter
   useEffect(() => {
@@ -782,6 +847,40 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
             setShowConfirmDialog(false);
             setPendingOperations([]);
           }}
+        />
+      )}
+
+      {/* Sort Menu Dialog */}
+      {showSortMenu && (
+        <SortMenu
+          visible={showSortMenu}
+          currentField={bufferState.sortConfig.field}
+          currentOrder={bufferState.sortConfig.order}
+          onFieldSelect={(field: SortField) => {
+            const newConfig = {
+              ...bufferState.sortConfig,
+              field,
+            };
+            bufferState.setSortConfig(newConfig);
+            const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
+            setStatusMessage(`Sorted by ${fieldName}`);
+            setStatusMessageColor(CatppuccinMocha.green);
+          }}
+          onOrderToggle={() => {
+            const newOrder =
+              bufferState.sortConfig.order === SortOrder.Ascending
+                ? SortOrder.Descending
+                : SortOrder.Ascending;
+            const newConfig = {
+              ...bufferState.sortConfig,
+              order: newOrder,
+            };
+            bufferState.setSortConfig(newConfig);
+            const orderStr = newOrder === SortOrder.Ascending ? 'ascending' : 'descending';
+            setStatusMessage(`Sort order: ${orderStr}`);
+            setStatusMessageColor(CatppuccinMocha.green);
+          }}
+          onClose={() => setShowSortMenu(false)}
         />
       )}
 
