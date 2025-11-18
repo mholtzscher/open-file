@@ -1,10 +1,11 @@
 /**
  * ConfirmationDialog React component
  *
- * Displays a modal dialog for confirming operations
+ * Displays a modal dialog for confirming operations using flexbox layout
  */
 
 import { CatppuccinMocha } from './theme.js';
+import { useTerminalSize } from '../hooks/useTerminalSize.js';
 
 export interface Operation {
   id: string;
@@ -56,40 +57,50 @@ export function ConfirmationDialog({
 }: ConfirmationDialogProps) {
   if (!visible) return null;
 
-  const width = 70;
-  const height = Math.min(20, operations.length + 8);
-  const left = Math.max(2, Math.floor((80 - width) / 2));
-  const top = Math.max(2, Math.floor((24 - height) / 2));
+  const terminalSize = useTerminalSize();
+  const dialogWidth = 70;
+  const maxOperationsDisplay = 11; // Account for title, header, footer, and padding
+  const dialogHeight = Math.min(20, operations.length + 8);
+  const centerLeft = Math.floor((terminalSize.width - dialogWidth) / 2);
+  const centerTop = Math.max(2, Math.floor((terminalSize.height - dialogHeight) / 2));
 
   return (
     <box
       position="absolute"
-      left={left}
-      top={top}
-      width={width}
-      height={height}
+      left={centerLeft}
+      top={centerTop}
+      width={dialogWidth}
+      height={dialogHeight}
       borderStyle="rounded"
       borderColor={CatppuccinMocha.yellow}
       backgroundColor={CatppuccinMocha.base}
       title={title}
+      flexDirection="column"
+      paddingLeft={2}
+      paddingTop={1}
+      paddingBottom={1}
     >
-      <text position="absolute" left={2} top={1} fg={CatppuccinMocha.text}>
+      <text fg={CatppuccinMocha.text} width={66}>
         The following operations will be performed:
       </text>
 
-      {operations.slice(0, height - 6).map((op, idx) => (
+      {operations.slice(0, maxOperationsDisplay).map(op => (
         <text
           key={op.id}
-          position="absolute"
-          left={4}
-          top={3 + idx}
           fg={op.type === 'delete' ? CatppuccinMocha.red : CatppuccinMocha.green}
+          width={66}
         >
           • {formatOperation(op)}
         </text>
       ))}
 
-      <text position="absolute" left={2} bottom={2} fg={CatppuccinMocha.overlay0}>
+      {operations.length > maxOperationsDisplay && (
+        <text fg={CatppuccinMocha.overlay0} width={66}>
+          ... and {operations.length - maxOperationsDisplay} more
+        </text>
+      )}
+
+      <text fg={CatppuccinMocha.overlay0} width={66}>
         Press y to confirm, n to cancel
       </text>
     </box>
