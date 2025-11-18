@@ -409,7 +409,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
       // Help dialog shortcuts
       if (showHelpDialog) {
-        if (key.name === '?' || key.name === 'escape') {
+        if (key.name === '?' || key.name === 'escape' || key.name === 'q') {
           setShowHelpDialog(false);
           return;
         }

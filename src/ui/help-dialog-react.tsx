@@ -60,7 +60,7 @@ export function HelpDialog({ visible }: HelpDialogProps) {
     { keys: ':', description: 'Command mode' },
     { section: '' },
     { section: 'OTHER' },
-    { keys: '?/g?', description: 'Toggle help' },
+    { keys: '?/g?/q', description: 'Toggle/close help' },
     { keys: 'q', description: 'Quit' },
   ];
 
