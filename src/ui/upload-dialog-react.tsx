@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
+import { useDialogKeyboard } from '../hooks/useDialogKeyboard.js';
 import { LocalFileEntry, FileTypeFilter, listFiles, formatBytes } from '../utils/file-browser.js';
 import { CatppuccinMocha } from './theme.js';
 
@@ -14,6 +15,7 @@ export interface UploadDialogProps {
   destinationPath?: string;
   onConfirm?: (selectedFiles: string[]) => void;
   onCancel?: () => void;
+  onKeyDown?: (key: string) => void;
 }
 
 /**
@@ -39,6 +41,7 @@ export function UploadDialog({
   destinationPath = '',
   onConfirm,
   onCancel,
+  onKeyDown,
 }: UploadDialogProps) {
   if (!visible) return null;
 
@@ -176,6 +179,9 @@ export function UploadDialog({
     },
     [state, onConfirm, onCancel]
   );
+
+  // Register keyboard handler with dialog system
+  useDialogKeyboard('upload-dialog', handleKeyDown, visible);
 
   const selectedEntry = state.entries[state.selectedIndex];
   const selectedCount = state.selectedFiles.size;

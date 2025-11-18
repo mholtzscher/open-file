@@ -32,6 +32,7 @@ import { EntryIdMap } from '../utils/entry-id.js';
 import { DownloadOperation, UploadOperation } from '../types/operations.js';
 import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
 import { UploadQueue } from '../utils/upload-queue.js';
+import { getDialogHandler } from '../hooks/useDialogKeyboard.js';
 
 interface S3ExplorerProps {
   bucket?: string;
@@ -115,6 +116,9 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
   // Track abort controller for cancelling operations
   const operationAbortControllerRef = useRef<AbortController | null>(null);
+
+  // Track upload dialog visibility for keyboard dispatcher
+  const showUploadDialogRef = useRef(showUploadDialog);
 
   // Track terminal size for responsive layout
   const terminalSize = useTerminalSize();
@@ -587,9 +591,22 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     showConfirmDialogRef.current = showConfirmDialog;
   }, [showConfirmDialog]);
 
+  useEffect(() => {
+    showUploadDialogRef.current = showUploadDialog;
+  }, [showUploadDialog]);
+
   // Register global keyboard dispatcher on mount
   useEffect(() => {
     setGlobalKeyboardDispatcher((key: any) => {
+      // Upload dialog - delegate to dialog handler
+      if (showUploadDialogRef.current) {
+        const handler = getDialogHandler('upload-dialog');
+        if (handler) {
+          handler(key.name);
+        }
+        return; // Block other keys when upload dialog is shown
+      }
+
       // Confirmation dialog - handle y/n keys
       if (showConfirmDialogRef.current) {
         if (key.name === 'y') {
