@@ -695,8 +695,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         return;
       }
 
-      // Upload dialog shortcut (press 'u' to upload)
-      if (key.name === 'u') {
+      // Upload dialog shortcut (press 'U' to upload)
+      if (key.name === 'U' || key.name === 'shift+u') {
         setShowUploadDialog(true);
         return;
       }
@@ -730,7 +730,15 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         return;
       }
 
-      // Redo (press 'Ctrl+r' or 'R' to redo)
+      // Refresh (press 'r' to reload current bucket/folder)
+      if (key.name === 'r') {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        const currentPath = currentBufferState.currentPath;
+        navigationHandlers.navigateToPath(currentPath);
+        return;
+      }
+
+      // Redo (press 'Ctrl+r' to redo)
       if (key.name === 'r' && key.ctrl) {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         if (currentBufferState.redo()) {
