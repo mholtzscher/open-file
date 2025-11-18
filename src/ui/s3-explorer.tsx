@@ -569,7 +569,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         }
 
         // Space or Enter to toggle order
-        if (key.name === ' ' || key.name === 'enter') {
+        if (key.name === 'space' || key.name === 'enter') {
           const newOrder =
             currentSortConfig.order === SortOrder.Ascending
               ? SortOrder.Descending
