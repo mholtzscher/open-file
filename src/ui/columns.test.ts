@@ -228,12 +228,14 @@ describe('DateColumn', () => {
 describe('Column functions', () => {
   it('should get default columns', () => {
     const columns = getDefaultColumns();
-    expect(columns.length).toBe(5);
+    expect(columns.length).toBe(7);
     expect(columns[0].id).toBe('icon');
     expect(columns[1].id).toBe('name');
     expect(columns[2].id).toBe('size');
     expect(columns[3].id).toBe('modified');
     expect(columns[4].id).toBe('storage-class');
+    expect(columns[5].id).toBe('etag');
+    expect(columns[6].id).toBe('content-type');
   });
 
   it('should render row with all columns', () => {

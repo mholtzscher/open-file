@@ -245,6 +245,70 @@ export class BucketCreatedColumn implements Column {
 }
 
 /**
+ * ETag column (S3-specific) - shows object ETag hash
+ */
+export class ETagColumn implements Column {
+  id = 'etag';
+  name = 'ETag';
+  width = 20;
+  visible = false; // Hidden by default
+  align: 'left' | 'right' | 'center' = 'left';
+
+  render(entry: Entry): string {
+    const etag = entry.metadata?.etag;
+    if (!etag) {
+      return padString('-', this.width, this.align);
+    }
+
+    // ETags can be long, show first part with ellipsis
+    const shortened = etag.length > this.width ? etag.slice(0, this.width - 3) + '...' : etag;
+    return padString(shortened, this.width, this.align) + ' ';
+  }
+}
+
+/**
+ * Content Type column (S3-specific) - shows MIME type
+ */
+export class ContentTypeColumn implements Column {
+  id = 'content-type';
+  name = 'Type';
+  width = 16;
+  visible = false; // Hidden by default
+  align: 'left' | 'right' | 'center' = 'left';
+
+  render(entry: Entry): string {
+    if (entry.type === EntryType.Directory) {
+      return padString('dir', this.width, this.align) + ' ';
+    }
+
+    const contentType = entry.metadata?.contentType;
+    if (!contentType) {
+      return padString('-', this.width, this.align) + ' ';
+    }
+
+    // Shorten common MIME types for display
+    const shortened = contentType
+      .replace('application/json', 'JSON')
+      .replace('application/xml', 'XML')
+      .replace('application/pdf', 'PDF')
+      .replace('text/plain', 'TXT')
+      .replace('text/html', 'HTML')
+      .replace('text/css', 'CSS')
+      .replace('text/javascript', 'JS')
+      .replace('image/png', 'PNG')
+      .replace('image/jpeg', 'JPEG')
+      .replace('image/gif', 'GIF')
+      .replace('video/mp4', 'MP4')
+      .replace('audio/mpeg', 'MP3');
+
+    // Use original or shortened, whichever fits better
+    const display =
+      shortened.length > this.width ? shortened.slice(0, this.width - 3) + '...' : shortened;
+    return padString(display, this.width, this.align) + ' ';
+  }
+}
+
+/**
  * Column configuration
  */
 export interface ColumnConfig {
@@ -261,6 +325,8 @@ export function getDefaultColumns(): Column[] {
     new SizeColumn(),
     new DateColumn(),
     new StorageClassColumn(),
+    new ETagColumn(),
+    new ContentTypeColumn(),
   ];
 }
 
