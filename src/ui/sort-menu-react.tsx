@@ -43,6 +43,7 @@ export function SortMenu({ visible, currentField, currentOrder }: SortMenuProps)
       backgroundColor={CatppuccinMocha.base}
       borderStyle="rounded"
       borderColor={CatppuccinMocha.blue}
+      title="Sort Options"
       zIndex={999}
       flexDirection="column"
       paddingLeft={1}
@@ -68,7 +69,7 @@ export function SortMenu({ visible, currentField, currentOrder }: SortMenuProps)
       <text fg={CatppuccinMocha.text}>{formatSortOrder(currentOrder)}</text>
 
       {/* Help text */}
-      <text fg={CatppuccinMocha.overlay2}>Keys: 1-4=field, Space=toggle, Esc/q=close</text>
+      <text fg={CatppuccinMocha.overlay2}>Keys: 1-4=field, Space/Enter=toggle, Esc/q=close</text>
     </box>
   );
 }

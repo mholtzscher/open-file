@@ -28,7 +28,7 @@ import { setGlobalKeyboardDispatcher } from '../index.tsx';
 import { detectChanges, buildOperationPlan } from '../utils/change-detection.js';
 import { EntryIdMap } from '../utils/entry-id.js';
 import { DownloadOperation, UploadOperation } from '../types/operations.js';
-import { SortField, SortOrder } from '../utils/sorting.js';
+import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
 
 interface S3ExplorerProps {
   bucket?: string;
@@ -563,13 +563,13 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
             field: fieldMap[key.name],
           };
           currentBufferState.setSortConfig(newConfig);
-          setStatusMessage(`Sorted by ${key.name}`);
+          setStatusMessage(`Sorted by ${formatSortField(fieldMap[key.name])}`);
           setStatusMessageColor(CatppuccinMocha.green);
           return;
         }
 
         // Space or Enter to toggle order
-        if (key.name === 'space' || key.name === 'enter') {
+        if (key.name === 'space' || key.name === 'return') {
           const newOrder =
             currentSortConfig.order === SortOrder.Ascending
               ? SortOrder.Descending
