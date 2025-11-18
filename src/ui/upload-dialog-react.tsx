@@ -23,6 +23,7 @@ interface DialogState {
   currentPath: string;
   entries: LocalFileEntry[];
   selectedIndex: number;
+  scrollOffset: number;
   selectedFiles: Set<string>;
   filter: FileTypeFilter;
   searchPattern: string;
@@ -46,6 +47,7 @@ export function UploadDialog({
     currentPath: process.cwd(),
     entries: [],
     selectedIndex: 0,
+    scrollOffset: 0,
     selectedFiles: new Set(),
     filter: FileTypeFilter.All,
     searchPattern: '',
@@ -53,9 +55,16 @@ export function UploadDialog({
   });
 
   const windowWidth = Math.min(80, terminalSize.width - 4);
-  const windowHeight = Math.min(20, terminalSize.height - 6);
+  const maxHeight = Math.max(10, terminalSize.height - 8);
+  const windowHeight = Math.min(24, maxHeight);
   const centerLeft = Math.floor((terminalSize.width - windowWidth) / 2);
   const centerTop = Math.max(2, Math.floor((terminalSize.height - windowHeight) / 2));
+
+  // Calculate available space for file list
+  // Account for: title(1) + path(1) + top padding(1) + selection info(1) + help text(1) + bottom padding(1) = 6 lines minimum
+  const headerHeight = 4; // title + path + margins
+  const footerHeight = 3; // selection info + help text + margins
+  const listHeight = Math.max(3, windowHeight - headerHeight - footerHeight);
 
   // Load directory on mount or when path changes
   useEffect(() => {
@@ -88,19 +97,29 @@ export function UploadDialog({
     (key: string) => {
       switch (key) {
         case 'j':
-          // Move down
-          setState(prev => ({
-            ...prev,
-            selectedIndex: Math.min(prev.selectedIndex + 1, prev.entries.length - 1),
-          }));
+          // Move down with scrolling
+          setState(prev => {
+            const newIndex = Math.min(prev.selectedIndex + 1, prev.entries.length - 1);
+            let newOffset = prev.scrollOffset;
+            // Scroll down if selected item is near bottom
+            if (newIndex >= prev.scrollOffset + listHeight - 1) {
+              newOffset = Math.min(newIndex - listHeight + 2, prev.entries.length - listHeight);
+            }
+            return { ...prev, selectedIndex: newIndex, scrollOffset: Math.max(0, newOffset) };
+          });
           break;
 
         case 'k':
-          // Move up
-          setState(prev => ({
-            ...prev,
-            selectedIndex: Math.max(prev.selectedIndex - 1, 0),
-          }));
+          // Move up with scrolling
+          setState(prev => {
+            const newIndex = Math.max(prev.selectedIndex - 1, 0);
+            let newOffset = prev.scrollOffset;
+            // Scroll up if selected item is near top
+            if (newIndex < prev.scrollOffset) {
+              newOffset = newIndex;
+            }
+            return { ...prev, selectedIndex: newIndex, scrollOffset: newOffset };
+          });
           break;
 
         case ' ':
@@ -200,37 +219,46 @@ export function UploadDialog({
           📁 {state.currentPath}
         </text>
 
-        {/* File list */}
-        <box flexDirection="column" flex={1} overflowY="auto" marginTop={1} marginBottom={1}>
+        {/* File list - scrollable */}
+        <box
+          flexDirection="column"
+          height={listHeight}
+          overflow="hidden"
+          marginTop={1}
+          marginBottom={1}
+        >
           {state.entries.length === 0 ? (
             <text fg={CatppuccinMocha.subtext0}>
               {state.error ? `Error: ${state.error}` : 'No files'}
             </text>
           ) : (
-            state.entries.map((entry, index) => {
-              const isSelected = index === state.selectedIndex;
-              const isSelectedFile = state.selectedFiles.has(entry.path);
-              const prefix = entry.isDirectory ? '📁' : '📄';
-              const checkmark = isSelectedFile ? '✓' : ' ';
-              const displayName = `${checkmark} ${prefix} ${entry.name}`;
+            state.entries
+              .slice(state.scrollOffset, state.scrollOffset + listHeight)
+              .map((entry, visibleIndex) => {
+                const actualIndex = state.scrollOffset + visibleIndex;
+                const isSelected = actualIndex === state.selectedIndex;
+                const isSelectedFile = state.selectedFiles.has(entry.path);
+                const prefix = entry.isDirectory ? '📁' : '📄';
+                const checkmark = isSelectedFile ? '✓' : ' ';
+                const displayName = `${checkmark} ${prefix} ${entry.name}`;
 
-              return (
-                <text
-                  key={entry.path}
-                  fg={
-                    isSelected
-                      ? CatppuccinMocha.blue
-                      : isSelectedFile
-                        ? CatppuccinMocha.green
-                        : CatppuccinMocha.text
-                  }
-                  bg={isSelected ? CatppuccinMocha.surface0 : undefined}
-                  width={Math.max(20, windowWidth - 6)}
-                >
-                  {displayName.substring(0, Math.max(20, windowWidth - 6))}
-                </text>
-              );
-            })
+                return (
+                  <text
+                    key={entry.path}
+                    fg={
+                      isSelected
+                        ? CatppuccinMocha.blue
+                        : isSelectedFile
+                          ? CatppuccinMocha.green
+                          : CatppuccinMocha.text
+                    }
+                    bg={isSelected ? CatppuccinMocha.surface0 : undefined}
+                    width={Math.max(20, windowWidth - 6)}
+                  >
+                    {displayName.substring(0, Math.max(20, windowWidth - 6))}
+                  </text>
+                );
+              })
           )}
         </box>
 
