@@ -261,7 +261,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
         // For now, just show a status message - we need to implement file dialog in the future
         setStatusMessage(
-          'Download: Press Shift+D to select destination path (not yet implemented)'
+          'Download: Feature not yet implemented - specify destination path via command dialog'
         );
         setStatusMessageColor(CatppuccinMocha.blue);
       },
@@ -269,7 +269,9 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
 
         // For now, just show a status message - we need to implement file dialog in the future
-        setStatusMessage('Upload: Press Shift+U to select local file (not yet implemented)');
+        setStatusMessage(
+          'Upload: Feature not yet implemented - specify local file path via command dialog'
+        );
         setStatusMessageColor(CatppuccinMocha.blue);
       },
       onPageDown: () => {

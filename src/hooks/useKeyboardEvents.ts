@@ -62,15 +62,11 @@ export function useKeyboardEvents(
 ): UseKeyboardEventsReturn {
   const keySequenceRef = useRef<string[]>([]);
   const sequenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const singleDTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear key sequence
   const clearKeySequence = useCallback(() => {
     if (sequenceTimeoutRef.current) {
       clearTimeout(sequenceTimeoutRef.current);
-    }
-    if (singleDTimeoutRef.current) {
-      clearTimeout(singleDTimeoutRef.current);
     }
     keySequenceRef.current = [];
   }, []);
@@ -133,20 +129,7 @@ export function useKeyboardEvents(
         // g followed by something else - wait for next key
         handled = false;
       } else if (keySequenceRef.current.length === 1 && keySequenceRef.current[0] === 'd') {
-        // Single 'd' - might be download or start of dd (delete)
-        // Set timeout to trigger download if no second 'd' follows
-        if (singleDTimeoutRef.current) {
-          clearTimeout(singleDTimeoutRef.current);
-        }
-        singleDTimeoutRef.current = setTimeout(() => {
-          // This timeout fires if no second 'd' comes within 300ms
-          if (keySequenceRef.current.length === 1 && keySequenceRef.current[0] === 'd') {
-            if (handlers.onDownload) {
-              handlers.onDownload();
-            }
-            keySequenceRef.current = [];
-          }
-        }, 300);
+        // d followed by something else - wait for next key
         handled = false;
       } else if (keySequenceRef.current.length === 1 && keySequenceRef.current[0] === 'y') {
         // y followed by something else - wait for next key
@@ -217,7 +200,10 @@ export function useKeyboardEvents(
           case 'p':
             if (handlers.onPaste) handlers.onPaste();
             break;
-          case 'u':
+          case 'D':
+            if (handlers.onDownload) handlers.onDownload();
+            break;
+          case 'U':
             if (handlers.onUpload) handlers.onUpload();
             break;
           case 'i':

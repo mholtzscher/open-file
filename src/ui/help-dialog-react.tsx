@@ -50,6 +50,8 @@ export function HelpDialog({ visible }: HelpDialogProps) {
     { keys: 'dd', description: 'Delete' },
     { keys: 'yy', description: 'Copy' },
     { keys: 'p', description: 'Paste' },
+    { keys: 'D', description: 'Download to local' },
+    { keys: 'U', description: 'Upload from local' },
     { keys: 'w', description: 'Save changes' },
     { section: '' },
     { section: 'SEARCH & COMMANDS' },
