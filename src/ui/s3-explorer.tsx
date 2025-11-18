@@ -5,7 +5,7 @@
  * Declarative React component that uses hooks for state management and rendering.
  */
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Adapter } from '../adapters/adapter.js';
 import { ConfigManager } from '../utils/config.js';
 import { useBufferState } from '../hooks/useBufferState.js';
@@ -419,9 +419,114 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   // Show error dialog if there's an error message
   const showErrorDialog = statusMessage && statusMessageColor === CatppuccinMocha.red;
 
+  // Create a ref to store the confirm handler so it can be called from keyboard dispatcher
+  const confirmHandlerRef = useRef<() => Promise<void>>(async () => {});
+
+  // Create the confirm handler
+  const createConfirmHandler = useCallback(async () => {
+    setIsExecuting(true);
+    try {
+      // Execute each operation in order
+      let successCount = 0;
+      for (const op of pendingOperations) {
+        try {
+          switch (op.type) {
+            case 'create': {
+              await adapter.create(op.path, op.entryType || 'file');
+              successCount++;
+              break;
+            }
+            case 'delete': {
+              await adapter.delete(op.path, true);
+              successCount++;
+              break;
+            }
+            case 'move': {
+              await adapter.move(op.source, op.destination);
+              successCount++;
+              break;
+            }
+            case 'copy': {
+              await adapter.copy(op.source, op.destination);
+              successCount++;
+              break;
+            }
+            case 'download': {
+              if (adapter.downloadToLocal) {
+                await adapter.downloadToLocal(op.source, op.destination, op.recursive || false);
+                successCount++;
+              }
+              break;
+            }
+            case 'upload': {
+              if (adapter.uploadFromLocal) {
+                await adapter.uploadFromLocal(op.source, op.destination, op.recursive || false);
+                successCount++;
+              }
+              break;
+            }
+          }
+        } catch (opError) {
+          console.error(`Failed to execute ${op.type} operation:`, opError);
+          const parsedError = parseAwsError(opError, `Failed to ${op.type}`);
+          setStatusMessage(`Operation failed: ${formatErrorForDisplay(parsedError, 70)}`);
+          setStatusMessageColor(CatppuccinMocha.red);
+        }
+      }
+
+      // Reload buffer after operations complete
+      if (successCount > 0) {
+        try {
+          // Reload the current directory to reflect changes
+          const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+          const result = await adapter.list(currentBufferState.currentPath);
+          currentBufferState.setEntries([...result.entries]);
+          setStatusMessage(`${successCount} operation(s) completed successfully`);
+          setStatusMessageColor(CatppuccinMocha.green);
+        } catch (reloadError) {
+          console.error('Failed to reload buffer:', reloadError);
+          setStatusMessage('Operations completed but failed to reload buffer');
+          setStatusMessageColor(CatppuccinMocha.yellow);
+        }
+      }
+
+      setShowConfirmDialog(false);
+      setPendingOperations([]);
+    } finally {
+      setIsExecuting(false);
+    }
+  }, [pendingOperations, adapter, multiPaneLayout, bufferState]);
+
+  // Update the ref whenever the handler changes
+  useEffect(() => {
+    confirmHandlerRef.current = createConfirmHandler;
+  }, [createConfirmHandler]);
+
+  // Create refs to handle dialog callbacks in keyboard dispatcher
+  const showConfirmDialogRef = useRef(showConfirmDialog);
+
+  useEffect(() => {
+    showConfirmDialogRef.current = showConfirmDialog;
+  }, [showConfirmDialog]);
+
   // Register global keyboard dispatcher on mount
   useEffect(() => {
     setGlobalKeyboardDispatcher((key: any) => {
+      // Confirmation dialog - handle y/n keys
+      if (showConfirmDialogRef.current) {
+        if (key.name === 'y') {
+          // Call the confirm handler
+          confirmHandlerRef.current();
+          return;
+        }
+        if (key.name === 'n' || key.name === 'escape') {
+          setShowConfirmDialog(false);
+          setPendingOperations([]);
+          return;
+        }
+        return; // Block other keys when confirmation dialog is shown
+      }
+
       // Error dialog - block all input except escape
       if (showErrorDialog) {
         if (key.name === 'escape') {
@@ -672,87 +777,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           title="Confirm Operations"
           operations={pendingOperations}
           visible={showConfirmDialog}
-          onConfirm={async () => {
-            setIsExecuting(true);
-            try {
-              // Execute each operation in order
-              let successCount = 0;
-              for (const op of pendingOperations) {
-                try {
-                  switch (op.type) {
-                    case 'create': {
-                      await adapter.create(op.path, op.entryType || 'file');
-                      successCount++;
-                      break;
-                    }
-                    case 'delete': {
-                      await adapter.delete(op.path, true);
-                      successCount++;
-                      break;
-                    }
-                    case 'move': {
-                      await adapter.move(op.source, op.destination);
-                      successCount++;
-                      break;
-                    }
-                    case 'copy': {
-                      await adapter.copy(op.source, op.destination);
-                      successCount++;
-                      break;
-                    }
-                    case 'download': {
-                      if (adapter.downloadToLocal) {
-                        await adapter.downloadToLocal(
-                          op.source,
-                          op.destination,
-                          op.recursive || false
-                        );
-                        successCount++;
-                      }
-                      break;
-                    }
-                    case 'upload': {
-                      if (adapter.uploadFromLocal) {
-                        await adapter.uploadFromLocal(
-                          op.source,
-                          op.destination,
-                          op.recursive || false
-                        );
-                        successCount++;
-                      }
-                      break;
-                    }
-                  }
-                } catch (opError) {
-                  console.error(`Failed to execute ${op.type} operation:`, opError);
-                  const parsedError = parseAwsError(opError, `Failed to ${op.type}`);
-                  setStatusMessage(`Operation failed: ${formatErrorForDisplay(parsedError, 70)}`);
-                  setStatusMessageColor(CatppuccinMocha.red);
-                }
-              }
-
-              // Reload buffer after operations complete
-              if (successCount > 0) {
-                try {
-                  const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-                  const result = await adapter.list(currentBufferState.currentPath);
-                  currentBufferState.setEntries([...result.entries]);
-                  setOriginalEntries([...result.entries]);
-                  setStatusMessage(`${successCount} operation(s) completed successfully`);
-                  setStatusMessageColor(CatppuccinMocha.green);
-                } catch (reloadError) {
-                  console.error('Failed to reload buffer:', reloadError);
-                  setStatusMessage('Operations completed but failed to reload buffer');
-                  setStatusMessageColor(CatppuccinMocha.yellow);
-                }
-              }
-
-              setShowConfirmDialog(false);
-              setPendingOperations([]);
-            } finally {
-              setIsExecuting(false);
-            }
-          }}
+          onConfirm={createConfirmHandler}
           onCancel={() => {
             setShowConfirmDialog(false);
             setPendingOperations([]);
