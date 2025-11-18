@@ -5,6 +5,7 @@
  */
 
 import { CatppuccinMocha } from './theme.js';
+import { getActiveAwsProfile } from '../utils/aws-profile.js';
 
 export interface HeaderProps {
   bucket?: string;
@@ -15,11 +16,13 @@ export interface HeaderProps {
  * Header React component
  *
  * Displays "open-s3" in the title border and bucket info inside the box.
+ * Shows the current AWS profile on the right side.
  * Uses padding to keep content inside the bordered box.
  */
 export function Header({ bucket }: HeaderProps) {
   const bucketText = bucket || 'none';
   const bucketColor = bucket ? CatppuccinMocha.text : CatppuccinMocha.overlay0;
+  const awsProfile = getActiveAwsProfile();
 
   return (
     <box
@@ -32,9 +35,16 @@ export function Header({ bucket }: HeaderProps) {
       paddingRight={1}
       flexDirection="row"
       alignItems="center"
+      justifyContent="space-between"
     >
-      <text fg={CatppuccinMocha.mauve}>bucket: </text>
-      <text fg={bucketColor}>{bucketText}</text>
+      <box flexDirection="row" alignItems="center">
+        <text fg={CatppuccinMocha.mauve}>bucket: </text>
+        <text fg={bucketColor}>{bucketText}</text>
+      </box>
+      <box flexDirection="row" alignItems="center">
+        <text fg={CatppuccinMocha.mauve}>aws: </text>
+        <text fg={CatppuccinMocha.text}>{awsProfile}</text>
+      </box>
     </box>
   );
 }
