@@ -125,7 +125,7 @@ export function UploadDialog({
           });
           break;
 
-        case ' ':
+        case 'space':
           // Toggle selection
           if (state.selectedIndex < state.entries.length) {
             const entry = state.entries[state.selectedIndex];
@@ -141,7 +141,7 @@ export function UploadDialog({
           }
           break;
 
-        case 'enter':
+        case 'return':
           // Navigate into directory or select file
           if (state.selectedIndex < state.entries.length) {
             const entry = state.entries[state.selectedIndex];
