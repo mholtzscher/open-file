@@ -733,8 +733,36 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       // Refresh (press 'r' to reload current bucket/folder)
       if (key.name === 'r') {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        const currentPath = currentBufferState.currentPath;
-        navigationHandlers.navigateToPath(currentPath);
+
+        // Handle root view (bucket listing) vs bucket folder view differently
+        if (!bucket) {
+          // Root view - reload buckets
+          try {
+            const s3Adapter = adapter as any;
+            if (s3Adapter.getBucketEntries) {
+              s3Adapter
+                .getBucketEntries()
+                .then((entries: any[]) => {
+                  currentBufferState.setEntries([...entries]);
+                  setStatusMessage(`Refreshed: ${entries.length} bucket(s)`);
+                  setStatusMessageColor(CatppuccinMocha.green);
+                })
+                .catch((err: any) => {
+                  const parsedError = parseAwsError(err, 'Refresh failed');
+                  setStatusMessage(formatErrorForDisplay(parsedError, 70));
+                  setStatusMessageColor(CatppuccinMocha.red);
+                });
+            }
+          } catch (err) {
+            const parsedError = parseAwsError(err, 'Refresh failed');
+            setStatusMessage(formatErrorForDisplay(parsedError, 70));
+            setStatusMessageColor(CatppuccinMocha.red);
+          }
+        } else {
+          // Bucket folder view - reload current path
+          const currentPath = currentBufferState.currentPath;
+          navigationHandlers.navigateToPath(currentPath);
+        }
         return;
       }
 
