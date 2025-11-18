@@ -268,9 +268,9 @@ export function UploadDialog({
           </text>
         )}
 
-        {/* Help text */}
+        {/* Help text - matches app-wide keybinding format */}
         <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-          j/k↕ space☑ enter→ c✓ esc✕
+          {`j/k:nav  space:select  enter:open  c:confirm  ESC:cancel`.substring(0, contentWidth)}
         </text>
       </box>
     </>
