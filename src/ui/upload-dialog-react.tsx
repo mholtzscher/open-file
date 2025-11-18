@@ -268,17 +268,23 @@ export function UploadDialog({
           )}
         </box>
 
-        {/* Selection info */}
-        {selectedCount > 0 && (
-          <text fg={CatppuccinMocha.green} width={Math.max(20, windowWidth - 6)}>
-            Selected: {selectedCount} files - {formatBytes(totalSize)}
-          </text>
-        )}
+        {/* Footer - selection info and help text in fixed box */}
+        <box flexDirection="column" height={2} overflow="hidden">
+          {/* Selection info */}
+          {selectedCount > 0 && (
+            <text fg={CatppuccinMocha.green} width={Math.max(20, windowWidth - 6)}>
+              {`Selected: ${selectedCount} files - ${formatBytes(totalSize)}`.substring(
+                0,
+                Math.max(20, windowWidth - 6)
+              )}
+            </text>
+          )}
 
-        {/* Help text - compact and single line */}
-        <text fg={CatppuccinMocha.overlay0} width={Math.max(20, windowWidth - 6)}>
-          {`j/k↕ space☑ enter→ c✓ esc✕`.substring(0, Math.max(20, windowWidth - 6))}
-        </text>
+          {/* Help text - compact and single line */}
+          <text fg={CatppuccinMocha.overlay0} width={Math.max(20, windowWidth - 6)}>
+            {`j/k↕ space☑ enter→ c✓ esc✕`.substring(0, Math.max(20, windowWidth - 6))}
+          </text>
+        </box>
       </box>
     </>
   );
