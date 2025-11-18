@@ -64,9 +64,11 @@ export function UploadDialog({
   const centerTop = Math.max(2, Math.floor((terminalSize.height - windowHeight) / 2));
 
   // Calculate available space for file list
-  // Layout: paddingTop(1) + path(1) + marginTop(1) + list + marginBottom(1) + footer(2) + paddingBottom(1)
-  // Total fixed space: 1 + 1 + 1 + 1 + 2 + 1 = 7 lines
-  const fixedSpace = 7;
+  // Layout: paddingTop(1) + path(1) + marginTop(1) + list + marginBottom(0) + selection(0-1) + help(1) + paddingBottom(1)
+  // Total fixed space when no selection: 1 + 1 + 1 + 0 + 0 + 1 + 1 = 5 lines
+  // Total fixed space when selected: 1 + 1 + 1 + 0 + 1 + 1 + 1 = 6 lines
+  // Use conservative estimate of 6 to always have space
+  const fixedSpace = 6;
   const listHeight = Math.max(3, windowHeight - fixedSpace);
 
   // Load directory on mount or when path changes
@@ -268,23 +270,20 @@ export function UploadDialog({
           )}
         </box>
 
-        {/* Footer - selection info and help text in fixed box */}
-        <box flexDirection="column" height={2} overflow="hidden">
-          {/* Selection info */}
-          {selectedCount > 0 && (
-            <text fg={CatppuccinMocha.green} width={Math.max(20, windowWidth - 6)}>
-              {`Selected: ${selectedCount} files - ${formatBytes(totalSize)}`.substring(
-                0,
-                Math.max(20, windowWidth - 6)
-              )}
-            </text>
-          )}
-
-          {/* Help text - compact and single line */}
-          <text fg={CatppuccinMocha.overlay0} width={Math.max(20, windowWidth - 6)}>
-            {`j/k↕ space☑ enter→ c✓ esc✕`.substring(0, Math.max(20, windowWidth - 6))}
+        {/* Selection info - only show if selected */}
+        {selectedCount > 0 && (
+          <text fg={CatppuccinMocha.green} width={Math.max(20, windowWidth - 6)}>
+            {`Selected: ${selectedCount}f - ${formatBytes(totalSize)}`.substring(
+              0,
+              Math.max(20, windowWidth - 6)
+            )}
           </text>
-        </box>
+        )}
+
+        {/* Help text - compact and single line */}
+        <text fg={CatppuccinMocha.overlay0} width={Math.max(20, windowWidth - 6)}>
+          {`j/k↕ space☑ enter→ c✓ esc✕`.substring(0, Math.max(20, windowWidth - 6))}
+        </text>
       </box>
     </>
   );
