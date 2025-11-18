@@ -4,7 +4,7 @@
  * Interactive file upload dialog with file browser, selection, and queue management
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { useDialogKeyboard } from '../hooks/useDialogKeyboard.js';
 import { LocalFileEntry, FileTypeFilter, listFiles, formatBytes } from '../utils/file-browser.js';
@@ -15,7 +15,6 @@ export interface UploadDialogProps {
   destinationPath?: string;
   onConfirm?: (selectedFiles: string[]) => void;
   onCancel?: () => void;
-  onKeyDown?: (key: string) => void;
 }
 
 /**
@@ -34,14 +33,13 @@ interface DialogState {
 }
 
 /**
- * UploadDialog React component
+ * UploadDialog React component with dynamic, flexible layout
  */
 export function UploadDialog({
   visible = true,
   destinationPath = '',
   onConfirm,
   onCancel,
-  onKeyDown,
 }: UploadDialogProps) {
   if (!visible) return null;
 
@@ -57,19 +55,11 @@ export function UploadDialog({
     isSearchMode: false,
   });
 
+  // Use most of the available space, but leave room for margins
   const windowWidth = Math.min(80, terminalSize.width - 4);
-  const maxHeight = Math.max(10, terminalSize.height - 8);
-  const windowHeight = Math.min(24, maxHeight);
+  const windowHeight = Math.min(24, terminalSize.height - 4);
   const centerLeft = Math.floor((terminalSize.width - windowWidth) / 2);
-  const centerTop = Math.max(2, Math.floor((terminalSize.height - windowHeight) / 2));
-
-  // Calculate available space for file list
-  // Layout: paddingTop(1) + path(1) + marginTop(1) + list + marginBottom(0) + selection(0-1) + help(1) + paddingBottom(1)
-  // Total fixed space when no selection: 1 + 1 + 1 + 0 + 0 + 1 + 1 = 5 lines
-  // Total fixed space when selected: 1 + 1 + 1 + 0 + 1 + 1 + 1 = 6 lines
-  // Use conservative estimate of 6 to always have space
-  const fixedSpace = 6;
-  const listHeight = Math.max(3, windowHeight - fixedSpace);
+  const centerTop = Math.max(1, Math.floor((terminalSize.height - windowHeight) / 2));
 
   // Load directory on mount or when path changes
   useEffect(() => {
@@ -100,15 +90,20 @@ export function UploadDialog({
   // Handle keyboard input
   const handleKeyDown = useCallback(
     (key: string) => {
+      // Estimate visible list height (rough, will work for dynamic sizing)
+      const estimatedListHeight = Math.max(3, windowHeight - 7);
+
       switch (key) {
         case 'j':
           // Move down with scrolling
           setState(prev => {
             const newIndex = Math.min(prev.selectedIndex + 1, prev.entries.length - 1);
             let newOffset = prev.scrollOffset;
-            // Scroll down if selected item is near bottom
-            if (newIndex >= prev.scrollOffset + listHeight - 1) {
-              newOffset = Math.min(newIndex - listHeight + 2, prev.entries.length - listHeight);
+            if (newIndex >= prev.scrollOffset + estimatedListHeight - 1) {
+              newOffset = Math.min(
+                newIndex - estimatedListHeight + 2,
+                prev.entries.length - estimatedListHeight
+              );
             }
             return { ...prev, selectedIndex: newIndex, scrollOffset: Math.max(0, newOffset) };
           });
@@ -119,7 +114,6 @@ export function UploadDialog({
           setState(prev => {
             const newIndex = Math.max(prev.selectedIndex - 1, 0);
             let newOffset = prev.scrollOffset;
-            // Scroll up if selected item is near top
             if (newIndex < prev.scrollOffset) {
               newOffset = newIndex;
             }
@@ -144,7 +138,7 @@ export function UploadDialog({
           break;
 
         case 'return':
-          // Navigate into directory or select file
+          // Navigate into directory
           if (state.selectedIndex < state.entries.length) {
             const entry = state.entries[state.selectedIndex];
             if (entry.isDirectory) {
@@ -179,18 +173,19 @@ export function UploadDialog({
           break;
       }
     },
-    [state, onConfirm, onCancel]
+    [state, onConfirm, onCancel, windowHeight]
   );
 
   // Register keyboard handler with dialog system
   useDialogKeyboard('upload-dialog', handleKeyDown, visible);
 
-  const selectedEntry = state.entries[state.selectedIndex];
   const selectedCount = state.selectedFiles.size;
   const totalSize = Array.from(state.selectedFiles).reduce((sum, path) => {
     const entry = state.entries.find(e => e.path === path);
     return sum + (entry?.size || 0);
   }, 0);
+
+  const contentWidth = windowWidth - 6; // Account for padding
 
   return (
     <>
@@ -205,7 +200,7 @@ export function UploadDialog({
         zIndex={999}
       />
 
-      {/* Dialog window */}
+      {/* Dialog window with dynamic flex layout */}
       <box
         position="absolute"
         left={centerLeft}
@@ -223,25 +218,21 @@ export function UploadDialog({
         zIndex={1000}
       >
         {/* Path display */}
-        <text fg={CatppuccinMocha.text} width={Math.max(20, windowWidth - 6)}>
-          📁 {state.currentPath}
+        <text fg={CatppuccinMocha.text} width={contentWidth}>
+          📁 {state.currentPath.substring(0, contentWidth - 2)}
         </text>
 
-        {/* File list - scrollable */}
-        <box
-          flexDirection="column"
-          height={listHeight}
-          overflow="hidden"
-          marginTop={1}
-          marginBottom={0}
-        >
+        {/* File list - grows to fill available space */}
+        <box flexDirection="column" overflow="hidden" marginTop={1} marginBottom={1}>
           {state.entries.length === 0 ? (
             <text fg={CatppuccinMocha.subtext0}>
               {state.error ? `Error: ${state.error}` : 'No files'}
             </text>
           ) : (
+            // Show files based on scroll offset
+            // Since we can't know exact height, just show a reasonable amount
             state.entries
-              .slice(state.scrollOffset, state.scrollOffset + listHeight)
+              .slice(state.scrollOffset, state.scrollOffset + 15)
               .map((entry, visibleIndex) => {
                 const actualIndex = state.scrollOffset + visibleIndex;
                 const isSelected = actualIndex === state.selectedIndex;
@@ -261,28 +252,25 @@ export function UploadDialog({
                           : CatppuccinMocha.text
                     }
                     bg={isSelected ? CatppuccinMocha.surface0 : undefined}
-                    width={Math.max(20, windowWidth - 6)}
+                    width={contentWidth}
                   >
-                    {displayName.substring(0, Math.max(20, windowWidth - 6))}
+                    {displayName.substring(0, contentWidth)}
                   </text>
                 );
               })
           )}
         </box>
 
-        {/* Selection info - only show if selected */}
+        {/* Selection summary */}
         {selectedCount > 0 && (
-          <text fg={CatppuccinMocha.green} width={Math.max(20, windowWidth - 6)}>
-            {`Selected: ${selectedCount}f - ${formatBytes(totalSize)}`.substring(
-              0,
-              Math.max(20, windowWidth - 6)
-            )}
+          <text fg={CatppuccinMocha.green} width={contentWidth}>
+            {`${selectedCount}f ${formatBytes(totalSize)}`.substring(0, contentWidth)}
           </text>
         )}
 
-        {/* Help text - compact and single line */}
-        <text fg={CatppuccinMocha.overlay0} width={Math.max(20, windowWidth - 6)}>
-          {`j/k↕ space☑ enter→ c✓ esc✕`.substring(0, Math.max(20, windowWidth - 6))}
+        {/* Help text */}
+        <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
+          j/k↕ space☑ enter→ c✓ esc✕
         </text>
       </box>
     </>
