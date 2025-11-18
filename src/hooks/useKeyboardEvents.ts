@@ -106,6 +106,13 @@ export function useKeyboardEvents(
         bufferState.cursorToBottom();
         keySequenceRef.current = [];
         handled = true;
+      } else if (shift && key === 'd' && keySequenceRef.current.length === 1) {
+        // Handle Shift+d for download (when terminal sends 'd' with shift modifier instead of 'D')
+        if (handlers.onDownload) {
+          handlers.onDownload();
+        }
+        keySequenceRef.current = [];
+        handled = true;
       } else if (sequence === 'dd') {
         // Delete line - call handler
         if (handlers.onDelete) {
@@ -187,7 +194,7 @@ export function useKeyboardEvents(
             // yy sequence - wait for second y
             break;
           case 'd':
-            // dd sequence or single 'd' for download
+            // dd sequence - wait for second d
             break;
           case 'g':
             // gg sequence - wait for second g
@@ -202,7 +209,6 @@ export function useKeyboardEvents(
             break;
           case 'D':
             if (handlers.onDownload) handlers.onDownload();
-            // Clear the pending 'd' sequence since we got 'D'
             keySequenceRef.current = [];
             break;
           case 'U':
@@ -230,10 +236,6 @@ export function useKeyboardEvents(
             if (handlers.onQuit) handlers.onQuit();
             break;
         }
-      } else if (key === 'D') {
-        // Allow D (uppercase) even when waiting for d sequence (e.g., after 'd' press)
-        if (handlers.onDownload) handlers.onDownload();
-        keySequenceRef.current = [];
       }
     },
     [bufferState, handleKeySequence, handlers]
