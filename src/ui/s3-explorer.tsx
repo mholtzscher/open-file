@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { Adapter } from '../adapters/adapter.js';
+import { Adapter, ProgressEvent } from '../adapters/adapter.js';
 import { ConfigManager } from '../utils/config.js';
 import { useBufferState } from '../hooks/useBufferState.js';
 import { useKeyboardEvents } from '../hooks/useKeyboardEvents.js';
@@ -19,6 +19,7 @@ import { StatusBar } from './status-bar-react.js';
 import { ConfirmationDialog } from './confirmation-dialog-react.js';
 import { HelpDialog } from './help-dialog-react.js';
 import { PreviewPane } from './preview-pane-react.js';
+import { ProgressWindow } from './progress-window-react.js';
 import { Header } from './header-react.js';
 import { SortMenu } from './sort-menu-react.js';
 import { CatppuccinMocha } from './theme.js';
@@ -100,6 +101,17 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState<string>('');
   const [previewEnabled, setPreviewEnabled] = useState(false);
+  const [showProgress, setShowProgress] = useState(false);
+  const [progressTitle, setProgressTitle] = useState('Operation in Progress');
+  const [progressDescription, setProgressDescription] = useState('Processing...');
+  const [progressValue, setProgressValue] = useState(0);
+  const [progressCurrentFile, setProgressCurrentFile] = useState('');
+  const [progressCurrentNum, setProgressCurrentNum] = useState(0);
+  const [progressTotalNum, setProgressTotalNum] = useState(0);
+  const [progressCancellable, setProgressCancellable] = useState(true);
+
+  // Track abort controller for cancelling operations
+  const operationAbortControllerRef = useRef<AbortController | null>(null);
 
   // Track terminal size for responsive layout
   const terminalSize = useTerminalSize();
@@ -430,53 +442,104 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   const createConfirmHandler = useCallback(async () => {
     setIsExecuting(true);
     try {
+      // Create abort controller for this operation batch
+      const abortController = new AbortController();
+      operationAbortControllerRef.current = abortController;
+      setProgressCancellable(true);
+
       // Execute each operation in order
       let successCount = 0;
-      for (const op of pendingOperations) {
+      setShowProgress(true);
+      setProgressTitle(`Executing ${pendingOperations[0]?.type || 'operation'}...`);
+
+      for (let opIndex = 0; opIndex < pendingOperations.length; opIndex++) {
+        const op = pendingOperations[opIndex];
+
+        // Check if operation was cancelled
+        if (abortController.signal.aborted) {
+          setStatusMessage('Operation cancelled by user');
+          setStatusMessageColor(CatppuccinMocha.yellow);
+          break;
+        }
+
         try {
+          // Create progress callback for this operation
+          const onProgress = (event: ProgressEvent) => {
+            // Calculate overall progress considering current operation index
+            const baseProgress = (opIndex / pendingOperations.length) * 100;
+            const opProgress = event.percentage / pendingOperations.length;
+            const totalProgress = Math.round(baseProgress + opProgress);
+
+            setProgressValue(totalProgress);
+            if (event.currentFile) {
+              setProgressCurrentFile(event.currentFile);
+            }
+            setProgressDescription(event.operation);
+          };
+
+          // Update progress for operation start
+          const progress = Math.round((opIndex / pendingOperations.length) * 100);
+          setProgressValue(progress);
+          setProgressDescription(`${op.type}: ${op.path || op.source || 'processing'}`);
+          setProgressCurrentFile(op.path || op.source || '');
+          setProgressCurrentNum(opIndex + 1);
+          setProgressTotalNum(pendingOperations.length);
+
           switch (op.type) {
             case 'create': {
-              await adapter.create(op.path, op.entryType || 'file');
+              await adapter.create(op.path, op.entryType || 'file', undefined, { onProgress });
               successCount++;
               break;
             }
             case 'delete': {
-              await adapter.delete(op.path, true);
+              await adapter.delete(op.path, true, { onProgress });
               successCount++;
               break;
             }
             case 'move': {
-              await adapter.move(op.source, op.destination);
+              await adapter.move(op.source, op.destination, { onProgress });
               successCount++;
               break;
             }
             case 'copy': {
-              await adapter.copy(op.source, op.destination);
+              await adapter.copy(op.source, op.destination, { onProgress });
               successCount++;
               break;
             }
             case 'download': {
               if (adapter.downloadToLocal) {
-                await adapter.downloadToLocal(op.source, op.destination, op.recursive || false);
+                await adapter.downloadToLocal(op.source, op.destination, op.recursive || false, {
+                  onProgress,
+                });
                 successCount++;
               }
               break;
             }
             case 'upload': {
               if (adapter.uploadFromLocal) {
-                await adapter.uploadFromLocal(op.source, op.destination, op.recursive || false);
+                await adapter.uploadFromLocal(op.source, op.destination, op.recursive || false, {
+                  onProgress,
+                });
                 successCount++;
               }
               break;
             }
           }
         } catch (opError) {
+          // Check if error is due to cancellation
+          if (opError instanceof Error && opError.name === 'AbortError') {
+            setStatusMessage('Operation cancelled by user');
+            setStatusMessageColor(CatppuccinMocha.yellow);
+            break;
+          }
           console.error(`Failed to execute ${op.type} operation:`, opError);
           const parsedError = parseAwsError(opError, `Failed to ${op.type}`);
           setStatusMessage(`Operation failed: ${formatErrorForDisplay(parsedError, 70)}`);
           setStatusMessageColor(CatppuccinMocha.red);
         }
       }
+
+      setShowProgress(false);
 
       // Reload buffer after operations complete
       if (successCount > 0) {
@@ -505,6 +568,14 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   useEffect(() => {
     confirmHandlerRef.current = createConfirmHandler;
   }, [createConfirmHandler]);
+
+  // Create the cancel handler for operations
+  const handleCancelOperation = useCallback(() => {
+    if (operationAbortControllerRef.current) {
+      operationAbortControllerRef.current.abort();
+      setProgressCancellable(false);
+    }
+  }, []);
 
   // Create refs to handle dialog callbacks in keyboard dispatcher
   const showConfirmDialogRef = useRef(showConfirmDialog);
@@ -926,6 +997,19 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
       {/* Help Dialog */}
       <HelpDialog visible={showHelpDialog} />
+
+      {/* Progress Window */}
+      <ProgressWindow
+        visible={showProgress}
+        title={progressTitle}
+        description={progressDescription}
+        progress={progressValue}
+        currentFile={progressCurrentFile}
+        currentFileNumber={progressCurrentNum}
+        totalFiles={progressTotalNum}
+        onCancel={handleCancelOperation}
+        canCancel={progressCancellable}
+      />
     </box>
   );
 }
