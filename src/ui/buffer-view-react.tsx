@@ -136,6 +136,15 @@ export function BufferView({
     bufferState.scrollOffset + viewportHeight
   );
 
+  // If no entries, show empty indicator
+  if (entries.length === 0) {
+    return (
+      <box flexDirection="column" width="100%" height="100%">
+        <text fg={Theme.getEmptyStateColor()}>&lt;empty&gt;</text>
+      </box>
+    );
+  }
+
   return (
     <box flexDirection="column" width="100%" height="100%">
       {visibleEntries.map((entry, idx) => {

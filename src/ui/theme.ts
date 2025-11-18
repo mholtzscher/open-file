@@ -186,6 +186,13 @@ export class Theme {
   }
 
   /**
+   * Get color for empty state indicator
+   */
+  static getEmptyStateColor(): string {
+    return CatppuccinMocha.overlay0;
+  }
+
+  /**
    * Get highlighted/accent color
    */
   static getAccentColor(): string {
