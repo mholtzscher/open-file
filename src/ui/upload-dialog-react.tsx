@@ -64,10 +64,10 @@ export function UploadDialog({
   const centerTop = Math.max(2, Math.floor((terminalSize.height - windowHeight) / 2));
 
   // Calculate available space for file list
-  // Account for: title(1) + path(1) + top padding(1) + selection info(1) + help text(1) + bottom padding(1) = 6 lines minimum
-  const headerHeight = 4; // title + path + margins
-  const footerHeight = 3; // selection info + help text + margins
-  const listHeight = Math.max(3, windowHeight - headerHeight - footerHeight);
+  // Layout: paddingTop(1) + path(1) + marginTop(1) + list + marginBottom(1) + footer(2) + paddingBottom(1)
+  // Total fixed space: 1 + 1 + 1 + 1 + 2 + 1 = 7 lines
+  const fixedSpace = 7;
+  const listHeight = Math.max(3, windowHeight - fixedSpace);
 
   // Load directory on mount or when path changes
   useEffect(() => {
@@ -231,7 +231,7 @@ export function UploadDialog({
           height={listHeight}
           overflow="hidden"
           marginTop={1}
-          marginBottom={1}
+          marginBottom={0}
         >
           {state.entries.length === 0 ? (
             <text fg={CatppuccinMocha.subtext0}>
