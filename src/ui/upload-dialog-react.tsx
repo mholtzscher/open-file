@@ -264,7 +264,10 @@ export function UploadDialog({
         {/* Selection summary */}
         {selectedCount > 0 && (
           <text fg={CatppuccinMocha.green} width={contentWidth}>
-            {`${selectedCount}f ${formatBytes(totalSize)}`.substring(0, contentWidth)}
+            {`Selected: ${selectedCount} files - ${formatBytes(totalSize)}`.substring(
+              0,
+              contentWidth
+            )}
           </text>
         )}
 
