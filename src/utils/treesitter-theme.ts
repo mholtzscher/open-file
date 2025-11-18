@@ -132,98 +132,47 @@ export function createTreeSitterStyle(): SyntaxStyle {
 /**
  * Detect Tree-sitter filetype from filename
  *
- * Tree-sitter uses different language identifiers than highlight.js
+ * IMPORTANT: OpenTUI v0.1.44 only ships with Tree-sitter grammars for:
+ * - javascript
+ * - typescript
+ * - markdown
+ * - markdown_inline
+ * - zig
+ *
+ * All other languages will fall back to plain text with no syntax highlighting.
+ * This is a limitation of the current OpenTUI release.
+ *
+ * @see node_modules/@opentui/core/assets/ for available grammars
  */
 export function detectTreeSitterFiletype(filename: string): string | undefined {
   const ext = filename.toLowerCase().split('.').pop();
   if (!ext) return undefined;
 
+  // Only return filetypes that OpenTUI actually has grammars for
   const filetypeMap: Record<string, string> = {
-    // JavaScript/TypeScript
+    // JavaScript (supported)
     js: 'javascript',
     jsx: 'javascript',
     mjs: 'javascript',
     cjs: 'javascript',
+
+    // TypeScript (supported)
     ts: 'typescript',
-    tsx: 'tsx',
+    tsx: 'typescript',
     mts: 'typescript',
     cts: 'typescript',
 
-    // Web
-    html: 'html',
-    htm: 'html',
-    css: 'css',
-    scss: 'scss',
-    sass: 'scss',
-    less: 'css',
-    json: 'json',
-    jsonc: 'json',
-    json5: 'json',
-
-    // Python
-    py: 'python',
-    pyw: 'python',
-    pyi: 'python',
-
-    // Rust
-    rs: 'rust',
-
-    // Go
-    go: 'go',
-
-    // C/C++
-    c: 'c',
-    h: 'c',
-    cpp: 'cpp',
-    cc: 'cpp',
-    cxx: 'cpp',
-    hpp: 'cpp',
-    hxx: 'cpp',
-    hh: 'cpp',
-
-    // Java
-    java: 'java',
-
-    // Shell
-    sh: 'bash',
-    bash: 'bash',
-    zsh: 'bash',
-    fish: 'bash',
-
-    // Config files
-    yaml: 'yaml',
-    yml: 'yaml',
-    toml: 'toml',
-    xml: 'xml',
-    ini: 'ini',
-
-    // Markdown
+    // Markdown (supported)
     md: 'markdown',
     markdown: 'markdown',
     mdx: 'markdown',
 
-    // SQL
-    sql: 'sql',
+    // Zig (supported)
+    zig: 'zig',
 
-    // Ruby
-    rb: 'ruby',
-    rake: 'ruby',
-
-    // PHP
-    php: 'php',
-
-    // Lua
-    lua: 'lua',
-
-    // Other common languages
-    vim: 'vim',
-    dockerfile: 'dockerfile',
-    makefile: 'make',
-    cmake: 'cmake',
-    proto: 'proto',
-    graphql: 'graphql',
-    gql: 'graphql',
-    regex: 'regex',
+    // All other languages: return undefined so CodeRenderable shows plain text
+    // This includes: Python, Rust, Go, Java, C/C++, JSON, YAML, etc.
+    // They will be rendered as plain text with no syntax highlighting.
   };
 
   return filetypeMap[ext];

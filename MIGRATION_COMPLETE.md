@@ -77,45 +77,42 @@ const filetype = detectTreeSitterFiletype('example.js'); // returns 'javascript'
 
 ## File Type Support
 
-Tree-sitter now supports comprehensive syntax highlighting for:
+### ⚠️ Important Limitation
 
-### Programming Languages
+**OpenTUI v0.1.44 only ships with Tree-sitter grammars for 5 languages:**
 
-- **JavaScript/TypeScript:** `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts`, `.cts`
-- **Python:** `.py`, `.pyw`, `.pyi`
-- **Rust:** `.rs`
-- **Go:** `.go`
-- **C/C++:** `.c`, `.h`, `.cpp`, `.cc`, `.cxx`, `.hpp`
-- **Java:** `.java`
-- **Ruby:** `.rb`, `.rake`
-- **PHP:** `.php`
-- **Lua:** `.lua`
+✅ **Supported (with syntax highlighting):**
 
-### Web Technologies
-
-- **HTML:** `.html`, `.htm`
-- **CSS:** `.css`, `.scss`, `.sass`, `.less`
-- **JSON:** `.json`, `.jsonc`, `.json5`
-
-### Config & Data
-
-- **YAML:** `.yaml`, `.yml`
-- **TOML:** `.toml`
-- **XML:** `.xml`
-- **INI:** `.ini`
-- **SQL:** `.sql`
-
-### Documentation
-
+- **JavaScript:** `.js`, `.jsx`, `.mjs`, `.cjs`
+- **TypeScript:** `.ts`, `.tsx`, `.mts`, `.cts`
 - **Markdown:** `.md`, `.markdown`, `.mdx`
+- **Zig:** `.zig`
 
-### Shell
+❌ **Unsupported (plain text only):**
 
-- **Bash:** `.sh`, `.bash`, `.zsh`, `.fish`
+- All other languages (Python, Rust, Go, Java, C/C++, JSON, YAML, etc.) will display as **plain text** with no syntax highlighting
+- The CodeRenderable component gracefully falls back to plain text when no grammar is available
 
-### Other
+### Why This Limitation Exists
 
-- **Dockerfile, Makefile, CMake, GraphQL, Protocol Buffers, Vim**
+OpenTUI's Tree-sitter implementation requires pre-compiled WASM grammars. Only 5 languages are bundled with OpenTUI v0.1.44:
+
+```
+node_modules/@opentui/core/assets/
+├── javascript/
+├── typescript/
+├── markdown/
+├── markdown_inline/
+└── zig/
+```
+
+### Future Improvements
+
+To support more languages, one of these approaches is needed:
+
+1. **Wait for OpenTUI update** - Future versions may include more grammars
+2. **Custom grammar loading** - Manually add Tree-sitter WASM grammars (requires build process)
+3. **Hybrid approach** - Use CodeRenderable for supported languages, fall back to highlight.js for others
 
 ## Testing
 

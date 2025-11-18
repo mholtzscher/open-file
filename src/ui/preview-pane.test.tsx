@@ -14,43 +14,47 @@ describe('PreviewPane utilities', () => {
     expect(typeof style.getStyleCount).toBe('function');
   });
 
-  it('detects filetype from JavaScript extension', () => {
+  it('detects JavaScript filetype (supported)', () => {
     expect(detectTreeSitterFiletype('test.js')).toBe('javascript');
     expect(detectTreeSitterFiletype('test.jsx')).toBe('javascript');
     expect(detectTreeSitterFiletype('test.mjs')).toBe('javascript');
   });
 
-  it('detects filetype from TypeScript extension', () => {
+  it('detects TypeScript filetype (supported)', () => {
     expect(detectTreeSitterFiletype('test.ts')).toBe('typescript');
-    expect(detectTreeSitterFiletype('test.tsx')).toBe('tsx');
+    expect(detectTreeSitterFiletype('test.tsx')).toBe('typescript');
   });
 
-  it('detects filetype from Python extension', () => {
-    expect(detectTreeSitterFiletype('test.py')).toBe('python');
+  it('detects Markdown filetype (supported)', () => {
+    expect(detectTreeSitterFiletype('README.md')).toBe('markdown');
+    expect(detectTreeSitterFiletype('notes.markdown')).toBe('markdown');
   });
 
-  it('detects filetype from JSON extension', () => {
-    expect(detectTreeSitterFiletype('package.json')).toBe('json');
+  it('detects Zig filetype (supported)', () => {
+    expect(detectTreeSitterFiletype('main.zig')).toBe('zig');
   });
 
-  it('detects filetype from Rust extension', () => {
-    expect(detectTreeSitterFiletype('main.rs')).toBe('rust');
+  it('returns undefined for unsupported languages (Python)', () => {
+    // OpenTUI v0.1.44 does not include Python grammar
+    expect(detectTreeSitterFiletype('test.py')).toBeUndefined();
   });
 
-  it('detects filetype from Go extension', () => {
-    expect(detectTreeSitterFiletype('main.go')).toBe('go');
+  it('returns undefined for unsupported languages (JSON)', () => {
+    // OpenTUI v0.1.44 does not include JSON grammar
+    expect(detectTreeSitterFiletype('package.json')).toBeUndefined();
+  });
+
+  it('returns undefined for unsupported languages (Rust)', () => {
+    // OpenTUI v0.1.44 does not include Rust grammar
+    expect(detectTreeSitterFiletype('main.rs')).toBeUndefined();
   });
 
   it('returns undefined for unknown extensions', () => {
     expect(detectTreeSitterFiletype('file.unknown')).toBeUndefined();
   });
 
-  it('detects makefile extension', () => {
-    expect(detectTreeSitterFiletype('Makefile')).toBe('make');
-  });
-
   it('handles case-insensitive extensions', () => {
     expect(detectTreeSitterFiletype('TEST.JS')).toBe('javascript');
-    expect(detectTreeSitterFiletype('TEST.PY')).toBe('python');
+    expect(detectTreeSitterFiletype('TEST.TS')).toBe('typescript');
   });
 });
