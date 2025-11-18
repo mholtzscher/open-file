@@ -695,8 +695,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         return;
       }
 
-      // Upload dialog shortcut (press 'U' to upload)
-      if (key.name === 'U' || key.name === 'shift+u') {
+      // Upload dialog shortcut (press 'U' to upload - shift+u only)
+      if ((key.name === 'u' && key.shift) || key.name === 'U') {
         setShowUploadDialog(true);
         return;
       }
