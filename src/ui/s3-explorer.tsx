@@ -98,6 +98,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   const [originalEntries, setOriginalEntries] = useState<any[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [previewContent, setPreviewContent] = useState<string | null>(null);
+  const [previewFilename, setPreviewFilename] = useState<string>('');
   const [previewEnabled, setPreviewEnabled] = useState(false);
 
   // Track terminal size for responsive layout
@@ -752,6 +753,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       // Only preview files
       if (!selectedEntry || !isPreviewableFile(selectedEntry)) {
         setPreviewContent(null);
+        setPreviewFilename('');
         return;
       }
 
@@ -760,6 +762,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         const maxPreviewSize = 100 * 1024;
         if (selectedEntry.size && selectedEntry.size > maxPreviewSize) {
           setPreviewContent(`File too large to preview (${formatBytes(selectedEntry.size)})`);
+          setPreviewFilename('');
           return;
         }
 
@@ -771,6 +774,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         const buffer = await adapter.read(fullPath);
         const content = buffer.toString('utf-8');
         setPreviewContent(content);
+        setPreviewFilename(selectedEntry.name);
       } catch (err) {
         console.error('Failed to load preview:', err);
         setPreviewContent('Failed to load preview');
@@ -849,7 +853,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
             {/* Preview Pane - only in single pane mode when enabled */}
             {previewEnabled && previewContent !== null && (
-              <PreviewPane content={previewContent} visible={true} />
+              <PreviewPane content={previewContent} filename={previewFilename} visible={true} />
             )}
           </>
         )}

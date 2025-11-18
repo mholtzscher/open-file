@@ -5,9 +5,11 @@
  */
 
 import { CatppuccinMocha, Theme } from './theme.js';
+import { highlightCode } from '../utils/syntax-highlighting.js';
 
 export interface PreviewPaneProps {
   content?: string;
+  filename?: string;
   visible?: boolean;
   flexGrow?: number;
   flexShrink?: number;
@@ -19,6 +21,7 @@ export interface PreviewPaneProps {
  */
 export function PreviewPane({
   content = '',
+  filename = '',
   visible = true,
   flexGrow = 1,
   flexShrink = 1,
@@ -46,7 +49,14 @@ export function PreviewPane({
     );
   }
 
-  const lines = content.split('\n');
+  // Apply syntax highlighting if filename is available
+  let lines: Array<{ text: string; color?: string }>;
+  if (filename) {
+    lines = highlightCode(content, filename);
+  } else {
+    lines = content.split('\n').map(text => ({ text }));
+  }
+
   const totalLines = lines.length;
 
   return (
@@ -63,8 +73,8 @@ export function PreviewPane({
       overflow="hidden"
     >
       {lines.map((line, idx) => (
-        <text key={idx} fg={CatppuccinMocha.text}>
-          {line}
+        <text key={idx} fg={line.color || CatppuccinMocha.text}>
+          {line.text}
         </text>
       ))}
     </box>
