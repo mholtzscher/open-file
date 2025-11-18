@@ -11,9 +11,10 @@ describe('PreviewPane', () => {
     expect(result).toBeNull();
   });
 
-  it('returns null when content is empty', () => {
+  it('shows empty indicator when content is empty', () => {
     const result = PreviewPane({ visible: true, content: '' });
-    expect(result).toBeNull();
+    expect(result).not.toBeNull();
+    // The component should render the empty indicator
   });
 
   it('renders with content when visible', () => {

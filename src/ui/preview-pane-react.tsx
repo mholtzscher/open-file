@@ -4,7 +4,7 @@
  * Displays a preview of the currently selected file
  */
 
-import { CatppuccinMocha } from './theme.js';
+import { CatppuccinMocha, Theme } from './theme.js';
 
 export interface PreviewPaneProps {
   content?: string;
@@ -24,7 +24,27 @@ export function PreviewPane({
   flexShrink = 1,
   flexBasis = 0,
 }: PreviewPaneProps) {
-  if (!visible || !content) return null;
+  if (!visible) return null;
+
+  // If no content, show empty indicator
+  if (!content) {
+    return (
+      <box
+        flexGrow={flexGrow}
+        flexShrink={flexShrink}
+        flexBasis={flexBasis}
+        borderStyle="rounded"
+        borderColor={CatppuccinMocha.blue}
+        title="Preview (0 lines)"
+        flexDirection="column"
+        paddingLeft={1}
+        paddingRight={1}
+        overflow="hidden"
+      >
+        <text fg={Theme.getEmptyStateColor()}>&lt;empty&gt;</text>
+      </box>
+    );
+  }
 
   const lines = content.split('\n');
   const totalLines = lines.length;
