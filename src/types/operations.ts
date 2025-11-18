@@ -59,9 +59,45 @@ export interface CopyOperation extends BaseOperation {
 }
 
 /**
+ * Download operation - download S3 objects to local filesystem
+ */
+export interface DownloadOperation extends BaseOperation {
+  type: 'download';
+  /** S3 path to download from */
+  source: string;
+  /** Local destination path */
+  destination: string;
+  /** Entry being downloaded */
+  entry: Entry;
+  /** Whether to download recursively for directories */
+  recursive?: boolean;
+}
+
+/**
+ * Upload operation - upload local files to S3
+ */
+export interface UploadOperation extends BaseOperation {
+  type: 'upload';
+  /** Local source path */
+  source: string;
+  /** S3 destination path */
+  destination: string;
+  /** Entry being uploaded */
+  entry: Entry;
+  /** Whether to upload recursively for directories */
+  recursive?: boolean;
+}
+
+/**
  * Union type of all operations
  */
-export type AdapterOperation = CreateOperation | DeleteOperation | MoveOperation | CopyOperation;
+export type AdapterOperation =
+  | CreateOperation
+  | DeleteOperation
+  | MoveOperation
+  | CopyOperation
+  | DownloadOperation
+  | UploadOperation;
 
 /**
  * Operation plan - collection of operations to execute

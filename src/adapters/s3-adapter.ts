@@ -24,6 +24,8 @@ import {
   ListObjectsV2CommandInput,
   _Object,
 } from '@aws-sdk/client-s3';
+import { promises as fs } from 'fs';
+import { join, dirname, basename } from 'path';
 import { Adapter, ListOptions, ListResult, OperationOptions } from './adapter.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { generateEntryId } from '../utils/entry-id.js';
@@ -1211,6 +1213,241 @@ export class S3Adapter implements Adapter {
     } catch (error) {
       logger.error('Failed to read file from S3', error);
       throw parseAwsError(error, 'read');
+    }
+  }
+
+  /**
+   * Download S3 objects to local filesystem
+   */
+  async downloadToLocal(
+    s3Path: string,
+    localPath: string,
+    recursive: boolean = false,
+    options?: OperationOptions
+  ): Promise<void> {
+    const logger = getLogger();
+    const s3Normalized = this.normalizePath(s3Path);
+
+    try {
+      if (recursive && s3Path.endsWith('/')) {
+        // Download directory recursively
+        await this.downloadDirectoryToLocal(s3Normalized, localPath, options);
+      } else {
+        // Download single file
+        await this.downloadSingleFileToLocal(s3Normalized, localPath, options);
+      }
+    } catch (error) {
+      logger.error(`Failed to download ${s3Path} to ${localPath}`, error);
+      throw parseAwsError(error, 'download');
+    }
+  }
+
+  /**
+   * Download a single S3 file to local filesystem
+   */
+  private async downloadSingleFileToLocal(
+    s3Key: string,
+    localPath: string,
+    options?: OperationOptions
+  ): Promise<void> {
+    // Ensure parent directory exists
+    const parentDir = dirname(localPath);
+    await fs.mkdir(parentDir, { recursive: true });
+
+    // Download the file
+    const fileBuffer = await this.read(s3Key, options);
+
+    // Write to local filesystem
+    await fs.writeFile(localPath, fileBuffer);
+  }
+
+  /**
+   * Download S3 directory to local filesystem recursively
+   */
+  private async downloadDirectoryToLocal(
+    s3Prefix: string,
+    localPath: string,
+    options?: OperationOptions
+  ): Promise<void> {
+    const objectsToDownload: string[] = [];
+    let continuationToken: string | undefined;
+    let totalObjects = 0;
+
+    // List all objects in the directory
+    do {
+      const response = await retryWithBackoff(() => {
+        const command = new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: s3Prefix,
+          ContinuationToken: continuationToken,
+        });
+        return this.client.send(command);
+      }, getS3RetryConfig());
+
+      if (response.Contents) {
+        for (const obj of response.Contents) {
+          if (obj.Key && obj.Key !== s3Prefix && !obj.Key.endsWith('/')) {
+            objectsToDownload.push(obj.Key);
+            totalObjects++;
+          }
+        }
+      }
+
+      continuationToken = response.NextContinuationToken;
+    } while (continuationToken);
+
+    // Download each file
+    for (let i = 0; i < objectsToDownload.length; i++) {
+      const s3Key = objectsToDownload[i];
+      const relativePath = s3Key.substring(s3Prefix.length);
+      const localFilePath = join(localPath, relativePath);
+
+      // Ensure parent directory exists
+      const parentDir = dirname(localFilePath);
+      await fs.mkdir(parentDir, { recursive: true });
+
+      // Download the file
+      const fileBuffer = await this.read(s3Key, options);
+      await fs.writeFile(localFilePath, fileBuffer);
+
+      // Report progress
+      if (options?.onProgress) {
+        options.onProgress({
+          operation: 'Downloading directory',
+          bytesTransferred: i + 1,
+          totalBytes: totalObjects,
+          percentage: Math.round(((i + 1) / totalObjects) * 100),
+          currentFile: s3Key,
+        });
+      }
+    }
+  }
+
+  /**
+   * Upload local files to S3
+   */
+  async uploadFromLocal(
+    localPath: string,
+    s3Path: string,
+    recursive: boolean = false,
+    options?: OperationOptions
+  ): Promise<void> {
+    const logger = getLogger();
+    const s3Normalized = this.normalizePath(s3Path, true);
+
+    try {
+      // Check if local path is a directory
+      const stats = await fs.stat(localPath);
+
+      if (stats.isDirectory() && recursive) {
+        // Upload directory recursively
+        await this.uploadDirectoryToS3(localPath, s3Normalized, options);
+      } else if (stats.isFile()) {
+        // Upload single file
+        await this.uploadSingleFileToS3(localPath, s3Normalized, options);
+      } else {
+        throw new Error(`Invalid path: ${localPath} is not a file or directory`);
+      }
+    } catch (error) {
+      logger.error(`Failed to upload ${localPath} to ${s3Path}`, error);
+      throw parseAwsError(error, 'upload');
+    }
+  }
+
+  /**
+   * Upload a single local file to S3
+   */
+  private async uploadSingleFileToS3(
+    localPath: string,
+    s3Key: string,
+    options?: OperationOptions
+  ): Promise<void> {
+    // Read the file
+    const fileBuffer = await fs.readFile(localPath);
+    const totalBytes = fileBuffer.length;
+
+    if (options?.onProgress) {
+      options.onProgress({
+        operation: 'Uploading file',
+        bytesTransferred: 0,
+        totalBytes,
+        percentage: 0,
+        currentFile: s3Key,
+      });
+    }
+
+    // Use multipart upload for large files
+    const MULTIPART_THRESHOLD = 5 * 1024 * 1024; // 5MB
+    if (totalBytes > MULTIPART_THRESHOLD) {
+      await this.uploadLargeFile(s3Key, fileBuffer, options);
+    } else {
+      // Use regular PutObject for small files
+      await retryWithBackoff(() => {
+        const command = new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: s3Key,
+          Body: fileBuffer,
+        });
+        return this.client.send(command);
+      }, getS3RetryConfig());
+    }
+
+    if (options?.onProgress) {
+      options.onProgress({
+        operation: 'Uploaded file',
+        bytesTransferred: totalBytes,
+        totalBytes,
+        percentage: 100,
+        currentFile: s3Key,
+      });
+    }
+  }
+
+  /**
+   * Upload local directory to S3 recursively
+   */
+  private async uploadDirectoryToS3(
+    localPath: string,
+    s3Prefix: string,
+    options?: OperationOptions
+  ): Promise<void> {
+    const filesToUpload: { localPath: string; s3Key: string }[] = [];
+
+    // Recursively collect all files
+    const collectFiles = async (dir: string, prefix: string) => {
+      const entries = await fs.readdir(dir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = join(dir, entry.name);
+        const s3Key = prefix + entry.name;
+
+        if (entry.isDirectory()) {
+          // Recursively collect from subdirectory
+          await collectFiles(fullPath, s3Key + '/');
+        } else if (entry.isFile()) {
+          filesToUpload.push({ localPath: fullPath, s3Key });
+        }
+      }
+    };
+
+    // Collect all files
+    await collectFiles(localPath, s3Prefix);
+
+    // Upload each file
+    for (let i = 0; i < filesToUpload.length; i++) {
+      const { localPath: filePath, s3Key } = filesToUpload[i];
+      await this.uploadSingleFileToS3(filePath, s3Key, options);
+
+      // Report progress
+      if (options?.onProgress) {
+        options.onProgress({
+          operation: 'Uploading directory',
+          bytesTransferred: i + 1,
+          totalBytes: filesToUpload.length,
+          percentage: Math.round(((i + 1) / filesToUpload.length) * 100),
+          currentFile: s3Key,
+        });
+      }
     }
   }
 }

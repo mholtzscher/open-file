@@ -249,6 +249,29 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           setShowConfirmDialog(true);
         }
       },
+      onDownload: () => {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        const currentEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
+
+        if (!currentEntry) {
+          setStatusMessage('No entry selected');
+          setStatusMessageColor(CatppuccinMocha.red);
+          return;
+        }
+
+        // For now, just show a status message - we need to implement file dialog in the future
+        setStatusMessage(
+          'Download: Press Shift+D to select destination path (not yet implemented)'
+        );
+        setStatusMessageColor(CatppuccinMocha.blue);
+      },
+      onUpload: () => {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+
+        // For now, just show a status message - we need to implement file dialog in the future
+        setStatusMessage('Upload: Press Shift+U to select local file (not yet implemented)');
+        setStatusMessageColor(CatppuccinMocha.blue);
+      },
       onPageDown: () => {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         currentBufferState.moveCursorDown(10);

@@ -30,6 +30,8 @@ export interface KeyboardHandlers {
   onCopy?: () => void;
   onPaste?: () => void;
   onDelete?: () => void;
+  onDownload?: () => void;
+  onUpload?: () => void;
   onEnterInsertMode?: () => void;
   onEnterEditMode?: () => void;
   onEnterSearchMode?: () => void;
@@ -42,6 +44,8 @@ export interface KeyboardHandlers {
   onBucketsCommand?: () => void;
   onBucketCommand?: (bucketName: string) => void;
   onCommand?: (command: string) => void;
+  onToggleMultiPane?: () => void;
+  onSwitchPane?: () => void;
 }
 
 export interface UseKeyboardEventsReturn {
@@ -58,11 +62,15 @@ export function useKeyboardEvents(
 ): UseKeyboardEventsReturn {
   const keySequenceRef = useRef<string[]>([]);
   const sequenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const singleDTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear key sequence
   const clearKeySequence = useCallback(() => {
     if (sequenceTimeoutRef.current) {
       clearTimeout(sequenceTimeoutRef.current);
+    }
+    if (singleDTimeoutRef.current) {
+      clearTimeout(singleDTimeoutRef.current);
     }
     keySequenceRef.current = [];
   }, []);
@@ -103,7 +111,10 @@ export function useKeyboardEvents(
         keySequenceRef.current = [];
         handled = true;
       } else if (sequence === 'dd') {
-        // Delete line - handled by buffer state or caller
+        // Delete line - call handler
+        if (handlers.onDelete) {
+          handlers.onDelete();
+        }
         keySequenceRef.current = [];
         handled = true;
       } else if (sequence === 'yy') {
@@ -122,7 +133,20 @@ export function useKeyboardEvents(
         // g followed by something else - wait for next key
         handled = false;
       } else if (keySequenceRef.current.length === 1 && keySequenceRef.current[0] === 'd') {
-        // d followed by something else - wait for next key
+        // Single 'd' - might be download or start of dd (delete)
+        // Set timeout to trigger download if no second 'd' follows
+        if (singleDTimeoutRef.current) {
+          clearTimeout(singleDTimeoutRef.current);
+        }
+        singleDTimeoutRef.current = setTimeout(() => {
+          // This timeout fires if no second 'd' comes within 300ms
+          if (keySequenceRef.current.length === 1 && keySequenceRef.current[0] === 'd') {
+            if (handlers.onDownload) {
+              handlers.onDownload();
+            }
+            keySequenceRef.current = [];
+          }
+        }, 300);
         handled = false;
       } else if (keySequenceRef.current.length === 1 && keySequenceRef.current[0] === 'y') {
         // y followed by something else - wait for next key
@@ -180,7 +204,7 @@ export function useKeyboardEvents(
             // yy sequence - wait for second y
             break;
           case 'd':
-            // dd sequence - wait for second d
+            // dd sequence or single 'd' for download
             break;
           case 'g':
             // gg sequence - wait for second g
@@ -192,6 +216,9 @@ export function useKeyboardEvents(
             break;
           case 'p':
             if (handlers.onPaste) handlers.onPaste();
+            break;
+          case 'u':
+            if (handlers.onUpload) handlers.onUpload();
             break;
           case 'i':
             bufferState.enterInsertMode();
