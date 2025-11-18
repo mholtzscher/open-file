@@ -93,7 +93,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   const [pendingOperations, setPendingOperations] = useState<any[]>([]);
   const [originalEntries, setOriginalEntries] = useState<any[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
-  const [previewContent, setPreviewContent] = useState<string>('');
+  const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewEnabled, setPreviewEnabled] = useState(false);
 
   // Track terminal size for responsive layout
@@ -209,7 +209,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         // If preview is enabled, close it first
         if (previewEnabled) {
           setPreviewEnabled(false);
-          setPreviewContent('');
+          setPreviewContent(null);
           setStatusMessage('Preview closed');
           setStatusMessageColor(CatppuccinMocha.text);
           return;
@@ -501,19 +501,19 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
       // Early exit if preview is disabled
       if (!previewEnabled) {
-        setPreviewContent('');
+        setPreviewContent(null);
         return;
       }
 
       // Early exit if not in bucket view or not initialized
       if (!bucket || !isInitialized) {
-        setPreviewContent('');
+        setPreviewContent(null);
         return;
       }
 
       // Early exit if multi-pane mode
       if (multiPaneLayout.isMultiPaneMode) {
-        setPreviewContent('');
+        setPreviewContent(null);
         return;
       }
 
@@ -521,7 +521,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
       // Only preview files
       if (!selectedEntry || !isPreviewableFile(selectedEntry)) {
-        setPreviewContent('');
+        setPreviewContent(null);
         return;
       }
 
@@ -618,7 +618,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
             />
 
             {/* Preview Pane - only in single pane mode when enabled */}
-            {previewEnabled && previewContent && (
+            {previewEnabled && previewContent !== null && (
               <PreviewPane content={previewContent} visible={true} />
             )}
           </>
