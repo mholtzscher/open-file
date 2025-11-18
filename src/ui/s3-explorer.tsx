@@ -249,7 +249,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           setShowConfirmDialog(true);
         }
       },
-      onDownload: () => {
+      onDownload: async () => {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         const currentEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
 
@@ -259,20 +259,50 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           return;
         }
 
-        // For now, just show a status message - we need to implement file dialog in the future
-        setStatusMessage(
-          'Download: Feature not yet implemented - specify destination path via command dialog'
-        );
-        setStatusMessageColor(CatppuccinMocha.blue);
-      },
-      onUpload: () => {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        if (currentEntry.type === 'directory' || currentEntry.type === 'bucket') {
+          setStatusMessage('Cannot download directories yet - select a file');
+          setStatusMessageColor(CatppuccinMocha.red);
+          return;
+        }
 
-        // For now, just show a status message - we need to implement file dialog in the future
+        if (!adapter.downloadToLocal) {
+          setStatusMessage('Download not supported by this adapter');
+          setStatusMessageColor(CatppuccinMocha.red);
+          return;
+        }
+
+        try {
+          setStatusMessage(`Downloading ${currentEntry.name}...`);
+          setStatusMessageColor(CatppuccinMocha.yellow);
+
+          // Build full S3 path
+          const s3Path = currentBufferState.currentPath
+            ? `${currentBufferState.currentPath}${currentEntry.name}`
+            : currentEntry.name;
+
+          // Download to current working directory with same filename
+          const localPath = currentEntry.name;
+
+          await adapter.downloadToLocal(s3Path, localPath, false);
+
+          setStatusMessage(`✓ Downloaded ${currentEntry.name} to ./${localPath}`);
+          setStatusMessageColor(CatppuccinMocha.green);
+        } catch (err) {
+          const error = err as Error;
+          setStatusMessage(`✗ Download failed: ${error.message}`);
+          setStatusMessageColor(CatppuccinMocha.red);
+        }
+      },
+      onUpload: async () => {
+        // For now, show help message about how to upload
+        // In the future, this could open a file picker or command prompt
         setStatusMessage(
-          'Upload: Feature not yet implemented - specify local file path via command dialog'
+          'Upload: To upload, use Vim-style command mode to specify local file path (e.g., :upload ./path/to/file)'
         );
         setStatusMessageColor(CatppuccinMocha.blue);
+
+        // TODO: Implement interactive file selection
+        // For now, users must manually specify paths via a command dialog
       },
       onPageDown: () => {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;

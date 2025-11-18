@@ -133,6 +133,34 @@ export interface Adapter {
   read(path: string, options?: OperationOptions): Promise<Buffer>;
 
   /**
+   * (Optional) Download a file from S3 to local filesystem
+   * @param s3Path - S3 path to download
+   * @param localPath - Local filesystem path
+   * @param recursive - Download recursively (for directories)
+   * @param options - Operation options (progress callback, etc.)
+   */
+  downloadToLocal?(
+    s3Path: string,
+    localPath: string,
+    recursive?: boolean,
+    options?: OperationOptions
+  ): Promise<void>;
+
+  /**
+   * (Optional) Upload a file from local filesystem to S3
+   * @param localPath - Local filesystem path
+   * @param s3Path - S3 path to upload to
+   * @param recursive - Upload recursively (for directories)
+   * @param options - Operation options (progress callback, etc.)
+   */
+  uploadFromLocal?(
+    localPath: string,
+    s3Path: string,
+    recursive?: boolean,
+    options?: OperationOptions
+  ): Promise<void>;
+
+  /**
    * (Optional) Get bucket entries for root view (S3 adapter only)
    * @returns List of bucket entries, or undefined if not supported
    */
