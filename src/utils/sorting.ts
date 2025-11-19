@@ -39,50 +39,6 @@ export const DEFAULT_SORT_CONFIG: SortConfig = {
 };
 
 /**
- * Compare two entries based on sort field
- */
-function compareEntries(a: Entry, b: Entry, field: SortField): number {
-  switch (field) {
-    case SortField.Name:
-      // Directories first, then files
-      if (a.type !== b.type) {
-        return a.type === EntryType.Directory ? -1 : 1;
-      }
-      return a.name.localeCompare(b.name);
-
-    case SortField.Size: {
-      // Directories first, then files by size
-      if (a.type !== b.type) {
-        return a.type === EntryType.Directory ? -1 : 1;
-      }
-      const sizeA = a.size ?? 0;
-      const sizeB = b.size ?? 0;
-      return sizeA - sizeB;
-    }
-
-    case SortField.Type:
-      // Sort by type, then by name
-      if (a.type !== b.type) {
-        return a.type === EntryType.Directory ? -1 : 1;
-      }
-      return a.name.localeCompare(b.name);
-
-    case SortField.Modified: {
-      // Directories first, then by date
-      if (a.type !== b.type) {
-        return a.type === EntryType.Directory ? -1 : 1;
-      }
-      const dateA = a.modified?.getTime() ?? 0;
-      const dateB = b.modified?.getTime() ?? 0;
-      return dateA - dateB;
-    }
-
-    default:
-      return 0;
-  }
-}
-
-/**
  * Sort entries according to configuration
  */
 export function sortEntries(entries: Entry[], config: SortConfig): Entry[] {
