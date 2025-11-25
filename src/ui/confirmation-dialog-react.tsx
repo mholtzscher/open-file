@@ -5,7 +5,7 @@
  */
 
 import { CatppuccinMocha } from './theme.js';
-import { useTerminalSize } from '../hooks/useTerminalSize.js';
+import { BaseDialog, getContentWidth } from './base-dialog-react.js';
 
 export interface Operation {
   id: string;
@@ -64,6 +64,9 @@ function formatOperation(op: Operation, maxWidth: number = 50): string {
   return text;
 }
 
+const DIALOG_WIDTH = 70;
+const MAX_OPERATIONS_DISPLAY = 11;
+
 /**
  * ConfirmationDialog React component
  */
@@ -71,57 +74,42 @@ export function ConfirmationDialog({
   title = 'Confirm Operation',
   operations = [],
   visible = true,
-  onConfirm,
-  onCancel,
 }: ConfirmationDialogProps) {
-  if (!visible) return null;
-
-  const terminalSize = useTerminalSize();
-  const dialogWidth = 70;
-  const maxOperationsDisplay = 11; // Account for title, header, footer, and padding
   const dialogHeight = Math.min(20, operations.length + 8);
-  const centerLeft = Math.floor((terminalSize.width - dialogWidth) / 2);
-  const centerTop = Math.max(2, Math.floor((terminalSize.height - dialogHeight) / 2));
+  const contentWidth = getContentWidth(DIALOG_WIDTH);
 
   return (
-    <box
-      position="absolute"
-      left={centerLeft}
-      top={centerTop}
-      width={dialogWidth}
-      height={dialogHeight}
-      borderStyle="rounded"
-      borderColor={CatppuccinMocha.yellow}
-      backgroundColor={CatppuccinMocha.base}
+    <BaseDialog
+      visible={visible}
       title={title}
-      flexDirection="column"
-      paddingLeft={2}
-      paddingTop={1}
-      paddingBottom={1}
+      width={DIALOG_WIDTH}
+      height={dialogHeight}
+      borderColor={CatppuccinMocha.yellow}
+      paddingRight={0}
     >
-      <text fg={CatppuccinMocha.text} width={66}>
+      <text fg={CatppuccinMocha.text} width={contentWidth}>
         The following operations will be performed:
       </text>
 
-      {operations.slice(0, maxOperationsDisplay).map(op => (
+      {operations.slice(0, MAX_OPERATIONS_DISPLAY).map(op => (
         <text
           key={op.id}
           fg={op.type === 'delete' ? CatppuccinMocha.red : CatppuccinMocha.green}
-          width={64}
+          width={contentWidth - 2}
         >
           • {formatOperation(op, 60)}
         </text>
       ))}
 
-      {operations.length > maxOperationsDisplay && (
-        <text fg={CatppuccinMocha.overlay0} width={66}>
-          ... and {operations.length - maxOperationsDisplay} more
+      {operations.length > MAX_OPERATIONS_DISPLAY && (
+        <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
+          ... and {operations.length - MAX_OPERATIONS_DISPLAY} more
         </text>
       )}
 
-      <text fg={CatppuccinMocha.overlay0} width={66}>
+      <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
         Press y to confirm, n to cancel
       </text>
-    </box>
+    </BaseDialog>
   );
 }

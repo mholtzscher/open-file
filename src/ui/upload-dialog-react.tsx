@@ -9,6 +9,7 @@ import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { useDialogKeyboard } from '../hooks/useDialogKeyboard.js';
 import { LocalFileEntry, FileTypeFilter, listFiles, formatBytes } from '../utils/file-browser.js';
 import { CatppuccinMocha } from './theme.js';
+import { BaseDialog, getContentWidth } from './base-dialog-react.js';
 
 export interface UploadDialogProps {
   visible?: boolean;
@@ -35,14 +36,7 @@ interface DialogState {
 /**
  * UploadDialog React component with dynamic, flexible layout
  */
-export function UploadDialog({
-  visible = true,
-  destinationPath = '',
-  onConfirm,
-  onCancel,
-}: UploadDialogProps) {
-  if (!visible) return null;
-
+export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDialogProps) {
   const terminalSize = useTerminalSize();
   const [state, setState] = useState<DialogState>({
     currentPath: process.cwd(),
@@ -58,8 +52,6 @@ export function UploadDialog({
   // Use most of the available space, but leave room for margins
   const windowWidth = Math.min(80, terminalSize.width - 4);
   const windowHeight = Math.min(24, terminalSize.height - 4);
-  const centerLeft = Math.floor((terminalSize.width - windowWidth) / 2);
-  const centerTop = Math.max(1, Math.floor((terminalSize.height - windowHeight) / 2));
 
   // Load directory on mount or when path changes
   useEffect(() => {
@@ -185,97 +177,75 @@ export function UploadDialog({
     return sum + (entry?.size || 0);
   }, 0);
 
-  const contentWidth = windowWidth - 6; // Account for padding
+  const contentWidth = getContentWidth(windowWidth);
 
   return (
-    <>
-      {/* Background overlay */}
-      <box
-        position="absolute"
-        left={centerLeft}
-        top={centerTop}
-        width={windowWidth}
-        height={windowHeight}
-        backgroundColor={CatppuccinMocha.base}
-        zIndex={999}
-      />
+    <BaseDialog
+      visible={visible}
+      title="Upload Files"
+      width={windowWidth}
+      height={windowHeight}
+      borderColor={CatppuccinMocha.blue}
+      showOverlay={true}
+    >
+      {/* Path display */}
+      <text fg={CatppuccinMocha.text} width={contentWidth}>
+        📁 {state.currentPath.substring(0, contentWidth - 2)}
+      </text>
 
-      {/* Dialog window with dynamic flex layout */}
-      <box
-        position="absolute"
-        left={centerLeft}
-        top={centerTop}
-        width={windowWidth}
-        height={windowHeight}
-        borderStyle="rounded"
-        borderColor={CatppuccinMocha.blue}
-        title="Upload Files"
-        flexDirection="column"
-        paddingLeft={2}
-        paddingRight={2}
-        paddingTop={1}
-        paddingBottom={1}
-        zIndex={1000}
-      >
-        {/* Path display */}
-        <text fg={CatppuccinMocha.text} width={contentWidth}>
-          📁 {state.currentPath.substring(0, contentWidth - 2)}
-        </text>
-
-        {/* File list - grows to fill available space */}
-        <box flexDirection="column" overflow="hidden" marginTop={1} marginBottom={1}>
-          {state.entries.length === 0 ? (
-            <text fg={CatppuccinMocha.subtext0}>
-              {state.error ? `Error: ${state.error}` : 'No files'}
-            </text>
-          ) : (
-            // Show files based on scroll offset
-            // Since we can't know exact height, just show a reasonable amount
-            state.entries
-              .slice(state.scrollOffset, state.scrollOffset + 15)
-              .map((entry, visibleIndex) => {
-                const actualIndex = state.scrollOffset + visibleIndex;
-                const isSelected = actualIndex === state.selectedIndex;
-                const isSelectedFile = state.selectedFiles.has(entry.path);
-                const prefix = entry.isDirectory ? '📁' : '📄';
-                const checkmark = isSelectedFile ? '✓' : ' ';
-                const displayName = `${checkmark} ${prefix} ${entry.name}`;
-
-                return (
-                  <text
-                    key={entry.path}
-                    fg={
-                      isSelected
-                        ? CatppuccinMocha.blue
-                        : isSelectedFile
-                          ? CatppuccinMocha.green
-                          : CatppuccinMocha.text
-                    }
-                    bg={isSelected ? CatppuccinMocha.surface0 : undefined}
-                    width={contentWidth}
-                  >
-                    {displayName.substring(0, contentWidth)}
-                  </text>
-                );
-              })
-          )}
-        </box>
-
-        {/* Selection summary */}
-        {selectedCount > 0 && (
-          <text fg={CatppuccinMocha.green} width={contentWidth}>
-            {`Selected: ${selectedCount} files - ${formatBytes(totalSize)}`.substring(
-              0,
-              contentWidth
-            )}
+      {/* File list - grows to fill available space */}
+      <box flexDirection="column" overflow="hidden" marginTop={1} marginBottom={1}>
+        {state.entries.length === 0 ? (
+          <text fg={CatppuccinMocha.subtext0}>
+            {state.error ? `Error: ${state.error}` : 'No files'}
           </text>
-        )}
+        ) : (
+          // Show files based on scroll offset
+          // Since we can't know exact height, just show a reasonable amount
+          state.entries
+            .slice(state.scrollOffset, state.scrollOffset + 15)
+            .map((entry, visibleIndex) => {
+              const actualIndex = state.scrollOffset + visibleIndex;
+              const isSelected = actualIndex === state.selectedIndex;
+              const isSelectedFile = state.selectedFiles.has(entry.path);
+              const prefix = entry.isDirectory ? '📁' : '📄';
+              const checkmark = isSelectedFile ? '✓' : ' ';
+              const displayName = `${checkmark} ${prefix} ${entry.name}`;
 
-        {/* Help text - matches app-wide keybinding format */}
-        <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-          {`j/k:nav  space:select  enter:open  c:confirm  ESC:cancel`.substring(0, contentWidth)}
-        </text>
+              return (
+                <text
+                  key={entry.path}
+                  fg={
+                    isSelected
+                      ? CatppuccinMocha.blue
+                      : isSelectedFile
+                        ? CatppuccinMocha.green
+                        : CatppuccinMocha.text
+                  }
+                  bg={isSelected ? CatppuccinMocha.surface0 : undefined}
+                  width={contentWidth}
+                >
+                  {displayName.substring(0, contentWidth)}
+                </text>
+              );
+            })
+        )}
       </box>
-    </>
+
+      {/* Selection summary */}
+      {selectedCount > 0 && (
+        <text fg={CatppuccinMocha.green} width={contentWidth}>
+          {`Selected: ${selectedCount} files - ${formatBytes(totalSize)}`.substring(
+            0,
+            contentWidth
+          )}
+        </text>
+      )}
+
+      {/* Help text - matches app-wide keybinding format */}
+      <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
+        {`j/k:nav  space:select  enter:open  c:confirm  ESC:cancel`.substring(0, contentWidth)}
+      </text>
+    </BaseDialog>
   );
 }

@@ -5,8 +5,8 @@
  */
 
 import { CatppuccinMocha } from './theme.js';
-import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { SortField, SortOrder, formatSortField, formatSortOrder } from '../utils/sorting.js';
+import { BaseDialog } from './base-dialog-react.js';
 
 export interface SortMenuProps {
   visible: boolean;
@@ -17,37 +17,24 @@ export interface SortMenuProps {
   onClose: () => void;
 }
 
+const DIALOG_WIDTH = 35;
+const DIALOG_HEIGHT = 13;
+const sortFields = [SortField.Name, SortField.Size, SortField.Modified, SortField.Type];
+
 /**
  * SortMenu React component
  */
 export function SortMenu({ visible, currentField, currentOrder }: SortMenuProps) {
-  if (!visible) {
-    return null;
-  }
-
-  const terminalSize = useTerminalSize();
-  const dialogWidth = 35;
-  const dialogHeight = 13;
-  const centerLeft = Math.floor((terminalSize.width - dialogWidth) / 2);
-  const centerTop = Math.max(2, Math.floor((terminalSize.height - dialogHeight) / 2));
-
-  const sortFields = [SortField.Name, SortField.Size, SortField.Modified, SortField.Type];
-
   return (
-    <box
-      position="absolute"
-      left={centerLeft}
-      top={centerTop}
-      width={dialogWidth}
-      height={dialogHeight}
-      backgroundColor={CatppuccinMocha.base}
-      borderStyle="rounded"
-      borderColor={CatppuccinMocha.blue}
+    <BaseDialog
+      visible={visible}
       title="Sort Options"
-      zIndex={999}
-      flexDirection="column"
+      width={DIALOG_WIDTH}
+      height={DIALOG_HEIGHT}
+      borderColor={CatppuccinMocha.blue}
       paddingLeft={1}
-      paddingTop={1}
+      paddingRight={0}
+      zIndex={999}
     >
       {/* Title */}
       <text fg={CatppuccinMocha.blue}>SORT BY</text>
@@ -70,6 +57,6 @@ export function SortMenu({ visible, currentField, currentOrder }: SortMenuProps)
 
       {/* Help text */}
       <text fg={CatppuccinMocha.overlay2}>Keys: 1-4=field, Space/Enter=toggle, Esc/q=close</text>
-    </box>
+    </BaseDialog>
   );
 }

@@ -5,41 +5,33 @@
  */
 
 import { CatppuccinMocha } from './theme.js';
-import { useTerminalSize } from '../hooks/useTerminalSize.js';
+import { BaseDialog, getContentWidth } from './base-dialog-react.js';
 
 interface ErrorDialogProps {
   visible: boolean;
   message: string;
 }
 
-export function ErrorDialog({ visible, message }: ErrorDialogProps) {
-  if (!visible) return null;
+const DIALOG_WIDTH = 70;
 
-  const terminalSize = useTerminalSize();
-  const dialogWidth = 70;
-  const centerLeft = Math.floor((terminalSize.width - dialogWidth) / 2);
+export function ErrorDialog({ visible, message }: ErrorDialogProps) {
+  const contentWidth = getContentWidth(DIALOG_WIDTH);
 
   return (
-    <box
-      position="absolute"
-      left={centerLeft}
-      top={1}
-      width={dialogWidth}
-      borderStyle="rounded"
-      borderColor={CatppuccinMocha.red}
-      backgroundColor={CatppuccinMocha.base}
+    <BaseDialog
+      visible={visible}
       title="Error"
-      flexDirection="column"
-      paddingLeft={2}
-      paddingTop={1}
-      paddingBottom={1}
+      width={DIALOG_WIDTH}
+      borderColor={CatppuccinMocha.red}
+      top={1}
+      paddingRight={0}
     >
-      <text fg={CatppuccinMocha.red} width={66}>
+      <text fg={CatppuccinMocha.red} width={contentWidth}>
         {message}
       </text>
-      <text fg={CatppuccinMocha.overlay0} width={66}>
+      <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
         Press Escape to dismiss
       </text>
-    </box>
+    </BaseDialog>
   );
 }
