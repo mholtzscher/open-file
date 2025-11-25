@@ -33,8 +33,8 @@ describe('dialogReducer', () => {
 
     it('should replace existing dialog when showing confirm', () => {
       const state: DialogState = {
+        ...initialDialogState,
         activeDialog: 'help',
-        pendingOperations: [],
       };
       const operations = [createTestOperation('op1')];
       const action: DialogAction = {
@@ -60,7 +60,7 @@ describe('dialogReducer', () => {
 
     it('should preserve pending operations when showing help', () => {
       const state: DialogState = {
-        activeDialog: null,
+        ...initialDialogState,
         pendingOperations: [createTestOperation('op1')],
       };
       const action: DialogAction = { type: 'SHOW_HELP' };
@@ -95,8 +95,8 @@ describe('dialogReducer', () => {
   describe('CLOSE action', () => {
     it('should close any active dialog', () => {
       const state: DialogState = {
+        ...initialDialogState,
         activeDialog: 'help',
-        pendingOperations: [],
       };
       const action: DialogAction = { type: 'CLOSE' };
 
@@ -108,6 +108,7 @@ describe('dialogReducer', () => {
     it('should preserve pending operations when closing', () => {
       const operations = [createTestOperation('op1')];
       const state: DialogState = {
+        ...initialDialogState,
         activeDialog: 'confirm',
         pendingOperations: operations,
       };
@@ -123,7 +124,7 @@ describe('dialogReducer', () => {
   describe('CLEAR_OPERATIONS action', () => {
     it('should clear pending operations', () => {
       const state: DialogState = {
-        activeDialog: null,
+        ...initialDialogState,
         pendingOperations: [createTestOperation('op1'), createTestOperation('op2')],
       };
       const action: DialogAction = { type: 'CLEAR_OPERATIONS' };
@@ -135,6 +136,7 @@ describe('dialogReducer', () => {
 
     it('should preserve active dialog when clearing operations', () => {
       const state: DialogState = {
+        ...initialDialogState,
         activeDialog: 'sort',
         pendingOperations: [createTestOperation('op1')],
       };
@@ -150,8 +152,8 @@ describe('dialogReducer', () => {
   describe('unknown action', () => {
     it('should return current state for unknown actions', () => {
       const state: DialogState = {
+        ...initialDialogState,
         activeDialog: 'help',
-        pendingOperations: [],
       };
       const action = { type: 'UNKNOWN' } as unknown as DialogAction;
 

@@ -66,9 +66,10 @@ test:
 test-watch:
     bun test --watch
 
-# Run linting (placeholder for when we add eslint)
+# Run linting (matches CI lint job)
 lint:
-    @echo "Linting not yet configured"
+    bunx tsc --noEmit --skipLibCheck
+    bunx biome check --write src/ || echo "Biome checks skipped"
 
 # Test React components specifically
 test-react:

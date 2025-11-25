@@ -263,7 +263,7 @@ describe('KeyboardContext logic', () => {
       const key = createKey('a', { ctrl: true, shift: true, meta: false, char: 'A' });
       dispatcher.dispatch(key);
 
-      expect(receivedKey).toEqual(key);
+      expect(receivedKey!).toEqual(key);
       expect(receivedKey!.name).toBe('a');
       expect(receivedKey!.ctrl).toBe(true);
       expect(receivedKey!.shift).toBe(true);

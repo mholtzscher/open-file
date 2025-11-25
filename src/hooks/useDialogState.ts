@@ -33,6 +33,7 @@ export function dialogReducer(state: DialogState, action: DialogAction): DialogS
   switch (action.type) {
     case 'SHOW_CONFIRM':
       return {
+        ...state,
         activeDialog: 'confirm',
         pendingOperations: action.payload.operations,
       };
