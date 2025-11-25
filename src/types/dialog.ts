@@ -9,7 +9,7 @@
  * Types of dialogs available in the application.
  * Only one dialog can be active at a time.
  */
-export type DialogType = 'confirm' | 'help' | 'sort' | 'upload' | null;
+export type DialogType = 'confirm' | 'help' | 'sort' | 'upload' | 'quit' | null;
 
 /**
  * State for the dialog system
@@ -19,6 +19,8 @@ export interface DialogState {
   activeDialog: DialogType;
   /** Pending operations for the confirm dialog */
   pendingOperations: PendingOperation[];
+  /** Number of pending changes for quit dialog */
+  quitPendingChanges: number;
 }
 
 /**
@@ -44,6 +46,13 @@ export interface ShowConfirmOptions {
 }
 
 /**
+ * Options for showing a quit confirmation dialog
+ */
+export interface ShowQuitOptions {
+  pendingChanges: number;
+}
+
+/**
  * Actions that can be dispatched to the dialog reducer
  */
 export type DialogAction =
@@ -51,5 +60,6 @@ export type DialogAction =
   | { type: 'SHOW_HELP' }
   | { type: 'SHOW_SORT' }
   | { type: 'SHOW_UPLOAD' }
+  | { type: 'SHOW_QUIT'; payload: ShowQuitOptions }
   | { type: 'CLOSE' }
   | { type: 'CLEAR_OPERATIONS' };

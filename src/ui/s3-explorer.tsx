@@ -107,12 +107,14 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
     isHelpOpen: showHelpDialog,
     isSortOpen: showSortMenu,
     isUploadOpen: showUploadDialog,
+    isQuitOpen: showQuitDialog,
     showConfirm,
     showHelp,
     toggleHelp,
     showSort,
     toggleSort,
     showUpload,
+    showQuit,
     closeDialog,
     closeAndClearOperations,
   } = useDialogState();
@@ -124,11 +126,6 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState<string>('');
   const [previewEnabled, setPreviewEnabled] = useState(false);
-
-  // ============================================
-  // Quit Confirmation State
-  // ============================================
-  const [quitPending, setQuitPending] = useState(false);
 
   // ============================================
   // Progress Window State (consolidated hook)
@@ -150,6 +147,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   const operationAbortControllerRef = useRef<AbortController | null>(null);
   const showUploadDialogRef = useRef(showUploadDialog);
   const showConfirmDialogRef = useRef(showConfirmDialog);
+  const quitAfterSaveRef = useRef(false);
 
   // ============================================
   // Hooks
@@ -215,7 +213,8 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   // Keyboard Dispatcher
   // ============================================
   // Check if any dialog is open (blocks normal keybindings)
-  const isAnyDialogOpen = showConfirmDialog || showHelpDialog || showSortMenu || showUploadDialog;
+  const isAnyDialogOpen =
+    showConfirmDialog || showHelpDialog || showSortMenu || showUploadDialog || showQuitDialog;
 
   // Initialize the keyboard dispatcher
   const {
@@ -525,17 +524,13 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         const currentBufferState = getActiveBuffer();
         const pendingChanges = currentBufferState.getMarkedForDeletion().length;
 
-        if (pendingChanges > 0 && !quitPending) {
-          // First quit attempt with pending changes - ask for confirmation
-          setQuitPending(true);
-          setStatusMessage(
-            `${pendingChanges} unsaved change(s). Press 'q' again to quit without saving, or 'w' to save first.`
-          );
-          setStatusMessageColor(CatppuccinMocha.yellow);
+        if (pendingChanges > 0) {
+          // Show quit confirmation dialog
+          showQuit(pendingChanges);
           return;
         }
 
-        // No pending changes, or user confirmed quit
+        // No pending changes - quit immediately
         process.exit(0);
       },
 
@@ -844,6 +839,12 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           setOriginalEntries([...result.entries]);
           setStatusMessage(`${successCount} operation(s) completed successfully`);
           setStatusMessageColor(CatppuccinMocha.green);
+
+          // If quit was requested after save, exit now
+          if (quitAfterSaveRef.current) {
+            quitAfterSaveRef.current = false;
+            process.exit(0);
+          }
         } catch (reloadError) {
           console.error('Failed to reload buffer:', reloadError);
           setStatusMessage('Operations completed but failed to reload buffer');
@@ -973,29 +974,25 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         return true; // Block all other keys when help dialog is open
       }
 
-      // Handle quit pending state - user must press q again or cancel
-      if (quitPending) {
+      // Quit confirmation dialog
+      if (showQuitDialog) {
         if (key.name === 'q') {
-          // User confirmed quit
+          // User confirmed quit without saving
           process.exit(0);
         } else if (key.name === 'escape' || key.name === 'n') {
           // User cancelled quit
-          setQuitPending(false);
+          closeDialog();
           setStatusMessage('Quit cancelled');
           setStatusMessageColor(CatppuccinMocha.text);
           return true;
         } else if (key.name === 'w') {
-          // User wants to save first - cancel quit pending and trigger save
-          setQuitPending(false);
+          // User wants to save first, then quit
+          quitAfterSaveRef.current = true;
+          closeDialog();
           dispatchKey({ ...key, name: 'w' }); // Dispatch 'w' to trigger save
           return true;
-        } else {
-          // Any other key cancels quit pending
-          setQuitPending(false);
-          setStatusMessage('');
-          setStatusMessageColor(CatppuccinMocha.text);
-          // Don't return - let the key be processed normally
         }
+        return true; // Block all other keys when quit dialog is open
       }
 
       // Dispatch to the action-based keyboard handler
@@ -1007,7 +1004,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
       showHelpDialog,
       showErrorDialog,
       showSortMenu,
-      quitPending,
+      showQuitDialog,
       closeDialog,
       closeAndClearOperations,
       bufferState,
@@ -1241,6 +1238,10 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
       totalFiles: progressState.totalNum,
       canCancel: progressState.cancellable,
       onCancel: handleCancelOperation,
+    },
+    quit: {
+      visible: showQuitDialog,
+      pendingChanges: dialogState.quitPendingChanges,
     },
   };
 

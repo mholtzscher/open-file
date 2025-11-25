@@ -13,6 +13,7 @@ import {
   DialogType,
   PendingOperation,
   ShowConfirmOptions,
+  ShowQuitOptions,
 } from '../types/dialog.js';
 
 /**
@@ -21,6 +22,7 @@ import {
 export const initialDialogState: DialogState = {
   activeDialog: null,
   pendingOperations: [],
+  quitPendingChanges: 0,
 };
 
 /**
@@ -51,6 +53,13 @@ export function dialogReducer(state: DialogState, action: DialogAction): DialogS
       return {
         ...state,
         activeDialog: 'upload',
+      };
+
+    case 'SHOW_QUIT':
+      return {
+        ...state,
+        activeDialog: 'quit',
+        quitPendingChanges: action.payload.pendingChanges,
       };
 
     case 'CLOSE':
@@ -86,6 +95,8 @@ export interface UseDialogStateReturn {
   isSortOpen: boolean;
   /** Whether the upload dialog is open */
   isUploadOpen: boolean;
+  /** Whether the quit confirmation dialog is open */
+  isQuitOpen: boolean;
   /** Show the confirm dialog with pending operations */
   showConfirm: (operations: PendingOperation[]) => void;
   /** Show the help dialog */
@@ -98,6 +109,8 @@ export interface UseDialogStateReturn {
   toggleSort: () => void;
   /** Show the upload dialog */
   showUpload: () => void;
+  /** Show the quit confirmation dialog */
+  showQuit: (pendingChanges: number) => void;
   /** Close any open dialog */
   closeDialog: () => void;
   /** Close dialog and clear pending operations */
@@ -166,6 +179,10 @@ export function useDialogState(): UseDialogStateReturn {
     dispatch({ type: 'SHOW_UPLOAD' });
   }, []);
 
+  const showQuit = useCallback((pendingChanges: number) => {
+    dispatch({ type: 'SHOW_QUIT', payload: { pendingChanges } });
+  }, []);
+
   const closeDialog = useCallback(() => {
     dispatch({ type: 'CLOSE' });
   }, []);
@@ -181,6 +198,7 @@ export function useDialogState(): UseDialogStateReturn {
   const isHelpOpen = state.activeDialog === 'help';
   const isSortOpen = state.activeDialog === 'sort';
   const isUploadOpen = state.activeDialog === 'upload';
+  const isQuitOpen = state.activeDialog === 'quit';
 
   return {
     dialog: state,
@@ -189,12 +207,14 @@ export function useDialogState(): UseDialogStateReturn {
     isHelpOpen,
     isSortOpen,
     isUploadOpen,
+    isQuitOpen,
     showConfirm,
     showHelp,
     toggleHelp,
     showSort,
     toggleSort,
     showUpload,
+    showQuit,
     closeDialog,
     closeAndClearOperations,
     dispatch,

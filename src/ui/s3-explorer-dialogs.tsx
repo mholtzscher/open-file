@@ -11,6 +11,7 @@ import { ErrorDialog } from './error-dialog-react.js';
 import { UploadDialog } from './upload-dialog-react.js';
 import { SortMenu } from './sort-menu-react.js';
 import { ProgressWindow } from './progress-window-react.js';
+import { QuitDialog } from './quit-dialog-react.js';
 import { SortField, SortOrder } from '../utils/sorting.js';
 import type { PendingOperation } from '../types/dialog.js';
 
@@ -61,6 +62,11 @@ export interface ProgressWindowState {
   onCancel: () => void;
 }
 
+export interface QuitDialogState {
+  visible: boolean;
+  pendingChanges: number;
+}
+
 /**
  * Combined dialog state for all dialogs
  */
@@ -71,6 +77,7 @@ export interface DialogsState {
   upload: UploadDialogState;
   sortMenu: SortMenuState;
   progress: ProgressWindowState;
+  quit: QuitDialogState;
 }
 
 interface S3ExplorerDialogsProps {
@@ -84,7 +91,7 @@ interface S3ExplorerDialogsProps {
  * Dialogs are rendered in a specific order to ensure proper z-index stacking.
  */
 export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
-  const { confirm, error, help, upload, sortMenu, progress } = dialogs;
+  const { confirm, error, help, upload, sortMenu, progress, quit } = dialogs;
 
   return (
     <>
@@ -137,6 +144,9 @@ export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
         onCancel={progress.onCancel}
         canCancel={progress.canCancel}
       />
+
+      {/* Quit Confirmation Dialog */}
+      {quit.visible && <QuitDialog visible={quit.visible} pendingChanges={quit.pendingChanges} />}
     </>
   );
 }
