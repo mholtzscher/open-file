@@ -9,7 +9,7 @@ import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { Adapter, ProgressEvent } from '../adapters/adapter.js';
 import { ConfigManager } from '../utils/config.js';
 import { useBufferState } from '../hooks/useBufferState.js';
-import { useKeyboardEvents } from '../hooks/useKeyboardEvents.js';
+import { useKeyboardDispatcher } from '../hooks/useKeyboardDispatcher.js';
 import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
 import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
 import { useMultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
@@ -21,13 +21,12 @@ import { DialogsState } from './s3-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
-import { detectChanges, buildOperationPlan } from '../utils/change-detection.js';
-import { EntryIdMap } from '../utils/entry-id.js';
 import { Entry, EntryType } from '../types/entry.js';
+import { EditMode } from '../types/edit-mode.js';
 import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
 import { getDialogHandler } from '../hooks/useDialogKeyboard.js';
 import type { PendingOperation } from '../types/dialog.js';
-import type { KeyboardKey } from '../types/keyboard.js';
+import type { KeyboardKey, KeyAction } from '../types/keyboard.js';
 
 interface S3ExplorerProps {
   bucket?: string;
@@ -208,12 +207,40 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   const navigationHandlers = useNavigationHandlers(activeBufferState, navigationConfig);
 
   // ============================================
-  // Keyboard Handlers
+  // Keyboard Dispatcher
   // ============================================
-  const keyboardHandlers = useMemo(
-    () => ({
-      onNavigateInto: async () => {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+  // Check if any dialog is open (blocks normal keybindings)
+  const isAnyDialogOpen = showConfirmDialog || showHelpDialog || showSortMenu || showUploadDialog;
+
+  // Initialize the keyboard dispatcher
+  const {
+    dispatch: dispatchKey,
+    registerActions,
+    clearKeySequence,
+  } = useKeyboardDispatcher({
+    mode: activeBufferState.mode,
+    isDialogOpen: isAnyDialogOpen,
+  });
+
+  // ============================================
+  // Action Handlers
+  // ============================================
+  // Register action handlers with the dispatcher
+  useEffect(() => {
+    const getActiveBuffer = () => multiPaneLayout.getActiveBufferState() || bufferState;
+
+    const actionHandlers: Partial<Record<KeyAction, () => void>> = {
+      // Navigation
+      'cursor:up': () => getActiveBuffer().moveCursorUp(1),
+      'cursor:down': () => getActiveBuffer().moveCursorDown(1),
+      'cursor:top': () => getActiveBuffer().cursorToTop(),
+      'cursor:bottom': () => getActiveBuffer().cursorToBottom(),
+      'cursor:pageUp': () => getActiveBuffer().moveCursorUp(10),
+      'cursor:pageDown': () => getActiveBuffer().moveCursorDown(10),
+
+      // Entry operations
+      'entry:open': async () => {
+        const currentBufferState = getActiveBuffer();
         const currentEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
 
         if (!currentEntry) return;
@@ -245,7 +272,8 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
 
         await navigationHandlers.navigateInto();
       },
-      onNavigateUp: async () => {
+
+      'entry:back': async () => {
         if (previewEnabled) {
           setPreviewEnabled(false);
           setPreviewContent(null);
@@ -254,7 +282,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           return;
         }
 
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        const currentBufferState = getActiveBuffer();
         if (!bucket) {
           setStatusMessage('Already at root');
           setStatusMessageColor(CatppuccinMocha.text);
@@ -276,24 +304,21 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           setStatusMessageColor(CatppuccinMocha.blue);
         }
       },
-      onDelete: () => {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+
+      'entry:delete': () => {
+        const currentBufferState = getActiveBuffer();
         const selected = currentBufferState.getSelectedEntries();
         if (selected.length > 0) {
-          // Save snapshot for undo
           currentBufferState.saveSnapshot();
 
-          // Mark entries for deletion (oil.nvim style)
           for (const entry of selected) {
             if (currentBufferState.isMarkedForDeletion(entry.id)) {
-              // Toggle: if already marked, unmark it
               currentBufferState.unmarkForDeletion(entry.id);
             } else {
               currentBufferState.markForDeletion(entry.id);
             }
           }
 
-          // Exit visual selection if active
           if (currentBufferState.selection.isActive) {
             currentBufferState.exitVisualSelection();
           }
@@ -310,8 +335,21 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           }
         }
       },
-      onDownload: () => {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+
+      'entry:copy': () => {
+        getActiveBuffer().copySelection();
+        setStatusMessage('Copied');
+        setStatusMessageColor(CatppuccinMocha.green);
+      },
+
+      'entry:paste': () => {
+        // Paste is handled by buffer state
+        setStatusMessage('Paste not yet implemented');
+        setStatusMessageColor(CatppuccinMocha.yellow);
+      },
+
+      'entry:download': () => {
+        const currentBufferState = getActiveBuffer();
         const currentEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
 
         if (!currentEntry) {
@@ -342,38 +380,69 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
 
         showConfirm([operation]);
       },
-      onUpload: async () => {
-        setStatusMessage(
-          'Upload: To upload, use Vim-style command mode to specify local file path (e.g., :upload ./path/to/file)'
-        );
+
+      'entry:upload': () => {
+        showUpload();
+      },
+
+      // Mode changes
+      'mode:insert': () => {
+        getActiveBuffer().enterInsertMode();
+        setStatusMessage('-- INSERT -- (type name, Enter to create, Esc to cancel)');
         setStatusMessageColor(CatppuccinMocha.blue);
       },
-      onPageDown: () => {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        currentBufferState.moveCursorDown(10);
-      },
-      onPageUp: () => {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        currentBufferState.moveCursorUp(10);
-      },
-      onSave: () => {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
 
-        // Get entries marked for deletion
+      'mode:edit': () => {
+        getActiveBuffer().enterEditMode();
+        setStatusMessage('-- EDIT -- (type to rename, Enter to confirm, Esc to cancel)');
+        setStatusMessageColor(CatppuccinMocha.blue);
+      },
+
+      'mode:search': () => {
+        getActiveBuffer().enterSearchMode();
+        setStatusMessage('Search mode: type pattern, n/N to navigate, ESC to clear');
+        setStatusMessageColor(CatppuccinMocha.blue);
+      },
+
+      'mode:command': () => {
+        getActiveBuffer().enterCommandMode();
+        setStatusMessage(':');
+        setStatusMessageColor(CatppuccinMocha.text);
+      },
+
+      'mode:visual': () => {
+        getActiveBuffer().startVisualSelection();
+        setStatusMessage('-- VISUAL --');
+        setStatusMessageColor(CatppuccinMocha.blue);
+      },
+
+      'mode:normal': () => {
+        const buf = getActiveBuffer();
+        buf.exitVisualSelection();
+        buf.exitSearchMode();
+        buf.exitCommandMode();
+        buf.exitInsertMode();
+        buf.exitEditMode();
+        setStatusMessage('');
+        setStatusMessageColor(CatppuccinMocha.text);
+      },
+
+      // Dialogs
+      'dialog:help': () => toggleHelp(),
+      'dialog:sort': () => toggleSort(),
+      'dialog:upload': () => showUpload(),
+
+      // Buffer operations
+      'buffer:save': () => {
+        const currentBufferState = getActiveBuffer();
         const markedForDeletion = currentBufferState.getMarkedForDeletion();
 
-        // Add deletion operations for marked entries
         const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
           id: entry.id,
           type: 'delete' as const,
           path: entry.path,
           entry,
         }));
-
-        // For now, only support deletion operations via the marking system
-        // The change detection (creates, moves, renames) requires proper
-        // originalEntries tracking which is complex with navigation
-        // TODO: Implement proper originalEntries tracking per-path for full oil.nvim support
 
         if (deleteOperations.length === 0) {
           setStatusMessage('No changes to save');
@@ -383,79 +452,249 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
 
         showConfirm(deleteOperations);
       },
-      onQuit: () => process.exit(0),
-      onShowHelp: () => toggleHelp(),
-      onBucketsCommand: () => {
-        if (!bucket) {
-          setStatusMessage('Already viewing buckets');
-          setStatusMessageColor(CatppuccinMocha.text);
-        } else {
-          setBucket(undefined);
-          setStatusMessage('Switched to bucket listing');
-          setStatusMessageColor(CatppuccinMocha.blue);
-        }
-      },
-      onBucketCommand: (bucketName: string) => {
-        if (adapter.setBucket) {
-          adapter.setBucket(bucketName);
-        }
-        setBucket(bucketName);
-        setStatusMessage(`Switched to bucket: ${bucketName}`);
-        setStatusMessageColor(CatppuccinMocha.blue);
-      },
-      onCommand: (command: string) => {
-        setStatusMessage(`Unknown command: ${command}`);
-        setStatusMessageColor(CatppuccinMocha.red);
-      },
-      onEnterSearchMode: () => {
-        setStatusMessage('Search mode: type pattern, n/N to navigate, ESC to clear');
-        setStatusMessageColor(CatppuccinMocha.blue);
-      },
-      onSearch: (query: string) => {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        currentBufferState.updateSearchQuery(query);
-        if (query) {
-          setStatusMessage(`Searching: ${query}`);
-          setStatusMessageColor(CatppuccinMocha.blue);
-        } else {
-          setStatusMessage('Search cleared');
-          setStatusMessageColor(CatppuccinMocha.text);
-        }
-      },
-      onToggleMultiPane: () => {
-        multiPaneLayout.toggleMultiPaneMode();
-        setStatusMessage(
-          multiPaneLayout.isMultiPaneMode ? 'Multi-pane mode enabled' : 'Single pane mode'
-        );
-        setStatusMessageColor(CatppuccinMocha.blue);
-      },
-      onSwitchPane: () => {
-        if (multiPaneLayout.panes.length > 1) {
-          const currentIndex = multiPaneLayout.panes.findIndex(
-            pane => pane.id === multiPaneLayout.activePaneId
-          );
-          const nextIndex = (currentIndex + 1) % multiPaneLayout.panes.length;
-          const nextPaneId = multiPaneLayout.panes[nextIndex].id;
-          multiPaneLayout.activatePane(nextPaneId);
-          setStatusMessage(`Switched to pane ${nextIndex + 1}`);
-          setStatusMessageColor(CatppuccinMocha.blue);
-        }
-      },
-    }),
-    [
-      navigationHandlers,
-      bufferState,
-      bucket,
-      showHelpDialog,
-      previewEnabled,
-      setBucket,
-      originalEntries,
-      adapter,
-      multiPaneLayout,
-    ]
-  );
 
-  const { handleKeyDown } = useKeyboardEvents(activeBufferState, keyboardHandlers);
+      'buffer:refresh': () => {
+        const currentBufferState = getActiveBuffer();
+
+        if (!bucket) {
+          if (adapter.getBucketEntries) {
+            adapter
+              .getBucketEntries()
+              .then((entries: Entry[]) => {
+                currentBufferState.setEntries([...entries]);
+                setStatusMessage(`Refreshed: ${entries.length} bucket(s)`);
+                setStatusMessageColor(CatppuccinMocha.green);
+              })
+              .catch((err: unknown) => {
+                const parsedError = parseAwsError(err, 'Refresh failed');
+                setStatusMessage(formatErrorForDisplay(parsedError, 70));
+                setStatusMessageColor(CatppuccinMocha.red);
+              });
+          }
+        } else {
+          const currentPath = currentBufferState.currentPath;
+          adapter
+            .list(currentPath)
+            .then(result => {
+              currentBufferState.setEntries([...result.entries]);
+              setOriginalEntries([...result.entries]);
+              setStatusMessage('Refreshed');
+              setStatusMessageColor(CatppuccinMocha.green);
+            })
+            .catch((err: unknown) => {
+              const parsedError = parseAwsError(err, 'Refresh failed');
+              setStatusMessage(formatErrorForDisplay(parsedError, 70));
+              setStatusMessageColor(CatppuccinMocha.red);
+            });
+        }
+      },
+
+      'buffer:undo': () => {
+        const currentBufferState = getActiveBuffer();
+        if (currentBufferState.undo()) {
+          setStatusMessage('Undo');
+          setStatusMessageColor(CatppuccinMocha.green);
+        } else {
+          setStatusMessage('Nothing to undo');
+          setStatusMessageColor(CatppuccinMocha.yellow);
+        }
+      },
+
+      'buffer:redo': () => {
+        const currentBufferState = getActiveBuffer();
+        if (currentBufferState.redo()) {
+          setStatusMessage('Redo');
+          setStatusMessageColor(CatppuccinMocha.green);
+        } else {
+          setStatusMessage('Nothing to redo');
+          setStatusMessageColor(CatppuccinMocha.yellow);
+        }
+      },
+
+      // Selection (visual mode)
+      'select:extend:up': () => getActiveBuffer().extendVisualSelection('up'),
+      'select:extend:down': () => getActiveBuffer().extendVisualSelection('down'),
+
+      // Application
+      'app:quit': () => process.exit(0),
+
+      'app:toggleHidden': () => {
+        const currentBufferState = getActiveBuffer();
+        currentBufferState.toggleHiddenFiles();
+        const state = currentBufferState.showHiddenFiles;
+        setStatusMessage(state ? 'Showing hidden files' : 'Hiding hidden files');
+        setStatusMessageColor(CatppuccinMocha.green);
+      },
+
+      // Text input handlers
+      'input:char': (key?: KeyboardKey) => {
+        const buf = getActiveBuffer();
+        if (key?.char && key.char.length === 1) {
+          if (buf.mode === EditMode.Search) {
+            const currentQuery = buf.searchQuery || '';
+            buf.updateSearchQuery(currentQuery + key.char);
+            setStatusMessage(`Searching: ${currentQuery + key.char}`);
+            setStatusMessageColor(CatppuccinMocha.blue);
+          } else if (buf.mode === EditMode.Command) {
+            buf.appendToEditBuffer(key.char);
+          } else if (buf.mode === EditMode.Insert || buf.mode === EditMode.Edit) {
+            if (key.char.match(/[a-zA-Z0-9._\-\s/]/)) {
+              buf.appendToEditBuffer(key.char);
+            }
+          }
+        }
+      },
+
+      'input:backspace': () => {
+        const buf = getActiveBuffer();
+        if (buf.mode === EditMode.Search) {
+          const currentQuery = buf.searchQuery || '';
+          buf.updateSearchQuery(currentQuery.slice(0, -1));
+          setStatusMessage(`Searching: ${currentQuery.slice(0, -1)}`);
+          setStatusMessageColor(CatppuccinMocha.blue);
+        } else {
+          buf.backspaceEditBuffer();
+        }
+      },
+
+      'input:confirm': () => {
+        const buf = getActiveBuffer();
+        if (buf.mode === EditMode.Command) {
+          const command = buf.getEditBuffer().trim();
+          if (command === ':w') {
+            actionHandlers['buffer:save']?.();
+          } else if (command === ':q') {
+            actionHandlers['app:quit']?.();
+          } else if (command === ':buckets') {
+            if (!bucket) {
+              setStatusMessage('Already viewing buckets');
+              setStatusMessageColor(CatppuccinMocha.text);
+            } else {
+              setBucket(undefined);
+              setStatusMessage('Switched to bucket listing');
+              setStatusMessageColor(CatppuccinMocha.blue);
+            }
+          } else if (command.startsWith(':bucket ')) {
+            const bucketName = command.substring(':bucket '.length).trim();
+            if (bucketName) {
+              if (adapter.setBucket) {
+                adapter.setBucket(bucketName);
+              }
+              setBucket(bucketName);
+              setStatusMessage(`Switched to bucket: ${bucketName}`);
+              setStatusMessageColor(CatppuccinMocha.blue);
+            }
+          } else {
+            setStatusMessage(`Unknown command: ${command}`);
+            setStatusMessageColor(CatppuccinMocha.red);
+          }
+          buf.exitCommandMode();
+        } else if (buf.mode === EditMode.Insert) {
+          const entryName = buf.getEditBuffer().trim();
+          if (entryName) {
+            buf.saveSnapshot();
+            const currentPath = buf.currentPath;
+            const entryPath = currentPath ? `${currentPath}${entryName}` : entryName;
+            const isDirectory = entryName.endsWith('/');
+
+            const newEntry = {
+              id: Math.random().toString(36),
+              name: entryName.replace(/\/$/, ''),
+              type: isDirectory ? EntryType.Directory : EntryType.File,
+              path: entryPath,
+              modified: new Date(),
+            };
+
+            const insertIndex = buf.selection.cursorIndex + 1;
+            const currentEntries = [...buf.entries];
+            currentEntries.splice(insertIndex, 0, newEntry);
+            buf.setEntries(currentEntries);
+
+            buf.clearEditBuffer();
+            buf.exitInsertMode();
+            setStatusMessage(`Created ${isDirectory ? 'directory' : 'file'}: ${entryName}`);
+            setStatusMessageColor(CatppuccinMocha.green);
+          }
+        } else if (buf.mode === EditMode.Edit) {
+          const newName = buf.getEditBuffer().trim();
+          if (newName && newName.length > 0) {
+            const currentEntry = buf.getSelectedEntry();
+            if (currentEntry) {
+              const currentEntries = buf.entries;
+              const updatedEntries = currentEntries.map(entry => {
+                if (entry.id === currentEntry.id) {
+                  const isDirectory = newName.endsWith('/');
+                  const cleanName = newName.replace(/\/$/, '');
+                  const currentPath = buf.currentPath;
+                  const newPath = currentPath ? `${currentPath}${cleanName}` : cleanName;
+
+                  return {
+                    ...entry,
+                    name: cleanName,
+                    path: newPath,
+                    type: isDirectory ? EntryType.Directory : EntryType.File,
+                  };
+                }
+                return entry;
+              });
+              buf.setEntries(updatedEntries);
+              setStatusMessage(`Renamed to: ${newName}`);
+              setStatusMessageColor(CatppuccinMocha.green);
+            }
+          }
+          buf.clearEditBuffer();
+          buf.exitEditMode();
+        }
+      },
+
+      'input:cancel': () => {
+        const buf = getActiveBuffer();
+        buf.clearEditBuffer();
+        if (buf.mode === EditMode.Search) {
+          buf.exitSearchMode();
+          buf.cursorToTop();
+        } else if (buf.mode === EditMode.Command) {
+          buf.exitCommandMode();
+        } else if (buf.mode === EditMode.Insert) {
+          buf.exitInsertMode();
+        } else if (buf.mode === EditMode.Edit) {
+          buf.exitEditMode();
+        }
+        setStatusMessage('');
+        setStatusMessageColor(CatppuccinMocha.text);
+      },
+
+      'input:tab': () => {
+        const buf = getActiveBuffer();
+        if (buf.mode === EditMode.Insert) {
+          const currentInput = buf.getEditBuffer().trim().toLowerCase();
+          if (currentInput) {
+            const matching = buf.entries
+              .filter(e => e.name.toLowerCase().startsWith(currentInput))
+              .map(e => e.name);
+
+            if (matching.length > 0) {
+              buf.setEditBuffer(matching[0]);
+            }
+          }
+        }
+      },
+    };
+
+    return registerActions(actionHandlers);
+  }, [
+    registerActions,
+    bufferState,
+    multiPaneLayout,
+    bucket,
+    adapter,
+    previewEnabled,
+    navigationHandlers,
+    showConfirm,
+    showUpload,
+    toggleHelp,
+    toggleSort,
+  ]);
 
   // ============================================
   // Computed State
@@ -623,6 +862,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   // Keyboard Handler (via Context)
   // ============================================
   // Create stable callback for keyboard handling
+  // This handler deals with dialog-specific keys and delegates to the dispatcher
   const keyboardHandlerCallback = useCallback(
     (key: KeyboardKey): boolean => {
       // Upload dialog - delegate to dialog handler
@@ -712,119 +952,17 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         return true; // Block all other keys when help dialog is open
       }
 
-      if (key.name === '?') {
-        showHelp();
-        return true;
-      }
-
-      // Upload dialog shortcut (press 'U' to upload - shift+u only)
-      if ((key.name === 'u' && key.shift) || key.name === 'U') {
-        showUpload();
-        return true;
-      }
-
-      // Sort menu shortcut (press 'o' to open)
-      if (key.name === 'o') {
-        toggleSort();
-        return true;
-      }
-
-      // Hidden files toggle (press 'H' to toggle)
-      if (key.name === 'H' || key.name === 'shift+h') {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        currentBufferState.toggleHiddenFiles();
-        const state = currentBufferState.showHiddenFiles;
-        setStatusMessage(state ? 'Showing hidden files' : 'Hiding hidden files');
-        setStatusMessageColor(CatppuccinMocha.green);
-        return true;
-      }
-
-      // Undo (press 'u' to undo)
-      if (key.name === 'u') {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        if (currentBufferState.undo()) {
-          setStatusMessage('Undo');
-          setStatusMessageColor(CatppuccinMocha.green);
-        } else {
-          setStatusMessage('Nothing to undo');
-          setStatusMessageColor(CatppuccinMocha.yellow);
-        }
-        return true;
-      }
-
-      // Refresh (press 'r' to reload current bucket/folder)
-      if (key.name === 'r') {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-
-        if (!bucket) {
-          try {
-            if (adapter.getBucketEntries) {
-              adapter
-                .getBucketEntries()
-                .then((entries: Entry[]) => {
-                  currentBufferState.setEntries([...entries]);
-                  setStatusMessage(`Refreshed: ${entries.length} bucket(s)`);
-                  setStatusMessageColor(CatppuccinMocha.green);
-                })
-                .catch((err: unknown) => {
-                  const parsedError = parseAwsError(err, 'Refresh failed');
-                  setStatusMessage(formatErrorForDisplay(parsedError, 70));
-                  setStatusMessageColor(CatppuccinMocha.red);
-                });
-            }
-          } catch (err) {
-            const parsedError = parseAwsError(err, 'Refresh failed');
-            setStatusMessage(formatErrorForDisplay(parsedError, 70));
-            setStatusMessageColor(CatppuccinMocha.red);
-          }
-        } else {
-          const currentPath = currentBufferState.currentPath;
-          adapter
-            .list(currentPath)
-            .then(result => {
-              currentBufferState.setEntries([...result.entries]);
-              setOriginalEntries([...result.entries]);
-              setStatusMessage('Refreshed');
-              setStatusMessageColor(CatppuccinMocha.green);
-            })
-            .catch((err: unknown) => {
-              const parsedError = parseAwsError(err, 'Refresh failed');
-              setStatusMessage(formatErrorForDisplay(parsedError, 70));
-              setStatusMessageColor(CatppuccinMocha.red);
-            });
-        }
-        return true;
-      }
-
-      // Redo (press 'Ctrl+r' to redo)
-      if (key.name === 'r' && key.ctrl) {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        if (currentBufferState.redo()) {
-          setStatusMessage('Redo');
-          setStatusMessageColor(CatppuccinMocha.green);
-        } else {
-          setStatusMessage('Nothing to redo');
-          setStatusMessageColor(CatppuccinMocha.yellow);
-        }
-        return true;
-      }
-
-      // Pass to normal keyboard handler
-      handleKeyDown(key);
-      return true; // Main UI always consumes keys
+      // Dispatch to the action-based keyboard handler
+      // This handles all normal mode, visual mode, search mode, etc. keybindings
+      return dispatchKey(key);
     },
     [
-      handleKeyDown,
+      dispatchKey,
       showHelpDialog,
       showErrorDialog,
       showSortMenu,
       closeDialog,
       closeAndClearOperations,
-      showHelp,
-      showUpload,
-      toggleSort,
-      bucket,
-      adapter,
       bufferState,
       multiPaneLayout,
     ]
