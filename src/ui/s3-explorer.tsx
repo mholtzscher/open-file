@@ -20,7 +20,7 @@ import { S3ExplorerLayout, StatusBarState, PreviewState } from './s3-explorer-la
 import { DialogsState } from './s3-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
-import { setGlobalKeyboardDispatcher } from '../index.tsx';
+import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
 import { detectChanges, buildOperationPlan } from '../utils/change-detection.js';
 import { EntryIdMap } from '../utils/entry-id.js';
 import { Entry, EntryType } from '../types/entry.js';
@@ -620,30 +620,31 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   }, [showUploadDialog]);
 
   // ============================================
-  // Global Keyboard Dispatcher
+  // Keyboard Handler (via Context)
   // ============================================
-  useEffect(() => {
-    setGlobalKeyboardDispatcher((key: KeyboardKey) => {
+  // Create stable callback for keyboard handling
+  const keyboardHandlerCallback = useCallback(
+    (key: KeyboardKey): boolean => {
       // Upload dialog - delegate to dialog handler
       if (showUploadDialogRef.current) {
         const handler = getDialogHandler('upload-dialog');
         if (handler) {
           handler(key.name);
         }
-        return;
+        return true; // Consumed by dialog
       }
 
       // Confirmation dialog - handle y/n keys
       if (showConfirmDialogRef.current) {
         if (key.name === 'y') {
           confirmHandlerRef.current();
-          return;
+          return true;
         }
         if (key.name === 'n' || key.name === 'escape') {
           closeAndClearOperations();
-          return;
+          return true;
         }
-        return;
+        return true; // Block all other keys when dialog is open
       }
 
       // Error dialog - block all input except escape
@@ -652,7 +653,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           setStatusMessage('');
           setStatusMessageColor(CatppuccinMocha.text);
         }
-        return;
+        return true; // Block all keys when error dialog is open
       }
 
       // Sort menu shortcuts
@@ -662,7 +663,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
 
         if (key.name === 'escape' || key.name === 'q') {
           closeDialog();
-          return;
+          return true;
         }
 
         const fieldMap: { [key: string]: SortField } = {
@@ -680,7 +681,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           currentBufferState.setSortConfig(newConfig);
           setStatusMessage(`Sorted by ${formatSortField(fieldMap[key.name])}`);
           setStatusMessageColor(CatppuccinMocha.green);
-          return;
+          return true;
         }
 
         if (key.name === 'space' || key.name === 'return') {
@@ -696,36 +697,36 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           const orderStr = newOrder === SortOrder.Ascending ? 'ascending' : 'descending';
           setStatusMessage(`Sort order: ${orderStr}`);
           setStatusMessageColor(CatppuccinMocha.green);
-          return;
+          return true;
         }
 
-        return;
+        return true; // Block all other keys when sort menu is open
       }
 
       // Help dialog shortcuts
       if (showHelpDialog) {
         if (key.name === '?' || key.name === 'escape' || key.name === 'q') {
           closeDialog();
-          return;
+          return true;
         }
-        return;
+        return true; // Block all other keys when help dialog is open
       }
 
       if (key.name === '?') {
         showHelp();
-        return;
+        return true;
       }
 
       // Upload dialog shortcut (press 'U' to upload - shift+u only)
       if ((key.name === 'u' && key.shift) || key.name === 'U') {
         showUpload();
-        return;
+        return true;
       }
 
       // Sort menu shortcut (press 'o' to open)
       if (key.name === 'o') {
         toggleSort();
-        return;
+        return true;
       }
 
       // Hidden files toggle (press 'H' to toggle)
@@ -735,7 +736,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         const state = currentBufferState.showHiddenFiles;
         setStatusMessage(state ? 'Showing hidden files' : 'Hiding hidden files');
         setStatusMessageColor(CatppuccinMocha.green);
-        return;
+        return true;
       }
 
       // Undo (press 'u' to undo)
@@ -748,7 +749,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           setStatusMessage('Nothing to undo');
           setStatusMessageColor(CatppuccinMocha.yellow);
         }
-        return;
+        return true;
       }
 
       // Refresh (press 'r' to reload current bucket/folder)
@@ -792,7 +793,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
               setStatusMessageColor(CatppuccinMocha.red);
             });
         }
-        return;
+        return true;
       }
 
       // Redo (press 'Ctrl+r' to redo)
@@ -805,28 +806,32 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           setStatusMessage('Nothing to redo');
           setStatusMessageColor(CatppuccinMocha.yellow);
         }
-        return;
+        return true;
       }
 
       // Pass to normal keyboard handler
       handleKeyDown(key);
-    });
+      return true; // Main UI always consumes keys
+    },
+    [
+      handleKeyDown,
+      showHelpDialog,
+      showErrorDialog,
+      showSortMenu,
+      closeDialog,
+      closeAndClearOperations,
+      showHelp,
+      showUpload,
+      toggleSort,
+      bucket,
+      adapter,
+      bufferState,
+      multiPaneLayout,
+    ]
+  );
 
-    return () => {
-      setGlobalKeyboardDispatcher(null);
-    };
-  }, [
-    handleKeyDown,
-    showHelpDialog,
-    showErrorDialog,
-    showSortMenu,
-    statusMessage,
-    statusMessageColor,
-    bucket,
-    adapter,
-    bufferState,
-    multiPaneLayout,
-  ]);
+  // Register keyboard handler with context at normal priority
+  useKeyboardHandler(keyboardHandlerCallback, [keyboardHandlerCallback], KeyboardPriority.Normal);
 
   // ============================================
   // Initialize Data

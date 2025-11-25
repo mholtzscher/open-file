@@ -2,6 +2,7 @@
 
 import { createCliRenderer } from '@opentui/core';
 import { createRoot } from '@opentui/react';
+import { useEffect } from 'react';
 import { S3Explorer } from './ui/s3-explorer.jsx';
 import { Adapter } from './adapters/adapter.js';
 import { MockAdapter } from './adapters/mock-adapter.js';
@@ -10,15 +11,17 @@ import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger.js';
 import { getActiveAwsRegion } from './utils/aws-profile.js';
+import { KeyboardProvider, useKeyboardDispatch } from './contexts/KeyboardContext.js';
 import type { KeyboardKey, KeyboardDispatcher } from './types/keyboard.js';
 
-// Global keyboard event dispatcher - exported at module level
-export let globalKeyboardDispatcher: KeyboardDispatcher | null = null;
+// Global keyboard event dispatcher - bridges external renderer to React context
+// This is set once when App mounts and provides the dispatch function from context
+let globalKeyboardDispatcher: KeyboardDispatcher | null = null;
 
 /**
- * Set the global keyboard event dispatcher
+ * Set the global keyboard event dispatcher (called internally by App component)
  */
-export function setGlobalKeyboardDispatcher(dispatcher: KeyboardDispatcher | null) {
+function setGlobalKeyboardDispatcher(dispatcher: KeyboardDispatcher | null) {
   globalKeyboardDispatcher = dispatcher;
 }
 
@@ -27,6 +30,33 @@ export function setGlobalKeyboardDispatcher(dispatcher: KeyboardDispatcher | nul
  */
 export function getGlobalKeyboardDispatcher() {
   return globalKeyboardDispatcher;
+}
+
+/**
+ * App component props
+ */
+interface AppProps {
+  bucket?: string;
+  adapter: Adapter;
+  configManager: ConfigManager;
+}
+
+/**
+ * App component that connects keyboard events to the React context
+ */
+function App({ bucket, adapter, configManager }: AppProps) {
+  const dispatch = useKeyboardDispatch();
+
+  // Connect the context dispatch to the global dispatcher
+  // This bridges the external renderer's keypress events to React
+  useEffect(() => {
+    setGlobalKeyboardDispatcher(dispatch);
+    return () => {
+      setGlobalKeyboardDispatcher(null);
+    };
+  }, [dispatch]);
+
+  return <S3Explorer bucket={bucket} adapter={adapter} configManager={configManager} />;
 }
 
 /**
@@ -150,10 +180,14 @@ async function main() {
       throw keyError;
     }
 
-    // Create and render app
+    // Create and render app with KeyboardProvider
     try {
       const root = createRoot(renderer);
-      root.render(<S3Explorer bucket={bucket} adapter={adapter} configManager={configManager} />);
+      root.render(
+        <KeyboardProvider>
+          <App bucket={bucket} adapter={adapter} configManager={configManager} />
+        </KeyboardProvider>
+      );
     } catch (renderError) {
       logger.error('Failed to render app', renderError);
       throw renderError;
