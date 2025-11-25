@@ -72,7 +72,10 @@ export {
   type S3ReadFunction,
 } from './transfer-operations.js';
 
+export { createProgressAdapter, type OperationProgressCallback } from './progress-adapter.js';
+
 export {
-  createProgressAdapter,
-  type OperationProgressCallback,
-} from './progress-adapter.js';
+  readObject,
+  type ReadObjectOptions,
+  type ReadOperationsLogger,
+} from './read-operations.js';
