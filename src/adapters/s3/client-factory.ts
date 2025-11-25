@@ -152,18 +152,3 @@ export function createS3Client(options: S3ClientOptions): S3ClientResult {
 
   return { client, region: resolvedRegion };
 }
-
-/**
- * Create a new S3 client with a different region
- *
- * Preserves endpoint and credential settings from the original options.
- */
-export function createS3ClientWithRegion(
-  options: S3ClientOptions,
-  newRegion: string
-): S3ClientResult {
-  return createS3Client({
-    ...options,
-    region: newRegion,
-  });
-}

@@ -19,12 +19,7 @@ import { generateEntryId } from '../utils/entry-id.js';
 import { retryWithBackoff, getS3RetryConfig } from '../utils/retry.js';
 import { parseAwsError } from '../utils/errors.js';
 import { getLogger } from '../utils/logger.js';
-import {
-  createS3Client,
-  createS3ClientWithRegion,
-  S3ClientOptions,
-  S3ClientResult,
-} from './s3/client-factory.js';
+import { createS3Client, S3ClientOptions, S3ClientResult } from './s3/client-factory.js';
 import {
   uploadLargeFile,
   shouldUseMultipartUpload,
@@ -92,22 +87,12 @@ export interface S3AdapterLogger {
 export type S3ClientFactory = (options: S3ClientOptions) => S3ClientResult;
 
 /**
- * Client factory with region override for dependency injection
- */
-export type S3ClientWithRegionFactory = (
-  options: S3ClientOptions,
-  region: string
-) => S3ClientResult;
-
-/**
  * Dependencies that can be injected into S3Adapter
  * All dependencies are optional and default to production implementations
  */
 export interface S3AdapterDependencies {
   /** Factory function to create S3 clients (defaults to createS3Client) */
   clientFactory?: S3ClientFactory;
-  /** Factory function to create S3 clients with specific region (defaults to createS3ClientWithRegion) */
-  clientWithRegionFactory?: S3ClientWithRegionFactory;
   /** Logger instance (defaults to getLogger()) */
   logger?: S3AdapterLogger;
 }
@@ -132,14 +117,11 @@ export class S3Adapter implements BucketAwareAdapter {
   // Injected dependencies with defaults
   private readonly logger: S3AdapterLogger;
   private readonly clientFactory: S3ClientFactory;
-  private readonly clientWithRegionFactory: S3ClientWithRegionFactory;
 
   constructor(config: S3AdapterConfig, dependencies?: S3AdapterDependencies) {
     // Initialize dependencies with defaults
     this.logger = dependencies?.logger ?? getLogger();
     this.clientFactory = dependencies?.clientFactory ?? createS3Client;
-    this.clientWithRegionFactory =
-      dependencies?.clientWithRegionFactory ?? createS3ClientWithRegion;
 
     this.bucket = config.bucket;
 
@@ -194,7 +176,7 @@ export class S3Adapter implements BucketAwareAdapter {
       });
       this.currentRegion = region;
       // Reinitialize S3Client with new region using factory
-      const { client } = this.clientWithRegionFactory(this.clientOptions, region);
+      const { client } = this.clientFactory({ ...this.clientOptions, region });
       this.client = client;
     }
   }

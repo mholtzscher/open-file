@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createS3Client, createS3ClientWithRegion, S3ClientOptions } from './client-factory.js';
+import { createS3Client, S3ClientOptions } from './client-factory.js';
 
 /**
  * Helper to verify that an object is an S3Client
@@ -110,32 +110,6 @@ describe('S3 Client Factory', () => {
       });
 
       expect(isS3Client(result.client)).toBe(true);
-    });
-  });
-
-  describe('createS3ClientWithRegion', () => {
-    it('should create client with new region while preserving other options', () => {
-      const baseOptions: S3ClientOptions = {
-        region: 'us-east-1',
-        accessKeyId: 'test-key',
-        secretAccessKey: 'test-secret',
-        endpoint: 'http://localhost:4566',
-      };
-
-      const result = createS3ClientWithRegion(baseOptions, 'eu-central-1');
-
-      expect(result.region).toBe('eu-central-1');
-      expect(isS3Client(result.client)).toBe(true);
-    });
-
-    it('should override original region with new region', () => {
-      const baseOptions: S3ClientOptions = {
-        region: 'us-west-2',
-      };
-
-      const result = createS3ClientWithRegion(baseOptions, 'ap-northeast-1');
-
-      expect(result.region).toBe('ap-northeast-1');
     });
   });
 

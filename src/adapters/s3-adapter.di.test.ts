@@ -12,7 +12,6 @@ import {
   S3AdapterDependencies,
   S3AdapterLogger,
   S3ClientFactory,
-  S3ClientWithRegionFactory,
 } from './s3-adapter.js';
 import { S3Client } from '@aws-sdk/client-s3';
 import { S3ClientResult } from './s3/client-factory.js';
@@ -65,16 +64,6 @@ describe('S3Adapter dependency injection', () => {
     const factory: S3ClientFactory = options => {
       factoryCalls.push({ type: 'create', options });
       return { client: mockClient, region };
-    };
-    return { factory, factoryCalls };
-  };
-
-  // Mock client with region factory
-  const createMockClientWithRegionFactory = (mockClient: S3Client) => {
-    const factoryCalls: any[] = [];
-    const factory: S3ClientWithRegionFactory = (options, newRegion) => {
-      factoryCalls.push({ type: 'createWithRegion', options, newRegion });
-      return { client: mockClient, region: newRegion };
     };
     return { factory, factoryCalls };
   };
@@ -132,13 +121,11 @@ describe('S3Adapter dependency injection', () => {
     it('should use injected logger for setRegion', () => {
       const { client } = createMockS3Client();
       const { factory } = createMockClientFactory(client);
-      const { factory: regionFactory } = createMockClientWithRegionFactory(client);
       const { logger, calls } = createMockLogger();
 
       const adapter = new S3Adapter(defaultConfig, {
         logger,
         clientFactory: factory,
-        clientWithRegionFactory: regionFactory,
       });
 
       calls.length = 0; // Clear constructor calls
@@ -166,37 +153,35 @@ describe('S3Adapter dependency injection', () => {
       expect(factoryCalls[0].options.region).toBe('us-east-1');
     });
 
-    it('should use injected clientWithRegionFactory for setRegion', () => {
+    it('should use clientFactory for setRegion', () => {
       const { client } = createMockS3Client();
-      const { factory } = createMockClientFactory(client);
-      const { factory: regionFactory, factoryCalls } = createMockClientWithRegionFactory(client);
+      const { factory, factoryCalls } = createMockClientFactory(client);
       const { logger } = createMockLogger();
 
       const adapter = new S3Adapter(defaultConfig, {
         logger,
         clientFactory: factory,
-        clientWithRegionFactory: regionFactory,
       });
 
+      factoryCalls.length = 0; // Clear constructor call
       adapter.setRegion('eu-west-1');
 
       expect(factoryCalls.length).toBe(1);
-      expect(factoryCalls[0].type).toBe('createWithRegion');
-      expect(factoryCalls[0].newRegion).toBe('eu-west-1');
+      expect(factoryCalls[0].type).toBe('create');
+      expect(factoryCalls[0].options.region).toBe('eu-west-1');
     });
 
-    it('should not call clientWithRegionFactory if region unchanged', () => {
+    it('should not call clientFactory if region unchanged', () => {
       const { client } = createMockS3Client();
-      const { factory } = createMockClientFactory(client, 'us-east-1');
-      const { factory: regionFactory, factoryCalls } = createMockClientWithRegionFactory(client);
+      const { factory, factoryCalls } = createMockClientFactory(client, 'us-east-1');
       const { logger } = createMockLogger();
 
       const adapter = new S3Adapter(defaultConfig, {
         logger,
         clientFactory: factory,
-        clientWithRegionFactory: regionFactory,
       });
 
+      factoryCalls.length = 0; // Clear constructor call
       adapter.setRegion('us-east-1'); // Same region
 
       expect(factoryCalls.length).toBe(0);

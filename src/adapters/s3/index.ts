@@ -2,12 +2,7 @@
  * S3 Module - Barrel exports for S3 adapter components
  */
 
-export {
-  createS3Client,
-  createS3ClientWithRegion,
-  type S3ClientOptions,
-  type S3ClientResult,
-} from './client-factory.js';
+export { createS3Client, type S3ClientOptions, type S3ClientResult } from './client-factory.js';
 
 export {
   uploadLargeFile,
