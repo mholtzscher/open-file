@@ -52,6 +52,7 @@ import {
   uploadFileToS3,
   uploadDirectoryToS3,
 } from './s3/transfer-operations.js';
+import { createProgressAdapter } from './s3/progress-adapter.js';
 // Re-export BucketInfo type for backwards compatibility
 export type { BucketInfo } from './s3/entry-parser.js';
 // Re-export client factory types for dependency injection
@@ -630,17 +631,7 @@ export class S3Adapter implements BucketAwareAdapter {
       bucket: this.bucket!,
       sourcePrefix: source,
       destPrefix: destination,
-      onProgress: options?.onProgress
-        ? (moved, total, currentKey) => {
-            options.onProgress!({
-              operation: 'Moving objects',
-              bytesTransferred: moved,
-              totalBytes: total,
-              percentage: Math.round((moved / total) * 100),
-              currentFile: currentKey,
-            });
-          }
-        : undefined,
+      onProgress: createProgressAdapter('Moving objects', options?.onProgress),
     });
   }
 
@@ -709,17 +700,7 @@ export class S3Adapter implements BucketAwareAdapter {
       sourcePrefix: source,
       destBucket: targetBucket,
       destPrefix: destination,
-      onProgress: options?.onProgress
-        ? (copied, total, currentKey) => {
-            options.onProgress!({
-              operation: 'Copying objects',
-              bytesTransferred: copied,
-              totalBytes: total,
-              percentage: Math.round((copied / total) * 100),
-              currentFile: currentKey,
-            });
-          }
-        : undefined,
+      onProgress: createProgressAdapter('Copying objects', options?.onProgress),
     });
   }
 
@@ -924,17 +905,7 @@ export class S3Adapter implements BucketAwareAdapter {
       readFromS3: this.read.bind(this),
       s3Prefix,
       localPath,
-      onProgress: options?.onProgress
-        ? (transferred, total, currentKey) => {
-            options.onProgress!({
-              operation: 'Downloading directory',
-              bytesTransferred: transferred,
-              totalBytes: total,
-              percentage: Math.round((transferred / total) * 100),
-              currentFile: currentKey,
-            });
-          }
-        : undefined,
+      onProgress: createProgressAdapter('Downloading directory', options?.onProgress),
       options,
     });
   }
@@ -999,17 +970,7 @@ export class S3Adapter implements BucketAwareAdapter {
       bucket: this.bucket!,
       localPath,
       s3Prefix,
-      onProgress: options?.onProgress
-        ? (transferred, total, currentKey) => {
-            options.onProgress!({
-              operation: 'Uploading directory',
-              bytesTransferred: transferred,
-              totalBytes: total,
-              percentage: Math.round((transferred / total) * 100),
-              currentFile: currentKey,
-            });
-          }
-        : undefined,
+      onProgress: createProgressAdapter('Uploading directory', options?.onProgress),
       options,
     });
   }

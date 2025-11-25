@@ -71,3 +71,8 @@ export {
   type TransferProgressCallback,
   type S3ReadFunction,
 } from './transfer-operations.js';
+
+export {
+  createProgressAdapter,
+  type OperationProgressCallback,
+} from './progress-adapter.js';
