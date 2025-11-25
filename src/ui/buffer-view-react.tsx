@@ -19,13 +19,15 @@ export interface BufferViewProps {
 
 /**
  * Format size for display
+ * Returns '-' for undefined (folders), '0B' for zero-byte files
  */
 function formatSize(size: number | undefined): string {
-  if (!size) return '-';
-  if (size > 1024 * 1024) {
+  if (size === undefined) return '-';
+  if (size === 0) return '0B';
+  if (size >= 1024 * 1024) {
     return `${(size / (1024 * 1024)).toFixed(1)}MB`;
   }
-  if (size > 1024) {
+  if (size >= 1024) {
     return `${(size / 1024).toFixed(1)}KB`;
   }
   return `${size}B`;
