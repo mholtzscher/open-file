@@ -110,7 +110,6 @@ export class S3Adapter implements BucketAwareAdapter {
   readonly name = 's3';
   private client: S3Client;
   private bucket?: string;
-  private prefix: string = '';
   private currentRegion: string;
   private clientOptions: S3ClientOptions;
 
