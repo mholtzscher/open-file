@@ -13,13 +13,11 @@ import {
   GetObjectCommand,
   PutObjectCommand,
   DeleteObjectCommand,
-  CopyObjectCommand,
   HeadObjectCommand,
   GetObjectTaggingCommand,
   ListObjectsV2CommandInput,
 } from '@aws-sdk/client-s3';
 import { promises as fs } from 'fs';
-import { join, dirname } from 'path';
 import { Adapter, ListOptions, ListResult, OperationOptions } from './adapter.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { generateEntryId } from '../utils/entry-id.js';
@@ -40,6 +38,14 @@ import {
   sortEntries,
 } from './s3/entry-parser.js';
 import { listAllObjects, batchDeleteObjects } from './s3/batch-operations.js';
+import { copyObject, copyDirectory as copyDirectoryOp } from './s3/copy-operations.js';
+import { moveObject, moveDirectory as moveDirectoryOp } from './s3/move-operations.js';
+import {
+  downloadFileToLocal,
+  downloadDirectoryToLocal as downloadDirToLocal,
+  uploadFileToS3,
+  uploadDirectoryToS3,
+} from './s3/transfer-operations.js';
 // Re-export BucketInfo type for backwards compatibility
 export type { BucketInfo } from './s3/entry-parser.js';
 
@@ -547,25 +553,12 @@ export class S3Adapter implements Adapter {
    * Move a single file (copy + delete)
    */
   private async moveSingleFile(source: string, destination: string): Promise<void> {
-    // Copy to new location with metadata preservation
-    await retryWithBackoff(() => {
-      const copyCommand = new CopyObjectCommand({
-        Bucket: this.bucket,
-        CopySource: `${this.bucket}/${source}`,
-        Key: destination,
-        MetadataDirective: 'COPY', // Preserve metadata
-      });
-      return this.client.send(copyCommand);
-    }, getS3RetryConfig());
-
-    // Delete from old location
-    await retryWithBackoff(() => {
-      const deleteCommand = new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: source,
-      });
-      return this.client.send(deleteCommand);
-    }, getS3RetryConfig());
+    await moveObject({
+      client: this.client,
+      bucket: this.bucket!,
+      sourceKey: source,
+      destKey: destination,
+    });
   }
 
   /**
@@ -576,50 +569,23 @@ export class S3Adapter implements Adapter {
     destination: string,
     options?: OperationOptions
   ): Promise<void> {
-    // List all objects under the source prefix
-    const objectsToMove = await listAllObjects({
+    await moveDirectoryOp({
       client: this.client,
       bucket: this.bucket!,
-      prefix: source,
+      sourcePrefix: source,
+      destPrefix: destination,
+      onProgress: options?.onProgress
+        ? (moved, total, currentKey) => {
+            options.onProgress!({
+              operation: 'Moving objects',
+              bytesTransferred: moved,
+              totalBytes: total,
+              percentage: Math.round((moved / total) * 100),
+              currentFile: currentKey,
+            });
+          }
+        : undefined,
     });
-
-    // Move each object (copy + delete)
-    for (let i = 0; i < objectsToMove.length; i++) {
-      const srcKey = objectsToMove[i];
-      const relativePath = srcKey.substring(source.length);
-      const destKey = destination + relativePath;
-
-      // Copy object
-      await retryWithBackoff(() => {
-        const copyCommand = new CopyObjectCommand({
-          Bucket: this.bucket,
-          CopySource: `${this.bucket}/${srcKey}`,
-          Key: destKey,
-          MetadataDirective: 'COPY', // Preserve metadata
-        });
-        return this.client.send(copyCommand);
-      }, getS3RetryConfig());
-
-      // Delete original
-      await retryWithBackoff(() => {
-        const deleteCommand = new DeleteObjectCommand({
-          Bucket: this.bucket,
-          Key: srcKey,
-        });
-        return this.client.send(deleteCommand);
-      }, getS3RetryConfig());
-
-      // Report progress
-      if (options?.onProgress) {
-        options.onProgress({
-          operation: 'Moving objects',
-          bytesTransferred: i + 1,
-          totalBytes: objectsToMove.length,
-          percentage: Math.round(((i + 1) / objectsToMove.length) * 100),
-          currentFile: srcKey,
-        });
-      }
-    }
   }
 
   /**
@@ -663,15 +629,13 @@ export class S3Adapter implements Adapter {
     destination: string,
     targetBucket: string
   ): Promise<void> {
-    await retryWithBackoff(() => {
-      const command = new CopyObjectCommand({
-        Bucket: targetBucket,
-        CopySource: `${this.bucket}/${source}`,
-        Key: destination,
-        MetadataDirective: 'COPY', // Preserve metadata
-      });
-      return this.client.send(command);
-    }, getS3RetryConfig());
+    await copyObject({
+      client: this.client,
+      sourceBucket: this.bucket!,
+      sourceKey: source,
+      destBucket: targetBucket,
+      destKey: destination,
+    });
   }
 
   /**
@@ -683,41 +647,24 @@ export class S3Adapter implements Adapter {
     targetBucket: string,
     options?: OperationOptions
   ): Promise<void> {
-    // List all objects under the source prefix, excluding the directory marker
-    const objectsToCopy = await listAllObjects({
+    await copyDirectoryOp({
       client: this.client,
-      bucket: this.bucket!,
-      prefix: source,
-      excludeKey: source,
+      sourceBucket: this.bucket!,
+      sourcePrefix: source,
+      destBucket: targetBucket,
+      destPrefix: destination,
+      onProgress: options?.onProgress
+        ? (copied, total, currentKey) => {
+            options.onProgress!({
+              operation: 'Copying objects',
+              bytesTransferred: copied,
+              totalBytes: total,
+              percentage: Math.round((copied / total) * 100),
+              currentFile: currentKey,
+            });
+          }
+        : undefined,
     });
-
-    // Copy each object
-    for (let i = 0; i < objectsToCopy.length; i++) {
-      const srcKey = objectsToCopy[i];
-      const relativePath = srcKey.substring(source.length);
-      const destKey = destination + relativePath;
-
-      await retryWithBackoff(() => {
-        const command = new CopyObjectCommand({
-          Bucket: targetBucket,
-          CopySource: `${this.bucket}/${srcKey}`,
-          Key: destKey,
-          MetadataDirective: 'COPY', // Preserve metadata
-        });
-        return this.client.send(command);
-      }, getS3RetryConfig());
-
-      // Report progress
-      if (options?.onProgress) {
-        options.onProgress({
-          operation: 'Copying objects',
-          bytesTransferred: i + 1,
-          totalBytes: objectsToCopy.length,
-          percentage: Math.round(((i + 1) / objectsToCopy.length) * 100),
-          currentFile: srcKey,
-        });
-      }
-    }
   }
 
   /**
@@ -901,15 +848,12 @@ export class S3Adapter implements Adapter {
     localPath: string,
     options?: OperationOptions
   ): Promise<void> {
-    // Ensure parent directory exists
-    const parentDir = dirname(localPath);
-    await fs.mkdir(parentDir, { recursive: true });
-
-    // Download the file
-    const fileBuffer = await this.read(s3Key, options);
-
-    // Write to local filesystem
-    await fs.writeFile(localPath, fileBuffer);
+    await downloadFileToLocal({
+      readFromS3: this.read.bind(this),
+      s3Key,
+      localPath,
+      options,
+    });
   }
 
   /**
@@ -920,40 +864,25 @@ export class S3Adapter implements Adapter {
     localPath: string,
     options?: OperationOptions
   ): Promise<void> {
-    // List all files (exclude directory markers and the prefix itself)
-    const objectsToDownload = await listAllObjects({
+    await downloadDirToLocal({
       client: this.client,
       bucket: this.bucket!,
-      prefix: s3Prefix,
-      excludeKey: s3Prefix,
-      excludeDirectoryMarkers: true,
+      readFromS3: this.read.bind(this),
+      s3Prefix,
+      localPath,
+      onProgress: options?.onProgress
+        ? (transferred, total, currentKey) => {
+            options.onProgress!({
+              operation: 'Downloading directory',
+              bytesTransferred: transferred,
+              totalBytes: total,
+              percentage: Math.round((transferred / total) * 100),
+              currentFile: currentKey,
+            });
+          }
+        : undefined,
+      options,
     });
-
-    // Download each file
-    for (let i = 0; i < objectsToDownload.length; i++) {
-      const s3Key = objectsToDownload[i];
-      const relativePath = s3Key.substring(s3Prefix.length);
-      const localFilePath = join(localPath, relativePath);
-
-      // Ensure parent directory exists
-      const parentDir = dirname(localFilePath);
-      await fs.mkdir(parentDir, { recursive: true });
-
-      // Download the file
-      const fileBuffer = await this.read(s3Key, options);
-      await fs.writeFile(localFilePath, fileBuffer);
-
-      // Report progress
-      if (options?.onProgress) {
-        options.onProgress({
-          operation: 'Downloading directory',
-          bytesTransferred: i + 1,
-          totalBytes: objectsToDownload.length,
-          percentage: Math.round(((i + 1) / objectsToDownload.length) * 100),
-          currentFile: s3Key,
-        });
-      }
-    }
   }
 
   /**
@@ -996,44 +925,13 @@ export class S3Adapter implements Adapter {
     s3Key: string,
     options?: OperationOptions
   ): Promise<void> {
-    // Read the file
-    const fileBuffer = await fs.readFile(localPath);
-    const totalBytes = fileBuffer.length;
-
-    if (options?.onProgress) {
-      options.onProgress({
-        operation: 'Uploading file',
-        bytesTransferred: 0,
-        totalBytes,
-        percentage: 0,
-        currentFile: s3Key,
-      });
-    }
-
-    // Use multipart upload for large files
-    if (shouldUseMultipartUpload(totalBytes)) {
-      await uploadLargeFile(this.client, this.bucket!, s3Key, fileBuffer, options);
-    } else {
-      // Use regular PutObject for small files
-      await retryWithBackoff(() => {
-        const command = new PutObjectCommand({
-          Bucket: this.bucket,
-          Key: s3Key,
-          Body: fileBuffer,
-        });
-        return this.client.send(command);
-      }, getS3RetryConfig());
-    }
-
-    if (options?.onProgress) {
-      options.onProgress({
-        operation: 'Uploaded file',
-        bytesTransferred: totalBytes,
-        totalBytes,
-        percentage: 100,
-        currentFile: s3Key,
-      });
-    }
+    await uploadFileToS3({
+      client: this.client,
+      bucket: this.bucket!,
+      localPath,
+      s3Key,
+      options,
+    });
   }
 
   /**
@@ -1044,43 +942,23 @@ export class S3Adapter implements Adapter {
     s3Prefix: string,
     options?: OperationOptions
   ): Promise<void> {
-    const filesToUpload: { localPath: string; s3Key: string }[] = [];
-
-    // Recursively collect all files
-    const collectFiles = async (dir: string, prefix: string) => {
-      const entries = await fs.readdir(dir, { withFileTypes: true });
-
-      for (const entry of entries) {
-        const fullPath = join(dir, entry.name);
-        const s3Key = prefix + entry.name;
-
-        if (entry.isDirectory()) {
-          // Recursively collect from subdirectory
-          await collectFiles(fullPath, s3Key + '/');
-        } else if (entry.isFile()) {
-          filesToUpload.push({ localPath: fullPath, s3Key });
-        }
-      }
-    };
-
-    // Collect all files
-    await collectFiles(localPath, s3Prefix);
-
-    // Upload each file
-    for (let i = 0; i < filesToUpload.length; i++) {
-      const { localPath: filePath, s3Key } = filesToUpload[i];
-      await this.uploadSingleFileToS3(filePath, s3Key, options);
-
-      // Report progress
-      if (options?.onProgress) {
-        options.onProgress({
-          operation: 'Uploading directory',
-          bytesTransferred: i + 1,
-          totalBytes: filesToUpload.length,
-          percentage: Math.round(((i + 1) / filesToUpload.length) * 100),
-          currentFile: s3Key,
-        });
-      }
-    }
+    await uploadDirectoryToS3({
+      client: this.client,
+      bucket: this.bucket!,
+      localPath,
+      s3Prefix,
+      onProgress: options?.onProgress
+        ? (transferred, total, currentKey) => {
+            options.onProgress!({
+              operation: 'Uploading directory',
+              bytesTransferred: transferred,
+              totalBytes: total,
+              percentage: Math.round((transferred / total) * 100),
+              currentFile: currentKey,
+            });
+          }
+        : undefined,
+      options,
+    });
   }
 }

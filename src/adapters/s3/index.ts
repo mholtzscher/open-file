@@ -42,3 +42,32 @@ export {
   type ListAllObjectsOptions,
   type BatchDeleteOptions,
 } from './batch-operations.js';
+
+export {
+  copyObject,
+  copyDirectory,
+  type CopyObjectOptions,
+  type CopyDirectoryOptions,
+  type CopyProgressCallback,
+} from './copy-operations.js';
+
+export {
+  moveObject,
+  moveDirectory,
+  type MoveObjectOptions,
+  type MoveDirectoryOptions,
+  type MoveProgressCallback,
+} from './move-operations.js';
+
+export {
+  downloadFileToLocal,
+  downloadDirectoryToLocal,
+  uploadFileToS3,
+  uploadDirectoryToS3,
+  type DownloadFileOptions,
+  type DownloadDirectoryOptions,
+  type UploadFileOptions,
+  type UploadDirectoryOptions,
+  type TransferProgressCallback,
+  type S3ReadFunction,
+} from './transfer-operations.js';
