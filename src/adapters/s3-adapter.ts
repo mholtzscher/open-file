@@ -314,7 +314,7 @@ export class S3Adapter implements BucketAwareAdapter {
         },
       };
     } catch (error) {
-      console.error(`Failed to get metadata for ${path}:`, error);
+      this.logger.error(`Failed to get metadata for ${path}`, error);
       throw parseAwsError(error, 'getMetadata');
     }
   }
@@ -403,7 +403,7 @@ export class S3Adapter implements BucketAwareAdapter {
         }
       }
     } catch (error) {
-      console.error(`Failed to create ${path}:`, error);
+      this.logger.error(`Failed to create ${path}`, error);
       throw parseAwsError(error, 'create');
     }
   }
@@ -454,7 +454,7 @@ export class S3Adapter implements BucketAwareAdapter {
         }, getS3RetryConfig());
       }
     } catch (error) {
-      console.error(`Failed to delete ${path}:`, error);
+      this.logger.error(`Failed to delete ${path}`, error);
       throw parseAwsError(error, 'delete');
     }
   }
@@ -476,7 +476,7 @@ export class S3Adapter implements BucketAwareAdapter {
         await this.moveSingleFile(srcNormalized, destNormalized);
       }
     } catch (error) {
-      console.error(`Failed to move ${source} to ${destination}:`, error);
+      this.logger.error(`Failed to move ${source} to ${destination}`, error);
       throw parseAwsError(error, 'move');
     }
   }
@@ -538,7 +538,7 @@ export class S3Adapter implements BucketAwareAdapter {
         await this.copySingleFile(srcNormalized, destNormalized, destBucket);
       }
     } catch (error) {
-      console.error(`Failed to copy ${source} to ${destination}:`, error);
+      this.logger.error(`Failed to copy ${source} to ${destination}`, error);
       throw parseAwsError(error, 'copy');
     }
   }
