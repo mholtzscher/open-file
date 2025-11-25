@@ -9,28 +9,13 @@ import { Entry, EntryType } from '../types/entry.js';
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { Theme, CatppuccinMocha } from './theme.js';
 import { EditMode } from '../types/edit-mode.js';
+import { formatBytes } from '../utils/file-browser.js';
 
 export interface BufferViewProps {
   bufferState: UseBufferStateReturn;
   showIcons?: boolean;
   showSizes?: boolean;
   showDates?: boolean;
-}
-
-/**
- * Format size for display
- * Returns '-' for undefined (folders), '0B' for zero-byte files
- */
-function formatSize(size: number | undefined): string {
-  if (size === undefined) return '-';
-  if (size === 0) return '0B';
-  if (size >= 1024 * 1024) {
-    return `${(size / (1024 * 1024)).toFixed(1)}MB`;
-  }
-  if (size >= 1024) {
-    return `${(size / 1024).toFixed(1)}KB`;
-  }
-  return `${size}B`;
 }
 
 /**
@@ -86,7 +71,7 @@ function formatEntry(
     parts.push(region.padEnd(12));
   } else if (showSizes) {
     // Size for regular entries
-    parts.push(formatSize(entry.size).padEnd(12));
+    parts.push(formatBytes(entry.size).padEnd(12));
   }
 
   // Date

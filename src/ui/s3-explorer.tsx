@@ -24,6 +24,7 @@ import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContex
 import { Entry, EntryType } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
 import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
+import { formatBytes } from '../utils/file-browser.js';
 import { getDialogHandler } from '../hooks/useDialogKeyboard.js';
 import type { PendingOperation } from '../types/dialog.js';
 import type { KeyboardKey, KeyAction } from '../types/keyboard.js';
@@ -69,16 +70,6 @@ function isPreviewableFile(entry: Entry | undefined): boolean {
   ];
 
   return textExtensions.some(ext => name.endsWith(ext));
-}
-
-/**
- * Format bytes for display
- */
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return bytes + 'B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
-  if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
-  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + 'GB';
 }
 
 /**

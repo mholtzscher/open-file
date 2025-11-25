@@ -272,12 +272,17 @@ export async function getDirectorySize(dirPath: string): Promise<number> {
 
 /**
  * Format bytes for display
+ * Returns '-' for undefined (e.g., folders), '0B' for zero-byte files
+ * Supports B, KB, MB, GB, TB
  */
-export function formatBytes(bytes: number): string {
+export function formatBytes(bytes: number | undefined): string {
+  if (bytes === undefined) return '-';
+  if (bytes === 0) return '0B';
   if (bytes < 1024) return bytes + 'B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
   if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
-  return (bytes / (1024 * 1024 * 1024)).toFixed(1) + 'GB';
+  if (bytes < 1024 * 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toFixed(1) + 'GB';
+  return (bytes / (1024 * 1024 * 1024 * 1024)).toFixed(1) + 'TB';
 }
 
 /**

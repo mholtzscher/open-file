@@ -17,6 +17,15 @@ describe('File Browser Utilities', () => {
       expect(formatBytes(1024 * 1024 * 1024)).toBe('1.0GB');
       expect(formatBytes(1024 * 1024 * 1024 * 2)).toBe('2.0GB');
     });
+
+    it('handles undefined for folders', () => {
+      expect(formatBytes(undefined)).toBe('-');
+    });
+
+    it('formats terabytes correctly', () => {
+      expect(formatBytes(1024 * 1024 * 1024 * 1024)).toBe('1.0TB');
+      expect(formatBytes(1024 * 1024 * 1024 * 1024 * 5)).toBe('5.0TB');
+    });
   });
 
   describe('getExtension', () => {
