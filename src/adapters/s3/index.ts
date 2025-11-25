@@ -46,18 +46,18 @@ export {
 export {
   copyObject,
   copyDirectory,
+  moveObject,
+  moveDirectory,
+  batchObjectOperation,
   type CopyObjectOptions,
   type CopyDirectoryOptions,
   type CopyProgressCallback,
-} from './copy-operations.js';
-
-export {
-  moveObject,
-  moveDirectory,
   type MoveObjectOptions,
   type MoveDirectoryOptions,
   type MoveProgressCallback,
-} from './move-operations.js';
+  type ObjectOperationProgressCallback,
+  type BatchObjectOperationOptions,
+} from './object-operations.js';
 
 export {
   downloadFileToLocal,

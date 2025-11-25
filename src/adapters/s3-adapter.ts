@@ -33,8 +33,12 @@ import {
 import { normalizeS3Path, getS3KeyName } from './s3/path-utils.js';
 import { parseBucketToEntry, BucketInfo } from './s3/entry-parser.js';
 import { listAllObjects, batchDeleteObjects } from './s3/batch-operations.js';
-import { copyObject, copyDirectory as copyDirectoryOp } from './s3/copy-operations.js';
-import { moveObject, moveDirectory as moveDirectoryOp } from './s3/move-operations.js';
+import {
+  copyObject,
+  copyDirectory as copyDirectoryOp,
+  moveObject,
+  moveDirectory as moveDirectoryOp,
+} from './s3/object-operations.js';
 import {
   downloadFileToLocal,
   downloadDirectoryToLocal as downloadDirToLocal,
