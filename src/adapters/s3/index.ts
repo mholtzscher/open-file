@@ -34,3 +34,11 @@ export {
   sortEntries,
   type BucketInfo,
 } from './entry-parser.js';
+
+export {
+  listAllObjects,
+  batchDeleteObjects,
+  DELETE_BATCH_SIZE,
+  type ListAllObjectsOptions,
+  type BatchDeleteOptions,
+} from './batch-operations.js';

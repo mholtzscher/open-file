@@ -13,7 +13,6 @@ import {
   GetObjectCommand,
   PutObjectCommand,
   DeleteObjectCommand,
-  DeleteObjectsCommand,
   CopyObjectCommand,
   HeadObjectCommand,
   GetObjectTaggingCommand,
@@ -40,6 +39,7 @@ import {
   parseBucketToEntry,
   sortEntries,
 } from './s3/entry-parser.js';
+import { listAllObjects, batchDeleteObjects } from './s3/batch-operations.js';
 // Re-export BucketInfo type for backwards compatibility
 export type { BucketInfo } from './s3/entry-parser.js';
 
@@ -480,60 +480,31 @@ export class S3Adapter implements Adapter {
       if (recursive) {
         // Delete directory and all contents using batch delete
         const prefix = normalized.endsWith('/') ? normalized : normalized + '/';
-        const objectsToDelete: { Key: string }[] = [];
 
-        // List all objects with pagination
-        let continuationToken: string | undefined;
-        do {
-          const response = await retryWithBackoff(() => {
-            const listCommand = new ListObjectsV2Command({
-              Bucket: this.bucket,
-              Prefix: prefix,
-              ContinuationToken: continuationToken,
-            });
-            return this.client.send(listCommand);
-          }, getS3RetryConfig());
+        // List all objects under the prefix
+        const keys = await listAllObjects({
+          client: this.client,
+          bucket: this.bucket!,
+          prefix,
+        });
 
-          // Collect objects to delete
-          if (response.Contents) {
-            for (const obj of response.Contents) {
-              if (obj.Key) {
-                objectsToDelete.push({ Key: obj.Key });
+        // Batch delete with progress reporting
+        await batchDeleteObjects({
+          client: this.client,
+          bucket: this.bucket!,
+          keys,
+          onProgress: options?.onProgress
+            ? (deleted, total) => {
+                options.onProgress!({
+                  operation: 'Deleting objects',
+                  bytesTransferred: deleted,
+                  totalBytes: total,
+                  percentage: Math.round((deleted / total) * 100),
+                  currentFile: path,
+                });
               }
-            }
-          }
-
-          continuationToken = response.NextContinuationToken;
-        } while (continuationToken);
-
-        // Batch delete objects (max 1000 per request)
-        const BATCH_SIZE = 1000;
-        for (let i = 0; i < objectsToDelete.length; i += BATCH_SIZE) {
-          const batch = objectsToDelete.slice(i, i + BATCH_SIZE);
-
-          await retryWithBackoff(() => {
-            const deleteCommand = new DeleteObjectsCommand({
-              Bucket: this.bucket,
-              Delete: {
-                Objects: batch,
-                Quiet: true, // Don't return list of deleted objects
-              },
-            });
-            return this.client.send(deleteCommand);
-          }, getS3RetryConfig());
-
-          // Report progress
-          if (options?.onProgress) {
-            const deletedCount = Math.min(i + BATCH_SIZE, objectsToDelete.length);
-            options.onProgress({
-              operation: 'Deleting objects',
-              bytesTransferred: deletedCount,
-              totalBytes: objectsToDelete.length,
-              percentage: Math.round((deletedCount / objectsToDelete.length) * 100),
-              currentFile: path,
-            });
-          }
-        }
+            : undefined,
+        });
       } else {
         // Delete single object
         await retryWithBackoff(() => {
@@ -605,33 +576,14 @@ export class S3Adapter implements Adapter {
     destination: string,
     options?: OperationOptions
   ): Promise<void> {
-    const objectsToMove: string[] = [];
+    // List all objects under the source prefix
+    const objectsToMove = await listAllObjects({
+      client: this.client,
+      bucket: this.bucket!,
+      prefix: source,
+    });
 
-    // List all objects with pagination
-    let continuationToken: string | undefined;
-    do {
-      const response = await retryWithBackoff(() => {
-        const listCommand = new ListObjectsV2Command({
-          Bucket: this.bucket,
-          Prefix: source,
-          ContinuationToken: continuationToken,
-        });
-        return this.client.send(listCommand);
-      }, getS3RetryConfig());
-
-      // Collect objects to move
-      if (response.Contents) {
-        for (const obj of response.Contents) {
-          if (obj.Key) {
-            objectsToMove.push(obj.Key);
-          }
-        }
-      }
-
-      continuationToken = response.NextContinuationToken;
-    } while (continuationToken);
-
-    // Move each object
+    // Move each object (copy + delete)
     for (let i = 0; i < objectsToMove.length; i++) {
       const srcKey = objectsToMove[i];
       const relativePath = srcKey.substring(source.length);
@@ -731,32 +683,13 @@ export class S3Adapter implements Adapter {
     targetBucket: string,
     options?: OperationOptions
   ): Promise<void> {
-    const objectsToCopy: string[] = [];
-
-    // List all objects with pagination
-    let continuationToken: string | undefined;
-    do {
-      const response = await retryWithBackoff(() => {
-        const command = new ListObjectsV2Command({
-          Bucket: this.bucket,
-          Prefix: source,
-          ContinuationToken: continuationToken,
-        });
-        return this.client.send(command);
-      }, getS3RetryConfig());
-
-      // Collect objects to copy
-      if (response.Contents) {
-        for (const obj of response.Contents) {
-          if (obj.Key && obj.Key !== source) {
-            // Skip the directory marker itself
-            objectsToCopy.push(obj.Key);
-          }
-        }
-      }
-
-      continuationToken = response.NextContinuationToken;
-    } while (continuationToken);
+    // List all objects under the source prefix, excluding the directory marker
+    const objectsToCopy = await listAllObjects({
+      client: this.client,
+      bucket: this.bucket!,
+      prefix: source,
+      excludeKey: source,
+    });
 
     // Copy each object
     for (let i = 0; i < objectsToCopy.length; i++) {
@@ -987,32 +920,14 @@ export class S3Adapter implements Adapter {
     localPath: string,
     options?: OperationOptions
   ): Promise<void> {
-    const objectsToDownload: string[] = [];
-    let continuationToken: string | undefined;
-    let totalObjects = 0;
-
-    // List all objects in the directory
-    do {
-      const response = await retryWithBackoff(() => {
-        const command = new ListObjectsV2Command({
-          Bucket: this.bucket,
-          Prefix: s3Prefix,
-          ContinuationToken: continuationToken,
-        });
-        return this.client.send(command);
-      }, getS3RetryConfig());
-
-      if (response.Contents) {
-        for (const obj of response.Contents) {
-          if (obj.Key && obj.Key !== s3Prefix && !obj.Key.endsWith('/')) {
-            objectsToDownload.push(obj.Key);
-            totalObjects++;
-          }
-        }
-      }
-
-      continuationToken = response.NextContinuationToken;
-    } while (continuationToken);
+    // List all files (exclude directory markers and the prefix itself)
+    const objectsToDownload = await listAllObjects({
+      client: this.client,
+      bucket: this.bucket!,
+      prefix: s3Prefix,
+      excludeKey: s3Prefix,
+      excludeDirectoryMarkers: true,
+    });
 
     // Download each file
     for (let i = 0; i < objectsToDownload.length; i++) {
@@ -1033,8 +948,8 @@ export class S3Adapter implements Adapter {
         options.onProgress({
           operation: 'Downloading directory',
           bytesTransferred: i + 1,
-          totalBytes: totalObjects,
-          percentage: Math.round(((i + 1) / totalObjects) * 100),
+          totalBytes: objectsToDownload.length,
+          percentage: Math.round(((i + 1) / objectsToDownload.length) * 100),
           currentFile: s3Key,
         });
       }
