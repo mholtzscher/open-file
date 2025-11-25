@@ -126,6 +126,11 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   const [previewEnabled, setPreviewEnabled] = useState(false);
 
   // ============================================
+  // Quit Confirmation State
+  // ============================================
+  const [quitPending, setQuitPending] = useState(false);
+
+  // ============================================
   // Progress Window State (consolidated hook)
   // ============================================
   const {
@@ -516,7 +521,23 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
       'select:extend:down': () => getActiveBuffer().extendVisualSelection('down'),
 
       // Application
-      'app:quit': () => process.exit(0),
+      'app:quit': () => {
+        const currentBufferState = getActiveBuffer();
+        const pendingChanges = currentBufferState.getMarkedForDeletion().length;
+
+        if (pendingChanges > 0 && !quitPending) {
+          // First quit attempt with pending changes - ask for confirmation
+          setQuitPending(true);
+          setStatusMessage(
+            `${pendingChanges} unsaved change(s). Press 'q' again to quit without saving, or 'w' to save first.`
+          );
+          setStatusMessageColor(CatppuccinMocha.yellow);
+          return;
+        }
+
+        // No pending changes, or user confirmed quit
+        process.exit(0);
+      },
 
       'app:toggleHidden': () => {
         const currentBufferState = getActiveBuffer();
@@ -952,6 +973,31 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         return true; // Block all other keys when help dialog is open
       }
 
+      // Handle quit pending state - user must press q again or cancel
+      if (quitPending) {
+        if (key.name === 'q') {
+          // User confirmed quit
+          process.exit(0);
+        } else if (key.name === 'escape' || key.name === 'n') {
+          // User cancelled quit
+          setQuitPending(false);
+          setStatusMessage('Quit cancelled');
+          setStatusMessageColor(CatppuccinMocha.text);
+          return true;
+        } else if (key.name === 'w') {
+          // User wants to save first - cancel quit pending and trigger save
+          setQuitPending(false);
+          dispatchKey({ ...key, name: 'w' }); // Dispatch 'w' to trigger save
+          return true;
+        } else {
+          // Any other key cancels quit pending
+          setQuitPending(false);
+          setStatusMessage('');
+          setStatusMessageColor(CatppuccinMocha.text);
+          // Don't return - let the key be processed normally
+        }
+      }
+
       // Dispatch to the action-based keyboard handler
       // This handles all normal mode, visual mode, search mode, etc. keybindings
       return dispatchKey(key);
@@ -961,6 +1007,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
       showHelpDialog,
       showErrorDialog,
       showSortMenu,
+      quitPending,
       closeDialog,
       closeAndClearOperations,
       bufferState,
