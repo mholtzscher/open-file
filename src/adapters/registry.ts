@@ -20,21 +20,43 @@ export type {
 export { isMutableAdapter, isTransferableAdapter, isBucketAwareAdapter } from './adapter.js';
 
 /**
+ * Factory function type for lazy adapter instantiation
+ */
+export type AdapterFactory = () => Adapter;
+
+/**
  * Adapter registry for managing multiple adapters
+ *
+ * Supports both eager registration (with instances) and lazy registration
+ * (with factories) for optimization. Built-in adapters like MockAdapter
+ * are registered lazily to avoid instantiation in production code.
  */
 export class AdapterRegistry {
   private adapters: Map<string, Adapter> = new Map();
+  private factories: Map<string, AdapterFactory> = new Map();
 
   constructor() {
-    // Register built-in adapters
-    this.register('mock', new MockAdapter());
+    // Register built-in adapters lazily to avoid instantiation overhead
+    this.registerFactory('mock', () => new MockAdapter());
   }
 
   /**
-   * Register an adapter
+   * Register an adapter instance
    */
   register(name: string, adapter: Adapter): void {
     this.adapters.set(name, adapter);
+    // Remove factory if one exists (instance takes precedence)
+    this.factories.delete(name);
+  }
+
+  /**
+   * Register an adapter factory for lazy instantiation
+   *
+   * The factory will be called on first getAdapter() call for this name.
+   * The resulting instance is cached for subsequent calls.
+   */
+  registerFactory(name: string, factory: AdapterFactory): void {
+    this.factories.set(name, factory);
   }
 
   /**
@@ -47,27 +69,41 @@ export class AdapterRegistry {
 
   /**
    * Get an adapter by name
+   *
+   * If a factory is registered for this name and no instance exists,
+   * the factory is called and the result is cached.
    */
   getAdapter(name: string): Adapter {
-    const adapter = this.adapters.get(name);
-    if (!adapter) {
-      throw new Error(`Adapter not found: ${name}`);
+    // Check for existing instance first
+    let adapter = this.adapters.get(name);
+    if (adapter) {
+      return adapter;
     }
-    return adapter;
+
+    // Check for factory and instantiate lazily
+    const factory = this.factories.get(name);
+    if (factory) {
+      adapter = factory();
+      this.adapters.set(name, adapter);
+      return adapter;
+    }
+
+    throw new Error(`Adapter not found: ${name}`);
   }
 
   /**
-   * Check if an adapter is registered
+   * Check if an adapter is registered (either as instance or factory)
    */
   hasAdapter(name: string): boolean {
-    return this.adapters.has(name);
+    return this.adapters.has(name) || this.factories.has(name);
   }
 
   /**
-   * List all registered adapters
+   * List all registered adapters (both instances and factories)
    */
   listAdapters(): string[] {
-    return Array.from(this.adapters.keys());
+    const names = new Set([...this.adapters.keys(), ...this.factories.keys()]);
+    return Array.from(names);
   }
 
   /**

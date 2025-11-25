@@ -2,7 +2,7 @@
  * Tests for AdapterRegistry
  */
 
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach, mock } from 'bun:test';
 import {
   AdapterRegistry,
   createAdapterRegistry,
@@ -15,6 +15,7 @@ import {
 } from './registry.js';
 import { MockAdapter } from './mock-adapter.js';
 import { S3Adapter } from './s3-adapter.js';
+import { Adapter } from './adapter.js';
 
 describe('AdapterRegistry', () => {
   let registry: AdapterRegistry;
@@ -108,6 +109,69 @@ describe('AdapterRegistry', () => {
     it('should return mock adapter as default', () => {
       const adapter = registry.getDefaultAdapter();
       expect(adapter).toBeInstanceOf(MockAdapter);
+    });
+  });
+
+  describe('registerFactory', () => {
+    it('should register a factory for lazy instantiation', () => {
+      const factory = mock(() => new MockAdapter());
+      registry.registerFactory('lazy', factory);
+
+      // Factory not called yet
+      expect(factory).not.toHaveBeenCalled();
+      expect(registry.hasAdapter('lazy')).toBe(true);
+
+      // Factory called on first getAdapter
+      const adapter = registry.getAdapter('lazy');
+      expect(factory).toHaveBeenCalledTimes(1);
+      expect(adapter).toBeInstanceOf(MockAdapter);
+    });
+
+    it('should cache instance after first getAdapter call', () => {
+      const factory = mock(() => new MockAdapter());
+      registry.registerFactory('lazy', factory);
+
+      const adapter1 = registry.getAdapter('lazy');
+      const adapter2 = registry.getAdapter('lazy');
+
+      // Factory only called once
+      expect(factory).toHaveBeenCalledTimes(1);
+      // Same instance returned
+      expect(adapter1).toBe(adapter2);
+    });
+
+    it('should be overwritten by register()', () => {
+      const factory = mock(() => new MockAdapter());
+      registry.registerFactory('test', factory);
+
+      const directAdapter = new MockAdapter();
+      registry.register('test', directAdapter);
+
+      const adapter = registry.getAdapter('test');
+      expect(factory).not.toHaveBeenCalled();
+      expect(adapter).toBe(directAdapter);
+    });
+
+    it('should include factory adapters in listAdapters()', () => {
+      registry.registerFactory('lazy1', () => new MockAdapter());
+      registry.registerFactory('lazy2', () => new MockAdapter());
+
+      const adapters = registry.listAdapters();
+      expect(adapters).toContain('lazy1');
+      expect(adapters).toContain('lazy2');
+    });
+  });
+
+  describe('lazy MockAdapter instantiation', () => {
+    it('should not instantiate MockAdapter until first access', () => {
+      // Create a fresh registry - MockAdapter should be registered as factory
+      const freshRegistry = new AdapterRegistry();
+
+      // hasAdapter should return true even before instantiation
+      expect(freshRegistry.hasAdapter('mock')).toBe(true);
+
+      // listAdapters should include mock
+      expect(freshRegistry.listAdapters()).toContain('mock');
     });
   });
 });
