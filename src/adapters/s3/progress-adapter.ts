@@ -12,11 +12,7 @@ import { ProgressCallback, ProgressEvent } from '../adapter.js';
  * Callback type for internal S3 operations (count-based progress)
  * Used by batch operations like move/copy/delete directory
  */
-export type OperationProgressCallback = (
-  count: number,
-  total: number,
-  currentItem: string
-) => void;
+export type OperationProgressCallback = (count: number, total: number, currentItem: string) => void;
 
 /**
  * Calculate progress percentage safely
