@@ -17,22 +17,24 @@ import {
   CopyObjectCommand,
   HeadObjectCommand,
   GetObjectTaggingCommand,
-  CreateMultipartUploadCommand,
-  UploadPartCommand,
-  CompleteMultipartUploadCommand,
-  AbortMultipartUploadCommand,
   ListObjectsV2CommandInput,
   _Object,
 } from '@aws-sdk/client-s3';
 import { promises as fs } from 'fs';
-import { join, dirname, basename } from 'path';
+import { join, dirname } from 'path';
 import { Adapter, ListOptions, ListResult, OperationOptions } from './adapter.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { generateEntryId } from '../utils/entry-id.js';
 import { retryWithBackoff, getS3RetryConfig } from '../utils/retry.js';
 import { parseAwsError } from '../utils/errors.js';
-import { loadAwsProfile, getActiveAwsProfile, getActiveAwsRegion } from '../utils/aws-profile.js';
 import { getLogger } from '../utils/logger.js';
+import { createS3Client, createS3ClientWithRegion, S3ClientOptions } from './s3/client-factory.js';
+import {
+  uploadLargeFile,
+  shouldUseMultipartUpload,
+  MULTIPART_THRESHOLD,
+} from './s3/multipart-upload.js';
+import { normalizeS3Path, getS3KeyName } from './s3/path-utils.js';
 
 /**
  * Configuration for S3 adapter
@@ -81,13 +83,11 @@ export class S3Adapter implements Adapter {
   private bucket?: string;
   private prefix: string = '';
   private currentRegion: string;
-  private config: S3AdapterConfig;
+  private clientOptions: S3ClientOptions;
 
   constructor(config: S3AdapterConfig) {
     const logger = getLogger();
     this.bucket = config.bucket;
-    this.config = config;
-    this.currentRegion = config.region || 'us-east-1';
 
     logger.debug('S3Adapter constructor called', {
       bucket: config.bucket,
@@ -98,92 +98,26 @@ export class S3Adapter implements Adapter {
       hasSecretKey: !!config.secretAccessKey,
     });
 
-    // Initialize S3 client with flexible configuration
-    const clientConfig: any = {};
+    // Store options for client recreation
+    this.clientOptions = {
+      region: config.region,
+      accessKeyId: config.accessKeyId,
+      secretAccessKey: config.secretAccessKey,
+      sessionToken: config.sessionToken,
+      profile: config.profile,
+      endpoint: config.endpoint,
+      forcePathStyle: config.forcePathStyle,
+    };
 
-    // Determine which profile to use
-    const profileName = config.profile || getActiveAwsProfile();
-    logger.debug('Active AWS profile', { profileName, env: process.env.AWS_PROFILE });
+    // Create S3 client using factory
+    const { client, region } = createS3Client(this.clientOptions);
+    this.client = client;
+    this.currentRegion = region;
 
-    // Load profile configuration if specified or AWS_PROFILE is set
-    let profileConfig = undefined;
-    if (config.profile || process.env.AWS_PROFILE) {
-      profileConfig = loadAwsProfile(profileName);
-      logger.debug('Loaded AWS profile config', {
-        profile: profileConfig?.profile,
-        region: profileConfig?.region,
-        hasCredentials: !!profileConfig?.accessKeyId,
-      });
-    }
-
-    // Region priority: explicit config > profile region > AWS_REGION env > us-east-1
-    if (config.region) {
-      clientConfig.region = config.region;
-      logger.debug('Using explicit region from config', { region: config.region });
-    } else if (profileConfig?.region) {
-      clientConfig.region = profileConfig.region;
-      logger.debug('Using region from profile', { region: profileConfig.region });
-    } else if (process.env.AWS_REGION) {
-      clientConfig.region = process.env.AWS_REGION;
-      logger.debug('Using region from AWS_REGION env', { region: process.env.AWS_REGION });
-    } else {
-      // Try to get region from active profile if AWS_PROFILE is set
-      const activeRegion = getActiveAwsRegion();
-      clientConfig.region = activeRegion || 'us-east-1';
-      logger.debug('Using region from active profile or default', {
-        region: clientConfig.region,
-        fromProfile: !!activeRegion,
-      });
-    }
-
-    // Custom endpoint (for LocalStack, MinIO, etc.)
-    if (config.endpoint) {
-      clientConfig.endpoint = config.endpoint;
-      clientConfig.forcePathStyle = config.forcePathStyle ?? true;
-      logger.debug('Using custom endpoint', {
-        endpoint: config.endpoint,
-        forcePathStyle: clientConfig.forcePathStyle,
-      });
-    }
-
-    // Credentials priority:
-    // 1. Explicit credentials in config
-    // 2. Profile credentials
-    // 3. AWS SDK default chain (env vars, instance metadata, etc.)
-    if (config.accessKeyId && config.secretAccessKey) {
-      clientConfig.credentials = {
-        accessKeyId: config.accessKeyId,
-        secretAccessKey: config.secretAccessKey,
-        ...(config.sessionToken && { sessionToken: config.sessionToken }),
-      };
-      logger.debug('Using explicit credentials from config');
-    } else if (profileConfig?.accessKeyId && profileConfig?.secretAccessKey) {
-      clientConfig.credentials = {
-        accessKeyId: profileConfig.accessKeyId,
-        secretAccessKey: profileConfig.secretAccessKey,
-        ...(profileConfig.sessionToken && { sessionToken: profileConfig.sessionToken }),
-      };
-      logger.debug('Using credentials from AWS profile', { profile: profileName });
-    } else {
-      logger.debug('Using AWS SDK default credential chain');
-    }
-    // If no explicit credentials, AWS SDK will use:
-    // 1. Environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
-    // 2. AWS profile from ~/.aws/credentials
-    // 3. EC2 instance metadata / ECS task role
-    // 4. Other AWS credential providers
-
-    logger.debug('S3Client configuration', {
-      region: clientConfig.region,
-      endpoint: clientConfig.endpoint,
-      hasCredentials: !!clientConfig.credentials,
-    });
-
-    this.client = new S3Client(clientConfig);
     logger.info('S3Adapter initialized', {
       bucket: this.bucket,
-      region: clientConfig.region,
-      profile: profileName,
+      region: this.currentRegion,
+      profile: config.profile,
     });
   }
 
@@ -207,53 +141,18 @@ export class S3Adapter implements Adapter {
         newRegion: region,
       });
       this.currentRegion = region;
-      // Reinitialize S3Client with new region
-      this.reinitializeClient();
+      // Reinitialize S3Client with new region using factory
+      const { client } = createS3ClientWithRegion(this.clientOptions, region);
+      this.client = client;
     }
-  }
-
-  /**
-   * Reinitialize S3Client with current region
-   */
-  private reinitializeClient(): void {
-    const logger = getLogger();
-    const clientConfig: any = { region: this.currentRegion };
-
-    // Preserve endpoint if set
-    if (this.config.endpoint) {
-      clientConfig.endpoint = this.config.endpoint;
-      clientConfig.forcePathStyle = this.config.forcePathStyle;
-    }
-
-    // Preserve credentials if set
-    if (this.config.accessKeyId && this.config.secretAccessKey) {
-      clientConfig.credentials = {
-        accessKeyId: this.config.accessKeyId,
-        secretAccessKey: this.config.secretAccessKey,
-        ...(this.config.sessionToken && { sessionToken: this.config.sessionToken }),
-      };
-    }
-
-    logger.debug('Reinitializing S3Client', { region: this.currentRegion });
-    this.client = new S3Client(clientConfig);
   }
 
   /**
    * Normalize path to S3 prefix format
-   * - Remove leading slash
-   * - Ensure trailing slash for directories
-   * - Root path should be empty string, not "/"
+   * Delegates to the path-utils module for consistent path handling.
    */
   private normalizePath(path: string, isDirectory: boolean = false): string {
-    let normalized = path.replace(/^\//, '').replace(/\/+/g, '/');
-    if (isDirectory && !normalized.endsWith('/') && normalized !== '') {
-      normalized += '/';
-    }
-    // Don't return "/" for root - S3 expects empty string for root prefix
-    if (normalized === '/') {
-      normalized = '';
-    }
-    return normalized;
+    return normalizeS3Path(path, isDirectory);
   }
 
   /**
@@ -309,7 +208,7 @@ export class S3Adapter implements Adapter {
     if (!this.bucket) {
       throw new Error('Bucket not configured. Use listBuckets() to list all buckets.');
     }
-    const bucket = this.bucket; // Narrow type for TypeScript
+    const bucket = this.bucket;
     const logger = getLogger();
     const prefix = this.normalizePath(path, true);
 
@@ -544,11 +443,7 @@ export class S3Adapter implements Adapter {
 
       return {
         id: generateEntryId(),
-        name:
-          normalized
-            .split('/')
-            .filter(p => p)
-            .pop() || normalized,
+        name: getS3KeyName(normalized),
         type: isDirectory ? EntryType.Directory : EntryType.File,
         path: normalized,
         size: response.ContentLength,
@@ -563,102 +458,6 @@ export class S3Adapter implements Adapter {
     } catch (error) {
       console.error(`Failed to get metadata for ${path}:`, error);
       throw parseAwsError(error, 'getMetadata');
-    }
-  }
-
-  /**
-   * Upload a large file using multipart upload
-   * AWS recommends multipart upload for files larger than 100MB,
-   * but it can be used for files as small as 5MB
-   */
-  private async uploadLargeFile(
-    key: string,
-    body: Buffer,
-    options?: OperationOptions
-  ): Promise<void> {
-    const PART_SIZE = 5 * 1024 * 1024; // 5MB per part
-    const totalBytes = body.length;
-    const parts: { ETag: string; PartNumber: number }[] = [];
-    let uploadId: string | undefined;
-
-    try {
-      // Initiate multipart upload
-      const createResponse = await retryWithBackoff(() => {
-        const command = new CreateMultipartUploadCommand({
-          Bucket: this.bucket,
-          Key: key,
-        });
-        return this.client.send(command);
-      }, getS3RetryConfig());
-
-      uploadId = createResponse.UploadId;
-      if (!uploadId) {
-        throw new Error('Failed to initiate multipart upload');
-      }
-
-      // Upload parts
-      const numParts = Math.ceil(totalBytes / PART_SIZE);
-      for (let partNumber = 1; partNumber <= numParts; partNumber++) {
-        const start = (partNumber - 1) * PART_SIZE;
-        const end = Math.min(start + PART_SIZE, totalBytes);
-        const partBody = body.subarray(start, end);
-
-        const uploadResponse = await retryWithBackoff(() => {
-          const command = new UploadPartCommand({
-            Bucket: this.bucket,
-            Key: key,
-            PartNumber: partNumber,
-            UploadId: uploadId,
-            Body: partBody,
-          });
-          return this.client.send(command);
-        }, getS3RetryConfig());
-
-        if (uploadResponse.ETag) {
-          parts.push({
-            ETag: uploadResponse.ETag,
-            PartNumber: partNumber,
-          });
-        }
-
-        // Report progress
-        if (options?.onProgress) {
-          options.onProgress({
-            operation: 'Uploading file',
-            bytesTransferred: end,
-            totalBytes,
-            percentage: Math.round((end / totalBytes) * 100),
-            currentFile: key,
-          });
-        }
-      }
-
-      // Complete multipart upload
-      await retryWithBackoff(() => {
-        const command = new CompleteMultipartUploadCommand({
-          Bucket: this.bucket,
-          Key: key,
-          UploadId: uploadId,
-          MultipartUpload: { Parts: parts },
-        });
-        return this.client.send(command);
-      }, getS3RetryConfig());
-    } catch (error) {
-      // Abort multipart upload on error
-      if (uploadId) {
-        try {
-          await this.client.send(
-            new AbortMultipartUploadCommand({
-              Bucket: this.bucket,
-              Key: key,
-              UploadId: uploadId,
-            })
-          );
-        } catch (abortError) {
-          console.error('Failed to abort multipart upload:', abortError);
-        }
-      }
-      throw error;
     }
   }
 
@@ -709,7 +508,6 @@ export class S3Adapter implements Adapter {
         // Create file with content
         const body = content instanceof Buffer ? content : Buffer.from(content || '');
         const totalBytes = body.length;
-        const MULTIPART_THRESHOLD = 5 * 1024 * 1024; // 5MB
 
         if (options?.onProgress) {
           options.onProgress({
@@ -722,8 +520,8 @@ export class S3Adapter implements Adapter {
         }
 
         // Use multipart upload for large files
-        if (totalBytes > MULTIPART_THRESHOLD) {
-          await this.uploadLargeFile(normalized, body, options);
+        if (shouldUseMultipartUpload(totalBytes)) {
+          await uploadLargeFile(this.client, this.bucket!, normalized, body, options);
         } else {
           // Use regular PutObject for small files
           await retryWithBackoff(() => {
@@ -1378,9 +1176,8 @@ export class S3Adapter implements Adapter {
     }
 
     // Use multipart upload for large files
-    const MULTIPART_THRESHOLD = 5 * 1024 * 1024; // 5MB
-    if (totalBytes > MULTIPART_THRESHOLD) {
-      await this.uploadLargeFile(s3Key, fileBuffer, options);
+    if (shouldUseMultipartUpload(totalBytes)) {
+      await uploadLargeFile(this.client, this.bucket!, s3Key, fileBuffer, options);
     } else {
       // Use regular PutObject for small files
       await retryWithBackoff(() => {
