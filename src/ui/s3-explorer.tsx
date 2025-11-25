@@ -14,25 +14,15 @@ import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
 import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
 import { useMultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
 
-import { Pane } from './pane-react.js';
-import { StatusBar } from './status-bar-react.js';
-import { ConfirmationDialog } from './confirmation-dialog-react.js';
-import { HelpDialog } from './help-dialog-react.js';
-import { PreviewPane } from './preview-pane-react.js';
-import { ProgressWindow } from './progress-window-react.js';
-import { UploadDialog } from './upload-dialog-react.js';
-import { Header } from './header-react.js';
-import { SortMenu } from './sort-menu-react.js';
+import { S3ExplorerLayout, StatusBarState, PreviewState } from './s3-explorer-layout.js';
+import { DialogsState } from './s3-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
-import { ErrorDialog } from './error-dialog-react.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { setGlobalKeyboardDispatcher } from '../index.tsx';
 import { detectChanges, buildOperationPlan } from '../utils/change-detection.js';
 import { EntryIdMap } from '../utils/entry-id.js';
-import { DownloadOperation, UploadOperation } from '../types/operations.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
-import { UploadQueue } from '../utils/upload-queue.js';
 import { getDialogHandler } from '../hooks/useDialogKeyboard.js';
 
 interface S3ExplorerProps {
@@ -44,7 +34,7 @@ interface S3ExplorerProps {
 /**
  * Helper to determine if a file should be previewed
  */
-function isPreviewableFile(entry: any): boolean {
+function isPreviewableFile(entry: Entry | undefined): boolean {
   if (!entry || entry.type !== 'file') return false;
 
   const name = entry.name.toLowerCase();
@@ -91,20 +81,39 @@ function formatBytes(bytes: number): string {
 /**
  * Main S3Explorer component - declarative React implementation
  */
-export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3ExplorerProps) {
+export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) {
+  // ============================================
+  // Core State
+  // ============================================
   const [bucket, setBucket] = useState<string | undefined>(initialBucket);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [originalEntries, setOriginalEntries] = useState<Entry[]>([]);
+
+  // ============================================
+  // Status Bar State
+  // ============================================
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [statusMessageColor, setStatusMessageColor] = useState<string>(CatppuccinMocha.text);
+
+  // ============================================
+  // Dialog Visibility State
+  // ============================================
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [showUploadDialog, setShowUploadDialog] = useState(false);
   const [pendingOperations, setPendingOperations] = useState<any[]>([]);
-  const [originalEntries, setOriginalEntries] = useState<any[]>([]);
-  const [isExecuting, setIsExecuting] = useState(false);
+
+  // ============================================
+  // Preview State
+  // ============================================
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [previewFilename, setPreviewFilename] = useState<string>('');
   const [previewEnabled, setPreviewEnabled] = useState(false);
+
+  // ============================================
+  // Progress Window State
+  // ============================================
   const [showProgress, setShowProgress] = useState(false);
   const [progressTitle, setProgressTitle] = useState('Operation in Progress');
   const [progressDescription, setProgressDescription] = useState('Processing...');
@@ -113,23 +122,22 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
   const [progressCurrentNum, setProgressCurrentNum] = useState(0);
   const [progressTotalNum, setProgressTotalNum] = useState(0);
   const [progressCancellable, setProgressCancellable] = useState(true);
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
 
-  // Track abort controller for cancelling operations
+  // ============================================
+  // Refs
+  // ============================================
   const operationAbortControllerRef = useRef<AbortController | null>(null);
-
-  // Track upload dialog visibility for keyboard dispatcher
   const showUploadDialogRef = useRef(showUploadDialog);
+  const showConfirmDialogRef = useRef(showConfirmDialog);
 
-  // Track terminal size for responsive layout
+  // ============================================
+  // Hooks
+  // ============================================
   const terminalSize = useTerminalSize();
   const layout = useLayoutDimensions(terminalSize.size);
 
-  // For S3, the path should be the prefix within the bucket, not the bucket name
-  // Start at root of bucket (empty prefix)
-  const initialPath = '';
-
   // Initialize buffer state
+  const initialPath = '';
   const bufferState = useBufferState([], initialPath);
   const bufferStateRef = useRef(bufferState);
   bufferStateRef.current = bufferState;
@@ -150,25 +158,19 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     bufferState.setViewportHeight(layout.contentHeight);
   }, [layout.contentHeight, bufferState.setViewportHeight]);
 
-  // Setup navigation handlers config - memoized to prevent recreation
+  // ============================================
+  // Navigation Config and Handlers
+  // ============================================
   const navigationConfig = useMemo(
     () => ({
       onLoadBuffer: async (path: string) => {
         const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         try {
           const result = await adapter.list(path);
-
-          // Update buffer state with new entries and current path
-          // Create a new array to ensure React detects the change
           activeBufferState.setEntries([...result.entries]);
           activeBufferState.setCurrentPath(path);
-
-          // Save original entries for change detection
           setOriginalEntries([...result.entries]);
-
-          // Reset cursor to top of new directory
           activeBufferState.cursorToTop();
-
           setStatusMessage(`Navigated to ${path}`);
           setStatusMessageColor(CatppuccinMocha.green);
         } catch (err) {
@@ -185,12 +187,12 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     [adapter, bufferState, multiPaneLayout]
   );
 
-  // Setup navigation handlers - use active buffer state
   const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
   const navigationHandlers = useNavigationHandlers(activeBufferState, navigationConfig);
 
-  // Setup keyboard event handlers - memoized to prevent stale closure
-  // Note: j/k/v navigation is handled directly by useKeyboardEvents
+  // ============================================
+  // Keyboard Handlers
+  // ============================================
   const keyboardHandlers = useMemo(
     () => ({
       onNavigateInto: async () => {
@@ -201,11 +203,9 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
         // Check if we're navigating into a bucket from root view
         if (!bucket && currentEntry.type === 'bucket') {
-          // Navigate into this bucket
           const bucketName = currentEntry.name;
           const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
 
-          // Update adapter bucket and region context before changing UI state
           const s3Adapter = adapter as any;
           if (s3Adapter.setBucket) {
             s3Adapter.setBucket(bucketName);
@@ -217,7 +217,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           return;
         }
 
-        // If it's a file, enable preview mode instead of showing error
+        // If it's a file, enable preview mode
         if (currentEntry.type === 'file') {
           if (!previewEnabled) {
             setPreviewEnabled(true);
@@ -227,11 +227,9 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           return;
         }
 
-        // Otherwise, normal directory navigation
         await navigationHandlers.navigateInto();
       },
       onNavigateUp: async () => {
-        // If preview is enabled, close it first
         if (previewEnabled) {
           setPreviewEnabled(false);
           setPreviewContent(null);
@@ -241,7 +239,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         }
 
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        // If we're in root view mode (no bucket set), can't navigate up
         if (!bucket) {
           setStatusMessage('Already at root');
           setStatusMessageColor(CatppuccinMocha.text);
@@ -252,15 +249,12 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         const parts = currentPath.split('/').filter(p => p);
 
         if (parts.length > 0) {
-          // Remove last part to go up one level
           parts.pop();
-          // If no parts left, we're going to root (empty path)
           const parentPath = parts.length > 0 ? parts.join('/') + '/' : '';
           await navigationHandlers.navigateToPath(parentPath);
           setStatusMessage(`Navigated to ${parentPath || 'bucket root'}`);
           setStatusMessageColor(CatppuccinMocha.green);
         } else {
-          // At bucket root, go back to bucket list (root view)
           setBucket(undefined);
           setStatusMessage('Back to bucket listing');
           setStatusMessageColor(CatppuccinMocha.blue);
@@ -290,15 +284,11 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           return;
         }
 
-        // Build full S3 path
         const s3Path = currentBufferState.currentPath
           ? `${currentBufferState.currentPath}${currentEntry.name}`
           : currentEntry.name;
-
-        // Download to current working directory with same filename
         const localPath = currentEntry.name;
 
-        // Create download operation
         const operation = {
           id: Math.random().toString(36),
           type: 'download' as const,
@@ -312,15 +302,10 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         setShowConfirmDialog(true);
       },
       onUpload: async () => {
-        // For now, show help message about how to upload
-        // In the future, this could open a file picker or command prompt
         setStatusMessage(
           'Upload: To upload, use Vim-style command mode to specify local file path (e.g., :upload ./path/to/file)'
         );
         setStatusMessageColor(CatppuccinMocha.blue);
-
-        // TODO: Implement interactive file selection
-        // For now, users must manually specify paths via a command dialog
       },
       onPageDown: () => {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
@@ -332,24 +317,19 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       },
       onSave: () => {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        // Detect changes between original and edited entries
         const changes = detectChanges(
           originalEntries,
           currentBufferState.entries,
           {} as EntryIdMap
         );
-
-        // Build operation plan from changes
         const plan = buildOperationPlan(changes);
 
-        // Check if there are any operations to execute
         if (plan.operations.length === 0) {
           setStatusMessage('No changes to save');
           setStatusMessageColor(CatppuccinMocha.text);
           return;
         }
 
-        // Show confirmation dialog with operations
         setPendingOperations(
           plan.operations.map(op => ({
             id: op.id,
@@ -364,7 +344,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       onQuit: () => process.exit(0),
       onShowHelp: () => setShowHelpDialog(!showHelpDialog),
       onBucketsCommand: () => {
-        // :buckets command - return to root view
         if (!bucket) {
           setStatusMessage('Already viewing buckets');
           setStatusMessageColor(CatppuccinMocha.text);
@@ -375,7 +354,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         }
       },
       onBucketCommand: (bucketName: string) => {
-        // :bucket <name> command - switch to bucket
         const s3Adapter = adapter as any;
         if (s3Adapter.setBucket) {
           s3Adapter.setBucket(bucketName);
@@ -385,7 +363,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         setStatusMessageColor(CatppuccinMocha.blue);
       },
       onCommand: (command: string) => {
-        // Generic command handler for unrecognized commands
         setStatusMessage(`Unknown command: ${command}`);
         setStatusMessageColor(CatppuccinMocha.red);
       },
@@ -437,25 +414,24 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     ]
   );
 
-  // Setup keyboard events - use active buffer state
   const { handleKeyDown } = useKeyboardEvents(activeBufferState, keyboardHandlers);
 
-  // Show error dialog if there's an error message
-  const showErrorDialog = statusMessage && statusMessageColor === CatppuccinMocha.red;
+  // ============================================
+  // Computed State
+  // ============================================
+  const showErrorDialog = statusMessage !== '' && statusMessageColor === CatppuccinMocha.red;
 
-  // Create a ref to store the confirm handler so it can be called from keyboard dispatcher
+  // ============================================
+  // Confirm Handler
+  // ============================================
   const confirmHandlerRef = useRef<() => Promise<void>>(async () => {});
 
-  // Create the confirm handler
   const createConfirmHandler = useCallback(async () => {
-    setIsExecuting(true);
     try {
-      // Create abort controller for this operation batch
       const abortController = new AbortController();
       operationAbortControllerRef.current = abortController;
       setProgressCancellable(true);
 
-      // Execute each operation in order
       let successCount = 0;
       setShowProgress(true);
       setProgressTitle(`Executing ${pendingOperations[0]?.type || 'operation'}...`);
@@ -463,7 +439,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       for (let opIndex = 0; opIndex < pendingOperations.length; opIndex++) {
         const op = pendingOperations[opIndex];
 
-        // Check if operation was cancelled
         if (abortController.signal.aborted) {
           setStatusMessage('Operation cancelled by user');
           setStatusMessageColor(CatppuccinMocha.yellow);
@@ -471,9 +446,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         }
 
         try {
-          // Create progress callback for this operation
           const onProgress = (event: ProgressEvent) => {
-            // Calculate overall progress considering current operation index
             const baseProgress = (opIndex / pendingOperations.length) * 100;
             const opProgress = event.percentage / pendingOperations.length;
             const totalProgress = Math.round(baseProgress + opProgress);
@@ -485,7 +458,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
             setProgressDescription(event.operation);
           };
 
-          // Update progress for operation start
           const progress = Math.round((opIndex / pendingOperations.length) * 100);
           setProgressValue(progress);
           setProgressDescription(`${op.type}: ${op.path || op.source || 'processing'}`);
@@ -494,27 +466,23 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           setProgressTotalNum(pendingOperations.length);
 
           switch (op.type) {
-            case 'create': {
+            case 'create':
               await adapter.create(op.path, op.entryType || 'file', undefined, { onProgress });
               successCount++;
               break;
-            }
-            case 'delete': {
+            case 'delete':
               await adapter.delete(op.path, true, { onProgress });
               successCount++;
               break;
-            }
-            case 'move': {
+            case 'move':
               await adapter.move(op.source, op.destination, { onProgress });
               successCount++;
               break;
-            }
-            case 'copy': {
+            case 'copy':
               await adapter.copy(op.source, op.destination, { onProgress });
               successCount++;
               break;
-            }
-            case 'download': {
+            case 'download':
               if (adapter.downloadToLocal) {
                 await adapter.downloadToLocal(op.source, op.destination, op.recursive || false, {
                   onProgress,
@@ -522,8 +490,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
                 successCount++;
               }
               break;
-            }
-            case 'upload': {
+            case 'upload':
               if (adapter.uploadFromLocal) {
                 await adapter.uploadFromLocal(op.source, op.destination, op.recursive || false, {
                   onProgress,
@@ -531,10 +498,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
                 successCount++;
               }
               break;
-            }
           }
         } catch (opError) {
-          // Check if error is due to cancellation
           if (opError instanceof Error && opError.name === 'AbortError') {
             setStatusMessage('Operation cancelled by user');
             setStatusMessageColor(CatppuccinMocha.yellow);
@@ -549,10 +514,8 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
       setShowProgress(false);
 
-      // Reload buffer after operations complete
       if (successCount > 0) {
         try {
-          // Reload the current directory to reflect changes
           const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
           const result = await adapter.list(currentBufferState.currentPath);
           currentBufferState.setEntries([...result.entries]);
@@ -567,17 +530,15 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
       setShowConfirmDialog(false);
       setPendingOperations([]);
-    } finally {
-      setIsExecuting(false);
+    } catch {
+      // Error handling is done within the loop
     }
   }, [pendingOperations, adapter, multiPaneLayout, bufferState]);
 
-  // Update the ref whenever the handler changes
   useEffect(() => {
     confirmHandlerRef.current = createConfirmHandler;
   }, [createConfirmHandler]);
 
-  // Create the cancel handler for operations
   const handleCancelOperation = useCallback(() => {
     if (operationAbortControllerRef.current) {
       operationAbortControllerRef.current.abort();
@@ -585,9 +546,9 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     }
   }, []);
 
-  // Create refs to handle dialog callbacks in keyboard dispatcher
-  const showConfirmDialogRef = useRef(showConfirmDialog);
-
+  // ============================================
+  // Ref Sync Effects
+  // ============================================
   useEffect(() => {
     showConfirmDialogRef.current = showConfirmDialog;
   }, [showConfirmDialog]);
@@ -596,7 +557,9 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     showUploadDialogRef.current = showUploadDialog;
   }, [showUploadDialog]);
 
-  // Register global keyboard dispatcher on mount
+  // ============================================
+  // Global Keyboard Dispatcher
+  // ============================================
   useEffect(() => {
     setGlobalKeyboardDispatcher((key: any) => {
       // Upload dialog - delegate to dialog handler
@@ -605,13 +568,12 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         if (handler) {
           handler(key.name);
         }
-        return; // Block other keys when upload dialog is shown
+        return;
       }
 
       // Confirmation dialog - handle y/n keys
       if (showConfirmDialogRef.current) {
         if (key.name === 'y') {
-          // Call the confirm handler
           confirmHandlerRef.current();
           return;
         }
@@ -620,7 +582,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           setPendingOperations([]);
           return;
         }
-        return; // Block other keys when confirmation dialog is shown
+        return;
       }
 
       // Error dialog - block all input except escape
@@ -629,7 +591,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           setStatusMessage('');
           setStatusMessageColor(CatppuccinMocha.text);
         }
-        return; // Block all other keys when error is shown
+        return;
       }
 
       // Sort menu shortcuts
@@ -642,7 +604,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           return;
         }
 
-        // Number keys: 1=Name, 2=Size, 3=Modified, 4=Type
         const fieldMap: { [key: string]: SortField } = {
           '1': SortField.Name,
           '2': SortField.Size,
@@ -661,7 +622,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           return;
         }
 
-        // Space or Enter to toggle order
         if (key.name === 'space' || key.name === 'return') {
           const newOrder =
             currentSortConfig.order === SortOrder.Ascending
@@ -678,7 +638,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           return;
         }
 
-        return; // Block other keys when sort menu is shown
+        return;
       }
 
       // Help dialog shortcuts
@@ -687,7 +647,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           setShowHelpDialog(false);
           return;
         }
-        return; // Block other keys when help is shown
+        return;
       }
 
       if (key.name === '?') {
@@ -734,20 +694,18 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       if (key.name === 'r') {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
 
-        // Handle root view (bucket listing) vs bucket folder view differently
         if (!bucket) {
-          // Root view - reload buckets
           try {
             const s3Adapter = adapter as any;
             if (s3Adapter.getBucketEntries) {
               s3Adapter
                 .getBucketEntries()
-                .then((entries: any[]) => {
+                .then((entries: Entry[]) => {
                   currentBufferState.setEntries([...entries]);
                   setStatusMessage(`Refreshed: ${entries.length} bucket(s)`);
                   setStatusMessageColor(CatppuccinMocha.green);
                 })
-                .catch((err: any) => {
+                .catch((err: unknown) => {
                   const parsedError = parseAwsError(err, 'Refresh failed');
                   setStatusMessage(formatErrorForDisplay(parsedError, 70));
                   setStatusMessageColor(CatppuccinMocha.red);
@@ -759,7 +717,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
             setStatusMessageColor(CatppuccinMocha.red);
           }
         } else {
-          // Bucket folder view - reload current path with refresh message
           const currentPath = currentBufferState.currentPath;
           adapter
             .list(currentPath)
@@ -769,7 +726,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
               setStatusMessage('Refreshed');
               setStatusMessageColor(CatppuccinMocha.green);
             })
-            .catch((err: any) => {
+            .catch((err: unknown) => {
               const parsedError = parseAwsError(err, 'Refresh failed');
               setStatusMessage(formatErrorForDisplay(parsedError, 70));
               setStatusMessageColor(CatppuccinMocha.red);
@@ -805,20 +762,24 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     showSortMenu,
     statusMessage,
     statusMessageColor,
+    bucket,
+    adapter,
+    bufferState,
+    multiPaneLayout,
   ]);
 
-  // Initialize data from adapter
+  // ============================================
+  // Initialize Data
+  // ============================================
   useEffect(() => {
     const initializeData = async () => {
       try {
         console.error(`[S3Explorer] Initializing data...`);
 
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        // Check if we're in root view mode (no bucket specified)
         if (!bucket) {
           console.error(`[S3Explorer] Root view mode detected, loading buckets...`);
-          // Load buckets for root view
-          const s3Adapter = adapter as any; // Cast to access S3-specific method
+          const s3Adapter = adapter as any;
           if (s3Adapter.getBucketEntries) {
             const entries = await s3Adapter.getBucketEntries();
             console.error(`[S3Explorer] Received ${entries.length} buckets`);
@@ -830,17 +791,11 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
             throw new Error('Adapter does not support bucket listing');
           }
         } else {
-          // Load entries from specific bucket
           const path = currentBufferState.currentPath;
           console.error(`[S3Explorer] Loading bucket: ${bucket}, path: "${path}"`);
           const result = await adapter.list(path);
           console.error(`[S3Explorer] Received ${result.entries.length} entries`);
-          console.error(
-            `[S3Explorer] Entries:`,
-            result.entries.map(e => e.name)
-          );
 
-          // Load entries into buffer state
           currentBufferState.setEntries([...result.entries]);
           console.error(`[S3Explorer] Entries loaded into buffer state`);
 
@@ -861,7 +816,7 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
         console.error('[S3Explorer] Setting error message:', errorDisplay);
         setStatusMessage(errorDisplay);
         setStatusMessageColor(CatppuccinMocha.red);
-        setIsInitialized(true); // Set initialized even on error so we show the error
+        setIsInitialized(true);
         console.error('[S3Explorer] Initialized set to true after error');
       }
     };
@@ -871,24 +826,23 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucket, adapter]);
 
-  // Preview content when selection changes (only if preview is enabled)
+  // ============================================
+  // Preview Effect
+  // ============================================
   useEffect(() => {
     const fetchPreview = async () => {
       const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
 
-      // Early exit if preview is disabled
       if (!previewEnabled) {
         setPreviewContent(null);
         return;
       }
 
-      // Early exit if not in bucket view or not initialized
       if (!bucket || !isInitialized) {
         setPreviewContent(null);
         return;
       }
 
-      // Early exit if multi-pane mode
       if (multiPaneLayout.isMultiPaneMode) {
         setPreviewContent(null);
         return;
@@ -896,7 +850,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
 
       const selectedEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
 
-      // Only preview files
       if (!selectedEntry || !isPreviewableFile(selectedEntry)) {
         setPreviewContent(null);
         setPreviewFilename('');
@@ -904,7 +857,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
       }
 
       try {
-        // Limit preview size to 100KB to avoid performance issues
         const maxPreviewSize = 100 * 1024;
         if (selectedEntry.size && selectedEntry.size > maxPreviewSize) {
           setPreviewContent(`File too large to preview (${formatBytes(selectedEntry.size)})`);
@@ -912,7 +864,6 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
           return;
         }
 
-        // Build full path for the selected file
         const fullPath = currentBufferState.currentPath
           ? `${currentBufferState.currentPath}${selectedEntry.name}`
           : selectedEntry.name;
@@ -938,194 +889,130 @@ export function S3Explorer({ bucket: initialBucket, adapter, configManager }: S3
     multiPaneLayout.isMultiPaneMode,
   ]);
 
-  if (!isInitialized) {
-    return (
-      <text fg={CatppuccinMocha.blue} position="absolute" left={2} top={2}>
-        Loading...
-      </text>
-    );
-  }
+  // ============================================
+  // Build Props for Layout Component
+  // ============================================
+  const statusBarState: StatusBarState = {
+    message: statusMessage,
+    messageColor: statusMessageColor,
+  };
 
+  const previewState: PreviewState = {
+    enabled: previewEnabled,
+    content: previewContent,
+    filename: previewFilename,
+  };
+
+  const dialogsState: DialogsState = {
+    confirm: {
+      visible: showConfirmDialog,
+      operations: pendingOperations,
+      onConfirm: createConfirmHandler,
+      onCancel: () => {
+        setShowConfirmDialog(false);
+        setPendingOperations([]);
+      },
+    },
+    error: {
+      visible: showErrorDialog,
+      message: statusMessage,
+    },
+    help: {
+      visible: showHelpDialog,
+    },
+    upload: {
+      visible: showUploadDialog,
+      destinationPath: activeBufferState.currentPath,
+      onConfirm: selectedFiles => {
+        setShowUploadDialog(false);
+        const currentPath = activeBufferState.currentPath;
+        const newOperations = selectedFiles.map((filePath, index) => {
+          const filename = filePath.split('/').pop() || filePath;
+          const s3Destination = currentPath ? `${currentPath}${filename}` : filename;
+
+          const entry: Entry = {
+            id: `local-${index}`,
+            name: filename,
+            path: filePath,
+            type: EntryType.File,
+            size: undefined,
+            modified: undefined,
+            metadata: undefined,
+          };
+
+          return {
+            id: `upload-${index}`,
+            type: 'upload' as const,
+            source: filePath,
+            destination: s3Destination,
+            entry,
+            recursive: false,
+          };
+        });
+        setPendingOperations(newOperations);
+        setShowConfirmDialog(true);
+      },
+      onCancel: () => setShowUploadDialog(false),
+    },
+    sortMenu: {
+      visible: showSortMenu,
+      currentField: bufferState.sortConfig.field,
+      currentOrder: bufferState.sortConfig.order,
+      onFieldSelect: (field: SortField) => {
+        const newConfig = {
+          ...bufferState.sortConfig,
+          field,
+        };
+        bufferState.setSortConfig(newConfig);
+        const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
+        setStatusMessage(`Sorted by ${fieldName}`);
+        setStatusMessageColor(CatppuccinMocha.green);
+      },
+      onOrderToggle: () => {
+        const newOrder =
+          bufferState.sortConfig.order === SortOrder.Ascending
+            ? SortOrder.Descending
+            : SortOrder.Ascending;
+        const newConfig = {
+          ...bufferState.sortConfig,
+          order: newOrder,
+        };
+        bufferState.setSortConfig(newConfig);
+        const orderStr = newOrder === SortOrder.Ascending ? 'ascending' : 'descending';
+        setStatusMessage(`Sort order: ${orderStr}`);
+        setStatusMessageColor(CatppuccinMocha.green);
+      },
+      onClose: () => setShowSortMenu(false),
+    },
+    progress: {
+      visible: showProgress,
+      title: progressTitle,
+      description: progressDescription,
+      progress: progressValue,
+      currentFile: progressCurrentFile,
+      currentFileNumber: progressCurrentNum,
+      totalFiles: progressTotalNum,
+      canCancel: progressCancellable,
+      onCancel: handleCancelOperation,
+    },
+  };
+
+  // ============================================
+  // Render
+  // ============================================
   return (
-    <box flexDirection="column" width="100%" height="100%">
-      {/* Header */}
-      <Header bucket={bucket} />
-
-      {/* Main content area with panes - flex layout */}
-      <box flexGrow={1} flexDirection="row" gap={1}>
-        {multiPaneLayout.isMultiPaneMode && multiPaneLayout.panes.length > 1 ? (
-          // Multi-pane mode
-          multiPaneLayout.panes.map(pane => {
-            const paneTitle = bucket
-              ? `${bucket}${pane.bufferState.currentPath ? ':' + pane.bufferState.currentPath : ''}`
-              : `Buckets`;
-
-            return (
-              <Pane
-                key={pane.id}
-                id={pane.id}
-                bufferState={pane.bufferState}
-                isActive={pane.isActive}
-                title={paneTitle}
-                showIcons={!terminalSize.isSmall}
-                showSizes={!terminalSize.isSmall}
-                showDates={!terminalSize.isMedium}
-                flexGrow={1}
-                flexShrink={1}
-                flexBasis={0}
-              />
-            );
-          })
-        ) : (
-          // Single pane mode - use main buffer state directly
-          <>
-            <Pane
-              id="main-pane"
-              bufferState={bufferState}
-              isActive={true}
-              title={
-                bucket
-                  ? `${bucket}${bufferState.currentPath ? ':' + bufferState.currentPath : ''}`
-                  : `Buckets`
-              }
-              showHeader={false}
-              showIcons={!terminalSize.isSmall}
-              showSizes={!terminalSize.isSmall}
-              showDates={!terminalSize.isMedium}
-              flexGrow={previewEnabled ? 1 : 1}
-              flexShrink={1}
-              flexBasis={previewEnabled ? 0 : 0}
-            />
-
-            {/* Preview Pane - only in single pane mode when enabled */}
-            {previewEnabled && previewContent !== null && (
-              <PreviewPane content={previewContent} filename={previewFilename} visible={true} />
-            )}
-          </>
-        )}
-      </box>
-
-      {/* Status Bar */}
-      <box height={layout.footerHeight} flexShrink={0}>
-        <StatusBar
-          path={activeBufferState.currentPath}
-          mode={activeBufferState.mode}
-          message={statusMessage && !showErrorDialog ? statusMessage : undefined}
-          messageColor={statusMessageColor}
-          searchQuery={activeBufferState.searchQuery}
-          commandBuffer={activeBufferState.editBuffer}
-          bucket={bucket}
-        />
-      </box>
-
-      {/* Overlays - positioned absolutely */}
-      {/* Error Dialog - shows when there's an error */}
-      {showErrorDialog && <ErrorDialog visible={true} message={statusMessage} />}
-
-      {/* Confirmation Dialog */}
-      {showConfirmDialog && (
-        <ConfirmationDialog
-          title="Confirm Operations"
-          operations={pendingOperations}
-          visible={showConfirmDialog}
-          onConfirm={createConfirmHandler}
-          onCancel={() => {
-            setShowConfirmDialog(false);
-            setPendingOperations([]);
-          }}
-        />
-      )}
-
-      {/* Sort Menu Dialog */}
-      {showSortMenu && (
-        <SortMenu
-          visible={showSortMenu}
-          currentField={bufferState.sortConfig.field}
-          currentOrder={bufferState.sortConfig.order}
-          onFieldSelect={(field: SortField) => {
-            const newConfig = {
-              ...bufferState.sortConfig,
-              field,
-            };
-            bufferState.setSortConfig(newConfig);
-            const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
-            setStatusMessage(`Sorted by ${fieldName}`);
-            setStatusMessageColor(CatppuccinMocha.green);
-          }}
-          onOrderToggle={() => {
-            const newOrder =
-              bufferState.sortConfig.order === SortOrder.Ascending
-                ? SortOrder.Descending
-                : SortOrder.Ascending;
-            const newConfig = {
-              ...bufferState.sortConfig,
-              order: newOrder,
-            };
-            bufferState.setSortConfig(newConfig);
-            const orderStr = newOrder === SortOrder.Ascending ? 'ascending' : 'descending';
-            setStatusMessage(`Sort order: ${orderStr}`);
-            setStatusMessageColor(CatppuccinMocha.green);
-          }}
-          onClose={() => setShowSortMenu(false)}
-        />
-      )}
-
-      {/* Help Dialog */}
-      <HelpDialog visible={showHelpDialog} />
-
-      {/* Upload Dialog */}
-      <UploadDialog
-        visible={showUploadDialog}
-        destinationPath={activeBufferState.currentPath}
-        onConfirm={selectedFiles => {
-          setShowUploadDialog(false);
-          // Create upload operations from selected files
-          const currentPath = activeBufferState.currentPath;
-          const newOperations = selectedFiles.map((filePath, index) => {
-            // Extract filename from full path
-            const filename = filePath.split('/').pop() || filePath;
-
-            // Build S3 destination path (bucket + prefix + filename)
-            const s3Destination = currentPath ? `${currentPath}${filename}` : filename;
-
-            // Create entry object for display
-            const entry: Entry = {
-              id: `local-${index}`,
-              name: filename,
-              path: filePath,
-              type: EntryType.File,
-              size: undefined,
-              modified: undefined,
-              metadata: undefined,
-            };
-
-            return {
-              id: `upload-${index}`,
-              type: 'upload' as const,
-              source: filePath,
-              destination: s3Destination,
-              entry,
-              recursive: false,
-            };
-          });
-          setPendingOperations(newOperations);
-          setShowConfirmDialog(true);
-        }}
-        onCancel={() => setShowUploadDialog(false)}
-      />
-
-      {/* Progress Window */}
-      <ProgressWindow
-        visible={showProgress}
-        title={progressTitle}
-        description={progressDescription}
-        progress={progressValue}
-        currentFile={progressCurrentFile}
-        currentFileNumber={progressCurrentNum}
-        totalFiles={progressTotalNum}
-        onCancel={handleCancelOperation}
-        canCancel={progressCancellable}
-      />
-    </box>
+    <S3ExplorerLayout
+      bucket={bucket}
+      isInitialized={isInitialized}
+      bufferState={bufferState}
+      activeBufferState={activeBufferState}
+      multiPaneLayout={multiPaneLayout}
+      terminalSize={terminalSize}
+      layout={layout}
+      statusBar={statusBarState}
+      preview={previewState}
+      dialogs={dialogsState}
+      showErrorDialog={showErrorDialog}
+    />
   );
 }
