@@ -183,7 +183,6 @@ export function useKeyboardEvents(
             if (handlers.onNavigateUp) handlers.onNavigateUp();
             break;
           case 'l':
-          case 'enter':
           case 'return':
             if (handlers.onNavigateInto) handlers.onNavigateInto();
             break;

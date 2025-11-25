@@ -128,9 +128,15 @@ async function main() {
     try {
       renderer.keyInput.on('keypress', (key: RawKeyEvent) => {
         if (globalKeyboardDispatcher) {
+          // Normalize key name - standardize on 'return' for enter key
+          let keyName = key.name || key.key || 'unknown';
+          if (keyName === 'enter') {
+            keyName = 'return';
+          }
+
           // Normalize key object to match expected interface
           const normalizedKey: KeyboardKey = {
-            name: key.name || key.key || 'unknown',
+            name: keyName,
             ctrl: key.ctrl || key.ctrlKey || false,
             shift: key.shift || key.shiftKey || false,
             meta: key.meta || key.metaKey || false,

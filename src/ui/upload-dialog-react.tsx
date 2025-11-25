@@ -129,9 +129,10 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
           }
           break;
 
+        case 'l':
         case 'return':
-        case 'enter':
-          // Navigate into directory
+          // On directory: navigate into it
+          // On file: select it and confirm upload
           if (state.selectedIndex < state.entries.length) {
             const entry = state.entries[state.selectedIndex];
             if (entry.isDirectory) {
@@ -139,10 +140,16 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
                 ...prev,
                 currentPath: entry.path,
               }));
+            } else {
+              // Select this file and confirm
+              const filesToUpload = new Set(state.selectedFiles);
+              filesToUpload.add(entry.path);
+              onConfirm?.(Array.from(filesToUpload));
             }
           }
           break;
 
+        case 'h':
         case 'backspace':
           // Go to parent directory
           const parentPath = state.currentPath.substring(0, state.currentPath.lastIndexOf('/'));
@@ -156,13 +163,6 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
 
         case 'escape':
           onCancel?.();
-          break;
-
-        case 'c':
-          // Confirm selection
-          if (state.selectedFiles.size > 0) {
-            onConfirm?.(Array.from(state.selectedFiles));
-          }
           break;
       }
     },
@@ -245,7 +245,7 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
 
       {/* Help text - matches app-wide keybinding format */}
       <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-        {`j/k:nav  space:select  enter:open  c:confirm  ESC:cancel`.substring(0, contentWidth)}
+        {`j/k:nav  space:select  enter:confirm  h:back  ESC:cancel`.substring(0, contentWidth)}
       </text>
     </BaseDialog>
   );
