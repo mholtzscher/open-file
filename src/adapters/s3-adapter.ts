@@ -7,14 +7,10 @@
 
 import {
   S3Client,
-  ListObjectsV2Command,
-  ListBucketsCommand,
-  GetBucketLocationCommand,
   PutObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
   GetObjectTaggingCommand,
-  ListObjectsV2CommandInput,
 } from '@aws-sdk/client-s3';
 import { promises as fs } from 'fs';
 import { BucketAwareAdapter, ListOptions, ListResult, OperationOptions } from './adapter.js';
@@ -35,13 +31,7 @@ import {
   MULTIPART_THRESHOLD,
 } from './s3/multipart-upload.js';
 import { normalizeS3Path, getS3KeyName } from './s3/path-utils.js';
-import {
-  parseS3ObjectToEntry,
-  parseCommonPrefixToEntry,
-  parseBucketToEntry,
-  sortEntries,
-  BucketInfo,
-} from './s3/entry-parser.js';
+import { parseBucketToEntry, BucketInfo } from './s3/entry-parser.js';
 import { listAllObjects, batchDeleteObjects } from './s3/batch-operations.js';
 import { copyObject, copyDirectory as copyDirectoryOp } from './s3/copy-operations.js';
 import { moveObject, moveDirectory as moveDirectoryOp } from './s3/move-operations.js';
@@ -53,6 +43,7 @@ import {
 } from './s3/transfer-operations.js';
 import { createProgressAdapter } from './s3/progress-adapter.js';
 import { readObject } from './s3/read-operations.js';
+import { listObjects, listBuckets as listBucketsOp } from './s3/list-operations.js';
 // Re-export BucketInfo type for backwards compatibility
 export type { BucketInfo } from './s3/entry-parser.js';
 // Re-export client factory types for dependency injection
@@ -219,87 +210,20 @@ export class S3Adapter implements BucketAwareAdapter {
     if (!this.bucket) {
       throw new Error('Bucket not configured. Use listBuckets() to list all buckets.');
     }
-    const bucket = this.bucket;
-    const prefix = this.normalizePath(path, true);
-
-    const params: ListObjectsV2CommandInput = {
-      Bucket: bucket,
-      Prefix: prefix,
-      Delimiter: '/',
-      MaxKeys: options?.limit || 1000,
-      ContinuationToken: options?.continuationToken,
-    };
-
-    this.logger.debug('S3Adapter.list called', {
-      bucket: this.bucket,
-      path,
-      prefix,
-      delimiter: '/',
-      limit: options?.limit,
-      hasContinuationToken: !!options?.continuationToken,
-    });
 
     try {
-      this.logger.debug('Sending ListObjectsV2Command', params);
-
-      const response = await retryWithBackoff(() => {
-        this.logger.debug('Executing ListObjectsV2Command...');
-        const command = new ListObjectsV2Command(params);
-        return this.client.send(command);
-      }, getS3RetryConfig());
-
-      this.logger.debug('ListObjectsV2 response received', {
-        commonPrefixesCount: response.CommonPrefixes?.length || 0,
-        contentsCount: response.Contents?.length || 0,
-        isTruncated: response.IsTruncated,
-        nextContinuationToken: !!response.NextContinuationToken,
+      return await listObjects({
+        client: this.client,
+        bucket: this.bucket,
+        prefix: this.normalizePath(path, true),
+        delimiter: '/',
+        maxKeys: options?.limit,
+        continuationToken: options?.continuationToken,
+        logger: this.logger,
       });
-
-      const entries: Entry[] = [];
-
-      // Process directories (common prefixes)
-      if (response.CommonPrefixes) {
-        for (const commonPrefix of response.CommonPrefixes) {
-          const entry = parseCommonPrefixToEntry(commonPrefix, prefix);
-          if (entry) {
-            entries.push(entry);
-          }
-        }
-      }
-
-      // Process files
-      if (response.Contents) {
-        for (const obj of response.Contents) {
-          const entry = parseS3ObjectToEntry(obj, prefix);
-          if (entry && entry.type === EntryType.File) {
-            entries.push(entry);
-          }
-        }
-      }
-
-      // Sort: directories first, then by name
-      sortEntries(entries);
-
-      this.logger.debug('Parsed entries', {
-        count: entries.length,
-        directories: entries.filter(e => e.type === EntryType.Directory).length,
-        files: entries.filter(e => e.type === EntryType.File).length,
-      });
-
-      return {
-        entries,
-        continuationToken: response.NextContinuationToken,
-        hasMore: response.IsTruncated ?? false,
-      };
     } catch (error) {
       this.logger.error('Failed to list S3 objects', error);
-      const parsedError = parseAwsError(error, 'list');
-      this.logger.error('Parsed error', {
-        code: (error as any)?.Code,
-        message: (error as any)?.message,
-        statusCode: (error as any)?.$metadata?.httpStatusCode,
-      });
-      throw parsedError;
+      throw parseAwsError(error, 'list');
     }
   }
 
@@ -308,62 +232,13 @@ export class S3Adapter implements BucketAwareAdapter {
    */
   async listBuckets(): Promise<BucketInfo[]> {
     try {
-      this.logger.debug('S3Adapter.listBuckets called');
-
-      const response = await retryWithBackoff(() => {
-        const command = new ListBucketsCommand({});
-        return this.client.send(command);
-      }, getS3RetryConfig());
-
-      this.logger.debug('ListBuckets response received', {
-        bucketCount: response.Buckets?.length || 0,
+      return await listBucketsOp({
+        client: this.client,
+        logger: this.logger,
       });
-
-      const buckets: BucketInfo[] = [];
-
-      // Process each bucket
-      if (response.Buckets) {
-        for (const bucket of response.Buckets) {
-          if (bucket.Name) {
-            // Get bucket region
-            let region: string | undefined;
-            try {
-              const locationResponse = await retryWithBackoff(() => {
-                const command = new GetBucketLocationCommand({ Bucket: bucket.Name });
-                return this.client.send(command);
-              }, getS3RetryConfig());
-              // LocationConstraint is undefined for us-east-1, otherwise it's the region
-              region = locationResponse.LocationConstraint || 'us-east-1';
-            } catch (error) {
-              this.logger.debug('Failed to get bucket location', {
-                bucket: bucket.Name,
-                error: (error as any)?.message,
-              });
-              // Region might not be accessible, continue anyway
-            }
-
-            buckets.push({
-              name: bucket.Name,
-              creationDate: bucket.CreationDate,
-              region,
-            });
-          }
-        }
-      }
-
-      // Sort by creation date (newest first)
-      buckets.sort((a, b) => {
-        if (!a.creationDate || !b.creationDate) return 0;
-        return b.creationDate.getTime() - a.creationDate.getTime();
-      });
-
-      this.logger.debug('Parsed buckets', { count: buckets.length });
-
-      return buckets;
     } catch (error) {
       this.logger.error('Failed to list S3 buckets', error);
-      const parsedError = parseAwsError(error, 'listBuckets');
-      throw parsedError;
+      throw parseAwsError(error, 'listBuckets');
     }
   }
 

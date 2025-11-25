@@ -79,3 +79,12 @@ export {
   type ReadObjectOptions,
   type ReadOperationsLogger,
 } from './read-operations.js';
+
+export {
+  listObjects,
+  listBuckets,
+  type ListObjectsOptions,
+  type ListObjectsResult,
+  type ListBucketsOptions,
+  type ListOperationsLogger,
+} from './list-operations.js';
