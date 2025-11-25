@@ -28,7 +28,7 @@ jobs:
           bunx esbuild src/index.tsx --bundle --platform=node --outfile=dist/index.js --external:@opentui/core --external:@aws-sdk/client-s3 || echo "Build skipped for development"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: build
           path: dist/
