@@ -130,6 +130,7 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
           break;
 
         case 'return':
+        case 'enter':
           // Navigate into directory
           if (state.selectedIndex < state.entries.length) {
             const entry = state.entries[state.selectedIndex];
