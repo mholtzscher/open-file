@@ -14,6 +14,7 @@ import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
 import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
 import { useMultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
 import { useProgressState } from '../hooks/useProgressState.js';
+import { useDialogState } from '../hooks/useDialogState.js';
 
 import { S3ExplorerLayout, StatusBarState, PreviewState } from './s3-explorer-layout.js';
 import { DialogsState } from './s3-explorer-dialogs.js';
@@ -99,13 +100,24 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   const [statusMessageColor, setStatusMessageColor] = useState<string>(CatppuccinMocha.text);
 
   // ============================================
-  // Dialog Visibility State
+  // Dialog Visibility State (consolidated hook)
   // ============================================
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showHelpDialog, setShowHelpDialog] = useState(false);
-  const [showSortMenu, setShowSortMenu] = useState(false);
-  const [showUploadDialog, setShowUploadDialog] = useState(false);
-  const [pendingOperations, setPendingOperations] = useState<PendingOperation[]>([]);
+  const {
+    dialog: dialogState,
+    isConfirmOpen: showConfirmDialog,
+    isHelpOpen: showHelpDialog,
+    isSortOpen: showSortMenu,
+    isUploadOpen: showUploadDialog,
+    showConfirm,
+    showHelp,
+    toggleHelp,
+    showSort,
+    toggleSort,
+    showUpload,
+    closeDialog,
+    closeAndClearOperations,
+  } = useDialogState();
+  const pendingOperations = dialogState.pendingOperations;
 
   // ============================================
   // Preview State
@@ -274,8 +286,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
             path: entry.path,
             entry,
           }));
-          setPendingOperations(deleteOperations);
-          setShowConfirmDialog(true);
+          showConfirm(deleteOperations);
         }
       },
       onDownload: () => {
@@ -308,8 +319,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           recursive: currentEntry.type === 'directory',
         };
 
-        setPendingOperations([operation]);
-        setShowConfirmDialog(true);
+        showConfirm([operation]);
       },
       onUpload: async () => {
         setStatusMessage(
@@ -340,7 +350,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           return;
         }
 
-        setPendingOperations(
+        showConfirm(
           plan.operations.map(op => ({
             id: op.id,
             type: op.type,
@@ -349,10 +359,9 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
             destination: (op as any).destination,
           }))
         );
-        setShowConfirmDialog(true);
       },
       onQuit: () => process.exit(0),
-      onShowHelp: () => setShowHelpDialog(!showHelpDialog),
+      onShowHelp: () => toggleHelp(),
       onBucketsCommand: () => {
         if (!bucket) {
           setStatusMessage('Already viewing buckets');
@@ -553,12 +562,11 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         }
       }
 
-      setShowConfirmDialog(false);
-      setPendingOperations([]);
+      closeAndClearOperations();
     } catch {
       // Error handling is done within the loop
     }
-  }, [pendingOperations, adapter, multiPaneLayout, bufferState]);
+  }, [pendingOperations, adapter, multiPaneLayout, bufferState, closeAndClearOperations]);
 
   useEffect(() => {
     confirmHandlerRef.current = createConfirmHandler;
@@ -603,8 +611,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           return;
         }
         if (key.name === 'n' || key.name === 'escape') {
-          setShowConfirmDialog(false);
-          setPendingOperations([]);
+          closeAndClearOperations();
           return;
         }
         return;
@@ -625,7 +632,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         const currentSortConfig = currentBufferState.sortConfig;
 
         if (key.name === 'escape' || key.name === 'q') {
-          setShowSortMenu(false);
+          closeDialog();
           return;
         }
 
@@ -669,26 +676,26 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
       // Help dialog shortcuts
       if (showHelpDialog) {
         if (key.name === '?' || key.name === 'escape' || key.name === 'q') {
-          setShowHelpDialog(false);
+          closeDialog();
           return;
         }
         return;
       }
 
       if (key.name === '?') {
-        setShowHelpDialog(true);
+        showHelp();
         return;
       }
 
       // Upload dialog shortcut (press 'U' to upload - shift+u only)
       if ((key.name === 'u' && key.shift) || key.name === 'U') {
-        setShowUploadDialog(true);
+        showUpload();
         return;
       }
 
       // Sort menu shortcut (press 'o' to open)
       if (key.name === 'o') {
-        setShowSortMenu(!showSortMenu);
+        toggleSort();
         return;
       }
 
@@ -932,8 +939,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
       operations: pendingOperations,
       onConfirm: createConfirmHandler,
       onCancel: () => {
-        setShowConfirmDialog(false);
-        setPendingOperations([]);
+        closeAndClearOperations();
       },
     },
     error: {
@@ -947,7 +953,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
       visible: showUploadDialog,
       destinationPath: activeBufferState.currentPath,
       onConfirm: selectedFiles => {
-        setShowUploadDialog(false);
+        closeDialog();
         const currentPath = activeBufferState.currentPath;
         const newOperations = selectedFiles.map((filePath, index) => {
           const filename = filePath.split('/').pop() || filePath;
@@ -972,10 +978,9 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
             recursive: false,
           };
         });
-        setPendingOperations(newOperations);
-        setShowConfirmDialog(true);
+        showConfirm(newOperations);
       },
-      onCancel: () => setShowUploadDialog(false),
+      onCancel: () => closeDialog(),
     },
     sortMenu: {
       visible: showSortMenu,
@@ -1005,7 +1010,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         setStatusMessage(`Sort order: ${orderStr}`);
         setStatusMessageColor(CatppuccinMocha.green);
       },
-      onClose: () => setShowSortMenu(false),
+      onClose: () => closeDialog(),
     },
     progress: {
       visible: progressState.visible,
