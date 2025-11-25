@@ -5,7 +5,10 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
 import {
   AdapterRegistry,
+  createAdapterRegistry,
   getAdapterRegistry,
+  resetAdapterRegistry,
+  setAdapterRegistry,
   registerAdapter,
   getAdapter,
   registerS3,
@@ -109,10 +112,42 @@ describe('AdapterRegistry', () => {
   });
 });
 
+describe('Factory functions', () => {
+  describe('createAdapterRegistry', () => {
+    it('should create a new registry instance', () => {
+      const registry1 = createAdapterRegistry();
+      const registry2 = createAdapterRegistry();
+
+      // Should be different instances
+      expect(registry1).not.toBe(registry2);
+      expect(registry1).toBeInstanceOf(AdapterRegistry);
+      expect(registry2).toBeInstanceOf(AdapterRegistry);
+    });
+
+    it('should create registry with mock adapter pre-registered', () => {
+      const registry = createAdapterRegistry();
+      expect(registry.hasAdapter('mock')).toBe(true);
+      expect(registry.getAdapter('mock')).toBeInstanceOf(MockAdapter);
+    });
+
+    it('should create isolated registries', () => {
+      const registry1 = createAdapterRegistry();
+      const registry2 = createAdapterRegistry();
+
+      // Register adapter in one registry
+      registry1.register('custom', new MockAdapter());
+
+      // Should not affect the other
+      expect(registry1.hasAdapter('custom')).toBe(true);
+      expect(registry2.hasAdapter('custom')).toBe(false);
+    });
+  });
+});
+
 describe('Global registry functions', () => {
   beforeEach(() => {
-    // Reset global registry
-    (globalThis as any).globalRegistry = null;
+    // Reset global registry using the proper function
+    resetAdapterRegistry();
   });
 
   describe('getAdapterRegistry', () => {
@@ -127,6 +162,54 @@ describe('Global registry functions', () => {
     it('should register mock adapter by default', () => {
       const registry = getAdapterRegistry();
       expect(registry.hasAdapter('mock')).toBe(true);
+    });
+  });
+
+  describe('resetAdapterRegistry', () => {
+    it('should reset the global registry', () => {
+      const registry1 = getAdapterRegistry();
+      registry1.register('custom', new MockAdapter());
+
+      resetAdapterRegistry();
+
+      const registry2 = getAdapterRegistry();
+      expect(registry1).not.toBe(registry2);
+      expect(registry2.hasAdapter('custom')).toBe(false);
+    });
+
+    it('should create fresh registry on next getAdapterRegistry call', () => {
+      const registry1 = getAdapterRegistry();
+      resetAdapterRegistry();
+      const registry2 = getAdapterRegistry();
+
+      expect(registry1).not.toBe(registry2);
+      // New registry should have default mock adapter
+      expect(registry2.hasAdapter('mock')).toBe(true);
+    });
+  });
+
+  describe('setAdapterRegistry', () => {
+    it('should set a custom global registry', () => {
+      const customRegistry = createAdapterRegistry();
+      customRegistry.register('custom-adapter', new MockAdapter());
+
+      setAdapterRegistry(customRegistry);
+
+      const globalReg = getAdapterRegistry();
+      expect(globalReg).toBe(customRegistry);
+      expect(globalReg.hasAdapter('custom-adapter')).toBe(true);
+    });
+
+    it('should replace existing global registry', () => {
+      const oldRegistry = getAdapterRegistry();
+      oldRegistry.register('old-adapter', new MockAdapter());
+
+      const newRegistry = createAdapterRegistry();
+      setAdapterRegistry(newRegistry);
+
+      const currentRegistry = getAdapterRegistry();
+      expect(currentRegistry).toBe(newRegistry);
+      expect(currentRegistry.hasAdapter('old-adapter')).toBe(false);
     });
   });
 

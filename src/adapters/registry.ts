@@ -78,11 +78,40 @@ export class AdapterRegistry {
   }
 }
 
+// ============================================================================
+// Factory Functions
+// ============================================================================
+
+/**
+ * Create a new AdapterRegistry instance
+ *
+ * Use this for explicit dependency injection rather than relying on the global singleton.
+ * The registry comes pre-configured with a MockAdapter for testing convenience.
+ *
+ * @example
+ * ```typescript
+ * // Create isolated registry for testing
+ * const registry = createAdapterRegistry();
+ * registry.registerS3({ region: 'us-east-1' });
+ * const adapter = registry.getAdapter('s3');
+ * ```
+ */
+export function createAdapterRegistry(): AdapterRegistry {
+  return new AdapterRegistry();
+}
+
+// ============================================================================
+// Global Registry (for backwards compatibility)
+// ============================================================================
+
 // Global registry instance
 let globalRegistry: AdapterRegistry | null = null;
 
 /**
- * Get the global adapter registry
+ * Get the global adapter registry (singleton)
+ *
+ * @deprecated Prefer using createAdapterRegistry() for explicit dependency injection,
+ * or use AdapterProvider/useAdapter for React components.
  */
 export function getAdapterRegistry(): AdapterRegistry {
   if (!globalRegistry) {
@@ -92,7 +121,42 @@ export function getAdapterRegistry(): AdapterRegistry {
 }
 
 /**
+ * Reset the global adapter registry
+ *
+ * Useful for testing to ensure a clean state between tests.
+ * Creates a fresh registry instance on next getAdapterRegistry() call.
+ *
+ * @example
+ * ```typescript
+ * beforeEach(() => {
+ *   resetAdapterRegistry();
+ * });
+ * ```
+ */
+export function resetAdapterRegistry(): void {
+  globalRegistry = null;
+}
+
+/**
+ * Set a custom global adapter registry
+ *
+ * Useful for testing to inject a pre-configured registry.
+ *
+ * @example
+ * ```typescript
+ * const mockRegistry = createAdapterRegistry();
+ * mockRegistry.register('custom', myCustomAdapter);
+ * setAdapterRegistry(mockRegistry);
+ * ```
+ */
+export function setAdapterRegistry(registry: AdapterRegistry): void {
+  globalRegistry = registry;
+}
+
+/**
  * Register a global adapter
+ *
+ * @deprecated Prefer using createAdapterRegistry() for explicit dependency injection.
  */
 export function registerAdapter(name: string, adapter: Adapter): void {
   getAdapterRegistry().register(name, adapter);
@@ -100,6 +164,8 @@ export function registerAdapter(name: string, adapter: Adapter): void {
 
 /**
  * Get a global adapter
+ *
+ * @deprecated Prefer using createAdapterRegistry() for explicit dependency injection.
  */
 export function getAdapter(name: string): Adapter {
   return getAdapterRegistry().getAdapter(name);
@@ -107,6 +173,8 @@ export function getAdapter(name: string): Adapter {
 
 /**
  * Register global S3 adapter
+ *
+ * @deprecated Prefer using createAdapterRegistry() for explicit dependency injection.
  */
 export function registerS3(config: S3AdapterConfig): void {
   getAdapterRegistry().registerS3(config);
