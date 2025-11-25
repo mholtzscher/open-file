@@ -26,3 +26,11 @@ export {
   getS3ParentPath,
   getS3RelativePath,
 } from './path-utils.js';
+
+export {
+  parseS3ObjectToEntry,
+  parseCommonPrefixToEntry,
+  parseBucketToEntry,
+  sortEntries,
+  type BucketInfo,
+} from './entry-parser.js';

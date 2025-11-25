@@ -18,7 +18,6 @@ import {
   HeadObjectCommand,
   GetObjectTaggingCommand,
   ListObjectsV2CommandInput,
-  _Object,
 } from '@aws-sdk/client-s3';
 import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
@@ -35,6 +34,14 @@ import {
   MULTIPART_THRESHOLD,
 } from './s3/multipart-upload.js';
 import { normalizeS3Path, getS3KeyName } from './s3/path-utils.js';
+import {
+  parseS3ObjectToEntry,
+  parseCommonPrefixToEntry,
+  parseBucketToEntry,
+  sortEntries,
+} from './s3/entry-parser.js';
+// Re-export BucketInfo type for backwards compatibility
+export type { BucketInfo } from './s3/entry-parser.js';
 
 /**
  * Configuration for S3 adapter
@@ -56,22 +63,6 @@ export interface S3AdapterConfig {
   endpoint?: string;
   /** Force path style (required for MinIO and some S3-compatible services) */
   forcePathStyle?: boolean;
-}
-
-/**
- * Bucket information with metadata
- */
-export interface BucketInfo {
-  /** Bucket name */
-  name: string;
-  /** Creation date */
-  creationDate?: Date;
-  /** Bucket region */
-  region?: string;
-  /** Total size in bytes */
-  totalSize?: number;
-  /** Number of objects */
-  objectCount?: number;
 }
 
 /**
@@ -156,52 +147,6 @@ export class S3Adapter implements Adapter {
   }
 
   /**
-   * Parse S3 object to Entry
-   */
-  private parseEntry(obj: _Object, prefix: string): Entry | null {
-    if (!obj.Key) return null;
-
-    // Filter out the directory marker itself
-    if (obj.Key === prefix) return null;
-
-    const relativePath = obj.Key.substring(prefix.length);
-    const parts = relativePath.split('/').filter(p => p);
-
-    if (parts.length === 0) return null;
-
-    // Check if this is a direct child
-    if (parts.length === 1) {
-      // Direct file
-      return {
-        id: generateEntryId(),
-        name: parts[0],
-        type: EntryType.File,
-        path: obj.Key,
-        size: obj.Size,
-        modified: obj.LastModified,
-        metadata: {
-          etag: obj.ETag,
-          storageClass: obj.StorageClass,
-        },
-      };
-    } else if (parts.length === 2 && obj.Key.endsWith('/')) {
-      // Direct subdirectory
-      return {
-        id: generateEntryId(),
-        name: parts[0],
-        type: EntryType.Directory,
-        path: obj.Key,
-        modified: obj.LastModified,
-        metadata: {
-          storageClass: obj.StorageClass,
-        },
-      };
-    }
-
-    return null;
-  }
-
-  /**
    * List entries at a given path
    */
   async list(path: string, options?: ListOptions): Promise<ListResult> {
@@ -250,19 +195,9 @@ export class S3Adapter implements Adapter {
       // Process directories (common prefixes)
       if (response.CommonPrefixes) {
         for (const commonPrefix of response.CommonPrefixes) {
-          if (commonPrefix.Prefix) {
-            const parts = commonPrefix.Prefix.substring(prefix.length)
-              .split('/')
-              .filter(p => p);
-            if (parts.length > 0) {
-              entries.push({
-                id: generateEntryId(),
-                name: parts[0],
-                type: EntryType.Directory,
-                path: commonPrefix.Prefix,
-                modified: new Date(),
-              });
-            }
+          const entry = parseCommonPrefixToEntry(commonPrefix, prefix);
+          if (entry) {
+            entries.push(entry);
           }
         }
       }
@@ -270,7 +205,7 @@ export class S3Adapter implements Adapter {
       // Process files
       if (response.Contents) {
         for (const obj of response.Contents) {
-          const entry = this.parseEntry(obj, prefix);
+          const entry = parseS3ObjectToEntry(obj, prefix);
           if (entry && entry.type === EntryType.File) {
             entries.push(entry);
           }
@@ -278,12 +213,7 @@ export class S3Adapter implements Adapter {
       }
 
       // Sort: directories first, then by name
-      entries.sort((a, b) => {
-        if (a.type !== b.type) {
-          return a.type === EntryType.Directory ? -1 : 1;
-        }
-        return a.name.localeCompare(b.name);
-      });
+      sortEntries(entries);
 
       logger.debug('Parsed entries', {
         count: entries.length,
@@ -379,17 +309,7 @@ export class S3Adapter implements Adapter {
    */
   async getBucketEntries(): Promise<Entry[]> {
     const buckets = await this.listBuckets();
-    return buckets.map(bucket => ({
-      id: generateEntryId(),
-      name: bucket.name,
-      type: EntryType.Bucket,
-      path: bucket.name,
-      modified: bucket.creationDate,
-      metadata: {
-        region: bucket.region,
-        createdAt: bucket.creationDate,
-      },
-    }));
+    return buckets.map(parseBucketToEntry);
   }
 
   /**
