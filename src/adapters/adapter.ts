@@ -208,16 +208,7 @@ export interface BucketAwareAdapter extends TransferableStorageAdapter {
 export function isMutableAdapter(
   adapter: ReadableStorageAdapter
 ): adapter is MutableStorageAdapter {
-  return (
-    'create' in adapter &&
-    'delete' in adapter &&
-    'move' in adapter &&
-    'copy' in adapter &&
-    typeof (adapter as MutableStorageAdapter).create === 'function' &&
-    typeof (adapter as MutableStorageAdapter).delete === 'function' &&
-    typeof (adapter as MutableStorageAdapter).move === 'function' &&
-    typeof (adapter as MutableStorageAdapter).copy === 'function'
-  );
+  return 'create' in adapter;
 }
 
 /**
@@ -226,30 +217,18 @@ export function isMutableAdapter(
 export function isTransferableAdapter(
   adapter: ReadableStorageAdapter
 ): adapter is TransferableStorageAdapter {
-  return (
-    isMutableAdapter(adapter) &&
-    'downloadToLocal' in adapter &&
-    'uploadFromLocal' in adapter &&
-    typeof (adapter as TransferableStorageAdapter).downloadToLocal === 'function' &&
-    typeof (adapter as TransferableStorageAdapter).uploadFromLocal === 'function'
-  );
+  return 'downloadToLocal' in adapter;
 }
 
 /**
  * Check if an adapter supports bucket operations
+ * Note: Checks multiple properties because partial implementations exist
+ * (e.g., MockAdapter has getBucketEntries but not setBucket/setRegion)
  */
 export function isBucketAwareAdapter(
   adapter: ReadableStorageAdapter
 ): adapter is BucketAwareAdapter {
-  return (
-    isTransferableAdapter(adapter) &&
-    'getBucketEntries' in adapter &&
-    'setBucket' in adapter &&
-    'setRegion' in adapter &&
-    typeof (adapter as BucketAwareAdapter).getBucketEntries === 'function' &&
-    typeof (adapter as BucketAwareAdapter).setBucket === 'function' &&
-    typeof (adapter as BucketAwareAdapter).setRegion === 'function'
-  );
+  return 'getBucketEntries' in adapter && 'setBucket' in adapter && 'setRegion' in adapter;
 }
 
 // ============================================================================
