@@ -523,7 +523,9 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
               break;
             case 'delete':
               if (op.path) {
-                await adapter.delete(op.path, true, { onProgress });
+                // Only use recursive delete for directories
+                const isDirectory = op.entry?.type === 'directory';
+                await adapter.delete(op.path, isDirectory, { onProgress });
                 successCount++;
               }
               break;
