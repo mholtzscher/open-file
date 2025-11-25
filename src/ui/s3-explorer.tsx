@@ -21,6 +21,7 @@ import { DialogsState } from './s3-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
+import { useAdapter, useHasAdapter } from '../contexts/AdapterContext.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
 import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
@@ -31,7 +32,8 @@ import type { KeyboardKey, KeyAction } from '../types/keyboard.js';
 
 interface S3ExplorerProps {
   bucket?: string;
-  adapter: Adapter;
+  /** Adapter can be passed as prop or accessed via AdapterContext */
+  adapter?: Adapter;
   configManager: ConfigManager;
 }
 
@@ -75,7 +77,20 @@ function isPreviewableFile(entry: Entry | undefined): boolean {
 /**
  * Main S3Explorer component - declarative React implementation
  */
-export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) {
+export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3ExplorerProps) {
+  // ============================================
+  // Adapter Resolution (prop or context)
+  // ============================================
+  const hasAdapterContext = useHasAdapter();
+  const contextAdapter = hasAdapterContext ? useAdapter() : null;
+  const adapter = adapterProp ?? contextAdapter;
+
+  if (!adapter) {
+    throw new Error(
+      'S3Explorer requires an adapter. Either pass it as a prop or wrap with AdapterProvider.'
+    );
+  }
+
   // ============================================
   // Core State
   // ============================================

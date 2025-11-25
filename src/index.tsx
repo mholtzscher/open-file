@@ -12,6 +12,7 @@ import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger.js';
 import { getActiveAwsRegion } from './utils/aws-profile.js';
 import { KeyboardProvider, useKeyboardDispatch } from './contexts/KeyboardContext.js';
+import { AdapterProvider } from './contexts/AdapterContext.js';
 import type { KeyboardKey, KeyboardDispatcher } from './types/keyboard.js';
 
 // Global keyboard event dispatcher - bridges external renderer to React context
@@ -180,12 +181,14 @@ async function main() {
       throw keyError;
     }
 
-    // Create and render app with KeyboardProvider
+    // Create and render app with context providers
     try {
       const root = createRoot(renderer);
       root.render(
         <KeyboardProvider>
-          <App bucket={bucket} adapter={adapter} configManager={configManager} />
+          <AdapterProvider adapter={adapter}>
+            <App bucket={bucket} adapter={adapter} configManager={configManager} />
+          </AdapterProvider>
         </KeyboardProvider>
       );
     } catch (renderError) {
