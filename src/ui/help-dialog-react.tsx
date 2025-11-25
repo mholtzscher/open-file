@@ -52,6 +52,7 @@ const keybindings: HelpItem[] = [
   { keys: ':', description: 'Command mode' },
   { section: '' },
   { section: 'OTHER' },
+  { keys: 'o', description: 'Sort menu' },
   { keys: '?/g?/q', description: 'Toggle/close help' },
   { keys: 'q', description: 'Quit' },
 ];
