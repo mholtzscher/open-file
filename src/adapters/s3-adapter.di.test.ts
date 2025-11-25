@@ -38,16 +38,20 @@ describe('S3Adapter dependency injection', () => {
     const client = {
       send: async (command: any) => {
         sendCalls.push(command);
-        // Return appropriate mock responses based on command type
-        const commandName = command.constructor.name;
-        if (commandName === 'ListBucketsCommand') {
-          return { Buckets: [] };
-        }
-        if (commandName === 'ListObjectsV2Command') {
+        // Return appropriate mock responses based on command input properties
+        // This is more reliable than constructor.name which can be minified
+        const input = command.input || {};
+        if ('Bucket' in input && 'Prefix' in input) {
+          // ListObjectsV2Command has Bucket and Prefix
           return { Contents: [], CommonPrefixes: [] };
         }
-        if (commandName === 'HeadObjectCommand') {
+        if ('Bucket' in input && 'Key' in input) {
+          // HeadObjectCommand has Bucket and Key
           return { ContentLength: 100 };
+        }
+        if (Object.keys(input).length === 0 || !('Bucket' in input)) {
+          // ListBucketsCommand has no required input
+          return { Buckets: [] };
         }
         return {};
       },
