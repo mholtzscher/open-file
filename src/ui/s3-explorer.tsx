@@ -362,14 +362,6 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         // Get entries marked for deletion
         const markedForDeletion = currentBufferState.getMarkedForDeletion();
 
-        // Detect other changes (creates, moves, renames)
-        const changes = detectChanges(
-          originalEntries,
-          currentBufferState.entries,
-          {} as EntryIdMap
-        );
-        const plan = buildOperationPlan(changes);
-
         // Add deletion operations for marked entries
         const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
           id: entry.id,
@@ -378,25 +370,18 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           entry,
         }));
 
-        // Combine all operations
-        const allOperations = [
-          ...plan.operations.map(op => ({
-            id: op.id,
-            type: op.type,
-            path: (op as any).path || (op as any).destination,
-            source: (op as any).source,
-            destination: (op as any).destination,
-          })),
-          ...deleteOperations,
-        ];
+        // For now, only support deletion operations via the marking system
+        // The change detection (creates, moves, renames) requires proper
+        // originalEntries tracking which is complex with navigation
+        // TODO: Implement proper originalEntries tracking per-path for full oil.nvim support
 
-        if (allOperations.length === 0) {
+        if (deleteOperations.length === 0) {
           setStatusMessage('No changes to save');
           setStatusMessageColor(CatppuccinMocha.text);
           return;
         }
 
-        showConfirm(allOperations);
+        showConfirm(deleteOperations);
       },
       onQuit: () => process.exit(0),
       onShowHelp: () => toggleHelp(),
