@@ -10,14 +10,15 @@ import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger.js';
 import { getActiveAwsRegion } from './utils/aws-profile.js';
+import type { KeyboardKey, KeyboardDispatcher } from './types/keyboard.js';
 
 // Global keyboard event dispatcher - exported at module level
-export let globalKeyboardDispatcher: ((key: any) => void) | null = null;
+export let globalKeyboardDispatcher: KeyboardDispatcher | null = null;
 
 /**
  * Set the global keyboard event dispatcher
  */
-export function setGlobalKeyboardDispatcher(dispatcher: ((key: any) => void) | null) {
+export function setGlobalKeyboardDispatcher(dispatcher: KeyboardDispatcher | null) {
   globalKeyboardDispatcher = dispatcher;
 }
 
@@ -97,11 +98,27 @@ async function main() {
     const bucket = cliArgs.bucket || configManager.getS3Config().bucket;
 
     // Create and start renderer
-    let renderer: any;
+    // Note: Using type assertion for external library type
+    type CliRenderer = Awaited<ReturnType<typeof createCliRenderer>> & {
+      keyInput: { on: (event: string, handler: (key: RawKeyEvent) => void) => void };
+    };
+    interface RawKeyEvent {
+      name?: string;
+      key?: string;
+      ctrl?: boolean;
+      ctrlKey?: boolean;
+      shift?: boolean;
+      shiftKey?: boolean;
+      meta?: boolean;
+      metaKey?: boolean;
+      char?: string;
+    }
+
+    let renderer: CliRenderer;
     try {
-      renderer = await createCliRenderer({
+      renderer = (await createCliRenderer({
         exitOnCtrlC: true,
-      });
+      })) as CliRenderer;
     } catch (rendererError) {
       logger.error('Failed to create CLI renderer', rendererError);
       throw rendererError;
@@ -109,10 +126,10 @@ async function main() {
 
     // Setup keyboard event handling
     try {
-      renderer.keyInput.on('keypress', (key: any) => {
+      renderer.keyInput.on('keypress', (key: RawKeyEvent) => {
         if (globalKeyboardDispatcher) {
           // Normalize key object to match expected interface
-          const normalizedKey = {
+          const normalizedKey: KeyboardKey = {
             name: key.name || key.key || 'unknown',
             ctrl: key.ctrl || key.ctrlKey || false,
             shift: key.shift || key.shiftKey || false,

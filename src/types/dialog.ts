@@ -30,15 +30,8 @@ export interface PendingOperation {
   path?: string;
   source?: string;
   destination?: string;
-  entry?: {
-    id: string;
-    name: string;
-    path: string;
-    type: 'file' | 'directory' | 'bucket';
-    size?: number;
-    modified?: Date;
-    metadata?: Record<string, string>;
-  };
+  /** Entry associated with this operation (uses the Entry type from entry.ts) */
+  entry?: import('./entry.js').Entry;
   entryType?: 'file' | 'directory';
   recursive?: boolean;
 }

@@ -25,6 +25,8 @@ import { EntryIdMap } from '../utils/entry-id.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
 import { getDialogHandler } from '../hooks/useDialogKeyboard.js';
+import type { PendingOperation } from '../types/dialog.js';
+import type { KeyboardKey } from '../types/keyboard.js';
 
 interface S3ExplorerProps {
   bucket?: string;
@@ -103,7 +105,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   const [showHelpDialog, setShowHelpDialog] = useState(false);
   const [showSortMenu, setShowSortMenu] = useState(false);
   const [showUploadDialog, setShowUploadDialog] = useState(false);
-  const [pendingOperations, setPendingOperations] = useState<any[]>([]);
+  const [pendingOperations, setPendingOperations] = useState<PendingOperation[]>([]);
 
   // ============================================
   // Preview State
@@ -209,12 +211,11 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           const bucketName = currentEntry.name;
           const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
 
-          const s3Adapter = adapter as any;
-          if (s3Adapter.setBucket) {
-            s3Adapter.setBucket(bucketName);
+          if (adapter.setBucket) {
+            adapter.setBucket(bucketName);
           }
-          if (s3Adapter.setRegion) {
-            s3Adapter.setRegion(bucketRegion);
+          if (adapter.setRegion) {
+            adapter.setRegion(bucketRegion);
           }
           setBucket(bucketName);
           return;
@@ -267,7 +268,13 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         const selected = currentBufferState.getSelectedEntries();
         if (selected.length > 0) {
-          setPendingOperations(selected);
+          const deleteOperations: PendingOperation[] = selected.map(entry => ({
+            id: entry.id,
+            type: 'delete' as const,
+            path: entry.path,
+            entry,
+          }));
+          setPendingOperations(deleteOperations);
           setShowConfirmDialog(true);
         }
       },
@@ -357,9 +364,8 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         }
       },
       onBucketCommand: (bucketName: string) => {
-        const s3Adapter = adapter as any;
-        if (s3Adapter.setBucket) {
-          s3Adapter.setBucket(bucketName);
+        if (adapter.setBucket) {
+          adapter.setBucket(bucketName);
         }
         setBucket(bucketName);
         setStatusMessage(`Switched to bucket: ${bucketName}`);
@@ -476,23 +482,33 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
 
           switch (op.type) {
             case 'create':
-              await adapter.create(op.path, op.entryType || 'file', undefined, { onProgress });
-              successCount++;
+              if (op.path) {
+                const createType =
+                  op.entryType === 'directory' ? EntryType.Directory : EntryType.File;
+                await adapter.create(op.path, createType, undefined, { onProgress });
+                successCount++;
+              }
               break;
             case 'delete':
-              await adapter.delete(op.path, true, { onProgress });
-              successCount++;
+              if (op.path) {
+                await adapter.delete(op.path, true, { onProgress });
+                successCount++;
+              }
               break;
             case 'move':
-              await adapter.move(op.source, op.destination, { onProgress });
-              successCount++;
+              if (op.source && op.destination) {
+                await adapter.move(op.source, op.destination, { onProgress });
+                successCount++;
+              }
               break;
             case 'copy':
-              await adapter.copy(op.source, op.destination, { onProgress });
-              successCount++;
+              if (op.source && op.destination) {
+                await adapter.copy(op.source, op.destination, { onProgress });
+                successCount++;
+              }
               break;
             case 'download':
-              if (adapter.downloadToLocal) {
+              if (adapter.downloadToLocal && op.source && op.destination) {
                 await adapter.downloadToLocal(op.source, op.destination, op.recursive || false, {
                   onProgress,
                 });
@@ -500,7 +516,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
               }
               break;
             case 'upload':
-              if (adapter.uploadFromLocal) {
+              if (adapter.uploadFromLocal && op.source && op.destination) {
                 await adapter.uploadFromLocal(op.source, op.destination, op.recursive || false, {
                   onProgress,
                 });
@@ -570,7 +586,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   // Global Keyboard Dispatcher
   // ============================================
   useEffect(() => {
-    setGlobalKeyboardDispatcher((key: any) => {
+    setGlobalKeyboardDispatcher((key: KeyboardKey) => {
       // Upload dialog - delegate to dialog handler
       if (showUploadDialogRef.current) {
         const handler = getDialogHandler('upload-dialog');
@@ -705,9 +721,8 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
 
         if (!bucket) {
           try {
-            const s3Adapter = adapter as any;
-            if (s3Adapter.getBucketEntries) {
-              s3Adapter
+            if (adapter.getBucketEntries) {
+              adapter
                 .getBucketEntries()
                 .then((entries: Entry[]) => {
                   currentBufferState.setEntries([...entries]);
@@ -788,9 +803,8 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         if (!bucket) {
           console.error(`[S3Explorer] Root view mode detected, loading buckets...`);
-          const s3Adapter = adapter as any;
-          if (s3Adapter.getBucketEntries) {
-            const entries = await s3Adapter.getBucketEntries();
+          if (adapter.getBucketEntries) {
+            const entries = await adapter.getBucketEntries();
             console.error(`[S3Explorer] Received ${entries.length} buckets`);
             currentBufferState.setEntries([...entries]);
             currentBufferState.setCurrentPath('');

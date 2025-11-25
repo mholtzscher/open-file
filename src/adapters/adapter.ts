@@ -165,4 +165,16 @@ export interface Adapter {
    * @returns List of bucket entries, or undefined if not supported
    */
   getBucketEntries?(): Promise<Entry[]>;
+
+  /**
+   * (Optional) Set the current bucket (S3 adapter only)
+   * @param bucket - Bucket name to set
+   */
+  setBucket?(bucket: string): void;
+
+  /**
+   * (Optional) Set the current region (S3 adapter only)
+   * @param region - AWS region to set
+   */
+  setRegion?(region: string): void;
 }

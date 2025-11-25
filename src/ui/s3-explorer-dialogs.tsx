@@ -12,14 +12,14 @@ import { UploadDialog } from './upload-dialog-react.js';
 import { SortMenu } from './sort-menu-react.js';
 import { ProgressWindow } from './progress-window-react.js';
 import { SortField, SortOrder } from '../utils/sorting.js';
-import { AdapterOperation } from '../types/operations.js';
+import type { PendingOperation } from '../types/dialog.js';
 
 /**
  * Props for individual dialog states
  */
 export interface ConfirmDialogState {
   visible: boolean;
-  operations: AdapterOperation[];
+  operations: PendingOperation[];
   onConfirm: () => Promise<void>;
   onCancel: () => void;
 }

@@ -5,6 +5,7 @@
 import { describe, it, expect } from 'bun:test';
 import { dialogReducer, initialDialogState } from './useDialogState';
 import type { DialogState, DialogAction, PendingOperation } from '../types/dialog';
+import { EntryType } from '../types/entry';
 
 const createTestOperation = (
   id: string,
@@ -303,10 +304,10 @@ describe('PendingOperation types', () => {
         id: 'entry1',
         name: 'file.txt',
         path: '/current/file.txt',
-        type: 'file',
+        type: EntryType.File,
         size: 1024,
         modified: new Date('2024-01-01'),
-        metadata: { key: 'value' },
+        metadata: { custom: { key: 'value' } },
       },
       recursive: true,
     };
