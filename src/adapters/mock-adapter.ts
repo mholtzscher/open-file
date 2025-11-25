@@ -1,6 +1,10 @@
 import { Adapter, ListOptions, ListResult } from './adapter.js';
 import { Entry, EntryType } from '../types/entry.js';
 
+// Note: MockAdapter implements the Adapter interface (MutableStorageAdapter with optional methods)
+// It provides getBucketEntries for testing but is not a full BucketAwareAdapter
+// since it doesn't need setBucket/setRegion functionality
+
 /**
  * In-memory entry for MockAdapter
  */

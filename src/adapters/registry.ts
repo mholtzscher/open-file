@@ -9,6 +9,16 @@ import { Adapter } from './adapter.js';
 import { MockAdapter } from './mock-adapter.js';
 import { S3Adapter, S3AdapterConfig } from './s3-adapter.js';
 
+// Re-export interfaces and type guards for convenience
+export type {
+  ReadableStorageAdapter,
+  MutableStorageAdapter,
+  TransferableStorageAdapter,
+  BucketAwareAdapter,
+} from './adapter.js';
+
+export { isMutableAdapter, isTransferableAdapter, isBucketAwareAdapter } from './adapter.js';
+
 /**
  * Adapter registry for managing multiple adapters
  */

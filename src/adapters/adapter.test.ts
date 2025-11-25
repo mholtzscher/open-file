@@ -4,8 +4,123 @@
 
 import { describe, it, expect } from 'bun:test';
 import { MockAdapter } from './mock-adapter.js';
+import { S3Adapter } from './s3-adapter.js';
 import { EntryType } from '../types/entry.js';
-import { ProgressEvent } from './adapter.js';
+import {
+  ProgressEvent,
+  ReadableStorageAdapter,
+  isMutableAdapter,
+  isTransferableAdapter,
+  isBucketAwareAdapter,
+} from './adapter.js';
+
+describe('Interface Type Guards', () => {
+  describe('isMutableAdapter', () => {
+    it('should return true for MockAdapter', () => {
+      const adapter = new MockAdapter();
+      expect(isMutableAdapter(adapter)).toBe(true);
+    });
+
+    it('should return true for S3Adapter', () => {
+      const adapter = new S3Adapter({
+        region: 'us-east-1',
+        accessKeyId: 'test',
+        secretAccessKey: 'test',
+      });
+      expect(isMutableAdapter(adapter)).toBe(true);
+    });
+
+    it('should return false for read-only adapter', () => {
+      // Create a minimal read-only adapter
+      const readOnlyAdapter: ReadableStorageAdapter = {
+        name: 'readonly',
+        list: async () => ({ entries: [], hasMore: false }),
+        getMetadata: async () => {
+          throw new Error('Not implemented');
+        },
+        exists: async () => false,
+        read: async () => Buffer.from(''),
+      };
+      expect(isMutableAdapter(readOnlyAdapter)).toBe(false);
+    });
+  });
+
+  describe('isTransferableAdapter', () => {
+    it('should return false for MockAdapter (no transfer methods)', () => {
+      const adapter = new MockAdapter();
+      expect(isTransferableAdapter(adapter)).toBe(false);
+    });
+
+    it('should return true for S3Adapter', () => {
+      const adapter = new S3Adapter({
+        region: 'us-east-1',
+        accessKeyId: 'test',
+        secretAccessKey: 'test',
+      });
+      expect(isTransferableAdapter(adapter)).toBe(true);
+    });
+  });
+
+  describe('isBucketAwareAdapter', () => {
+    it('should return false for MockAdapter (partial bucket support)', () => {
+      const adapter = new MockAdapter();
+      // MockAdapter has getBucketEntries but not setBucket/setRegion
+      expect(isBucketAwareAdapter(adapter)).toBe(false);
+    });
+
+    it('should return true for S3Adapter', () => {
+      const adapter = new S3Adapter({
+        region: 'us-east-1',
+        accessKeyId: 'test',
+        secretAccessKey: 'test',
+      });
+      expect(isBucketAwareAdapter(adapter)).toBe(true);
+    });
+  });
+
+  describe('type narrowing', () => {
+    it('should narrow type after isMutableAdapter check', () => {
+      const adapter: ReadableStorageAdapter = new MockAdapter();
+
+      if (isMutableAdapter(adapter)) {
+        // TypeScript should now allow calling create
+        expect(typeof adapter.create).toBe('function');
+        expect(typeof adapter.delete).toBe('function');
+        expect(typeof adapter.move).toBe('function');
+        expect(typeof adapter.copy).toBe('function');
+      }
+    });
+
+    it('should narrow type after isTransferableAdapter check', () => {
+      const adapter: ReadableStorageAdapter = new S3Adapter({
+        region: 'us-east-1',
+        accessKeyId: 'test',
+        secretAccessKey: 'test',
+      });
+
+      if (isTransferableAdapter(adapter)) {
+        // TypeScript should now allow calling transfer methods
+        expect(typeof adapter.downloadToLocal).toBe('function');
+        expect(typeof adapter.uploadFromLocal).toBe('function');
+      }
+    });
+
+    it('should narrow type after isBucketAwareAdapter check', () => {
+      const adapter: ReadableStorageAdapter = new S3Adapter({
+        region: 'us-east-1',
+        accessKeyId: 'test',
+        secretAccessKey: 'test',
+      });
+
+      if (isBucketAwareAdapter(adapter)) {
+        // TypeScript should now allow calling bucket methods
+        expect(typeof adapter.getBucketEntries).toBe('function');
+        expect(typeof adapter.setBucket).toBe('function');
+        expect(typeof adapter.setRegion).toBe('function');
+      }
+    });
+  });
+});
 
 describe('MockAdapter', () => {
   const adapter = new MockAdapter();

@@ -18,7 +18,7 @@ import {
   ListObjectsV2CommandInput,
 } from '@aws-sdk/client-s3';
 import { promises as fs } from 'fs';
-import { Adapter, ListOptions, ListResult, OperationOptions } from './adapter.js';
+import { BucketAwareAdapter, ListOptions, ListResult, OperationOptions } from './adapter.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { generateEntryId } from '../utils/entry-id.js';
 import { retryWithBackoff, getS3RetryConfig } from '../utils/retry.js';
@@ -118,8 +118,14 @@ export interface S3AdapterDependencies {
 
 /**
  * S3 Adapter implementation
+ *
+ * Implements BucketAwareAdapter which includes:
+ * - ReadableStorageAdapter: list, getMetadata, exists, read
+ * - MutableStorageAdapter: create, delete, move, copy
+ * - TransferableStorageAdapter: downloadToLocal, uploadFromLocal
+ * - BucketAwareAdapter: getBucketEntries, setBucket, setRegion
  */
-export class S3Adapter implements Adapter {
+export class S3Adapter implements BucketAwareAdapter {
   readonly name = 's3';
   private client: S3Client;
   private bucket?: string;
