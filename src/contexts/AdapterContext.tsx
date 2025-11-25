@@ -9,12 +9,10 @@
  * - Type-safe adapter access
  * - Testable in isolation (wrap with mock adapter in tests)
  * - No global mutable state in React tree
- * - Support for multiple adapter types via registry
  */
 
 import { createContext, useContext, ReactNode, useMemo } from 'react';
 import type { Adapter, ReadableStorageAdapter } from '../adapters/adapter.js';
-import { AdapterRegistry, createAdapterRegistry } from '../adapters/registry.js';
 
 // ============================================================================
 // Context Types
@@ -26,9 +24,6 @@ import { AdapterRegistry, createAdapterRegistry } from '../adapters/registry.js'
 interface AdapterContextValue {
   /** The primary adapter for storage operations */
   adapter: Adapter;
-
-  /** Optional registry for multi-adapter scenarios */
-  registry?: AdapterRegistry;
 }
 
 // ============================================================================
@@ -50,12 +45,6 @@ interface AdapterProviderProps {
 
   /** The adapter to provide */
   adapter: Adapter;
-
-  /**
-   * Optional registry for multi-adapter scenarios
-   * If provided, enables useAdapterRegistry hook
-   */
-  registry?: AdapterRegistry;
 }
 
 // ============================================================================
@@ -70,7 +59,6 @@ interface AdapterProviderProps {
  *
  * @example
  * ```tsx
- * // Basic usage with a single adapter
  * function App() {
  *   const adapter = new S3Adapter({ region: 'us-east-1' });
  *
@@ -80,29 +68,15 @@ interface AdapterProviderProps {
  *     </AdapterProvider>
  *   );
  * }
- *
- * // With registry for multiple adapters
- * function App() {
- *   const registry = createAdapterRegistry();
- *   registry.registerS3({ region: 'us-east-1' });
- *   const adapter = registry.getAdapter('s3');
- *
- *   return (
- *     <AdapterProvider adapter={adapter} registry={registry}>
- *       <S3Explorer />
- *     </AdapterProvider>
- *   );
- * }
  * ```
  */
-export function AdapterProvider({ children, adapter, registry }: AdapterProviderProps) {
+export function AdapterProvider({ children, adapter }: AdapterProviderProps) {
   // Memoize context value to prevent unnecessary re-renders
   const value = useMemo<AdapterContextValue>(
     () => ({
       adapter,
-      registry,
     }),
-    [adapter, registry]
+    [adapter]
   );
 
   return <AdapterContext.Provider value={value}>{children}</AdapterContext.Provider>;
@@ -156,40 +130,6 @@ export function useAdapter(): Adapter {
 export function useTypedAdapter<T extends ReadableStorageAdapter>(): T {
   const adapter = useAdapter();
   return adapter as unknown as T;
-}
-
-/**
- * Hook to access the adapter registry from context
- *
- * Only available if a registry was provided to AdapterProvider.
- *
- * @returns The registry, or undefined if not provided
- *
- * @example
- * ```tsx
- * function AdapterSwitcher() {
- *   const registry = useAdapterRegistry();
- *
- *   if (!registry) {
- *     return <div>Single adapter mode</div>;
- *   }
- *
- *   return (
- *     <select>
- *       {registry.listAdapters().map(name => (
- *         <option key={name}>{name}</option>
- *       ))}
- *     </select>
- *   );
- * }
- * ```
- */
-export function useAdapterRegistry(): AdapterRegistry | undefined {
-  const context = useContext(AdapterContext);
-  if (!context) {
-    throw new Error('useAdapterRegistry must be used within an AdapterProvider');
-  }
-  return context.registry;
 }
 
 /**

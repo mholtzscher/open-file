@@ -7,7 +7,6 @@
 
 import { describe, it, expect } from 'bun:test';
 import { MockAdapter } from '../adapters/mock-adapter.js';
-import { createAdapterRegistry, AdapterRegistry } from '../adapters/registry.js';
 import type { Adapter, ReadableStorageAdapter } from '../adapters/adapter.js';
 
 /**
@@ -16,11 +15,9 @@ import type { Adapter, ReadableStorageAdapter } from '../adapters/adapter.js';
  */
 class AdapterContextStore {
   private adapter: Adapter | null = null;
-  private registry: AdapterRegistry | undefined = undefined;
 
-  setAdapter(adapter: Adapter, registry?: AdapterRegistry): void {
+  setAdapter(adapter: Adapter): void {
     this.adapter = adapter;
-    this.registry = registry;
   }
 
   getAdapter(): Adapter {
@@ -34,20 +31,12 @@ class AdapterContextStore {
     return this.getAdapter() as unknown as T;
   }
 
-  getAdapterRegistry(): AdapterRegistry | undefined {
-    if (!this.adapter) {
-      throw new Error('useAdapterRegistry must be used within an AdapterProvider');
-    }
-    return this.registry;
-  }
-
   hasAdapter(): boolean {
     return this.adapter !== null;
   }
 
   clear(): void {
     this.adapter = null;
-    this.registry = undefined;
   }
 }
 
@@ -60,25 +49,6 @@ describe('AdapterContext logic', () => {
       store.setAdapter(adapter);
 
       expect(store.getAdapter()).toBe(adapter);
-    });
-
-    it('should store and provide registry when specified', () => {
-      const store = new AdapterContextStore();
-      const adapter = new MockAdapter();
-      const registry = createAdapterRegistry();
-
-      store.setAdapter(adapter, registry);
-
-      expect(store.getAdapterRegistry()).toBe(registry);
-    });
-
-    it('should return undefined registry when not provided', () => {
-      const store = new AdapterContextStore();
-      const adapter = new MockAdapter();
-
-      store.setAdapter(adapter);
-
-      expect(store.getAdapterRegistry()).toBeUndefined();
     });
   });
 
@@ -113,28 +83,6 @@ describe('AdapterContext logic', () => {
       expect(typeof typedAdapter.list).toBe('function');
       expect(typeof typedAdapter.read).toBe('function');
       expect(typeof typedAdapter.exists).toBe('function');
-    });
-  });
-
-  describe('getAdapterRegistry (useAdapterRegistry equivalent)', () => {
-    it('should return registry when provided', () => {
-      const store = new AdapterContextStore();
-      const adapter = new MockAdapter();
-      const registry = createAdapterRegistry();
-      registry.register('custom', new MockAdapter());
-
-      store.setAdapter(adapter, registry);
-
-      expect(store.getAdapterRegistry()).toBe(registry);
-      expect(store.getAdapterRegistry()?.hasAdapter('custom')).toBe(true);
-    });
-
-    it('should throw when used outside provider', () => {
-      const store = new AdapterContextStore();
-
-      expect(() => store.getAdapterRegistry()).toThrow(
-        'useAdapterRegistry must be used within an AdapterProvider'
-      );
     });
   });
 
@@ -178,31 +126,6 @@ describe('AdapterContext integration patterns', () => {
       // Components can access the adapter
       const retrieved = store.getAdapter();
       expect(retrieved.name).toBe('mock');
-    });
-  });
-
-  describe('multi-adapter with registry', () => {
-    it('should allow switching adapters via registry', () => {
-      const store = new AdapterContextStore();
-      const registry = createAdapterRegistry();
-
-      // Register multiple adapters
-      const mockAdapter1 = new MockAdapter();
-      const mockAdapter2 = new MockAdapter();
-      (mockAdapter1 as any).testId = 'adapter1';
-      (mockAdapter2 as any).testId = 'adapter2';
-
-      registry.register('adapter1', mockAdapter1);
-      registry.register('adapter2', mockAdapter2);
-
-      // Start with adapter1
-      store.setAdapter(mockAdapter1, registry);
-      expect((store.getAdapter() as any).testId).toBe('adapter1');
-
-      // Switch to adapter2
-      const adapter2 = registry.getAdapter('adapter2');
-      store.setAdapter(adapter2, registry);
-      expect((store.getAdapter() as any).testId).toBe('adapter2');
     });
   });
 
