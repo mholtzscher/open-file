@@ -124,15 +124,6 @@ localstack BUCKET="":
         bun run src/index.tsx --endpoint http://localhost:4566 --bucket {{BUCKET}}; \
     fi
 
-# Check for ready work items using bd
-bd-status:
-    bd ready --json | jq 'length' && bd list --json | jq '[.[] | select(.status == "closed")] | length'
-
-# Show React migration progress
-migration-status:
-    @echo "=== React Migration Status ==="
-    @bd ready --json | jq '.[] | {id, title}' | head -20
-
 # Development with type checking and running
 dev-check: check
     bun run --watch src/index.tsx
