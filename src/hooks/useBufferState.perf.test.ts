@@ -1,240 +1,402 @@
 /**
- * Performance tests for React hooks and buffer state
+ * Performance tests for buffer state management
  *
- * Tests efficiency of operations and rendering with large datasets
+ * Tests efficiency of operations and rendering with large datasets.
+ * Uses the BufferState class directly for testing since it shares
+ * the same algorithmic complexity as the useBufferState hook.
  */
 
 import { describe, it, expect } from 'bun:test';
+import { BufferState } from '../ui/buffer-state.js';
+import { Entry, EntryType } from '../types/entry.js';
+import { SortField, SortOrder } from '../utils/sorting.js';
 
-describe('Performance Optimization - React Version', () => {
-  describe('Buffer state performance', () => {
-    it('handles cursor movement in O(1) time', () => {
-      // Move cursor 1000 times
-      // Should complete in < 10ms
-      // No memory leaks
-      expect(true).toBe(true);
+/**
+ * Create a large list of test entries
+ */
+function createLargeEntryList(count: number): Entry[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: `entry-${i}`,
+    name: `file-${i}.txt`,
+    type: EntryType.File,
+    path: `/bucket/folder/file-${i}.txt`,
+    size: 1024 + i,
+    modified: new Date(),
+  }));
+}
+
+/**
+ * Measure average time for an operation over multiple iterations
+ */
+function measureOperation(
+  operation: () => void,
+  iterations: number
+): { avgMs: number; totalMs: number } {
+  const start = performance.now();
+  for (let i = 0; i < iterations; i++) {
+    operation();
+  }
+  const totalMs = performance.now() - start;
+  return { avgMs: totalMs / iterations, totalMs };
+}
+
+describe('Performance - Buffer State Operations', () => {
+  const LARGE_ENTRY_COUNT = 10000;
+  const ITERATIONS = 1000;
+
+  describe('Cursor movement performance', () => {
+    it('handles cursor movement in O(1) time with large lists', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+
+      // Move cursor up and down many times
+      const { avgMs: avgDownMs } = measureOperation(() => {
+        buffer.moveCursorDown();
+      }, ITERATIONS);
+
+      // Reset to middle
+      buffer.selection.cursorIndex = Math.floor(LARGE_ENTRY_COUNT / 2);
+
+      const { avgMs: avgUpMs } = measureOperation(() => {
+        buffer.moveCursorUp();
+      }, ITERATIONS);
+
+      // Cursor movement should be very fast (< 0.1ms per operation)
+      expect(avgDownMs).toBeLessThan(0.1);
+      expect(avgUpMs).toBeLessThan(0.1);
     });
 
-    it('handles copy/paste with large selections', () => {
-      // Select 1000 entries
-      // Copy to clipboard
-      // Paste 10 times
-      // Should complete in < 50ms
-      expect(true).toBe(true);
-    });
+    it('cursor to top/bottom is O(1)', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
 
-    it('maintains performance with 10000 entries', () => {
-      // Load 10000 entries into buffer
-      // Cursor movement responsive
-      // Copy/paste operations fast
-      // Memory usage acceptable
-      expect(true).toBe(true);
-    });
+      const { avgMs: toBottomMs } = measureOperation(() => {
+        buffer.moveCursorToBottom();
+      }, ITERATIONS);
 
-    it('search filtering efficient', () => {
-      // 10000 entries
-      // Search query filters down to 100 matches
-      // Filtering < 5ms
-      expect(true).toBe(true);
-    });
-  });
+      const { avgMs: toTopMs } = measureOperation(() => {
+        buffer.moveCursorToTop();
+      }, ITERATIONS);
 
-  describe('React rendering performance', () => {
-    it('memo reduces unnecessary re-renders', () => {
-      // Use React.memo on list items
-      // 1000 items, one changes
-      // Only 1 item re-renders
-      expect(true).toBe(true);
-    });
-
-    it('useCallback prevents handler re-creation', () => {
-      // Callback handlers memoized
-      // Don't create new function on every render
-      // Child components don't re-render unnecessarily
-      expect(true).toBe(true);
-    });
-
-    it('useMemo caches expensive computations', () => {
-      // Color calculations memoized
-      // Entry formatting memoized
-      // Not recalculated on every render
-      expect(true).toBe(true);
-    });
-
-    it('large list scrolling smooth', () => {
-      // 10000 entries
-      // Only viewport rendered (visible entries)
-      // Scrolling 60fps
-      // Memory footprint minimal
-      expect(true).toBe(true);
-    });
-  });
-
-  describe('Buffer operations optimization', () => {
-    it('visual selection extends efficiently', () => {
-      // Start selection at entry 0
-      // Extend to entry 5000
-      // Should be fast (< 1ms)
-      expect(true).toBe(true);
-    });
-
-    it('copy operation creates shallow copies', () => {
-      // Copy 1000 entries
-      // Doesn't deep clone
-      // References are fine for read access
-      expect(true).toBe(true);
-    });
-
-    it('paste avoids unnecessary allocations', () => {
-      // Paste 1000 entries
-      // Splice operation optimized
-      // No quadratic complexity
-      expect(true).toBe(true);
-    });
-
-    it("undo history doesn't grow unbounded", () => {
-      // Perform 100 operations
-      // Undo history grows
-      // But limited in size
-      // Old entries removed (LRU)
-      expect(true).toBe(true);
+      // Jump operations should be constant time
+      expect(toBottomMs).toBeLessThan(0.1);
+      expect(toTopMs).toBeLessThan(0.1);
     });
   });
 
-  describe('Keyboard event handling', () => {
-    it('key sequence timeout uses minimal resources', () => {
-      // 100 key presses per second
-      // Timeout handlers efficient
-      // No memory leaks
-      // CPU usage minimal
-      expect(true).toBe(true);
+  describe('Selection operations performance', () => {
+    it('visual selection start/extend is O(1)', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+
+      const { avgMs: startMs } = measureOperation(() => {
+        buffer.startVisualSelection();
+      }, ITERATIONS);
+
+      const { avgMs: extendMs } = measureOperation(() => {
+        buffer.extendVisualSelection('down');
+      }, ITERATIONS);
+
+      expect(startMs).toBeLessThan(0.1);
+      expect(extendMs).toBeLessThan(0.1);
     });
 
-    it('mode transitions fast', () => {
-      // Switch between modes 1000 times
-      // Each < 0.1ms
-      expect(true).toBe(true);
-    });
+    it('getSelectedEntries is O(range) not O(n)', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
 
-    it('handlers execute in constant time', () => {
-      // No linear search of entries
-      // No quadratic complexity
-      // Direct cursor index access
-      expect(true).toBe(true);
+      // Select a small range at the end
+      buffer.selection.cursorIndex = LARGE_ENTRY_COUNT - 100;
+      buffer.startVisualSelection();
+      for (let i = 0; i < 99; i++) {
+        buffer.extendVisualSelection('down');
+      }
+
+      // Getting 100 selected entries from a 10000 list
+      const { avgMs } = measureOperation(() => {
+        buffer.getSelectedEntries();
+      }, ITERATIONS);
+
+      // Should be proportional to selection size (100), not total entries (10000)
+      expect(avgMs).toBeLessThan(0.1);
     });
   });
 
-  describe('Navigation handler performance', () => {
-    it('path parsing efficient', () => {
-      // Parse deeply nested path 10000 times
-      // Each parse < 0.1ms
-      expect(true).toBe(true);
+  describe('Copy/paste performance', () => {
+    it('copy operation is O(selection size)', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+
+      // Select 100 entries
+      buffer.selection.cursorIndex = 0;
+      buffer.startVisualSelection();
+      for (let i = 0; i < 99; i++) {
+        buffer.extendVisualSelection('down');
+      }
+
+      const { avgMs } = measureOperation(() => {
+        buffer.copySelection();
+      }, 100); // Fewer iterations since copy involves JSON
+
+      // Copy 100 entries should be fast
+      expect(avgMs).toBeLessThan(1);
     });
 
-    it('navigation check O(1) or O(log n)', () => {
-      // canNavigateUp() check
-      // Should not iterate all entries
-      // Just check path structure
-      expect(true).toBe(true);
+    it('clipboard check is O(1)', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+      buffer.copySelection();
+
+      const { avgMs } = measureOperation(() => {
+        buffer.hasClipboardContent();
+      }, ITERATIONS);
+
+      expect(avgMs).toBeLessThan(0.01);
+    });
+  });
+
+  describe('Search filtering performance', () => {
+    it('search filtering completes in reasonable time for large lists', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+
+      // Activate search with a filter
+      buffer.searchQuery = 'file-999'; // Matches ~11 entries (file-999, file-9990-9999)
+
+      const { totalMs } = measureOperation(() => {
+        buffer.getFilteredEntries();
+      }, 100);
+
+      // Filtering 10000 entries 100 times should complete in under 500ms total
+      expect(totalMs).toBeLessThan(500);
     });
 
-    it('directory navigation with callbacks', () => {
-      // Load 10000 entries
-      // Navigation callback completes quickly
-      // Doesn't block other operations
-      expect(true).toBe(true);
+    it('updateSearchQuery handles live typing efficiently', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+
+      // Simulate typing a search query character by character
+      const query = 'file-123';
+      const start = performance.now();
+
+      for (const char of query) {
+        buffer.updateSearchQuery(buffer.searchQuery + char);
+      }
+
+      const elapsed = performance.now() - start;
+
+      // Typing 8 characters with live filtering should be responsive
+      expect(elapsed).toBeLessThan(100);
+    });
+  });
+
+  describe('Mode transitions performance', () => {
+    it('mode transitions are O(1)', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+
+      const modes = [
+        () => buffer.enterEditMode(),
+        () => buffer.exitEditMode(),
+        () => buffer.enterInsertMode(),
+        () => buffer.exitInsertMode(),
+        () => buffer.enterSearchMode(),
+        () => buffer.exitSearchMode(),
+        () => buffer.startVisualSelection(),
+        () => buffer.exitVisualSelection(),
+      ];
+
+      for (const modeTransition of modes) {
+        const { avgMs } = measureOperation(modeTransition, ITERATIONS);
+        expect(avgMs).toBeLessThan(0.1);
+      }
+    });
+  });
+
+  describe('Key sequence handling performance', () => {
+    it('handleKeyPress executes in constant time', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+
+      const keys = ['j', 'k', 'g', 'g', 'G', 'd', 'd', 'y', 'y', 'p'];
+
+      const { totalMs } = measureOperation(() => {
+        for (const key of keys) {
+          buffer.handleKeyPress(key);
+        }
+      }, 100);
+
+      // 1000 key presses should be very fast
+      expect(totalMs).toBeLessThan(50);
+    });
+  });
+
+  describe('Undo/redo performance', () => {
+    it('saveToHistory operates efficiently', () => {
+      const entries = createLargeEntryList(1000); // Smaller set for undo tests
+      const buffer = new BufferState(entries);
+
+      const { avgMs } = measureOperation(() => {
+        buffer.saveToHistory();
+      }, 50);
+
+      // Cloning state involves JSON, but should still be reasonable
+      expect(avgMs).toBeLessThan(20);
+    });
+
+    it('undo/redo operations are efficient', () => {
+      const entries = createLargeEntryList(1000);
+      const buffer = new BufferState(entries);
+
+      // Create some history
+      for (let i = 0; i < 10; i++) {
+        buffer.saveToHistory();
+        buffer.moveCursorDown();
+      }
+
+      const { avgMs: undoMs } = measureOperation(() => {
+        if (buffer.canUndo()) {
+          buffer.undo();
+        }
+      }, 10);
+
+      const { avgMs: redoMs } = measureOperation(() => {
+        if (buffer.canRedo()) {
+          buffer.redo();
+        }
+      }, 10);
+
+      // Undo/redo should be fast
+      expect(undoMs).toBeLessThan(20);
+      expect(redoMs).toBeLessThan(20);
+    });
+  });
+
+  describe('Pagination performance', () => {
+    it('pageUp/pageDown are O(1)', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+
+      const { avgMs: pageDownMs } = measureOperation(() => {
+        buffer.pageDown();
+      }, ITERATIONS);
+
+      const { avgMs: pageUpMs } = measureOperation(() => {
+        buffer.pageUp();
+      }, ITERATIONS);
+
+      expect(pageDownMs).toBeLessThan(0.1);
+      expect(pageUpMs).toBeLessThan(0.1);
+    });
+
+    it('getVisibleEntries is O(page size) not O(n)', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+      const pageSize = 20;
+
+      const { avgMs } = measureOperation(() => {
+        buffer.getVisibleEntries(pageSize);
+      }, ITERATIONS);
+
+      // Getting 20 entries from 10000 should be very fast
+      expect(avgMs).toBeLessThan(0.1);
+    });
+  });
+
+  describe('Sorting performance', () => {
+    it('setSortConfig sorts in O(n log n) time', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+
+      const configs = [
+        { field: SortField.Name, order: SortOrder.Ascending },
+        { field: SortField.Name, order: SortOrder.Descending },
+        { field: SortField.Size, order: SortOrder.Ascending },
+        { field: SortField.Modified, order: SortOrder.Descending },
+      ];
+
+      for (const config of configs) {
+        const start = performance.now();
+        buffer.setSortConfig(config);
+        const elapsed = performance.now() - start;
+
+        // Sorting 10000 entries should complete in under 100ms
+        expect(elapsed).toBeLessThan(100);
+      }
     });
   });
 
   describe('Memory efficiency', () => {
-    it('no memory leaks in hooks', () => {
-      // Mount/unmount components 100 times
-      // Memory returns to baseline
-      // Timeouts cleared
-      // Event listeners removed
-      expect(true).toBe(true);
+    it('entry deletion marking is O(1)', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
+
+      const { avgMs: deleteMs } = measureOperation(() => {
+        buffer.deleteEntry(Math.floor(Math.random() * LARGE_ENTRY_COUNT));
+      }, ITERATIONS);
+
+      expect(deleteMs).toBeLessThan(0.1);
     });
 
-    it("clipboard doesn't grow unbounded", () => {
-      // Copy large entries 1000 times
-      // Only last copy stored
-      // Previous copied cleared
-      expect(true).toBe(true);
-    });
+    it('isEntryDeleted check is O(1) due to Set lookup', () => {
+      const entries = createLargeEntryList(LARGE_ENTRY_COUNT);
+      const buffer = new BufferState(entries);
 
-    it('scroll position cached efficiently', () => {
-      // Scroll through 10000 entries
-      // Scroll offset cached
-      // Not recalculated constantly
-      expect(true).toBe(true);
-    });
+      // Mark half the entries as deleted
+      for (let i = 0; i < LARGE_ENTRY_COUNT / 2; i++) {
+        buffer.deleteEntry(i);
+      }
 
-    it("search results don't duplicate data", () => {
-      // Search returns filtered view
-      // Not copies of entries
-      // Shares original data
-      expect(true).toBe(true);
+      const { avgMs } = measureOperation(() => {
+        buffer.isEntryDeleted(Math.floor(Math.random() * LARGE_ENTRY_COUNT));
+      }, ITERATIONS);
+
+      expect(avgMs).toBeLessThan(0.1);
     });
   });
 
-  describe('Algorithm complexity', () => {
-    it('cursor movement O(1)', () => {
-      // moveCursorDown/Up
-      // Simple math, no loops
-      // 1 entry or 10000 entries, same speed
-      expect(true).toBe(true);
-    });
+  describe('Initial load performance', () => {
+    it('BufferState construction scales linearly with entry count', () => {
+      const sizes = [100, 1000, 5000, 10000];
+      const times: number[] = [];
 
-    it('selection range O(n) where n is range size', () => {
-      // Select from 0 to 5000
-      // Slice operation proportional to range
-      // Not to total entries
-      expect(true).toBe(true);
-    });
+      for (const size of sizes) {
+        const entries = createLargeEntryList(size);
+        const start = performance.now();
+        new BufferState(entries);
+        times.push(performance.now() - start);
+      }
 
-    it('entry search O(n)', () => {
-      // Find entry by id
-      // Linear search acceptable for <10000 entries
-      // For very large: use index
-      expect(true).toBe(true);
-    });
-
-    it('sort is O(n log n)', () => {
-      // Sort 10000 entries
-      // Expected O(n log n) performance
-      // Takes < 50ms
-      expect(true).toBe(true);
+      // Verify roughly linear scaling
+      // 100x entries should be roughly 100x time (with some overhead)
+      const ratio = times[3] / times[0];
+      // Allow significant variance due to JSON.parse overhead and GC
+      expect(ratio).toBeLessThan(500);
     });
   });
 
-  describe('Rendering optimization', () => {
-    it('virtual scrolling implemented', () => {
-      // Only render visible entries
-      // Buffer entries rendered outside viewport
-      // Smooth scrolling experience
-      expect(true).toBe(true);
-    });
+  describe('Hidden files toggle performance', () => {
+    it('toggleHiddenFiles operates efficiently', () => {
+      // Create entries with some hidden files
+      const entries: Entry[] = [];
+      for (let i = 0; i < LARGE_ENTRY_COUNT; i++) {
+        const name = i % 10 === 0 ? `.hidden-${i}` : `file-${i}.txt`;
+        entries.push({
+          id: `entry-${i}`,
+          name,
+          type: EntryType.File,
+          path: `/bucket/${name}`,
+        });
+      }
 
-    it('batch updates where possible', () => {
-      // Multiple state updates
-      // Batched into single render
-      // Not multiple renders
-      expect(true).toBe(true);
-    });
+      const buffer = new BufferState(entries);
 
-    it('expensive computations deferred', () => {
-      // Color calculations
-      // Entry formatting
-      // Use useMemo to defer
-      // Only when needed
-      expect(true).toBe(true);
-    });
+      const { avgMs } = measureOperation(() => {
+        buffer.toggleHiddenFiles();
+      }, 100);
 
-    it('string formatting optimized', () => {
-      // Format 10000 entries for display
-      // < 20ms
-      // Uses memoization
-      expect(true).toBe(true);
+      // Toggle should be O(1) for the toggle itself, filtering is separate
+      expect(avgMs).toBeLessThan(1);
     });
   });
 });
