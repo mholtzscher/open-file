@@ -13,6 +13,7 @@ import { useKeyboardEvents } from '../hooks/useKeyboardEvents.js';
 import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
 import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
 import { useMultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
+import { useProgressState } from '../hooks/useProgressState.js';
 
 import { S3ExplorerLayout, StatusBarState, PreviewState } from './s3-explorer-layout.js';
 import { DialogsState } from './s3-explorer-dialogs.js';
@@ -112,16 +113,18 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   const [previewEnabled, setPreviewEnabled] = useState(false);
 
   // ============================================
-  // Progress Window State
+  // Progress Window State (consolidated hook)
   // ============================================
-  const [showProgress, setShowProgress] = useState(false);
-  const [progressTitle, setProgressTitle] = useState('Operation in Progress');
-  const [progressDescription, setProgressDescription] = useState('Processing...');
-  const [progressValue, setProgressValue] = useState(0);
-  const [progressCurrentFile, setProgressCurrentFile] = useState('');
-  const [progressCurrentNum, setProgressCurrentNum] = useState(0);
-  const [progressTotalNum, setProgressTotalNum] = useState(0);
-  const [progressCancellable, setProgressCancellable] = useState(true);
+  const {
+    progress: progressState,
+    showProgress,
+    updateFile: updateProgressFile,
+    updateProgress,
+    updateDescription: updateProgressDescription,
+    hideProgress,
+    cancelOperation: cancelProgressOperation,
+    dispatch: dispatchProgress,
+  } = useProgressState();
 
   // ============================================
   // Refs
@@ -430,11 +433,13 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
     try {
       const abortController = new AbortController();
       operationAbortControllerRef.current = abortController;
-      setProgressCancellable(true);
 
       let successCount = 0;
-      setShowProgress(true);
-      setProgressTitle(`Executing ${pendingOperations[0]?.type || 'operation'}...`);
+      showProgress({
+        title: `Executing ${pendingOperations[0]?.type || 'operation'}...`,
+        totalNum: pendingOperations.length,
+        cancellable: true,
+      });
 
       for (let opIndex = 0; opIndex < pendingOperations.length; opIndex++) {
         const op = pendingOperations[opIndex];
@@ -451,19 +456,23 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
             const opProgress = event.percentage / pendingOperations.length;
             const totalProgress = Math.round(baseProgress + opProgress);
 
-            setProgressValue(totalProgress);
+            updateProgress(totalProgress);
             if (event.currentFile) {
-              setProgressCurrentFile(event.currentFile);
+              dispatchProgress({ type: 'UPDATE', payload: { currentFile: event.currentFile } });
             }
-            setProgressDescription(event.operation);
+            updateProgressDescription(event.operation);
           };
 
           const progress = Math.round((opIndex / pendingOperations.length) * 100);
-          setProgressValue(progress);
-          setProgressDescription(`${op.type}: ${op.path || op.source || 'processing'}`);
-          setProgressCurrentFile(op.path || op.source || '');
-          setProgressCurrentNum(opIndex + 1);
-          setProgressTotalNum(pendingOperations.length);
+          dispatchProgress({
+            type: 'UPDATE',
+            payload: {
+              value: progress,
+              description: `${op.type}: ${op.path || op.source || 'processing'}`,
+              currentFile: op.path || op.source || '',
+              currentNum: opIndex + 1,
+            },
+          });
 
           switch (op.type) {
             case 'create':
@@ -512,7 +521,7 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         }
       }
 
-      setShowProgress(false);
+      hideProgress();
 
       if (successCount > 0) {
         try {
@@ -542,9 +551,9 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
   const handleCancelOperation = useCallback(() => {
     if (operationAbortControllerRef.current) {
       operationAbortControllerRef.current.abort();
-      setProgressCancellable(false);
+      dispatchProgress({ type: 'UPDATE', payload: { cancellable: false } });
     }
-  }, []);
+  }, [dispatchProgress]);
 
   // ============================================
   // Ref Sync Effects
@@ -985,14 +994,14 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
       onClose: () => setShowSortMenu(false),
     },
     progress: {
-      visible: showProgress,
-      title: progressTitle,
-      description: progressDescription,
-      progress: progressValue,
-      currentFile: progressCurrentFile,
-      currentFileNumber: progressCurrentNum,
-      totalFiles: progressTotalNum,
-      canCancel: progressCancellable,
+      visible: progressState.visible,
+      title: progressState.title,
+      description: progressState.description,
+      progress: progressState.value,
+      currentFile: progressState.currentFile,
+      currentFileNumber: progressState.currentNum,
+      totalFiles: progressState.totalNum,
+      canCancel: progressState.cancellable,
       onCancel: handleCancelOperation,
     },
   };
