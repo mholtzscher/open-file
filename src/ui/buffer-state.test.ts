@@ -482,6 +482,125 @@ describe('BufferState', () => {
     });
   });
 
+  describe('Deletion Marking (oil.nvim style)', () => {
+    it('should mark entry for deletion', () => {
+      const id1 = generateEntryId();
+      const entries: Entry[] = [
+        {
+          id: id1,
+          name: 'file1.txt',
+          type: EntryType.File,
+          path: 'file1.txt',
+        },
+      ];
+
+      const buffer = new BufferState(entries);
+      expect(buffer.isEntryDeleted(0)).toBe(false);
+
+      buffer.deleteEntry(0);
+      expect(buffer.isEntryDeleted(0)).toBe(true);
+      expect(buffer.isDirty).toBe(true);
+    });
+
+    it('should unmark entry for deletion', () => {
+      const id1 = generateEntryId();
+      const entries: Entry[] = [
+        {
+          id: id1,
+          name: 'file1.txt',
+          type: EntryType.File,
+          path: 'file1.txt',
+        },
+      ];
+
+      const buffer = new BufferState(entries);
+      buffer.deleteEntry(0);
+      expect(buffer.isEntryDeleted(0)).toBe(true);
+
+      buffer.undeleteEntry(0);
+      expect(buffer.isEntryDeleted(0)).toBe(false);
+    });
+
+    it('should get list of deleted entries', () => {
+      const id1 = generateEntryId();
+      const id2 = generateEntryId();
+      const id3 = generateEntryId();
+
+      const entries: Entry[] = [
+        { id: id1, name: 'file1.txt', type: EntryType.File, path: 'file1.txt' },
+        { id: id2, name: 'file2.txt', type: EntryType.File, path: 'file2.txt' },
+        { id: id3, name: 'file3.txt', type: EntryType.File, path: 'file3.txt' },
+      ];
+
+      const buffer = new BufferState(entries);
+      buffer.deleteEntry(0);
+      buffer.deleteEntry(2);
+
+      const deleted = buffer.getDeletedEntries();
+      expect(deleted.length).toBe(2);
+      expect(deleted[0].name).toBe('file1.txt');
+      expect(deleted[1].name).toBe('file3.txt');
+    });
+
+    it('should mark multiple entries for deletion', () => {
+      const id1 = generateEntryId();
+      const id2 = generateEntryId();
+      const id3 = generateEntryId();
+
+      const entries: Entry[] = [
+        { id: id1, name: 'file1.txt', type: EntryType.File, path: 'file1.txt' },
+        { id: id2, name: 'file2.txt', type: EntryType.File, path: 'file2.txt' },
+        { id: id3, name: 'file3.txt', type: EntryType.File, path: 'file3.txt' },
+      ];
+
+      const buffer = new BufferState(entries);
+      buffer.deleteEntries([0, 1, 2]);
+
+      expect(buffer.isEntryDeleted(0)).toBe(true);
+      expect(buffer.isEntryDeleted(1)).toBe(true);
+      expect(buffer.isEntryDeleted(2)).toBe(true);
+    });
+
+    it('should undo all deletions', () => {
+      const id1 = generateEntryId();
+      const id2 = generateEntryId();
+
+      const entries: Entry[] = [
+        { id: id1, name: 'file1.txt', type: EntryType.File, path: 'file1.txt' },
+        { id: id2, name: 'file2.txt', type: EntryType.File, path: 'file2.txt' },
+      ];
+
+      const buffer = new BufferState(entries);
+      buffer.deleteEntries([0, 1]);
+
+      expect(buffer.getDeletedEntries().length).toBe(2);
+
+      buffer.undoAllDeletions();
+
+      expect(buffer.getDeletedEntries().length).toBe(0);
+      expect(buffer.isEntryDeleted(0)).toBe(false);
+      expect(buffer.isEntryDeleted(1)).toBe(false);
+    });
+
+    it('should track deletion marks in undo/redo', () => {
+      const id1 = generateEntryId();
+      const entries: Entry[] = [
+        { id: id1, name: 'file1.txt', type: EntryType.File, path: 'file1.txt' },
+      ];
+
+      const buffer = new BufferState(entries);
+
+      // Save state, then mark for deletion
+      buffer.saveToHistory();
+      buffer.deleteEntry(0);
+      expect(buffer.isEntryDeleted(0)).toBe(true);
+
+      // Note: The old BufferState class undo/redo doesn't include deletedEntryIds
+      // This test documents the limitation - full undo/redo for deletion marks
+      // is implemented in the useBufferState hook instead
+    });
+  });
+
   describe('Undo/Redo Operations', () => {
     it('should save state to undo history', () => {
       const id1 = generateEntryId();

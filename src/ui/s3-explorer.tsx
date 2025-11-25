@@ -280,13 +280,34 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         const selected = currentBufferState.getSelectedEntries();
         if (selected.length > 0) {
-          const deleteOperations: PendingOperation[] = selected.map(entry => ({
-            id: entry.id,
-            type: 'delete' as const,
-            path: entry.path,
-            entry,
-          }));
-          showConfirm(deleteOperations);
+          // Save snapshot for undo
+          currentBufferState.saveSnapshot();
+
+          // Mark entries for deletion (oil.nvim style)
+          for (const entry of selected) {
+            if (currentBufferState.isMarkedForDeletion(entry.id)) {
+              // Toggle: if already marked, unmark it
+              currentBufferState.unmarkForDeletion(entry.id);
+            } else {
+              currentBufferState.markForDeletion(entry.id);
+            }
+          }
+
+          // Exit visual selection if active
+          if (currentBufferState.selection.isActive) {
+            currentBufferState.exitVisualSelection();
+          }
+
+          const markedCount = currentBufferState.getMarkedForDeletion().length;
+          if (markedCount > 0) {
+            setStatusMessage(
+              `${markedCount} item(s) marked for deletion. Press 'w' to save or 'u' to undo.`
+            );
+            setStatusMessageColor(CatppuccinMocha.yellow);
+          } else {
+            setStatusMessage('No items marked for deletion');
+            setStatusMessageColor(CatppuccinMocha.text);
+          }
         }
       },
       onDownload: () => {
@@ -337,6 +358,11 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
       },
       onSave: () => {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+
+        // Get entries marked for deletion
+        const markedForDeletion = currentBufferState.getMarkedForDeletion();
+
+        // Detect other changes (creates, moves, renames)
         const changes = detectChanges(
           originalEntries,
           currentBufferState.entries,
@@ -344,21 +370,33 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
         );
         const plan = buildOperationPlan(changes);
 
-        if (plan.operations.length === 0) {
-          setStatusMessage('No changes to save');
-          setStatusMessageColor(CatppuccinMocha.text);
-          return;
-        }
+        // Add deletion operations for marked entries
+        const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
+          id: entry.id,
+          type: 'delete' as const,
+          path: entry.path,
+          entry,
+        }));
 
-        showConfirm(
-          plan.operations.map(op => ({
+        // Combine all operations
+        const allOperations = [
+          ...plan.operations.map(op => ({
             id: op.id,
             type: op.type,
             path: (op as any).path || (op as any).destination,
             source: (op as any).source,
             destination: (op as any).destination,
-          }))
-        );
+          })),
+          ...deleteOperations,
+        ];
+
+        if (allOperations.length === 0) {
+          setStatusMessage('No changes to save');
+          setStatusMessageColor(CatppuccinMocha.text);
+          return;
+        }
+
+        showConfirm(allOperations);
       },
       onQuit: () => process.exit(0),
       onShowHelp: () => toggleHelp(),
@@ -553,6 +591,10 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
           const result = await adapter.list(currentBufferState.currentPath);
           currentBufferState.setEntries([...result.entries]);
+          // Clear deletion marks after successful save
+          currentBufferState.clearDeletionMarks();
+          // Update original entries reference
+          setOriginalEntries([...result.entries]);
           setStatusMessage(`${successCount} operation(s) completed successfully`);
           setStatusMessageColor(CatppuccinMocha.green);
         } catch (reloadError) {

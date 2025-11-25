@@ -253,12 +253,15 @@ export function useKeyboardEvents(
           // Confirm entry creation
           const entryName = bufferState.getEditBuffer().trim();
           if (entryName) {
+            // Save state for undo
+            bufferState.saveSnapshot();
+
             // Create new entry with the name
             const currentPath = bufferState.currentPath;
             const entryPath = currentPath ? `${currentPath}${entryName}` : entryName;
             const isDirectory = entryName.endsWith('/');
 
-            // Add new entry to buffer
+            // Add new entry to buffer at cursor position (insert after current entry)
             const newEntry = {
               id: Math.random().toString(36),
               name: entryName.replace(/\/$/, ''),
@@ -267,17 +270,33 @@ export function useKeyboardEvents(
               modified: new Date(),
             };
 
-            const currentEntries = bufferState.entries;
-            bufferState.setEntries([...currentEntries, newEntry]);
+            // Insert at cursor position + 1 (after current entry)
+            const insertIndex = bufferState.selection.cursorIndex + 1;
+            const currentEntries = [...bufferState.entries];
+            currentEntries.splice(insertIndex, 0, newEntry);
+            bufferState.setEntries(currentEntries);
+
             bufferState.clearEditBuffer();
             bufferState.exitInsertMode();
           }
           break;
         }
-        case 'tab':
-          // Apply first matching completion (if any)
-          // For now, just accept what's in the buffer
+        case 'tab': {
+          // Apply tab completion based on existing entry names
+          const currentInput = bufferState.getEditBuffer().trim().toLowerCase();
+          if (currentInput) {
+            // Find entries that start with the current input
+            const matching = bufferState.entries
+              .filter(e => e.name.toLowerCase().startsWith(currentInput))
+              .map(e => e.name);
+
+            if (matching.length > 0) {
+              // Use first match for completion
+              bufferState.setEditBuffer(matching[0]);
+            }
+          }
           break;
+        }
         case 'backspace':
           bufferState.backspaceEditBuffer();
           break;

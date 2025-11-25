@@ -8,6 +8,7 @@
 import { Entry, EntryType } from '../types/entry.js';
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { Theme, CatppuccinMocha } from './theme.js';
+import { EditMode } from '../types/edit-mode.js';
 
 export interface BufferViewProps {
   bufferState: UseBufferStateReturn;
@@ -102,7 +103,11 @@ function formatEntry(
 /**
  * Get entry color
  */
-function getEntryColor(entry: Entry, isSelected: boolean): string {
+function getEntryColor(entry: Entry, isSelected: boolean, isMarkedForDeletion: boolean): string {
+  // Deleted entries shown in red/muted color
+  if (isMarkedForDeletion) {
+    return CatppuccinMocha.red;
+  }
   if (entry.type === EntryType.Directory) {
     return Theme.getDirectoryColor(isSelected);
   } else if (entry.type === EntryType.Bucket) {
@@ -110,6 +115,17 @@ function getEntryColor(entry: Entry, isSelected: boolean): string {
     return Theme.getDirectoryColor(isSelected);
   }
   return Theme.getFileColor(isSelected);
+}
+
+/**
+ * Apply strikethrough effect to text (using Unicode combining characters)
+ */
+function applyStrikethrough(text: string): string {
+  // Unicode strikethrough combining character
+  return text
+    .split('')
+    .map(char => char + '\u0336')
+    .join('');
 }
 
 /**
@@ -145,6 +161,10 @@ export function BufferView({
     );
   }
 
+  // Check if in insert mode
+  const isInsertMode = bufferState.mode === EditMode.Insert;
+  const editBuffer = bufferState.editBuffer || '';
+
   return (
     <box flexDirection="column" width="100%" height="100%">
       {visibleEntries.map((entry, idx) => {
@@ -164,9 +184,21 @@ export function BufferView({
               bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
             );
 
+        // Check if entry is marked for deletion
+        const isMarkedForDeletion = bufferState.isMarkedForDeletion(entry.id);
+
         const cursor = isSelected ? '> ' : '  ';
-        const content = cursor + formatEntry(entry, isSelected, showIcons, showSizes, showDates);
-        const color = getEntryColor(entry, isSelected);
+        // Add deletion marker prefix if marked for deletion
+        const deleteMarker = isMarkedForDeletion ? '✗ ' : '';
+        let content =
+          cursor + deleteMarker + formatEntry(entry, isSelected, showIcons, showSizes, showDates);
+
+        // Apply strikethrough to deleted entries
+        if (isMarkedForDeletion) {
+          content = applyStrikethrough(content);
+        }
+
+        const color = getEntryColor(entry, isSelected, isMarkedForDeletion);
 
         return (
           <text
@@ -178,6 +210,14 @@ export function BufferView({
           </text>
         );
       })}
+      {/* Show insert mode input line */}
+      {isInsertMode && (
+        <text fg={CatppuccinMocha.peach} bg={CatppuccinMocha.surface0}>
+          {'> + 📄  '}
+          {editBuffer}
+          {'_'}
+        </text>
+      )}
     </box>
   );
 }

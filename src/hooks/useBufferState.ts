@@ -30,6 +30,7 @@ export interface UseBufferStateReturn {
   copyRegister: Entry[];
   viewportHeight: number;
   editBuffer: string; // Buffer for edit/insert mode
+  deletedEntryIds: Set<string>; // Entries marked for deletion
 
   // Buffer data operations
   setEntries: (entries: Entry[]) => void;
@@ -82,6 +83,13 @@ export interface UseBufferStateReturn {
   getSelectedEntries: () => Entry[];
   getFilteredEntries: () => Entry[];
 
+  // Deletion marking (oil.nvim style)
+  markForDeletion: (entryId: string) => void;
+  unmarkForDeletion: (entryId: string) => void;
+  isMarkedForDeletion: (entryId: string) => boolean;
+  getMarkedForDeletion: () => Entry[];
+  clearDeletionMarks: () => void;
+
   // Undo/redo
   undo: () => boolean;
   redo: () => boolean;
@@ -109,8 +117,14 @@ export function useBufferState(
   const [copyRegister, setCopyRegister] = useState<Entry[]>([]);
   const [viewportHeight, setViewportHeight] = useState(20);
   const [editBuffer, setEditBuffer] = useState<string>('');
-  const [undoHistory, setUndoHistory] = useState<Entry[][]>([]);
-  const [redoHistory, setRedoHistory] = useState<Entry[][]>([]);
+  // Snapshot type for undo/redo that includes deletion marks
+  type BufferSnapshot = {
+    entries: Entry[];
+    deletedIds: Set<string>;
+  };
+  const [undoHistory, setUndoHistory] = useState<BufferSnapshot[]>([]);
+  const [redoHistory, setRedoHistory] = useState<BufferSnapshot[]>([]);
+  const [deletedEntryIds, setDeletedEntryIds] = useState<Set<string>>(new Set());
 
   // Helper function to ensure cursor is within bounds
   const constrainCursor = useCallback(
@@ -346,34 +360,36 @@ export function useBufferState(
     setEditBuffer('');
   }, []);
 
-  // Undo/redo operations
+  // Undo/redo operations (includes deletion marks)
   const undo = useCallback((): boolean => {
     if (undoHistory.length === 0) return false;
 
     // Save current state to redo history
-    setRedoHistory(prev => [...prev, entries]);
+    setRedoHistory(prev => [...prev, { entries, deletedIds: new Set(deletedEntryIds) }]);
 
     // Restore previous state
-    const previousEntries = undoHistory[undoHistory.length - 1];
-    setEntries([...previousEntries]);
+    const previousSnapshot = undoHistory[undoHistory.length - 1];
+    setEntries([...previousSnapshot.entries]);
+    setDeletedEntryIds(new Set(previousSnapshot.deletedIds));
     setUndoHistory(prev => prev.slice(0, -1));
 
     return true;
-  }, [undoHistory, entries]);
+  }, [undoHistory, entries, deletedEntryIds]);
 
   const redo = useCallback((): boolean => {
     if (redoHistory.length === 0) return false;
 
     // Save current state to undo history
-    setUndoHistory(prev => [...prev, entries]);
+    setUndoHistory(prev => [...prev, { entries, deletedIds: new Set(deletedEntryIds) }]);
 
     // Restore next state
-    const nextEntries = redoHistory[redoHistory.length - 1];
-    setEntries([...nextEntries]);
+    const nextSnapshot = redoHistory[redoHistory.length - 1];
+    setEntries([...nextSnapshot.entries]);
+    setDeletedEntryIds(new Set(nextSnapshot.deletedIds));
     setRedoHistory(prev => prev.slice(0, -1));
 
     return true;
-  }, [redoHistory, entries]);
+  }, [redoHistory, entries, deletedEntryIds]);
 
   const canUndo = useCallback((): boolean => {
     return undoHistory.length > 0;
@@ -384,9 +400,41 @@ export function useBufferState(
   }, [redoHistory.length]);
 
   const saveSnapshot = useCallback((): void => {
-    setUndoHistory(prev => [...prev, entries]);
+    setUndoHistory(prev => [...prev, { entries, deletedIds: new Set(deletedEntryIds) }]);
     setRedoHistory([]);
-  }, [entries]);
+  }, [entries, deletedEntryIds]);
+
+  // Deletion marking functions (oil.nvim style)
+  const markForDeletion = useCallback((entryId: string): void => {
+    setDeletedEntryIds(prev => {
+      const next = new Set(prev);
+      next.add(entryId);
+      return next;
+    });
+  }, []);
+
+  const unmarkForDeletion = useCallback((entryId: string): void => {
+    setDeletedEntryIds(prev => {
+      const next = new Set(prev);
+      next.delete(entryId);
+      return next;
+    });
+  }, []);
+
+  const isMarkedForDeletion = useCallback(
+    (entryId: string): boolean => {
+      return deletedEntryIds.has(entryId);
+    },
+    [deletedEntryIds]
+  );
+
+  const getMarkedForDeletion = useCallback((): Entry[] => {
+    return entries.filter(e => deletedEntryIds.has(e.id));
+  }, [entries, deletedEntryIds]);
+
+  const clearDeletionMarks = useCallback((): void => {
+    setDeletedEntryIds(new Set());
+  }, []);
 
   return {
     entries,
@@ -401,6 +449,7 @@ export function useBufferState(
     copyRegister,
     viewportHeight,
     editBuffer,
+    deletedEntryIds,
 
     setEntries,
     setCurrentPath,
@@ -441,6 +490,12 @@ export function useBufferState(
     getSelectedEntry,
     getSelectedEntries,
     getFilteredEntries,
+
+    markForDeletion,
+    unmarkForDeletion,
+    isMarkedForDeletion,
+    getMarkedForDeletion,
+    clearDeletionMarks,
 
     undo,
     redo,
