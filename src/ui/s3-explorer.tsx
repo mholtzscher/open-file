@@ -987,9 +987,24 @@ export function S3Explorer({ bucket: initialBucket, adapter }: S3ExplorerProps) 
           return true;
         } else if (key.name === 'w') {
           // User wants to save first, then quit
-          quitAfterSaveRef.current = true;
-          closeDialog();
-          dispatchKey({ ...key, name: 'w' }); // Dispatch 'w' to trigger save
+          const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+          const markedForDeletion = currentBufferState.getMarkedForDeletion();
+
+          if (markedForDeletion.length > 0) {
+            const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
+              id: entry.id,
+              type: 'delete' as const,
+              path: entry.path,
+              entry,
+            }));
+
+            quitAfterSaveRef.current = true;
+            closeDialog();
+            showConfirm(deleteOperations);
+          } else {
+            // No changes to save, just quit
+            process.exit(0);
+          }
           return true;
         }
         return true; // Block all other keys when quit dialog is open
