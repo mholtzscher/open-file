@@ -24,7 +24,12 @@ import { generateEntryId } from '../utils/entry-id.js';
 import { retryWithBackoff, getS3RetryConfig } from '../utils/retry.js';
 import { parseAwsError } from '../utils/errors.js';
 import { getLogger } from '../utils/logger.js';
-import { createS3Client, createS3ClientWithRegion, S3ClientOptions } from './s3/client-factory.js';
+import {
+  createS3Client,
+  createS3ClientWithRegion,
+  S3ClientOptions,
+  S3ClientResult,
+} from './s3/client-factory.js';
 import {
   uploadLargeFile,
   shouldUseMultipartUpload,
@@ -36,6 +41,7 @@ import {
   parseCommonPrefixToEntry,
   parseBucketToEntry,
   sortEntries,
+  BucketInfo,
 } from './s3/entry-parser.js';
 import { listAllObjects, batchDeleteObjects } from './s3/batch-operations.js';
 import { copyObject, copyDirectory as copyDirectoryOp } from './s3/copy-operations.js';
@@ -48,6 +54,8 @@ import {
 } from './s3/transfer-operations.js';
 // Re-export BucketInfo type for backwards compatibility
 export type { BucketInfo } from './s3/entry-parser.js';
+// Re-export client factory types for dependency injection
+export type { S3ClientOptions, S3ClientResult } from './s3/client-factory.js';
 
 /**
  * Configuration for S3 adapter
@@ -72,6 +80,43 @@ export interface S3AdapterConfig {
 }
 
 /**
+ * Logger interface for dependency injection
+ * Matches the Logger class methods used by S3Adapter
+ */
+export interface S3AdapterLogger {
+  debug(message: string, data?: any): void;
+  info(message: string, data?: any): void;
+  warn(message: string, data?: any): void;
+  error(message: string, error?: Error | any): void;
+}
+
+/**
+ * Client factory function type for dependency injection
+ */
+export type S3ClientFactory = (options: S3ClientOptions) => S3ClientResult;
+
+/**
+ * Client factory with region override for dependency injection
+ */
+export type S3ClientWithRegionFactory = (
+  options: S3ClientOptions,
+  region: string
+) => S3ClientResult;
+
+/**
+ * Dependencies that can be injected into S3Adapter
+ * All dependencies are optional and default to production implementations
+ */
+export interface S3AdapterDependencies {
+  /** Factory function to create S3 clients (defaults to createS3Client) */
+  clientFactory?: S3ClientFactory;
+  /** Factory function to create S3 clients with specific region (defaults to createS3ClientWithRegion) */
+  clientWithRegionFactory?: S3ClientWithRegionFactory;
+  /** Logger instance (defaults to getLogger()) */
+  logger?: S3AdapterLogger;
+}
+
+/**
  * S3 Adapter implementation
  */
 export class S3Adapter implements Adapter {
@@ -82,11 +127,21 @@ export class S3Adapter implements Adapter {
   private currentRegion: string;
   private clientOptions: S3ClientOptions;
 
-  constructor(config: S3AdapterConfig) {
-    const logger = getLogger();
+  // Injected dependencies with defaults
+  private readonly logger: S3AdapterLogger;
+  private readonly clientFactory: S3ClientFactory;
+  private readonly clientWithRegionFactory: S3ClientWithRegionFactory;
+
+  constructor(config: S3AdapterConfig, dependencies?: S3AdapterDependencies) {
+    // Initialize dependencies with defaults
+    this.logger = dependencies?.logger ?? getLogger();
+    this.clientFactory = dependencies?.clientFactory ?? createS3Client;
+    this.clientWithRegionFactory =
+      dependencies?.clientWithRegionFactory ?? createS3ClientWithRegion;
+
     this.bucket = config.bucket;
 
-    logger.debug('S3Adapter constructor called', {
+    this.logger.debug('S3Adapter constructor called', {
       bucket: config.bucket,
       region: config.region,
       profile: config.profile,
@@ -107,11 +162,11 @@ export class S3Adapter implements Adapter {
     };
 
     // Create S3 client using factory
-    const { client, region } = createS3Client(this.clientOptions);
+    const { client, region } = this.clientFactory(this.clientOptions);
     this.client = client;
     this.currentRegion = region;
 
-    logger.info('S3Adapter initialized', {
+    this.logger.info('S3Adapter initialized', {
       bucket: this.bucket,
       region: this.currentRegion,
       profile: config.profile,
@@ -122,24 +177,22 @@ export class S3Adapter implements Adapter {
    * Set the bucket to operate on (for bucket selection from root view)
    */
   setBucket(bucketName: string): void {
-    const logger = getLogger();
     this.bucket = bucketName;
-    logger.debug('S3Adapter bucket changed', { bucket: bucketName });
+    this.logger.debug('S3Adapter bucket changed', { bucket: bucketName });
   }
 
   /**
    * Set the region and reinitialize S3Client if needed (for bucket selection from root view)
    */
   setRegion(region: string): void {
-    const logger = getLogger();
     if (region !== this.currentRegion) {
-      logger.debug('S3Adapter region changed', {
+      this.logger.debug('S3Adapter region changed', {
         oldRegion: this.currentRegion,
         newRegion: region,
       });
       this.currentRegion = region;
       // Reinitialize S3Client with new region using factory
-      const { client } = createS3ClientWithRegion(this.clientOptions, region);
+      const { client } = this.clientWithRegionFactory(this.clientOptions, region);
       this.client = client;
     }
   }
@@ -160,7 +213,6 @@ export class S3Adapter implements Adapter {
       throw new Error('Bucket not configured. Use listBuckets() to list all buckets.');
     }
     const bucket = this.bucket;
-    const logger = getLogger();
     const prefix = this.normalizePath(path, true);
 
     const params: ListObjectsV2CommandInput = {
@@ -171,7 +223,7 @@ export class S3Adapter implements Adapter {
       ContinuationToken: options?.continuationToken,
     };
 
-    logger.debug('S3Adapter.list called', {
+    this.logger.debug('S3Adapter.list called', {
       bucket: this.bucket,
       path,
       prefix,
@@ -181,15 +233,15 @@ export class S3Adapter implements Adapter {
     });
 
     try {
-      logger.debug('Sending ListObjectsV2Command', params);
+      this.logger.debug('Sending ListObjectsV2Command', params);
 
       const response = await retryWithBackoff(() => {
-        logger.debug('Executing ListObjectsV2Command...');
+        this.logger.debug('Executing ListObjectsV2Command...');
         const command = new ListObjectsV2Command(params);
         return this.client.send(command);
       }, getS3RetryConfig());
 
-      logger.debug('ListObjectsV2 response received', {
+      this.logger.debug('ListObjectsV2 response received', {
         commonPrefixesCount: response.CommonPrefixes?.length || 0,
         contentsCount: response.Contents?.length || 0,
         isTruncated: response.IsTruncated,
@@ -221,7 +273,7 @@ export class S3Adapter implements Adapter {
       // Sort: directories first, then by name
       sortEntries(entries);
 
-      logger.debug('Parsed entries', {
+      this.logger.debug('Parsed entries', {
         count: entries.length,
         directories: entries.filter(e => e.type === EntryType.Directory).length,
         files: entries.filter(e => e.type === EntryType.File).length,
@@ -233,9 +285,9 @@ export class S3Adapter implements Adapter {
         hasMore: response.IsTruncated ?? false,
       };
     } catch (error) {
-      logger.error('Failed to list S3 objects', error);
+      this.logger.error('Failed to list S3 objects', error);
       const parsedError = parseAwsError(error, 'list');
-      logger.error('Parsed error', {
+      this.logger.error('Parsed error', {
         code: (error as any)?.Code,
         message: (error as any)?.message,
         statusCode: (error as any)?.$metadata?.httpStatusCode,
@@ -248,17 +300,15 @@ export class S3Adapter implements Adapter {
    * List all S3 buckets in the account with metadata
    */
   async listBuckets(): Promise<BucketInfo[]> {
-    const logger = getLogger();
-
     try {
-      logger.debug('S3Adapter.listBuckets called');
+      this.logger.debug('S3Adapter.listBuckets called');
 
       const response = await retryWithBackoff(() => {
         const command = new ListBucketsCommand({});
         return this.client.send(command);
       }, getS3RetryConfig());
 
-      logger.debug('ListBuckets response received', {
+      this.logger.debug('ListBuckets response received', {
         bucketCount: response.Buckets?.length || 0,
       });
 
@@ -278,7 +328,7 @@ export class S3Adapter implements Adapter {
               // LocationConstraint is undefined for us-east-1, otherwise it's the region
               region = locationResponse.LocationConstraint || 'us-east-1';
             } catch (error) {
-              logger.debug('Failed to get bucket location', {
+              this.logger.debug('Failed to get bucket location', {
                 bucket: bucket.Name,
                 error: (error as any)?.message,
               });
@@ -300,11 +350,11 @@ export class S3Adapter implements Adapter {
         return b.creationDate.getTime() - a.creationDate.getTime();
       });
 
-      logger.debug('Parsed buckets', { count: buckets.length });
+      this.logger.debug('Parsed buckets', { count: buckets.length });
 
       return buckets;
     } catch (error) {
-      logger.error('Failed to list S3 buckets', error);
+      this.logger.error('Failed to list S3 buckets', error);
       const parsedError = parseAwsError(error, 'listBuckets');
       throw parsedError;
     }
@@ -692,7 +742,6 @@ export class S3Adapter implements Adapter {
    */
   async read(path: string, options?: OperationOptions): Promise<Buffer> {
     const normalized = this.normalizePath(path);
-    const logger = getLogger();
 
     try {
       // First, get the file size via HeadObject
@@ -809,7 +858,7 @@ export class S3Adapter implements Adapter {
       // Combine chunks into single buffer
       return Buffer.concat(chunks);
     } catch (error) {
-      logger.error('Failed to read file from S3', error);
+      this.logger.error('Failed to read file from S3', error);
       throw parseAwsError(error, 'read');
     }
   }
@@ -823,7 +872,6 @@ export class S3Adapter implements Adapter {
     recursive: boolean = false,
     options?: OperationOptions
   ): Promise<void> {
-    const logger = getLogger();
     const s3Normalized = this.normalizePath(s3Path);
 
     try {
@@ -835,7 +883,7 @@ export class S3Adapter implements Adapter {
         await this.downloadSingleFileToLocal(s3Normalized, localPath, options);
       }
     } catch (error) {
-      logger.error(`Failed to download ${s3Path} to ${localPath}`, error);
+      this.logger.error(`Failed to download ${s3Path} to ${localPath}`, error);
       throw parseAwsError(error, 'download');
     }
   }
@@ -894,8 +942,6 @@ export class S3Adapter implements Adapter {
     recursive: boolean = false,
     options?: OperationOptions
   ): Promise<void> {
-    const logger = getLogger();
-
     try {
       // Check if local path is a directory
       const stats = await fs.stat(localPath);
@@ -912,7 +958,7 @@ export class S3Adapter implements Adapter {
         throw new Error(`Invalid path: ${localPath} is not a file or directory`);
       }
     } catch (error) {
-      logger.error(`Failed to upload ${localPath} to ${s3Path}`, error);
+      this.logger.error(`Failed to upload ${localPath} to ${s3Path}`, error);
       throw parseAwsError(error, 'upload');
     }
   }
