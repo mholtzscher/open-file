@@ -2,36 +2,40 @@
 
 ## 🗂️ Quick Navigation
 
-| Document | Purpose | Time | Best For |
-|----------|---------|------|----------|
-| **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** | Fast answers & cheat sheets | 5 min | Getting unstuck quickly |
+| Document                                                   | Purpose                      | Time   | Best For                |
+| ---------------------------------------------------------- | ---------------------------- | ------ | ----------------------- |
+| **[QUICK_REFERENCE.md](QUICK_REFERENCE.md)**               | Fast answers & cheat sheets  | 5 min  | Getting unstuck quickly |
 | **[BOX_TITLE_BORDER_GUIDE.md](BOX_TITLE_BORDER_GUIDE.md)** | Complete technical reference | 20 min | Understanding internals |
-| **[PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md)** | Working code examples | 15 min | Copy-paste solutions |
-| **[README.md](README.md)** | Overview & navigation | 10 min | Getting oriented |
+| **[PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md)**         | Working code examples        | 15 min | Copy-paste solutions    |
+| **[README.md](README.md)**                                 | Overview & navigation        | 10 min | Getting oriented        |
 
 ---
 
 ## 🎯 Choose Your Path
 
 ### Path 1: "I need to fix this NOW" ⚡ (7 minutes)
+
 1. Read: [QUICK_REFERENCE.md](QUICK_REFERENCE.md) → Section "TL;DR"
 2. Copy: [PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md) → Example 1
 3. Modify for your use case
 4. Done!
 
 ### Path 2: "I want to understand this" 🧠 (45 minutes)
+
 1. Read: [README.md](README.md) → All sections
 2. Study: [BOX_TITLE_BORDER_GUIDE.md](BOX_TITLE_BORDER_GUIDE.md) → All sections
 3. Review: [PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md) → All examples
 4. Done!
 
 ### Path 3: "I'm debugging an issue" 🔧 (15 minutes)
+
 1. Read: [QUICK_REFERENCE.md](QUICK_REFERENCE.md) → "Common Mistakes" table
 2. Use: [QUICK_REFERENCE.md](QUICK_REFERENCE.md) → "Debugging Checklist"
 3. Refer: [BOX_TITLE_BORDER_GUIDE.md](BOX_TITLE_BORDER_GUIDE.md) → "Why Text Might Appear in Border"
 4. Done!
 
 ### Path 4: "I need the complete API" 📚 (30 minutes)
+
 1. Read: [QUICK_REFERENCE.md](QUICK_REFERENCE.md) → "API Reference"
 2. Study: [BOX_TITLE_BORDER_GUIDE.md](BOX_TITLE_BORDER_GUIDE.md) → "Box Component Properties Reference"
 3. Reference: [PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md) → All examples for context
@@ -42,10 +46,12 @@
 ## 📄 Document Breakdown
 
 ### QUICK_REFERENCE.md
+
 **Size:** 312 lines  
 **Focus:** Fast answers and cheat sheets
 
 **Contains:**
+
 - TL;DR problem/solution
 - Core concepts (3 main points)
 - Three quick solution patterns with code
@@ -56,12 +62,14 @@
 - Debugging checklist
 
 **When to use:**
+
 - Need answer quickly
 - Looking for specific code pattern
 - Can't remember the details
 - Debugging specific issue
 
 **Example sections:**
+
 ```
 - TL;DR - Fix Your Box Title Issue
 - Quick Solutions (Dialog, Flex, Nested)
@@ -73,10 +81,12 @@
 ---
 
 ### BOX_TITLE_BORDER_GUIDE.md
+
 **Size:** 459 lines  
 **Focus:** Complete technical reference
 
 **Contains:**
+
 - How the `title` prop works
 - How box rendering works internally
 - Why text appears in border (with scenarios)
@@ -87,12 +97,14 @@
 - Real-world examples from OpenTUI repo
 
 **When to use:**
+
 - Need to understand how it works
 - Want to see implementation details
 - Need source code references
 - Learning OpenTUI internals
 
 **Example sections:**
+
 ```
 - Understanding Box Titles in OpenTUI
 - How Box Rendering Works
@@ -105,10 +117,12 @@
 ---
 
 ### PRACTICAL_EXAMPLES.md
+
 **Size:** 557 lines  
 **Focus:** Working code examples
 
 **Contains:**
+
 - 4 complete, runnable examples
 - Simple Dialog Box (Example 1)
 - Form with Multiple Fields (Example 2)
@@ -119,12 +133,14 @@
 - Pattern explanations
 
 **When to use:**
+
 - Need working code to copy
 - Want to see patterns in action
 - Looking for specific use case
 - Need complete example to start from
 
 **Example code:**
+
 ```typescript
 // Each example includes:
 // 1. Complete, runnable code
@@ -136,10 +152,12 @@
 ---
 
 ### README.md
+
 **Size:** 367 lines  
 **Focus:** Overview and navigation
 
 **Contains:**
+
 - Quick answer to your issue
 - Three key concepts explained
 - Three patterns overview
@@ -151,12 +169,14 @@
 - Document status
 
 **When to use:**
+
 - First time reading the research
 - Need overview before diving in
 - Want to understand structure
 - Need to find specific topic
 
 **Example sections:**
+
 ```
 - Quick Answer: Why Is My Text In The Border?
 - Key Concepts
@@ -170,56 +190,67 @@
 ## 🔍 Find By Topic
 
 ### "How do I position content in a box?"
+
 → [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Positioning Math  
 → [PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md) - Example 1
 
 ### "What's the difference between title and content?"
+
 → [README.md](README.md) - Key Concepts  
 → [BOX_TITLE_BORDER_GUIDE.md](BOX_TITLE_BORDER_GUIDE.md) - Understanding Box Titles
 
 ### "Why is text appearing in my border?"
+
 → [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - TL;DR  
 → [BOX_TITLE_BORDER_GUIDE.md](BOX_TITLE_BORDER_GUIDE.md) - Why Text Might Appear in Border
 
 ### "How do I create a form with a border?"
+
 → [PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md) - Example 2
 
 ### "What's a scissor rect?"
+
 → [BOX_TITLE_BORDER_GUIDE.md](BOX_TITLE_BORDER_GUIDE.md) - Content Area is Protected by Scissor Rect
 
 ### "Show me a multi-pane layout"
+
 → [PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md) - Example 3
 
 ### "What properties can I set on a box?"
+
 → [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Box Properties Cheat Sheet  
 → [BOX_TITLE_BORDER_GUIDE.md](BOX_TITLE_BORDER_GUIDE.md) - Box Component Properties Reference
 
 ### "How do I debug positioning issues?"
+
 → [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Debugging Checklist
 
 ### "What's the math for positioning?"
+
 → [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Positioning Math
 
 ### "Can you show source code references?"
+
 → [BOX_TITLE_BORDER_GUIDE.md](BOX_TITLE_BORDER_GUIDE.md) - OpenTUI Box Source Code Reference
 
 ---
 
 ## 📊 Document Statistics
 
-| Document | Lines | Sections | Code Examples |
-|----------|-------|----------|---------------|
-| QUICK_REFERENCE.md | 312 | 8 | 12 |
-| BOX_TITLE_BORDER_GUIDE.md | 459 | 10 | 15 |
-| PRACTICAL_EXAMPLES.md | 557 | 5 | 4 (complete) |
-| README.md | 367 | 12 | 8 |
-| **TOTAL** | **1,695** | **35** | **39** |
+| Document                  | Lines     | Sections | Code Examples |
+| ------------------------- | --------- | -------- | ------------- |
+| QUICK_REFERENCE.md        | 312       | 8        | 12            |
+| BOX_TITLE_BORDER_GUIDE.md | 459       | 10       | 15            |
+| PRACTICAL_EXAMPLES.md     | 557       | 5        | 4 (complete)  |
+| README.md                 | 367       | 12       | 8             |
+| **TOTAL**                 | **1,695** | **35**   | **39**        |
 
 ---
 
 ## ✅ Research Verification
 
 This research is:
+
 - ✅ Based on OpenTUI v0.1.44+ source code
 - ✅ Verified with real examples from OpenTUI repo
 - ✅ Includes actual working code patterns
@@ -232,6 +263,7 @@ This research is:
 ## 🚀 Getting Started
 
 ### Fastest Start (If You're In a Hurry)
+
 ```bash
 1. Read: QUICK_REFERENCE.md (top section)
 2. Copy: Example 1 from PRACTICAL_EXAMPLES.md
@@ -239,6 +271,7 @@ This research is:
 ```
 
 ### Proper Start (If You Have Time)
+
 ```bash
 1. Read: README.md (overview)
 2. Read: QUICK_REFERENCE.md (reference)
@@ -247,6 +280,7 @@ This research is:
 ```
 
 ### Deep Learning (If You Want Full Understanding)
+
 ```bash
 1. Read: README.md (overview)
 2. Read: BOX_TITLE_BORDER_GUIDE.md (technical)
@@ -259,13 +293,16 @@ This research is:
 ## 📞 Using This Research
 
 ### In Your Code
+
 ```typescript
 // Pattern: Absolute Positioning (from PRACTICAL_EXAMPLES.md)
 const box = new BoxRenderable(renderer, {
   id: 'box',
   position: 'absolute',
-  left: 10, top: 5,
-  width: 40, height: 10,
+  left: 10,
+  top: 5,
+  width: 40,
+  height: 10,
   title: 'Title',
   border: true,
 });
@@ -273,11 +310,13 @@ const box = new BoxRenderable(renderer, {
 const content = new TextRenderable(renderer, {
   content: 'Content',
   position: 'absolute',
-  left: 12, top: 7,
+  left: 12,
+  top: 7,
 });
 ```
 
 ### In Your Documentation
+
 ```
 Reference this research:
 - For box title and border information
@@ -287,6 +326,7 @@ Reference this research:
 ```
 
 ### In Your Team
+
 ```
 Share this research with:
 - Other developers using OpenTUI
@@ -308,13 +348,13 @@ Share this research with:
 
 ## 📝 Document Version
 
-| Aspect | Details |
-|--------|---------|
-| Version | 1.0 |
-| Created | November 2025 |
-| OpenTUI Version | 0.1.44+ |
-| Status | Complete |
-| Last Updated | November 17, 2025 |
+| Aspect          | Details           |
+| --------------- | ----------------- |
+| Version         | 1.0               |
+| Created         | November 2025     |
+| OpenTUI Version | 0.1.44+           |
+| Status          | Complete          |
+| Last Updated    | November 17, 2025 |
 
 ---
 
@@ -327,6 +367,7 @@ Share this research with:
 **The Solution:** Use `position: "absolute"` with `left: box.left + 2` and `top: box.top + 2`
 
 **Where to Learn:**
+
 - Quick fix: QUICK_REFERENCE.md
 - How it works: BOX_TITLE_BORDER_GUIDE.md
 - Working examples: PRACTICAL_EXAMPLES.md
@@ -336,4 +377,3 @@ Share this research with:
 **Research Complete ✅**  
 **Ready to use 🚀**  
 **All files tested and verified ✓**
-

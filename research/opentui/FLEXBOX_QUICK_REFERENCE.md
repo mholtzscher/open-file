@@ -6,14 +6,14 @@
 
 ### Quick Comparison
 
-| Aspect | Flexbox | Absolute Positioning |
-|--------|---------|----------------------|
-| **Automatic sizing** | ✅ Yes | ❌ Manual |
-| **Terminal resize** | ✅ Auto-recalculates | ❌ Must handle |
-| **Code complexity** | ✅ Simple | ❌ Complex |
-| **Maintenance** | ✅ Easy | ❌ Hard |
-| **Responsive** | ✅ Built-in | ❌ Additional work |
-| **Recommended** | ✅ YES | ⚠️ Only for overlays |
+| Aspect               | Flexbox              | Absolute Positioning |
+| -------------------- | -------------------- | -------------------- |
+| **Automatic sizing** | ✅ Yes               | ❌ Manual            |
+| **Terminal resize**  | ✅ Auto-recalculates | ❌ Must handle       |
+| **Code complexity**  | ✅ Simple            | ❌ Complex           |
+| **Maintenance**      | ✅ Easy              | ❌ Hard              |
+| **Responsive**       | ✅ Built-in          | ❌ Additional work   |
+| **Recommended**      | ✅ YES               | ⚠️ Only for overlays |
 
 ---
 
@@ -47,12 +47,14 @@
 ### Benefits Over Current Approach
 
 **Before (Absolute Positioning)**:
+
 - Manual coordinate calculations
 - Must handle terminal resize
 - Hard to maintain
 - ~50 lines of layout code
 
 **After (Flexbox)**:
+
 - Automatic sizing
 - Terminal resize handled by Yoga
 - Easy to read
@@ -105,9 +107,9 @@ alignSelf="center"            // Override parent's alignItems
 
 ```jsx
 <box flexDirection="column" width="100%" height="100%">
-  <box height={2} flexGrow={0} />          {/* Header - fixed */}
-  <box flexGrow={1} overflow="hidden" />   {/* Content - grows */}
-  <box height={1} flexGrow={0} />          {/* Footer - fixed */}
+  <box height={2} flexGrow={0} /> {/* Header - fixed */}
+  <box flexGrow={1} overflow="hidden" /> {/* Content - grows */}
+  <box height={1} flexGrow={0} /> {/* Footer - fixed */}
 </box>
 ```
 
@@ -115,8 +117,8 @@ alignSelf="center"            // Override parent's alignItems
 
 ```jsx
 <box flexDirection="row" gap={1}>
-  <box flexGrow={1} overflow="hidden" />   {/* Left - 50% */}
-  <box flexGrow={1} overflow="hidden" />   {/* Right - 50% */}
+  <box flexGrow={1} overflow="hidden" /> {/* Left - 50% */}
+  <box flexGrow={1} overflow="hidden" /> {/* Right - 50% */}
 </box>
 ```
 
@@ -124,8 +126,8 @@ alignSelf="center"            // Override parent's alignItems
 
 ```jsx
 <box flexDirection="row" gap={1}>
-  <box flexGrow={1} overflow="hidden" />   {/* Left - takes space */}
-  <box width={30} flexGrow={0} />          {/* Right - 30 chars */}
+  <box flexGrow={1} overflow="hidden" /> {/* Left - takes space */}
+  <box width={30} flexGrow={0} /> {/* Right - 30 chars */}
 </box>
 ```
 
@@ -133,16 +135,16 @@ alignSelf="center"            // Override parent's alignItems
 
 ```jsx
 <box flexDirection="row" gap={1}>
-  <box flexGrow={1} flexBasis="33%" />     {/* 33% */}
-  <box flexGrow={1} flexBasis="33%" />     {/* 33% */}
-  <box flexGrow={1} flexBasis="33%" />     {/* 33% */}
+  <box flexGrow={1} flexBasis="33%" /> {/* 33% */}
+  <box flexGrow={1} flexBasis="33%" /> {/* 33% */}
+  <box flexGrow={1} flexBasis="33%" /> {/* 33% */}
 </box>
 ```
 
 ### 5. Centered Content
 
 ```jsx
-<box 
+<box
   flexDirection="column"
   justifyContent="center"    {/* Vertical center */}
   alignItems="center"         {/* Horizontal center */}
@@ -158,12 +160,14 @@ alignSelf="center"            // Override parent's alignItems
 ## Property Values Quick Lookup
 
 ### `flexDirection`
+
 - `"row"` - Horizontal, left to right
 - `"column"` - Vertical, top to bottom
 - `"row-reverse"` - Horizontal, right to left
 - `"column-reverse"` - Vertical, bottom to top
 
 ### `justifyContent` (Main Axis Alignment)
+
 - `"flex-start"` - Pack to start
 - `"center"` - Center items
 - `"flex-end"` - Pack to end
@@ -172,12 +176,14 @@ alignSelf="center"            // Override parent's alignItems
 - `"space-evenly"` - Equal space between and around
 
 ### `alignItems` (Cross Axis Alignment)
+
 - `"flex-start"` - Align to start
 - `"center"` - Center items
 - `"flex-end"` - Align to end
 - `"stretch"` - Items stretch to fill
 
 ### Sizing Values
+
 - `width={30}` - Fixed: 30 characters
 - `width="50%"` - Percentage of parent
 - `width="auto"` - Automatic/content-based
@@ -188,33 +194,35 @@ alignSelf="center"            // Override parent's alignItems
 
 ## Layout Property Support
 
-| Property | Works? | Notes |
-|----------|--------|-------|
-| flexDirection | ✅ | All renderables |
-| justifyContent | ✅ | All renderables |
-| alignItems | ✅ | All renderables |
-| gap | ✅ | Group, Box, ScrollBox |
-| flexGrow | ✅ | All renderables |
-| flexShrink | ✅ | All renderables |
-| width/height | ✅ | All renderables |
-| margin | ✅ | All renderables |
-| padding | ✅ | All renderables |
-| position="absolute" | ✅ | For overlays/modals |
+| Property            | Works? | Notes                 |
+| ------------------- | ------ | --------------------- |
+| flexDirection       | ✅     | All renderables       |
+| justifyContent      | ✅     | All renderables       |
+| alignItems          | ✅     | All renderables       |
+| gap                 | ✅     | Group, Box, ScrollBox |
+| flexGrow            | ✅     | All renderables       |
+| flexShrink          | ✅     | All renderables       |
+| width/height        | ✅     | All renderables       |
+| margin              | ✅     | All renderables       |
+| padding             | ✅     | All renderables       |
+| position="absolute" | ✅     | For overlays/modals   |
 
 ---
 
 ## Terminal Resize Handling
 
 ### With Flexbox (Automatic)
+
 ```jsx
 // No code needed! Yoga automatically recalculates on terminal resize
 <box flexDirection="row" width="100%" height="100%">
-  <box flexGrow={1} />  {/* Automatically resizes */}
-  <box flexGrow={1} />  {/* Automatically resizes */}
+  <box flexGrow={1} /> {/* Automatically resizes */}
+  <box flexGrow={1} /> {/* Automatically resizes */}
 </box>
 ```
 
 ### With Absolute Positioning (Manual)
+
 ```typescript
 // Must listen to resize and manually recalculate
 renderer.on('resize', (width, height) => {
@@ -231,6 +239,7 @@ renderer.on('resize', (width, height) => {
 ## When to Use What
 
 ### Use Flexbox For
+
 ✅ Main layout structure (panes, sections)
 ✅ Responsive design
 ✅ Equal or proportional sizing
@@ -238,6 +247,7 @@ renderer.on('resize', (width, height) => {
 ✅ Professional, maintainable code
 
 ### Use Absolute Positioning For
+
 ⚠️ Overlays and modals
 ⚠️ Fixed positioning on top of content
 ⚠️ Precise pixel-perfect placement
@@ -248,12 +258,14 @@ renderer.on('resize', (width, height) => {
 ## Common Mistakes to Avoid
 
 ❌ **Don't**: Use absolute positioning for main layout
+
 ```jsx
 // BAD - manual calculations everywhere
 <box position="absolute" left={0} top={0} width={leftWidth} height={contentHeight} />
 ```
 
 ✅ **Do**: Use flexbox for main layout
+
 ```jsx
 // GOOD - simple and maintainable
 <box flexDirection="row" gap={1}>
@@ -267,6 +279,7 @@ renderer.on('resize', (width, height) => {
 ## Real-World Example: S3 Explorer Layout
 
 ### Current (Absolute Positioning)
+
 ```jsx
 const leftWidth = Math.floor((width - 42) / 3);
 const middleWidth = Math.floor((width - 42) / 3);
@@ -275,12 +288,19 @@ return (
   <>
     <box position="absolute" left={0} top={0} width={leftWidth} height={height} />
     <box position="absolute" left={leftWidth + 1} top={0} width={middleWidth} height={height} />
-    <box position="absolute" left={leftWidth + middleWidth + 2} top={0} width={40} height={height} />
+    <box
+      position="absolute"
+      left={leftWidth + middleWidth + 2}
+      top={0}
+      width={40}
+      height={height}
+    />
   </>
 );
 ```
 
 ### Recommended (Flexbox)
+
 ```jsx
 return (
   <box flexDirection="row" width="100%" height="100%" gap={1}>
@@ -309,6 +329,7 @@ return (
 **For S3 Explorer Multi-Pane Layout:**
 
 🎯 **Switch to flexbox immediately**
+
 - Reduces code complexity
 - Better terminal resize handling
 - More professional
@@ -320,4 +341,3 @@ return (
 **Last Updated**: November 2025  
 **Status**: Research Complete  
 **Confidence**: High (based on TypeScript definitions and architecture)
-

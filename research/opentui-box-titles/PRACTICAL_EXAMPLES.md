@@ -21,7 +21,7 @@ async function dialogExample() {
     backgroundColor: '#1a1a2e',
     borderStyle: 'rounded',
     borderColor: '#00FF00',
-    title: 'Settings',              // ← Title appears in border
+    title: 'Settings', // ← Title appears in border
     titleAlignment: 'center',
     border: true,
   });
@@ -32,8 +32,8 @@ async function dialogExample() {
     id: 'label',
     content: 'Configuration:',
     position: 'absolute',
-    left: 17,                      // box.left + 2 for padding
-    top: 7,                        // box.top + 2 for border + title
+    left: 17, // box.left + 2 for padding
+    top: 7, // box.top + 2 for border + title
     fg: '#FFFFFF',
   });
   renderer.root.add(label);
@@ -58,7 +58,7 @@ async function dialogExample() {
   });
   renderer.root.add(info);
 
-  renderer.keyInput.on('keypress', (key) => {
+  renderer.keyInput.on('keypress', key => {
     if (key.name === 'escape') process.exit(0);
   });
 }
@@ -67,6 +67,7 @@ dialogExample().catch(console.error);
 ```
 
 **Output:**
+
 ```
 ┌─────────── Settings ───────────┐
 │                                │
@@ -118,7 +119,8 @@ async function formExample() {
     titleAlignment: 'center',
     border: true,
     backgroundColor: '#0a0a1a',
-    padding: {                     // ← Key: padding accounts for border
+    padding: {
+      // ← Key: padding accounts for border
       top: 1,
       left: 2,
       right: 2,
@@ -182,7 +184,7 @@ async function formExample() {
   // Focus management
   nameInput.focus();
 
-  renderer.keyInput.on('keypress', (key) => {
+  renderer.keyInput.on('keypress', key => {
     if (key.name === 'escape') process.exit(0);
     if (key.name === 'tab') {
       if (nameInput.focused) {
@@ -200,6 +202,7 @@ formExample().catch(console.error);
 ```
 
 **Output:**
+
 ```
 ┌────── User Registration ──────┐
 │                               │
@@ -290,8 +293,8 @@ async function multiPaneExample() {
       id: `file-${index}`,
       content: `• ${file}`,
       position: 'absolute',
-      left: 3,                      // Account for border
-      top: 3 + index,                // Account for border + title
+      left: 3, // Account for border
+      top: 3 + index, // Account for border + title
       fg: '#FFFFFF',
     });
     renderer.root.add(fileItem);
@@ -311,17 +314,13 @@ async function multiPaneExample() {
   contentContainer.add(rightPane);
 
   // Add editor content
-  const editorContent = [
-    'function main() {',
-    '  console.log("Hello");',
-    '}',
-  ];
+  const editorContent = ['function main() {', '  console.log("Hello");', '}'];
   editorContent.forEach((line, index) => {
     const editorLine = new TextRenderable(renderer, {
       id: `editor-line-${index}`,
       content: line,
       position: 'absolute',
-      left: 40,                     // Position in right pane
+      left: 40, // Position in right pane
       top: 3 + index,
       fg: '#00FF00',
     });
@@ -349,7 +348,7 @@ async function multiPaneExample() {
   });
   renderer.root.add(footerText);
 
-  renderer.keyInput.on('keypress', (key) => {
+  renderer.keyInput.on('keypress', key => {
     if (key.name === 'escape') process.exit(0);
   });
 }
@@ -358,6 +357,7 @@ multiPaneExample().catch(console.error);
 ```
 
 **Output:**
+
 ```
 ┌─ Application ────────────────────────────────────┐
 │ OpenTUI Multi-Pane Demo                          │
@@ -403,8 +403,8 @@ async function nestedBoxesExample() {
   const inner1 = new BoxRenderable(renderer, {
     id: 'inner-box-1',
     position: 'absolute',
-    left: 8,                       // Inside outer box
-    top: 5,                        // Below outer border + title
+    left: 8, // Inside outer box
+    top: 5, // Below outer border + title
     width: 25,
     height: 10,
     backgroundColor: '#1a1a2e',
@@ -421,8 +421,8 @@ async function nestedBoxesExample() {
     id: 'inner1-content',
     content: 'This is panel A',
     position: 'absolute',
-    left: 11,                      // Inside inner1 box
-    top: 8,                        // Below inner1 border + title
+    left: 11, // Inside inner1 box
+    top: 8, // Below inner1 border + title
     fg: '#00FF00',
   });
   renderer.root.add(inner1Content);
@@ -431,7 +431,7 @@ async function nestedBoxesExample() {
   const inner2 = new BoxRenderable(renderer, {
     id: 'inner-box-2',
     position: 'absolute',
-    left: 38,                      // To the right of inner1
+    left: 38, // To the right of inner1
     top: 5,
     width: 25,
     height: 10,
@@ -449,7 +449,7 @@ async function nestedBoxesExample() {
     id: 'inner2-content',
     content: 'This is panel B',
     position: 'absolute',
-    left: 41,                      // Inside inner2 box
+    left: 41, // Inside inner2 box
     top: 8,
     fg: '#FF6B6B',
   });
@@ -482,7 +482,7 @@ async function nestedBoxesExample() {
   });
   renderer.root.add(infoContent);
 
-  renderer.keyInput.on('keypress', (key) => {
+  renderer.keyInput.on('keypress', key => {
     if (key.name === 'escape') process.exit(0);
   });
 }
@@ -491,6 +491,7 @@ nestedBoxesExample().catch(console.error);
 ```
 
 **Output:**
+
 ```
 ╔═════════════════════ Outer Container ═════════════════════╗
 ║                                                            ║
@@ -510,32 +511,36 @@ nestedBoxesExample().catch(console.error);
 ## Key Takeaways from Examples
 
 ### Pattern 1: Always Use Absolute Positioning for Content
+
 ```typescript
 const text = new TextRenderable(renderer, {
-  content: "Content",
-  position: "absolute",     // ← Required for positioning inside box
-  left: boxLeft + 2,        // ← Account for border
-  top: boxTop + 2,          // ← Account for border + title
+  content: 'Content',
+  position: 'absolute', // ← Required for positioning inside box
+  left: boxLeft + 2, // ← Account for border
+  top: boxTop + 2, // ← Account for border + title
 });
 ```
 
 ### Pattern 2: Use Padding with Flex Layout
+
 ```typescript
 const box = new BoxRenderable(renderer, {
-  borderStyle: "single",
-  title: "Title",
+  borderStyle: 'single',
+  title: 'Title',
   border: true,
-  padding: {                // ← Flex children respect this
+  padding: {
+    // ← Flex children respect this
     top: 1,
     left: 2,
     right: 2,
     bottom: 1,
   },
-  flexDirection: "column",
+  flexDirection: 'column',
 });
 ```
 
 ### Pattern 3: Calculate Content Boundaries
+
 ```typescript
 // For box at (10, 5) with size (40, 10) and border:
 // - Content starts at: (11, 6) - 1 cell inset
@@ -544,14 +549,14 @@ const box = new BoxRenderable(renderer, {
 ```
 
 ### Pattern 4: Title Alignment
+
 ```typescript
 const box = new BoxRenderable(renderer, {
-  title: "Left Title",
-  titleAlignment: "left",      // ← Left, center, or right
+  title: 'Left Title',
+  titleAlignment: 'left', // ← Left, center, or right
 });
 ```
 
 ---
 
 **All examples tested with OpenTUI v0.1.44+**
-

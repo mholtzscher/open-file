@@ -13,10 +13,10 @@
 
 ```typescript
 import {
-  TextRenderable,        // For text display
-  BoxRenderable,         // For containers with borders
-  GroupRenderable,       // For flex layout
-  TextAttributes,        // Text styling flags
+  TextRenderable, // For text display
+  BoxRenderable, // For containers with borders
+  GroupRenderable, // For flex layout
+  TextAttributes, // Text styling flags
 } from '@opentui/core';
 ```
 
@@ -64,17 +64,17 @@ import {
 ### TextAttributes Flags
 
 ```typescript
-TextAttributes.BOLD          // 0x01
-TextAttributes.DIM           // 0x02
-TextAttributes.ITALIC        // 0x04
-TextAttributes.UNDERLINE     // 0x08
-TextAttributes.BLINK         // 0x10
-TextAttributes.INVERT        // 0x20
-TextAttributes.HIDDEN        // 0x40
-TextAttributes.STRIKETHROUGH // 0x80
+TextAttributes.BOLD; // 0x01
+TextAttributes.DIM; // 0x02
+TextAttributes.ITALIC; // 0x04
+TextAttributes.UNDERLINE; // 0x08
+TextAttributes.BLINK; // 0x10
+TextAttributes.INVERT; // 0x20
+TextAttributes.HIDDEN; // 0x40
+TextAttributes.STRIKETHROUGH; // 0x80
 
 // Usage: combine with bitwise OR
-attributes: TextAttributes.BOLD | TextAttributes.UNDERLINE
+attributes: TextAttributes.BOLD | TextAttributes.UNDERLINE;
 ```
 
 ---
@@ -164,11 +164,13 @@ const code = new GroupRenderable(renderer, {
 
 lines.forEach((line, idx) => {
   // Add line number
-  numbers.add(new TextRenderable(renderer, {
-    id: `num-${idx}`,
-    content: `${idx + 1}`.padStart(4),
-    fg: '#666666',
-  }));
+  numbers.add(
+    new TextRenderable(renderer, {
+      id: `num-${idx}`,
+      content: `${idx + 1}`.padStart(4),
+      fg: '#666666',
+    })
+  );
 
   // Add code line (simplified)
   const codeLine = new BoxRenderable(renderer, {
@@ -176,15 +178,17 @@ lines.forEach((line, idx) => {
     flexDirection: 'row',
     height: 1,
   });
-  
+
   line.segments.forEach((seg, segIdx) => {
-    codeLine.add(new TextRenderable(renderer, {
-      id: `seg-${idx}-${segIdx}`,
-      content: seg.text,
-      fg: seg.color,
-    }));
+    codeLine.add(
+      new TextRenderable(renderer, {
+        id: `seg-${idx}-${segIdx}`,
+        content: seg.text,
+        fg: seg.color,
+      })
+    );
   });
-  
+
   code.add(codeLine);
 });
 
@@ -202,7 +206,7 @@ class CodeScroller {
     this.lines = lines;
     this.visibleHeight = visibleHeight;
     this.offset = 0;
-    
+
     this.container = new GroupRenderable(renderer, {
       id: 'code-scroll',
       flexDirection: 'column',
@@ -214,7 +218,7 @@ class CodeScroller {
   render() {
     this.container.removeAll();
     const end = Math.min(this.offset + this.visibleHeight, this.lines.length);
-    
+
     for (let i = this.offset; i < end; i++) {
       const line = this.lines[i];
       const box = new BoxRenderable(this.renderer, {
@@ -222,15 +226,17 @@ class CodeScroller {
         flexDirection: 'row',
         height: 1,
       });
-      
+
       line.segments.forEach((seg, j) => {
-        box.add(new TextRenderable(this.renderer, {
-          id: `seg-${i}-${j}`,
-          content: seg.text,
-          fg: seg.color,
-        }));
+        box.add(
+          new TextRenderable(this.renderer, {
+            id: `seg-${i}-${j}`,
+            content: seg.text,
+            fg: seg.color,
+          })
+        );
       });
-      
+
       this.container.add(box);
     }
   }
@@ -250,7 +256,7 @@ const scroller = new CodeScroller(renderer, lines, 30);
 scroller.render();
 renderer.root.add(scroller.container);
 
-renderer.keyInput.on('keypress', (key) => {
+renderer.keyInput.on('keypress', key => {
   if (key.name === 'down') scroller.scroll('down', 1);
   if (key.name === 'up') scroller.scroll('up', 1);
   if (key.name === 'pagedown') scroller.scroll('down', 10);
@@ -274,9 +280,15 @@ bun install highlight.js
 function detectLanguage(filename: string): string | null {
   const ext = filename.split('.').pop()?.toLowerCase();
   const map = {
-    js: 'javascript', ts: 'typescript', py: 'python',
-    go: 'go', rs: 'rust', java: 'java',
-    json: 'json', yaml: 'yaml', html: 'html',
+    js: 'javascript',
+    ts: 'typescript',
+    py: 'python',
+    go: 'go',
+    rs: 'rust',
+    java: 'java',
+    json: 'json',
+    yaml: 'yaml',
+    html: 'html',
   };
   return map[ext] || null;
 }
@@ -287,19 +299,24 @@ function detectLanguage(filename: string): string | null {
 ```typescript
 import hljs from 'highlight.js';
 
-interface TextSegment { text: string; color?: string; }
-interface HighlightedLine { segments: TextSegment[]; }
+interface TextSegment {
+  text: string;
+  color?: string;
+}
+interface HighlightedLine {
+  segments: TextSegment[];
+}
 
 function highlightCode(code: string, filename: string): HighlightedLine[] {
   const lang = detectLanguage(filename);
   if (!lang) {
     return code.split('\n').map(line => ({
-      segments: [{ text: line }]
+      segments: [{ text: line }],
     }));
   }
 
   const html = hljs.highlight(code, { language: lang }).value;
-  
+
   // Parse HTML spans to get colored segments
   // (See full implementation in README.md)
   return lines;
@@ -310,12 +327,12 @@ function highlightCode(code: string, filename: string): HighlightedLine[] {
 
 ```typescript
 function mapColor(hlToken: string): string {
-  if (hlToken.includes('string')) return '#a6e3a1';    // Green
-  if (hlToken.includes('keyword')) return '#cba6f7';   // Purple
-  if (hlToken.includes('number')) return '#f8b88b';    // Orange
-  if (hlToken.includes('comment')) return '#6c7086';   // Gray
-  if (hlToken.includes('function')) return '#89b4fa';  // Blue
-  return '#cdd6f4';  // Default
+  if (hlToken.includes('string')) return '#a6e3a1'; // Green
+  if (hlToken.includes('keyword')) return '#cba6f7'; // Purple
+  if (hlToken.includes('number')) return '#f8b88b'; // Orange
+  if (hlToken.includes('comment')) return '#6c7086'; // Gray
+  if (hlToken.includes('function')) return '#89b4fa'; // Blue
+  return '#cdd6f4'; // Default
 }
 ```
 
@@ -323,25 +340,25 @@ function mapColor(hlToken: string): string {
 
 ## Performance Tiers
 
-| Size | Lines | Approach | CPU | Memory |
-|------|-------|----------|-----|--------|
-| < 100 KB | < 1K | Direct | ✅ | ✅ |
-| 100 KB - 1 MB | 1K - 10K | Direct/Virtual | ⚠️ | ⚠️ |
-| 1 - 10 MB | 10K - 100K | Virtual | ❌ | ⚠️ |
-| > 10 MB | > 100K | Chunked | ❌ | ❌ |
+| Size          | Lines      | Approach       | CPU | Memory |
+| ------------- | ---------- | -------------- | --- | ------ |
+| < 100 KB      | < 1K       | Direct         | ✅  | ✅     |
+| 100 KB - 1 MB | 1K - 10K   | Direct/Virtual | ⚠️  | ⚠️     |
+| 1 - 10 MB     | 10K - 100K | Virtual        | ❌  | ⚠️     |
+| > 10 MB       | > 100K     | Chunked        | ❌  | ❌     |
 
 ---
 
 ## Common Mistakes
 
-| ❌ Wrong | ✅ Right |
-|---------|----------|
-| Create Text for each char | Create Text per segment |
-| Render entire 100MB file | Use virtual scrolling |
-| Call `renderer.start()` for static code | Use passive rendering |
-| Forget `overflow: 'hidden'` | Set overflow to contain content |
-| Highlight entire file sync | Highlight incrementally/chunked |
-| Add items one by one | Batch in container, add once |
+| ❌ Wrong                                | ✅ Right                        |
+| --------------------------------------- | ------------------------------- |
+| Create Text for each char               | Create Text per segment         |
+| Render entire 100MB file                | Use virtual scrolling           |
+| Call `renderer.start()` for static code | Use passive rendering           |
+| Forget `overflow: 'hidden'`             | Set overflow to contain content |
+| Highlight entire file sync              | Highlight incrementally/chunked |
+| Add items one by one                    | Batch in container, add once    |
 
 ---
 
@@ -352,7 +369,7 @@ function mapColor(hlToken: string): string {
 ❌ No text selection  
 ❌ No copy-to-clipboard  
 ❌ Single rendering layer  
-❌ No search/find  
+❌ No search/find
 
 **But:** All are solvable with custom code!
 
@@ -372,4 +389,3 @@ function mapColor(hlToken: string): string {
 - **Advanced patterns:** See section 4 (Virtual Scrolling) in README
 - **Gotchas:** See section 8 in README
 - **Best practices:** See section 9 in README
-

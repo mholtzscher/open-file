@@ -3,40 +3,42 @@
 ## TL;DR - Fix Your Box Title Issue
 
 ### Problem
+
 ```typescript
 // ❌ WRONG - Text appears in border or is ignored
 const box = new BoxRenderable(renderer, {
-  title: "My Title",
-  borderStyle: "rounded",
+  title: 'My Title',
+  borderStyle: 'rounded',
 });
-const text = new TextRenderable(renderer, { content: "Content" });
+const text = new TextRenderable(renderer, { content: 'Content' });
 box.add(text);
 ```
 
 ### Solution
+
 ```typescript
 // ✅ CORRECT - Title in border, content positioned inside
 const box = new BoxRenderable(renderer, {
-  id: "box",
-  position: "absolute",
+  id: 'box',
+  position: 'absolute',
   left: 10,
   top: 5,
   width: 40,
   height: 10,
-  title: "My Title",           // ← In border
-  titleAlignment: "center",
-  borderStyle: "rounded",
+  title: 'My Title', // ← In border
+  titleAlignment: 'center',
+  borderStyle: 'rounded',
   border: true,
 });
 renderer.root.add(box);
 
 const text = new TextRenderable(renderer, {
-  id: "content",
-  content: "Content",
-  position: "absolute",
-  left: 12,                    // ← Inside box (10 + 2)
-  top: 7,                      // ← Below border+title
-  fg: "#FFFFFF",
+  id: 'content',
+  content: 'Content',
+  position: 'absolute',
+  left: 12, // ← Inside box (10 + 2)
+  top: 7, // ← Below border+title
+  fg: '#FFFFFF',
 });
 renderer.root.add(text);
 ```
@@ -46,15 +48,18 @@ renderer.root.add(text);
 ## Core Concepts
 
 ### 1. `title` is NOT a child element
+
 - It's a **border property** that renders as part of the box frame
 - Use `title` prop, not by adding a text child
 
 ### 2. Scissor rect automatically protects content
+
 - OpenTUI clips children to stay within box bounds
 - 1-cell inset from each border side
 - You still need to position children correctly for visibility
 
 ### 3. Children need explicit positioning
+
 - Use `position: "absolute"` with `left` and `top`
 - Calculate for border (1 cell) + title (1 cell if title exists)
 - Can be positioned anywhere, not just inside the box
@@ -64,11 +69,15 @@ renderer.root.add(text);
 ## Quick Solutions
 
 ### Dialog Box (Title + Content)
+
 ```typescript
 const box = new BoxRenderable(renderer, {
   id: 'dialog',
-  position: 'absolute', left: 10, top: 5,
-  width: 40, height: 10,
+  position: 'absolute',
+  left: 10,
+  top: 5,
+  width: 40,
+  height: 10,
   title: 'Dialog',
   borderStyle: 'rounded',
   border: true,
@@ -79,12 +88,14 @@ renderer.root.add(box);
 const content = new TextRenderable(renderer, {
   content: 'Message here',
   position: 'absolute',
-  left: 12, top: 7,  // +2 for border/title
+  left: 12,
+  top: 7, // +2 for border/title
 });
 renderer.root.add(content);
 ```
 
 ### Flex Layout (Title + Flex Children)
+
 ```typescript
 const box = new BoxRenderable(renderer, {
   borderStyle: 'single',
@@ -101,11 +112,15 @@ box.add(input);
 ```
 
 ### Multiple Boxes (Title + Nested Content)
+
 ```typescript
 // Outer box
 const outer = new BoxRenderable(renderer, {
-  position: 'absolute', left: 5, top: 2,
-  width: 50, height: 15,
+  position: 'absolute',
+  left: 5,
+  top: 2,
+  width: 50,
+  height: 15,
   title: 'Outer',
   border: true,
 });
@@ -114,8 +129,10 @@ renderer.root.add(outer);
 // Inner box (positioned inside outer)
 const inner = new BoxRenderable(renderer, {
   position: 'absolute',
-  left: 8, top: 5,        // Inside outer box
-  width: 25, height: 8,
+  left: 8,
+  top: 5, // Inside outer box
+  width: 25,
+  height: 8,
   title: 'Inner',
   border: true,
 });
@@ -134,18 +151,18 @@ const box = new BoxRenderable(renderer, {
   top: 5,
   width: 40,
   height: 10,
-  
+
   // Border & Title
   border: true,
   borderStyle: 'single' | 'double' | 'rounded' | 'heavy',
   borderColor: '#FFFFFF',
   title: 'Title Text',
   titleAlignment: 'left' | 'center' | 'right',
-  
+
   // Appearance
   backgroundColor: '#1a1a2e',
   shouldFill: true,
-  
+
   // Layout (if using flex children)
   padding: { top: 1, left: 2, right: 2, bottom: 1 },
   flexDirection: 'column' | 'row',
@@ -183,33 +200,38 @@ Safe positioning for children:
 
 ## Common Mistakes
 
-| Mistake | Problem | Fix |
-|---------|---------|-----|
-| No `position: "absolute"` on child | Child renders at box origin | Add `position: 'absolute'` |
-| Wrong coordinates | Content overlaps border | Add +2 to `left`, +2 to `top` |
-| Using text as child instead of title | Title isn't visible | Use `title` prop on box |
-| No `border: true` | No box visible | Set `border: true` |
-| Flex children overlap border | Content in border area | Add `padding` to box |
-| Z-index conflicts | Borders hidden behind content | Adjust z-index values |
+| Mistake                              | Problem                       | Fix                           |
+| ------------------------------------ | ----------------------------- | ----------------------------- |
+| No `position: "absolute"` on child   | Child renders at box origin   | Add `position: 'absolute'`    |
+| Wrong coordinates                    | Content overlaps border       | Add +2 to `left`, +2 to `top` |
+| Using text as child instead of title | Title isn't visible           | Use `title` prop on box       |
+| No `border: true`                    | No box visible                | Set `border: true`            |
+| Flex children overlap border         | Content in border area        | Add `padding` to box          |
+| Z-index conflicts                    | Borders hidden behind content | Adjust z-index values         |
 
 ---
 
 ## When to Use Each Approach
 
 ### Absolute Positioning
+
 ```typescript
 // Best for: Dialogs, simple forms, manual layouts
 // Pros: Full control, clear positioning
 // Cons: Manual calculations needed
 
-const box = new BoxRenderable(renderer, { /* ... */ });
+const box = new BoxRenderable(renderer, {
+  /* ... */
+});
 const text = new TextRenderable(renderer, {
   position: 'absolute',
-  left: 12, top: 7,
+  left: 12,
+  top: 7,
 });
 ```
 
 ### Flex Layout
+
 ```typescript
 // Best for: Complex forms, responsive layouts
 // Pros: Automatic positioning, scales well
@@ -217,18 +239,25 @@ const text = new TextRenderable(renderer, {
 
 const box = new BoxRenderable(renderer, {
   flexDirection: 'column',
-  padding: { /* ... */ },
+  padding: {
+    /* ... */
+  },
 });
 ```
 
 ### Nested Boxes
+
 ```typescript
 // Best for: Multi-pane UIs, hierarchical layouts
 // Pros: Organized structure
 // Cons: Extra nesting level
 
-const outer = new BoxRenderable(renderer, { /* ... */ });
-const inner = new BoxRenderable(renderer, { /* ... */ });
+const outer = new BoxRenderable(renderer, {
+  /* ... */
+});
+const inner = new BoxRenderable(renderer, {
+  /* ... */
+});
 renderer.root.add(outer);
 renderer.root.add(inner);
 ```
@@ -238,6 +267,7 @@ renderer.root.add(inner);
 ## Debugging Checklist
 
 Text appearing in border?
+
 - [ ] Is `title` prop being set? (Good - means title works)
 - [ ] Are children using `position: "absolute"`?
 - [ ] Is `left` coordinate >= box.left + 2?
@@ -249,51 +279,53 @@ Text appearing in border?
 ## API Reference
 
 ### BoxOptions
+
 ```typescript
 interface BoxOptions {
   // Core
-  id?: string
-  position?: 'absolute' | 'relative'
-  left?: number
-  top?: number
-  width?: number | string
-  height?: number | string
-  
+  id?: string;
+  position?: 'absolute' | 'relative';
+  left?: number;
+  top?: number;
+  width?: number | string;
+  height?: number | string;
+
   // Border & Title
-  border?: boolean | BorderSides[]
-  borderStyle?: 'single' | 'double' | 'rounded' | 'heavy'
-  borderColor?: string | RGBA
-  focusedBorderColor?: string | RGBA
-  customBorderChars?: BorderCharacters
-  title?: string
-  titleAlignment?: 'left' | 'center' | 'right'
-  
+  border?: boolean | BorderSides[];
+  borderStyle?: 'single' | 'double' | 'rounded' | 'heavy';
+  borderColor?: string | RGBA;
+  focusedBorderColor?: string | RGBA;
+  customBorderChars?: BorderCharacters;
+  title?: string;
+  titleAlignment?: 'left' | 'center' | 'right';
+
   // Appearance
-  backgroundColor?: string | RGBA
-  shouldFill?: boolean
-  zIndex?: number
-  
+  backgroundColor?: string | RGBA;
+  shouldFill?: boolean;
+  zIndex?: number;
+
   // Layout
-  padding?: { top?: number; left?: number; right?: number; bottom?: number }
-  gap?: number | `${number}%`
-  flexDirection?: 'row' | 'column'
-  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between'
-  alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch'
-  flexGrow?: number
-  flexShrink?: number
+  padding?: { top?: number; left?: number; right?: number; bottom?: number };
+  gap?: number | `${number}%`;
+  flexDirection?: 'row' | 'column';
+  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
+  alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
+  flexGrow?: number;
+  flexShrink?: number;
 }
 ```
 
 ### TextRenderable (for content inside box)
+
 ```typescript
 interface TextRenderableOptions {
-  id?: string
-  content: string
-  position?: 'absolute' | 'relative'
-  left?: number
-  top?: number
-  fg?: string | RGBA         // Foreground color
-  attributes?: TextAttributes
+  id?: string;
+  content: string;
+  position?: 'absolute' | 'relative';
+  left?: number;
+  top?: number;
+  fg?: string | RGBA; // Foreground color
+  attributes?: TextAttributes;
 }
 ```
 
@@ -309,4 +341,3 @@ interface TextRenderableOptions {
 ---
 
 **OpenTUI v0.1.44+ | Quick Reference v1.0**
-

@@ -16,14 +16,14 @@ The `title` prop on `BoxRenderable` is **not** a child element. It's a rendering
 
 ```typescript
 export interface BoxOptions<TRenderable extends Renderable = BoxRenderable> {
-  backgroundColor?: string | RGBA
-  borderStyle?: BorderStyle
-  border?: boolean | BorderSides[]
-  borderColor?: string | RGBA
-  customBorderChars?: BorderCharacters
-  shouldFill?: boolean
-  title?: string                    // ← Built-in title in border
-  titleAlignment?: "left" | "center" | "right"
+  backgroundColor?: string | RGBA;
+  borderStyle?: BorderStyle;
+  border?: boolean | BorderSides[];
+  borderColor?: string | RGBA;
+  customBorderChars?: BorderCharacters;
+  shouldFill?: boolean;
+  title?: string; // ← Built-in title in border
+  titleAlignment?: 'left' | 'center' | 'right';
   // ... other options
 }
 ```
@@ -85,6 +85,7 @@ protected getScissorRect(): { x: number; y: number; width: number; height: numbe
 ```
 
 **How it works:**
+
 1. When a box has a border, the scissor rect is inset by 1 cell
 2. This prevents children from rendering in the border area
 3. Children are automatically clipped to stay within the content area
@@ -97,22 +98,23 @@ protected getScissorRect(): { x: number; y: number; width: number; height: numbe
 
 ```typescript
 const boxObject = new BoxRenderable(renderer, {
-  id: "box-object",
-  position: "absolute",
+  id: 'box-object',
+  position: 'absolute',
   left: 10,
   top: 8,
   width: 8,
   height: 4,
-  backgroundColor: "#FF6B6B",
-  borderStyle: "single",
-  borderColor: "#FFFFFF",
-  title: "Box",                    // ← Title in border
-  titleAlignment: "center",
-})
-this.parentContainer.add(boxObject)
+  backgroundColor: '#FF6B6B',
+  borderStyle: 'single',
+  borderColor: '#FFFFFF',
+  title: 'Box', // ← Title in border
+  titleAlignment: 'center',
+});
+this.parentContainer.add(boxObject);
 ```
 
 **Rendering:**
+
 ```
 ┌─ Box ─┐
 │       │
@@ -125,39 +127,41 @@ this.parentContainer.add(boxObject)
 ```typescript
 // Create container box
 const statusBox = new BoxRenderable(renderer, {
-  id: "status",
-  position: "absolute",
+  id: 'status',
+  position: 'absolute',
   left: 2,
   top: 24,
   width: 60,
   height: 14,
-  backgroundColor: "#1a1a2e",
-  borderStyle: "single",
-  borderColor: "#FFFFFF",
-  title: "Animation Values",     // ← Title in border
-  titleAlignment: "center",
-})
-this.parentContainer.add(statusBox)
+  backgroundColor: '#1a1a2e',
+  borderStyle: 'single',
+  borderColor: '#FFFFFF',
+  title: 'Animation Values', // ← Title in border
+  titleAlignment: 'center',
+});
+this.parentContainer.add(statusBox);
 
 // Add TEXT CHILDREN with absolute positioning INSIDE the box
 const statusLine1 = new TextRenderable(renderer, {
-  id: "status-line1",
-  content: "Timeline: Initializing...",
-  position: "absolute",
-  left: 4,    // ← Positioned inside box with padding
-  top: 25,    // ← Below the border and title
-  fg: "#FFFFFF",
-})
-this.parentContainer.add(statusLine1)
+  id: 'status-line1',
+  content: 'Timeline: Initializing...',
+  position: 'absolute',
+  left: 4, // ← Positioned inside box with padding
+  top: 25, // ← Below the border and title
+  fg: '#FFFFFF',
+});
+this.parentContainer.add(statusLine1);
 ```
 
 **Key Points:**
+
 1. The `title` prop is in the border
 2. Children use `position: "absolute"` with explicit `left` and `top`
 3. Children are positioned INSIDE the box's scissor rect
 4. The scissor rect automatically prevents overflow into the border
 
 **Rendering:**
+
 ```
 ┌─ Animation Values ─────────────────────────────────┐
 │ Timeline: Initializing...                          │
@@ -175,23 +179,23 @@ this.parentContainer.add(statusLine1)
 ```typescript
 // ❌ WRONG: Text will render at box coordinates, potentially overlapping border
 const box = new BoxRenderable(renderer, {
-  id: "box",
-  position: "absolute",
+  id: 'box',
+  position: 'absolute',
   left: 10,
   top: 5,
   width: 30,
   height: 10,
-  borderStyle: "rounded",
-  title: "Title",
-})
+  borderStyle: 'rounded',
+  title: 'Title',
+});
 
 const text = new TextRenderable(renderer, {
-  id: "text",
-  content: "Content",
+  id: 'text',
+  content: 'Content',
   // No position specified - defaults to box's top-left!
-})
+});
 
-box.add(text)
+box.add(text);
 ```
 
 **Problem:** Text inherits the box's position, rendering on top of the border.
@@ -201,22 +205,22 @@ box.add(text)
 ```typescript
 // ❌ PROBLEMATIC: Flex children might position at box edge
 const box = new BoxRenderable(renderer, {
-  id: "box",
-  flexDirection: "column",
+  id: 'box',
+  flexDirection: 'column',
   width: 40,
   height: 10,
-  borderStyle: "rounded",
-  title: "Title",
+  borderStyle: 'rounded',
+  title: 'Title',
   border: true,
-})
+});
 
 const text = new TextRenderable(renderer, {
-  id: "text",
-  content: "Content",
+  id: 'text',
+  content: 'Content',
   // Flex layout - might place at box edge
-})
+});
 
-box.add(text)
+box.add(text);
 ```
 
 **Problem:** Flex layout doesn't automatically account for the border visually. The scissor rect prevents rendering, but layout might be off.
@@ -230,134 +234,135 @@ box.add(text)
 ```typescript
 // Container with title and border
 const box = new BoxRenderable(renderer, {
-  id: "dialog",
-  position: "absolute",
+  id: 'dialog',
+  position: 'absolute',
   left: 10,
   top: 5,
   width: 40,
   height: 12,
-  backgroundColor: "#1a1a2e",
-  borderStyle: "rounded",
-  borderColor: "#00FF00",
-  title: "Settings",
-  titleAlignment: "center",
+  backgroundColor: '#1a1a2e',
+  borderStyle: 'rounded',
+  borderColor: '#00FF00',
+  title: 'Settings',
+  titleAlignment: 'center',
   border: true,
-})
-renderer.root.add(box)
+});
+renderer.root.add(box);
 
 // Add text children with explicit positioning inside the box
 const label = new TextRenderable(renderer, {
-  id: "label",
-  content: "Configuration:",
-  position: "absolute",
-  left: 12,              // Inside box (box.left + 2 for padding)
-  top: 7,                // Below border and title
-  fg: "#FFFFFF",
-})
-renderer.root.add(label)
+  id: 'label',
+  content: 'Configuration:',
+  position: 'absolute',
+  left: 12, // Inside box (box.left + 2 for padding)
+  top: 7, // Below border and title
+  fg: '#FFFFFF',
+});
+renderer.root.add(label);
 
 const value = new TextRenderable(renderer, {
-  id: "value",
-  content: "Enabled",
-  position: "absolute",
+  id: 'value',
+  content: 'Enabled',
+  position: 'absolute',
   left: 12,
   top: 8,
-  fg: "#00FF00",
-})
-renderer.root.add(value)
+  fg: '#00FF00',
+});
+renderer.root.add(value);
 ```
 
 ### Pattern 2: Flex Layout with Manual Padding (For Complex Layouts)
 
 ```typescript
 const container = new GroupRenderable(renderer, {
-  id: "container",
-  flexDirection: "column",
+  id: 'container',
+  flexDirection: 'column',
   width: 50,
   height: 15,
-})
+});
 
 const box = new BoxRenderable(renderer, {
-  id: "box",
-  borderStyle: "single",
-  borderColor: "#FFFFFF",
-  title: "Form",
-  titleAlignment: "center",
+  id: 'box',
+  borderStyle: 'single',
+  borderColor: '#FFFFFF',
+  title: 'Form',
+  titleAlignment: 'center',
   border: true,
-  padding: {              // Use padding to account for border
+  padding: {
+    // Use padding to account for border
     top: 1,
     left: 2,
     right: 2,
     bottom: 1,
   },
-  flexDirection: "column",
+  flexDirection: 'column',
   gap: 1,
-})
+});
 
 // Add children to the box - flex layout will respect padding
 const input1 = new InputRenderable(renderer, {
-  id: "input1",
-  placeholder: "First field",
-})
-box.add(input1)
+  id: 'input1',
+  placeholder: 'First field',
+});
+box.add(input1);
 
 const input2 = new InputRenderable(renderer, {
-  id: "input2",
-  placeholder: "Second field",
-})
-box.add(input2)
+  id: 'input2',
+  placeholder: 'Second field',
+});
+box.add(input2);
 
-container.add(box)
-renderer.root.add(container)
+container.add(box);
+renderer.root.add(container);
 ```
 
 ### Pattern 3: GroupRenderable for Nested Content
 
 ```typescript
 const box = new BoxRenderable(renderer, {
-  id: "panel",
-  position: "absolute",
+  id: 'panel',
+  position: 'absolute',
   left: 5,
   top: 3,
   width: 60,
   height: 20,
-  backgroundColor: "#0a0a1a",
-  borderStyle: "rounded",
-  borderColor: "#00FF00",
-  title: "Panel Title",
-  titleAlignment: "center",
+  backgroundColor: '#0a0a1a',
+  borderStyle: 'rounded',
+  borderColor: '#00FF00',
+  title: 'Panel Title',
+  titleAlignment: 'center',
   border: true,
-})
-renderer.root.add(box)
+});
+renderer.root.add(box);
 
 // Create a group for content inside the box
 const contentGroup = new GroupRenderable(renderer, {
-  id: "content",
-  position: "absolute",
-  left: 7,               // Offset from box.left to account for border
-  top: 5,                // Offset from box.top to account for border/title
-  width: 54,             // box.width - 2*border
-  height: 15,            // box.height - border - title - padding
-  flexDirection: "column",
+  id: 'content',
+  position: 'absolute',
+  left: 7, // Offset from box.left to account for border
+  top: 5, // Offset from box.top to account for border/title
+  width: 54, // box.width - 2*border
+  height: 15, // box.height - border - title - padding
+  flexDirection: 'column',
   gap: 1,
-})
+});
 
 // Add children to the group
 const header = new TextRenderable(renderer, {
-  id: "header",
-  content: "Header",
-  fg: "#00FF00",
-})
-contentGroup.add(header)
+  id: 'header',
+  content: 'Header',
+  fg: '#00FF00',
+});
+contentGroup.add(header);
 
 const text1 = new TextRenderable(renderer, {
-  id: "text1",
-  content: "Line 1",
-  fg: "#FFFFFF",
-})
-contentGroup.add(text1)
+  id: 'text1',
+  content: 'Line 1',
+  fg: '#FFFFFF',
+});
+contentGroup.add(text1);
 
-box.add(contentGroup)
+box.add(contentGroup);
 ```
 
 ---
@@ -369,26 +374,26 @@ box.add(contentGroup)
 ```typescript
 interface BoxOptions {
   // Border configuration
-  border?: boolean | BorderSides[]           // Enable/disable border
-  borderStyle?: "single" | "double" | "rounded" | "heavy"
-  borderColor?: string | RGBA
-  focusedBorderColor?: string | RGBA
-  customBorderChars?: BorderCharacters
+  border?: boolean | BorderSides[]; // Enable/disable border
+  borderStyle?: 'single' | 'double' | 'rounded' | 'heavy';
+  borderColor?: string | RGBA;
+  focusedBorderColor?: string | RGBA;
+  customBorderChars?: BorderCharacters;
 
   // Title configuration
-  title?: string                              // Text to show in border
-  titleAlignment?: "left" | "center" | "right"
+  title?: string; // Text to show in border
+  titleAlignment?: 'left' | 'center' | 'right';
 
   // Content styling
-  backgroundColor?: string | RGBA
-  shouldFill?: boolean                        // Fill background
+  backgroundColor?: string | RGBA;
+  shouldFill?: boolean; // Fill background
 
   // Layout (Yoga/Flexbox)
-  padding?: { top?: number; left?: number; right?: number; bottom?: number }
-  gap?: number | `${number}%`
-  flexDirection?: "row" | "column"
-  alignItems?: "flex-start" | "center" | "flex-end" | "stretch"
-  justifyContent?: "flex-start" | "center" | "flex-end" | "space-between"
+  padding?: { top?: number; left?: number; right?: number; bottom?: number };
+  gap?: number | `${number}%`;
+  flexDirection?: 'row' | 'column';
+  alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch';
+  justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between';
 }
 ```
 
@@ -419,10 +424,12 @@ If text is appearing in the border when it shouldn't:
 ## OpenTUI Box Source Code Reference
 
 **Key Classes:**
+
 - `BoxRenderable` (packages/core/src/renderables/Box.ts)
 - `Renderable` base class (packages/core/src/Renderable.ts)
 
 **Key Methods:**
+
 - `BoxRenderable.renderSelf()` - Draws the box and border
 - `BoxRenderable.getScissorRect()` - Defines the content clipping region
 - `buffer.drawBox()` - Low-level border rendering in Zig
@@ -432,11 +439,13 @@ If text is appearing in the border when it shouldn't:
 ## Real-World Examples from OpenTUI Repository
 
 **Timeline Example** (`timeline-example.ts`):
+
 - Shows boxes with titles displayed on border
 - Content rendered using separate TextRenderables with absolute positioning
 - Pattern: Box title + positioned text children
 
 **Input/Select Layout Demo** (`input-select-layout-demo.ts`):
+
 - Demonstrates flex layout with bordered containers
 - Uses padding to account for borders
 - Pattern: Bordered boxes with flex children
@@ -445,15 +454,14 @@ If text is appearing in the border when it shouldn't:
 
 ## Summary Table
 
-| Approach | Best For | Pros | Cons |
-|----------|----------|------|------|
-| **Title + Absolute Children** | Simple content boxes, dialogs | Clear separation, easy to position | Manual positioning needed |
-| **Flex Layout + Padding** | Complex layouts, forms | Responsive, automatic layout | Requires padding setup |
-| **GroupRenderable Inside Box** | Nested hierarchies | Organized structure | Extra nesting level |
+| Approach                       | Best For                      | Pros                               | Cons                      |
+| ------------------------------ | ----------------------------- | ---------------------------------- | ------------------------- |
+| **Title + Absolute Children**  | Simple content boxes, dialogs | Clear separation, easy to position | Manual positioning needed |
+| **Flex Layout + Padding**      | Complex layouts, forms        | Responsive, automatic layout       | Requires padding setup    |
+| **GroupRenderable Inside Box** | Nested hierarchies            | Organized structure                | Extra nesting level       |
 
 ---
 
 **Status:** Research Complete  
 **OpenTUI Version:** 0.1.44+  
 **Last Updated:** November 2025
-

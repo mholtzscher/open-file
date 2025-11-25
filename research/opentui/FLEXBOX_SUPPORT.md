@@ -31,28 +31,40 @@ From `@opentui/core/lib/yoga.options.d.ts`:
 
 ```typescript
 // Flex directions
-export type FlexDirectionString = "column" | "column-reverse" | "row" | "row-reverse";
+export type FlexDirectionString = 'column' | 'column-reverse' | 'row' | 'row-reverse';
 
 // Main axis alignment
-export type JustifyString = "flex-start" | "center" | "flex-end" 
-                          | "space-between" | "space-around" | "space-evenly";
+export type JustifyString =
+  | 'flex-start'
+  | 'center'
+  | 'flex-end'
+  | 'space-between'
+  | 'space-around'
+  | 'space-evenly';
 
 // Cross axis alignment
-export type AlignString = "auto" | "flex-start" | "center" | "flex-end" 
-                        | "stretch" | "baseline" | "space-between" 
-                        | "space-around" | "space-evenly";
+export type AlignString =
+  | 'auto'
+  | 'flex-start'
+  | 'center'
+  | 'flex-end'
+  | 'stretch'
+  | 'baseline'
+  | 'space-between'
+  | 'space-around'
+  | 'space-evenly';
 
 // Wrapping
-export type WrapString = "no-wrap" | "wrap" | "wrap-reverse";
+export type WrapString = 'no-wrap' | 'wrap' | 'wrap-reverse';
 
 // Positioning
-export type PositionTypeString = "static" | "relative" | "absolute";
+export type PositionTypeString = 'static' | 'relative' | 'absolute';
 
 // Display
-export type DisplayString = "flex" | "none" | "contents";
+export type DisplayString = 'flex' | 'none' | 'contents';
 
 // Overflow
-export type OverflowString = "visible" | "hidden" | "scroll";
+export type OverflowString = 'visible' | 'hidden' | 'scroll';
 ```
 
 ---
@@ -71,37 +83,37 @@ export interface LayoutOptions extends BaseRenderableOptions {
   justifyContent?: JustifyString;
   alignItems?: AlignString;
   alignSelf?: AlignString;
-  alignContent?: AlignString;  // For wrapped items
-  gap?: number;               // Space between items
+  alignContent?: AlignString; // For wrapped items
+  gap?: number; // Space between items
   rowGap?: number;
   columnGap?: number;
 
   // Flex item properties
-  flexGrow?: number;          // Grow factor (default: 0)
-  flexShrink?: number;        // Shrink factor (default: 1)
-  flexBasis?: number | "auto";  // Base size before growing/shrinking
+  flexGrow?: number; // Grow factor (default: 0)
+  flexShrink?: number; // Shrink factor (default: 1)
+  flexBasis?: number | 'auto'; // Base size before growing/shrinking
 
   // Positioning
-  position?: PositionTypeString;  // "static" | "relative" | "absolute"
-  top?: number | "auto" | `${number}%`;
-  right?: number | "auto" | `${number}%`;
-  bottom?: number | "auto" | `${number}%`;
-  left?: number | "auto" | `${number}%`;
+  position?: PositionTypeString; // "static" | "relative" | "absolute"
+  top?: number | 'auto' | `${number}%`;
+  right?: number | 'auto' | `${number}%`;
+  bottom?: number | 'auto' | `${number}%`;
+  left?: number | 'auto' | `${number}%`;
 
   // Sizing
-  width?: number | "auto" | `${number}%`;
-  height?: number | "auto" | `${number}%`;
-  minWidth?: number | "auto" | `${number}%`;
-  minHeight?: number | "auto" | `${number}%`;
-  maxWidth?: number | "auto" | `${number}%`;
-  maxHeight?: number | "auto" | `${number}%`;
+  width?: number | 'auto' | `${number}%`;
+  height?: number | 'auto' | `${number}%`;
+  minWidth?: number | 'auto' | `${number}%`;
+  minHeight?: number | 'auto' | `${number}%`;
+  maxWidth?: number | 'auto' | `${number}%`;
+  maxHeight?: number | 'auto' | `${number}%`;
 
   // Spacing
-  margin?: number | "auto" | `${number}%`;
-  marginTop?: number | "auto" | `${number}%`;
-  marginRight?: number | "auto" | `${number}%`;
-  marginBottom?: number | "auto" | `${number}%`;
-  marginLeft?: number | "auto" | `${number}%`;
+  margin?: number | 'auto' | `${number}%`;
+  marginTop?: number | 'auto' | `${number}%`;
+  marginRight?: number | 'auto' | `${number}%`;
+  marginBottom?: number | 'auto' | `${number}%`;
+  marginLeft?: number | 'auto' | `${number}%`;
 
   padding?: number | `${number}%`;
   paddingTop?: number | `${number}%`;
@@ -110,7 +122,7 @@ export interface LayoutOptions extends BaseRenderableOptions {
   paddingLeft?: number | `${number}%`;
 
   // Display control
-  display?: "flex" | "none" | "contents";
+  display?: 'flex' | 'none' | 'contents';
   overflow?: OverflowString;
   enableLayout?: boolean;
 }
@@ -142,7 +154,7 @@ const header = new GroupRenderable(renderer, {
 const title = new TextRenderable(renderer, {
   id: 'title',
   content: 'S3 Explorer',
-  flexGrow: 0,  // Don't grow
+  flexGrow: 0, // Don't grow
 });
 
 const info = new TextRenderable(renderer, {
@@ -169,8 +181,12 @@ renderer.root.add(header);
   backgroundColor="#1a1a2e"
   padding={1}
 >
-  <text id="title" flexGrow={0}>S3 Explorer</text>
-  <text id="info" flexGrow={0}>bucket: my-bucket</text>
+  <text id="title" flexGrow={0}>
+    S3 Explorer
+  </text>
+  <text id="info" flexGrow={0}>
+    bucket: my-bucket
+  </text>
 </box>
 ```
 
@@ -183,23 +199,23 @@ renderer.root.add(header);
 ```typescript
 const container = new GroupRenderable(renderer, {
   id: 'main-container',
-  flexDirection: 'column',  // Stack vertically
+  flexDirection: 'column', // Stack vertically
   width: '100%',
   height: '100%',
-  gap: 1,  // Space between items
+  gap: 1, // Space between items
 });
 
 const header = new BoxRenderable(renderer, {
   id: 'header',
   height: 3,
   backgroundColor: '#1a1a2e',
-  flexGrow: 0,  // Don't grow
-  flexShrink: 0,  // Don't shrink
+  flexGrow: 0, // Don't grow
+  flexShrink: 0, // Don't shrink
 });
 
 const content = new BoxRenderable(renderer, {
   id: 'content',
-  flexGrow: 1,  // Take all remaining space
+  flexGrow: 1, // Take all remaining space
   backgroundColor: '#2d2d44',
 });
 
@@ -220,13 +236,7 @@ renderer.root.add(container);
 **React Syntax**:
 
 ```jsx
-<box
-  id="main-container"
-  flexDirection="column"
-  width="100%"
-  height="100%"
-  gap={1}
->
+<box id="main-container" flexDirection="column" width="100%" height="100%" gap={1}>
   <box id="header" height={3} flexGrow={0} flexShrink={0} />
   <box id="content" flexGrow={1} />
   <box id="footer" height={2} flexGrow={0} flexShrink={0} />
@@ -246,14 +256,14 @@ const paneContainer = new GroupRenderable(renderer, {
   width: '100%',
   height: contentHeight,
   gap: 1,
-  alignItems: 'stretch',  // Panes stretch to fill height
+  alignItems: 'stretch', // Panes stretch to fill height
 });
 
 // Left pane
 const leftPane = new GroupRenderable(renderer, {
   id: 'left-pane',
-  flexGrow: 1,           // Equal share of space
-  flexBasis: '50%',      // Preferred width: 50% of container
+  flexGrow: 1, // Equal share of space
+  flexBasis: '50%', // Preferred width: 50% of container
   overflow: 'hidden',
 });
 
@@ -268,7 +278,7 @@ const middlePane = new GroupRenderable(renderer, {
 // Right pane (preview)
 const rightPane = new GroupRenderable(renderer, {
   id: 'right-pane',
-  flexGrow: 0,           // Fixed width
+  flexGrow: 0, // Fixed width
   width: 30,
   overflow: 'hidden',
 });
@@ -306,8 +316,8 @@ renderer.root.add(paneContainer);
 const centered = new GroupRenderable(renderer, {
   id: 'centered-box',
   flexDirection: 'column',
-  justifyContent: 'center',  // Vertical center
-  alignItems: 'center',       // Horizontal center
+  justifyContent: 'center', // Vertical center
+  alignItems: 'center', // Horizontal center
   width: 40,
   height: 10,
   backgroundColor: '#1a1a2e',
@@ -332,11 +342,11 @@ renderer.root.add(centered);
 const grid = new GroupRenderable(renderer, {
   id: 'grid',
   flexDirection: 'row',
-  flexWrap: 'wrap',         // Wrap to next line
+  flexWrap: 'wrap', // Wrap to next line
   gap: 1,
   width: '100%',
   height: 'auto',
-  alignContent: 'flex-start',  // Align wrapped lines
+  alignContent: 'flex-start', // Align wrapped lines
 });
 
 // Add items that flex and wrap
@@ -345,7 +355,7 @@ for (let i = 0; i < 10; i++) {
     id: `item-${i}`,
     width: 15,
     height: 5,
-    flexGrow: 0,   // Fixed size
+    flexGrow: 0, // Fixed size
     flexShrink: 0,
   });
   grid.add(item);
@@ -376,6 +386,7 @@ container.add(pane2);
 ```
 
 **Advantages**:
+
 - ✅ Automatic sizing and positioning
 - ✅ Responsive to container changes
 - ✅ Responsive to terminal resizing
@@ -405,6 +416,7 @@ const pane2 = new BoxRenderable(renderer, {
 ```
 
 **Disadvantages**:
+
 - ❌ Manual calculation of positions
 - ❌ Must handle terminal resize events
 - ❌ Must recalculate on every size change
@@ -419,22 +431,22 @@ const pane2 = new BoxRenderable(renderer, {
 
 ### Container Properties (Parent)
 
-| Property | Values | Purpose |
-|----------|--------|---------|
-| `flexDirection` | "row" \| "column" | Main layout direction |
+| Property         | Values                                                                                        | Purpose                     |
+| ---------------- | --------------------------------------------------------------------------------------------- | --------------------------- |
+| `flexDirection`  | "row" \| "column"                                                                             | Main layout direction       |
 | `justifyContent` | "flex-start" \| "center" \| "flex-end" \| "space-between" \| "space-around" \| "space-evenly" | Align items along main axis |
-| `alignItems` | "flex-start" \| "center" \| "flex-end" \| "stretch" | Align items on cross axis |
-| `gap` | number | Space between children |
-| `flexWrap` | "no-wrap" \| "wrap" \| "wrap-reverse" | Wrap behavior |
+| `alignItems`     | "flex-start" \| "center" \| "flex-end" \| "stretch"                                           | Align items on cross axis   |
+| `gap`            | number                                                                                        | Space between children      |
+| `flexWrap`       | "no-wrap" \| "wrap" \| "wrap-reverse"                                                         | Wrap behavior               |
 
 ### Item Properties (Child)
 
-| Property | Type | Purpose |
-|----------|------|---------|
-| `flexGrow` | number | How much to grow (0 = no growth) |
-| `flexShrink` | number | How much to shrink (1 = shrink proportionally) |
-| `flexBasis` | number \| "auto" | Base size before growing/shrinking |
-| `alignSelf` | string | Override parent's alignItems |
+| Property     | Type             | Purpose                                        |
+| ------------ | ---------------- | ---------------------------------------------- |
+| `flexGrow`   | number           | How much to grow (0 = no growth)               |
+| `flexShrink` | number           | How much to shrink (1 = shrink proportionally) |
+| `flexBasis`  | number \| "auto" | Base size before growing/shrinking             |
+| `alignSelf`  | string           | Override parent's alignItems                   |
 
 ### Quick Reference
 
@@ -459,14 +471,14 @@ const pane2 = new BoxRenderable(renderer, {
 
 ## Layout Property Support Matrix
 
-| Component | Flexbox | Absolute | Percentage | Gap |
-|-----------|---------|----------|------------|-----|
-| **GroupRenderable** | ✅ | ✅ | ✅ | ✅ |
-| **BoxRenderable** | ✅ | ✅ | ✅ | ✅ |
-| **TextRenderable** | ✅ | ✅ | ✅ | ❌ |
-| **InputRenderable** | ✅ | ✅ | ✅ | ❌ |
-| **SelectRenderable** | ✅ | ✅ | ✅ | ❌ |
-| **ScrollBoxRenderable** | ✅ | ✅ | ✅ | ✅ |
+| Component               | Flexbox | Absolute | Percentage | Gap |
+| ----------------------- | ------- | -------- | ---------- | --- |
+| **GroupRenderable**     | ✅      | ✅       | ✅         | ✅  |
+| **BoxRenderable**       | ✅      | ✅       | ✅         | ✅  |
+| **TextRenderable**      | ✅      | ✅       | ✅         | ❌  |
+| **InputRenderable**     | ✅      | ✅       | ✅         | ❌  |
+| **SelectRenderable**    | ✅      | ✅       | ✅         | ❌  |
+| **ScrollBoxRenderable** | ✅      | ✅       | ✅         | ✅  |
 
 ---
 
@@ -501,6 +513,7 @@ render(<MyApp />);
 ## Migration Strategy for S3 Explorer
 
 ### Current State
+
 - Using absolute positioning with manual calculations
 - Panes positioned using `left`, `top`, `width`, `height`
 - Manual offset calculations for gaps
@@ -508,27 +521,26 @@ render(<MyApp />);
 ### Recommended Migration
 
 **Phase 1: Container Layout**
+
 ```jsx
-<box
-  flexDirection="row"
-  width="100%"
-  height={contentHeight}
-  gap={1}
->
+<box flexDirection="row" width="100%" height={contentHeight} gap={1}>
   {/* Panes here */}
 </box>
 ```
 
 **Phase 2: Remove Manual Sizing**
+
 - Delete manual coordinate calculations
 - Remove `useLayoutDimensions` hook dependencies
 - Use flexbox properties instead
 
 **Phase 3: Responsive Panes**
+
 - Adjust pane widths dynamically with terminal size
 - Use `flexBasis` and `flexGrow` for responsive behavior
 
 ### Benefits of Migration
+
 - ✅ Reduce code complexity
 - ✅ Eliminate manual calculations
 - ✅ Automatic terminal resize handling
@@ -611,13 +623,7 @@ function S3ExplorerLayout() {
       </box>
 
       {/* Panes container */}
-      <box
-        id="panes"
-        flexDirection="row"
-        flexGrow={1}
-        gap={1}
-        alignItems="stretch"
-      >
+      <box id="panes" flexDirection="row" flexGrow={1} gap={1} alignItems="stretch">
         {/* Left pane - buckets */}
         <box id="left-pane" flexGrow={1} flexBasis="33%" overflow="hidden" />
 
@@ -660,13 +666,7 @@ function S3ExplorerLayout() {
       <box position="absolute" left={0} top={0} width={terminalWidth} height={1} />
 
       {/* Left pane */}
-      <box
-        position="absolute"
-        left={0}
-        top={1}
-        width={leftWidth}
-        height={contentHeight}
-      />
+      <box position="absolute" left={0} top={1} width={leftWidth} height={contentHeight} />
 
       {/* Middle pane */}
       <box
@@ -687,13 +687,7 @@ function S3ExplorerLayout() {
       />
 
       {/* Footer */}
-      <box
-        position="absolute"
-        left={0}
-        top={contentHeight + 1}
-        width={terminalWidth}
-        height={1}
-      />
+      <box position="absolute" left={0} top={contentHeight + 1} width={terminalWidth} height={1} />
     </>
   );
 }
@@ -713,6 +707,7 @@ function S3ExplorerLayout() {
 ## Recommendation Summary
 
 ### Use Flexbox If:
+
 - ✅ Building responsive layouts
 - ✅ Want automatic sizing
 - ✅ Need responsive terminal support
@@ -720,12 +715,15 @@ function S3ExplorerLayout() {
 - ✅ Planning feature additions
 
 ### Use Absolute Positioning If:
+
 - ✅ Need precise pixel-perfect positioning
 - ✅ Building overlays or modals
 - ✅ Layout is entirely fixed
 
 ### For S3 Explorer Multi-Pane Layout:
+
 **Strongly recommend migrating to flexbox** for:
+
 - Simpler code
 - Automatic terminal resize handling
 - Better maintainability
@@ -738,4 +736,3 @@ function S3ExplorerLayout() {
 **OpenTUI Version**: 0.1.44+  
 **Status**: Complete Research  
 **Recommendation Level**: High Priority
-

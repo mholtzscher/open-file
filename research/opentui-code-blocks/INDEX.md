@@ -3,40 +3,43 @@
 ## 📋 Documents
 
 ### 1. **README.md** - Complete Guide (Main Document)
-   - **Length:** ~6,000 words
-   - **Audience:** Developers implementing code display
-   - **Content:**
-     - Executive summary with key findings
-     - How open-s3 implements it (real-world example)
-     - Complete API reference
-     - Implementation patterns (basic → advanced)
-     - Performance characteristics and limits
-     - Virtual scrolling for large files
-     - Comparison with other frameworks
-     - Limitations and gotchas
-     - Best practices
-     - Future enhancements
 
-   **Read this if:** You need comprehensive understanding or implementation guidance
+- **Length:** ~6,000 words
+- **Audience:** Developers implementing code display
+- **Content:**
+  - Executive summary with key findings
+  - How open-s3 implements it (real-world example)
+  - Complete API reference
+  - Implementation patterns (basic → advanced)
+  - Performance characteristics and limits
+  - Virtual scrolling for large files
+  - Comparison with other frameworks
+  - Limitations and gotchas
+  - Best practices
+  - Future enhancements
+
+**Read this if:** You need comprehensive understanding or implementation guidance
 
 ### 2. **QUICK_REFERENCE.md** - Fast Lookup (For Implementation)
-   - **Length:** ~800 words
-   - **Audience:** Quick lookups during coding
-   - **Content:**
-     - TL;DR summary
-     - Component names and imports
-     - Full API quick reference with props
-     - Code patterns (4 examples from basic → virtual scrolling)
-     - Syntax highlighting quick setup
-     - Performance tiers
-     - Common mistakes and solutions
-     - Limitations list
-     - Real-world example paths
 
-   **Read this if:** You're coding and need quick answers
+- **Length:** ~800 words
+- **Audience:** Quick lookups during coding
+- **Content:**
+  - TL;DR summary
+  - Component names and imports
+  - Full API quick reference with props
+  - Code patterns (4 examples from basic → virtual scrolling)
+  - Syntax highlighting quick setup
+  - Performance tiers
+  - Common mistakes and solutions
+  - Limitations list
+  - Real-world example paths
+
+**Read this if:** You're coding and need quick answers
 
 ### 3. **INDEX.md** (This File)
-   - Navigation guide for all documents
+
+- Navigation guide for all documents
 
 ---
 
@@ -45,6 +48,7 @@
 ### "I want to display syntax-highlighted code"
 
 **Files to read:**
+
 1. QUICK_REFERENCE.md → Pattern #2
 2. README.md → Section 7 (Real-world example)
 3. Reference code: `/home/michael/code/open-s3/src/utils/syntax-highlighting.ts`
@@ -54,6 +58,7 @@
 ### "I need to display a huge file (>100k lines)"
 
 **Files to read:**
+
 1. QUICK_REFERENCE.md → Pattern #4 (Virtual Scrolling)
 2. README.md → Section 4 (Scrolling and Large Files)
 3. Performance characteristics: Section 5
@@ -63,6 +68,7 @@
 ### "I want line numbers on code"
 
 **Files to read:**
+
 1. QUICK_REFERENCE.md → Pattern #3
 2. README.md → Section 3.3 (With Line Numbers)
 
@@ -78,16 +84,16 @@
 
 ## 📊 Key Findings Summary
 
-| Question | Answer |
-|----------|--------|
-| **Does OpenTUI have a CodeBlock component?** | No |
-| **What should I use instead?** | TextRenderable + BoxRenderable |
-| **How do I add syntax highlighting?** | Use `highlight.js` library |
-| **How do I handle scrolling?** | Manual implementation required |
-| **Can I display line numbers?** | Yes, using text elements |
-| **What's the file size limit?** | ~1MB for direct rendering, >1MB use virtual scrolling |
-| **Is there built-in search?** | No, must build custom |
-| **Can I copy code to clipboard?** | Not built-in, must implement |
+| Question                                     | Answer                                                |
+| -------------------------------------------- | ----------------------------------------------------- |
+| **Does OpenTUI have a CodeBlock component?** | No                                                    |
+| **What should I use instead?**               | TextRenderable + BoxRenderable                        |
+| **How do I add syntax highlighting?**        | Use `highlight.js` library                            |
+| **How do I handle scrolling?**               | Manual implementation required                        |
+| **Can I display line numbers?**              | Yes, using text elements                              |
+| **What's the file size limit?**              | ~1MB for direct rendering, >1MB use virtual scrolling |
+| **Is there built-in search?**                | No, must build custom                                 |
+| **Can I copy code to clipboard?**            | Not built-in, must implement                          |
 
 ---
 
@@ -132,12 +138,15 @@ Code Display System
 ## 💡 Core Concepts
 
 ### 1. Composition Over Built-ins
+
 OpenTUI doesn't have a "CodeBlock" component because it follows a philosophy of composition:
+
 - Each component does ONE thing
 - Build complex features by combining components
 - Maximum flexibility, more code, but powerful
 
 ### 2. Syntax Highlighting Pattern
+
 ```
 Input:   code string + filename
     ↓
@@ -151,6 +160,7 @@ Render:  For each line/segment → TextRenderable
 ```
 
 ### 3. Scrolling Challenge
+
 - No built-in scrolling
 - Text beyond bounds is clipped (overflow: 'hidden')
 - Solution: Virtual scrolling renders only visible lines
@@ -179,12 +189,14 @@ File size?
 ## 🛠️ Implementation Checklist
 
 ### Basic Code Display
+
 - [ ] Create BoxRenderable with `overflow: 'hidden'`
 - [ ] Add TextRenderable inside
 - [ ] Set text color with `fg` prop
 - [ ] Add border and title
 
 ### With Syntax Highlighting
+
 - [ ] Install highlight.js: `bun install highlight.js`
 - [ ] Create `highlightCode()` function
 - [ ] Implement language detection
@@ -193,12 +205,14 @@ File size?
 - [ ] Render colored segments
 
 ### With Line Numbers
+
 - [ ] Create container with `flexDirection: 'row'`
 - [ ] Left column: line numbers (fixed width)
 - [ ] Right column: code (flexGrow: 1)
 - [ ] Render each line independently
 
 ### With Virtual Scrolling (>1K lines)
+
 - [ ] Create VirtualCodeScroller class
 - [ ] Implement `scroll(direction, amount)` method
 - [ ] Only render visible lines
@@ -210,23 +224,27 @@ File size?
 ## 🎓 Learning Path
 
 ### Level 1: Beginner
+
 1. Read: QUICK_REFERENCE.md → Pattern #1 (Basic display)
 2. Do: Create a simple code box with colored text
 3. Time: 10 minutes
 
 ### Level 2: Intermediate
+
 1. Read: QUICK_REFERENCE.md → Pattern #2 (With highlighting)
 2. Read: README.md → Section 7 (Real-world example)
 3. Do: Add syntax highlighting to your code display
 4. Time: 30 minutes
 
 ### Level 3: Advanced
+
 1. Read: QUICK_REFERENCE.md → Pattern #4 (Virtual scrolling)
 2. Read: README.md → Section 4 (Large files)
 3. Do: Implement scrolling for large files
 4. Time: 60 minutes
 
 ### Level 4: Expert
+
 1. Read: README.md → All sections (full guide)
 2. Study: open-s3 source code
 3. Read: OpenTUI architecture-guide.md for rendering pipeline
@@ -240,6 +258,7 @@ File size?
 ### In open-s3 Project
 
 **Syntax Highlighting:**
+
 - File: `src/utils/syntax-highlighting.ts` (232 lines)
 - Key functions:
   - `detectLanguage(filename)` - detects from extension
@@ -248,6 +267,7 @@ File size?
 - Interfaces: `TextSegment`, `HighlightedLine`
 
 **Rendering:**
+
 - File: `src/ui/preview-pane-react.tsx` (87 lines)
 - Key features:
   - React component wrapper
@@ -256,6 +276,7 @@ File size?
   - Overflow handling
 
 **Color Theme:**
+
 - File: `src/ui/theme.ts`
 - Uses: Catppuccin Mocha theme
 
@@ -288,11 +309,13 @@ File size?
 ## 📚 Additional Resources
 
 ### In This Project
+
 - `/home/michael/code/open-s3/src/utils/syntax-highlighting.ts` - Reference implementation
 - `/home/michael/code/open-s3/src/ui/preview-pane-react.tsx` - Reference component
 - `/home/michael/code/open-s3/research/opentui/comprehensive-guide.md` - Full OpenTUI docs
 
 ### External
+
 - **OpenTUI GitHub:** https://github.com/sst/opentui
 - **highlight.js:** https://highlightjs.org/
 - **highlight.js Docs:** https://highlightjs.readthedocs.io/
@@ -326,6 +349,7 @@ QUICK_REFERENCE.md (Fast Lookup)
 ## ✅ Verification Checklist
 
 Before using this research:
+
 - [ ] OpenTUI version 0.1.44+ (checked Nov 2025)
 - [ ] TypeScript/Bun project setup
 - [ ] highlight.js installed (if using syntax highlighting)
@@ -337,4 +361,3 @@ Before using this research:
 **Last Updated:** November 2025
 **Status:** Complete Research Documentation
 **Accuracy Level:** ⭐⭐⭐⭐⭐ (Based on source code + real-world implementation)
-

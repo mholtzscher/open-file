@@ -52,6 +52,7 @@ const container = new GroupRenderable(renderer, {
 ```
 
 **React syntax** (as used in S3 Explorer):
+
 ```jsx
 <box flexDirection="row" gap={1} width="100%" height="100%">
   <box flexGrow={1} />
@@ -83,28 +84,29 @@ Full `LayoutOptions` interface includes:
 
 ```typescript
 // Container properties
-flexDirection, flexWrap, justifyContent, alignItems, alignSelf, gap
+(flexDirection, flexWrap, justifyContent, alignItems, alignSelf, gap);
 
 // Item properties
-flexGrow, flexShrink, flexBasis
+(flexGrow, flexShrink, flexBasis);
 
 // Positioning
-position ("static" | "relative" | "absolute")
-top, right, bottom, left
+position('static' | 'relative' | 'absolute');
+(top, right, bottom, left);
 
 // Sizing
-width, height, minWidth, maxWidth, minHeight, maxHeight
+(width, height, minWidth, maxWidth, minHeight, maxHeight);
 
 // Spacing
-margin, marginTop, marginRight, marginBottom, marginLeft
-padding, paddingTop, paddingRight, paddingBottom, paddingLeft
+(margin, marginTop, marginRight, marginBottom, marginLeft);
+(padding, paddingTop, paddingRight, paddingBottom, paddingLeft);
 
 // Display
-display ("flex" | "none" | "contents")
-overflow ("visible" | "hidden" | "scroll")
+display('flex' | 'none' | 'contents');
+overflow('visible' | 'hidden' | 'scroll');
 ```
 
 **All properties support**:
+
 - Absolute values (numbers in character cells)
 - Percentage values (`"50%"`, `"100%"`)
 - Auto values (`"auto"`)
@@ -115,13 +117,13 @@ overflow ("visible" | "hidden" | "scroll")
 
 **Answer**: ❌ **NO, flexbox is the recommended approach**
 
-| Aspect | Flexbox | Absolute |
-|--------|---------|----------|
-| **Automatic sizing** | ✅ | ❌ |
-| **Terminal resize** | ✅ | ❌ |
-| **Code complexity** | ✅ Simple | ❌ Complex |
-| **Maintainability** | ✅ Easy | ❌ Hard |
-| **Best for** | Main layouts | Overlays only |
+| Aspect               | Flexbox      | Absolute      |
+| -------------------- | ------------ | ------------- |
+| **Automatic sizing** | ✅           | ❌            |
+| **Terminal resize**  | ✅           | ❌            |
+| **Code complexity**  | ✅ Simple    | ❌ Complex    |
+| **Maintainability**  | ✅ Easy      | ❌ Hard       |
+| **Best for**         | Main layouts | Overlays only |
 
 **Current S3 Explorer**: Uses absolute positioning (manual calculations)  
 **Recommended**: Switch to flexbox (automatic handling)
@@ -136,17 +138,13 @@ The S3 Explorer uses absolute positioning:
 
 ```jsx
 // From pane-react.tsx
-<text 
-  position="absolute" 
-  left={left} 
-  top={top} 
-  fg={CatppuccinMocha.blue}
->
+<text position="absolute" left={left} top={top} fg={CatppuccinMocha.blue}>
   {/* Content */}
 </text>
 ```
 
 **Characteristics**:
+
 - Manual `left`, `top`, `width`, `height` calculations
 - Uses `useLayoutDimensions` hook for sizing
 - Manual gap handling (offset calculations)
@@ -155,6 +153,7 @@ The S3 Explorer uses absolute positioning:
 ### Why Switch to Flexbox
 
 **Advantages**:
+
 - ✅ Eliminate manual calculations (~40 lines of code)
 - ✅ Automatic terminal resize handling
 - ✅ Better code clarity and maintainability
@@ -169,16 +168,19 @@ The S3 Explorer uses absolute positioning:
 ## Recommended Action Plan
 
 ### Phase 1: Quick Win (Immediate)
+
 ```jsx
 // Wrap existing panes in flexbox container
 <box flexDirection="row" width="100%" height="100%" gap={1}>
   {/* Existing pane components */}
 </box>
 ```
+
 - Time: 15 minutes
 - Benefit: Better spacing, visual improvement
 
 ### Phase 2: Refactor Dimensions (Short-term)
+
 - Remove manual coordinate calculations
 - Convert to `flexGrow` and `flexBasis`
 - Clean up `useLayoutDimensions` dependencies
@@ -186,6 +188,7 @@ The S3 Explorer uses absolute positioning:
 - Benefit: Reduced code, auto-resize
 
 ### Phase 3: Polish (Optional)
+
 - Resizable panes (flexbox makes this easier)
 - Proportional sizing via GUI
 - Layout persistence
@@ -226,6 +229,7 @@ return (
 ```
 
 **Difference**:
+
 - Lines of code: 15 → 7
 - Manual calculations: Yes → No
 - Auto-resize: No → Yes
@@ -240,12 +244,14 @@ return (
 **What it is**: Facebook's open-source layout library implementing CSS Flexbox
 
 **Key characteristics**:
+
 - Fast: ~0.1-0.5ms per layout calculation
 - Accurate: W3C Flexbox specification compliant
 - Terminal-aware: Works with character cells instead of pixels
 - Well-tested: Used in production systems
 
 **Terminal-specific adjustments**:
+
 - All measurements in cell units (1 cell ≈ 1 character)
 - Heights in lines (1 line ≈ 1 character height)
 - `gap: 1` = 1 character/line space
@@ -267,9 +273,9 @@ React JSX integration provides autocomplete in editors:
 
 ```jsx
 <box
-  flexDirection="row"    // ✅ TypeScript knows all valid values
+  flexDirection="row" // ✅ TypeScript knows all valid values
   justifyContent="flex-" // 🎨 Autocomplete shows: flex-start, flex-end, etc.
-  alignItems="center"    // ✅ No typos possible
+  alignItems="center" // ✅ No typos possible
 />
 ```
 
@@ -277,15 +283,15 @@ React JSX integration provides autocomplete in editors:
 
 ## Layout Property Support Matrix
 
-| Renderable Type | Flexbox | Absolute | Percentage |
-|-----------------|---------|----------|------------|
-| GroupRenderable | ✅ | ✅ | ✅ |
-| BoxRenderable | ✅ | ✅ | ✅ |
-| TextRenderable | ✅ | ✅ | ✅ |
-| InputRenderable | ✅ | ✅ | ✅ |
-| SelectRenderable | ✅ | ✅ | ✅ |
-| ScrollBoxRenderable | ✅ | ✅ | ✅ |
-| ASCIIFontRenderable | ✅ | ✅ | ✅ |
+| Renderable Type     | Flexbox | Absolute | Percentage |
+| ------------------- | ------- | -------- | ---------- |
+| GroupRenderable     | ✅      | ✅       | ✅         |
+| BoxRenderable       | ✅      | ✅       | ✅         |
+| TextRenderable      | ✅      | ✅       | ✅         |
+| InputRenderable     | ✅      | ✅       | ✅         |
+| SelectRenderable    | ✅      | ✅       | ✅         |
+| ScrollBoxRenderable | ✅      | ✅       | ✅         |
+| ASCIIFontRenderable | ✅      | ✅       | ✅         |
 
 **All components support all layout properties!**
 
@@ -293,12 +299,12 @@ React JSX integration provides autocomplete in editors:
 
 ## Comparison with Alternative TUI Frameworks
 
-| Framework | Layout System | Flexbox | Notes |
-|-----------|---------------|---------|-------|
-| **OpenTUI** | Yoga | ✅ Full | Recommended for S3 Explorer |
-| Ink (React) | Flexbox | ✅ Full | React-only, similar capabilities |
-| Blessed | Manual | ❌ No | jQuery-style, no flexbox |
-| Oclif | Tables | ❌ No | CLI-focused, limited layouts |
+| Framework   | Layout System | Flexbox | Notes                            |
+| ----------- | ------------- | ------- | -------------------------------- |
+| **OpenTUI** | Yoga          | ✅ Full | Recommended for S3 Explorer      |
+| Ink (React) | Flexbox       | ✅ Full | React-only, similar capabilities |
+| Blessed     | Manual        | ❌ No   | jQuery-style, no flexbox         |
+| Oclif       | Tables        | ❌ No   | CLI-focused, limited layouts     |
 
 **OpenTUI advantage**: Full Yoga Flexbox + excellent React integration
 
@@ -311,6 +317,7 @@ React JSX integration provides autocomplete in editors:
 **Switch the S3 Explorer multi-pane layout from absolute positioning to flexbox**
 
 **Why**:
+
 1. Simpler code (40-50% reduction in layout-related code)
 2. Better terminal resize handling (automatic)
 3. More maintainable
@@ -326,6 +333,7 @@ React JSX integration provides autocomplete in editors:
 ### MIGRATION STEPS
 
 1. **Wrap panes in flexbox container** (5 min)
+
    ```jsx
    <box flexDirection="row" width="100%" gap={1}>
      {/* Panes */}
@@ -430,4 +438,3 @@ Created comprehensive research documentation:
 **Status**: ✅ RESEARCH COMPLETE  
 **Recommendation**: Proceed with flexbox implementation  
 **Confidence**: Very High (95%+)
-

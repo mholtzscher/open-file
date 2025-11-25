@@ -11,14 +11,14 @@ OpenTUI **does NOT have a dedicated "CodeBlock" component**. Instead, it uses a 
 
 ### Key Findings
 
-| Aspect | Details |
-|--------|---------|
-| **Component Name** | `TextRenderable` (core) + `Box`/`Group` (layout) |
-| **Syntax Highlighting** | Via external `highlight.js` library |
-| **Scrolling Support** | Manual - requires container with `overflow: "hidden"` |
-| **Line Numbers** | Not built-in - must be added manually |
-| **Large File Handling** | Recommended: only render visible lines (viewport-based) |
-| **Performance** | Excellent for <1000 lines, may struggle with 100k+ lines |
+| Aspect                  | Details                                                  |
+| ----------------------- | -------------------------------------------------------- |
+| **Component Name**      | `TextRenderable` (core) + `Box`/`Group` (layout)         |
+| **Syntax Highlighting** | Via external `highlight.js` library                      |
+| **Scrolling Support**   | Manual - requires container with `overflow: "hidden"`    |
+| **Line Numbers**        | Not built-in - must be added manually                    |
+| **Large File Handling** | Recommended: only render visible lines (viewport-based)  |
+| **Performance**         | Excellent for <1000 lines, may struggle with 100k+ lines |
 
 ---
 
@@ -64,24 +64,45 @@ export function highlightCode(code: string, filename: string): HighlightedLine[]
 ```
 
 **Capabilities:**
+
 - Detects language from file extension
 - Uses `highlight.js` for syntax parsing
 - Maps highlight.js token classes to Catppuccin Mocha colors
 - Returns structured data (not HTML strings)
 
 **Supported Languages:**
+
 ```typescript
 {
-  js, jsx, ts, tsx,        // JavaScript/TypeScript
-  py,                      // Python
-  rb,                      // Ruby
-  go, rs, c, cpp, java,   // Compiled languages
-  sh, bash, zsh, fish,     // Shells
-  json, yaml, yml, toml,   // Config files
-  xml, html, css, scss,    // Web technologies
-  md, markdown,            // Markup
-  sql,                     // Database
-  csv, txt, log            // Plain text formats
+  (js,
+    jsx,
+    ts,
+    tsx, // JavaScript/TypeScript
+    py, // Python
+    rb, // Ruby
+    go,
+    rs,
+    c,
+    cpp,
+    java, // Compiled languages
+    sh,
+    bash,
+    zsh,
+    fish, // Shells
+    json,
+    yaml,
+    yml,
+    toml, // Config files
+    xml,
+    html,
+    css,
+    scss, // Web technologies
+    md,
+    markdown, // Markup
+    sql, // Database
+    csv,
+    txt,
+    log); // Plain text formats
 }
 ```
 
@@ -98,7 +119,7 @@ export function PreviewPane({
 }: PreviewPaneProps) {
   // Highlight code if filename provided
   const lines = highlightCode(content, filename);
-  
+
   return (
     <box overflow="hidden" title={`Preview (${totalLines} lines)`}>
       {lines.map((line, lineIdx) => (
@@ -116,6 +137,7 @@ export function PreviewPane({
 ```
 
 **Key Points:**
+
 - Each line is a Box with `flexDirection="row"`
 - Each segment is a Text element with color
 - Container has `overflow: "hidden"` to clip content beyond bounds
@@ -128,11 +150,13 @@ export function PreviewPane({
 ### 2.1 TextRenderable (Core Component)
 
 **Import:**
+
 ```typescript
 import { TextRenderable, TextAttributes } from '@opentui/core';
 ```
 
 **Constructor:**
+
 ```typescript
 new TextRenderable(renderer, {
   id: string;                           // Unique identifier
@@ -152,6 +176,7 @@ new TextRenderable(renderer, {
 ```
 
 **TextAttributes (Bitmask Flags):**
+
 ```typescript
 enum TextAttributes {
   BOLD = 0x01,
@@ -165,10 +190,11 @@ enum TextAttributes {
 }
 
 // Usage (bitwise OR):
-attributes: TextAttributes.BOLD | TextAttributes.UNDERLINE
+attributes: TextAttributes.BOLD | TextAttributes.UNDERLINE;
 ```
 
 **Limitations:**
+
 - No built-in word wrapping
 - No built-in scrolling
 - Content is static (no text cursor or editing)
@@ -177,11 +203,13 @@ attributes: TextAttributes.BOLD | TextAttributes.UNDERLINE
 ### 2.2 BoxRenderable (Layout Container)
 
 **Import:**
+
 ```typescript
 import { BoxRenderable } from '@opentui/core';
 ```
 
 **Key Props for Code Display:**
+
 ```typescript
 {
   overflow?: 'visible' | 'hidden' | 'scroll';  // ✨ IMPORTANT
@@ -191,7 +219,7 @@ import { BoxRenderable } from '@opentui/core';
   titleAlignment?: 'left' | 'center' | 'right';
   padding?: { top, left, right, bottom };
   backgroundColor?: string;
-  
+
   // Flexbox layout
   flexDirection?: 'row' | 'column';
   gap?: number;
@@ -199,6 +227,7 @@ import { BoxRenderable } from '@opentui/core';
 ```
 
 **Overflow Behavior:**
+
 ```typescript
 // overflow: 'hidden' - clips content beyond container bounds
 // overflow: 'scroll' - shows scroll indicators (visual only, no interaction)
@@ -208,6 +237,7 @@ import { BoxRenderable } from '@opentui/core';
 ### 2.3 GroupRenderable (Flex Container)
 
 **Import:**
+
 ```typescript
 import { GroupRenderable } from '@opentui/core';
 ```
@@ -220,7 +250,7 @@ const container = new GroupRenderable(renderer, {
   flexDirection: 'column',
   width: '100%',
   height: '100%',
-  gap: 0,  // No gap between lines
+  gap: 0, // No gap between lines
 });
 
 // Add content dynamically
@@ -234,6 +264,7 @@ container.add(lineElement);
 ### 3.1 Basic Code Display
 
 **Minimal Example:**
+
 ```typescript
 import { createCliRenderer, TextRenderable, BoxRenderable } from '@opentui/core';
 
@@ -265,11 +296,13 @@ renderer.root.add(codeBox);
 ### 3.2 Syntax Highlighted Code (Like Open-S3)
 
 **Step 1: Install highlight.js**
+
 ```bash
 bun install highlight.js
 ```
 
 **Step 2: Create highlighting module**
+
 ```typescript
 import hljs from 'highlight.js';
 
@@ -284,9 +317,9 @@ export interface HighlightedLine {
 
 export function highlightCode(code: string, filename: string): HighlightedLine[] {
   const language = detectLanguageFromExtension(filename);
-  
+
   const highlighted = hljs.highlight(code, { language }).value;
-  
+
   // Parse HTML spans into segments with colors
   // (see syntax-highlighting.ts in open-s3 for full implementation)
   return lines;
@@ -294,6 +327,7 @@ export function highlightCode(code: string, filename: string): HighlightedLine[]
 ```
 
 **Step 3: Render with colors**
+
 ```typescript
 const lines = highlightCode(fileContent, 'script.js');
 
@@ -329,6 +363,7 @@ renderer.root.add(codeBox);
 ### 3.3 With Line Numbers
 
 **Implementation:**
+
 ```typescript
 function renderCodeWithLineNumbers(
   renderer: any,
@@ -336,7 +371,7 @@ function renderCodeWithLineNumbers(
   filename: string
 ): BoxRenderable {
   const lines = highlightCode(content, filename);
-  
+
   const container = new BoxRenderable(renderer, {
     id: 'code-with-lines',
     flexDirection: 'row',
@@ -347,7 +382,7 @@ function renderCodeWithLineNumbers(
   const lineNumberCol = new GroupRenderable(renderer, {
     id: 'line-numbers',
     flexDirection: 'column',
-    width: 5,  // Fixed width for line numbers
+    width: 5, // Fixed width for line numbers
     backgroundColor: '#1a1a1a',
   });
 
@@ -407,7 +442,7 @@ interface ScrollViewport {
   startLine: number;
   endLine: number;
   totalLines: number;
-  visibleHeight: number;  // Terminal rows
+  visibleHeight: number; // Terminal rows
 }
 
 class VirtualCodeScroller {
@@ -416,11 +451,7 @@ class VirtualCodeScroller {
   private codeContainer: GroupRenderable;
   private scrollOffset = 0;
 
-  constructor(
-    renderer: any,
-    lines: HighlightedLine[],
-    visibleHeight: number
-  ) {
+  constructor(renderer: any, lines: HighlightedLine[], visibleHeight: number) {
     this.allLines = lines;
     this.codeContainer = new GroupRenderable(renderer, {
       id: 'virtual-code',
@@ -433,10 +464,7 @@ class VirtualCodeScroller {
 
   private updateViewport() {
     const startLine = this.scrollOffset;
-    const endLine = Math.min(
-      this.scrollOffset + this.viewport.visibleHeight,
-      this.allLines.length
-    );
+    const endLine = Math.min(this.scrollOffset + this.viewport.visibleHeight, this.allLines.length);
 
     // Re-render only visible lines
     this.codeContainer.removeAll();
@@ -495,7 +523,7 @@ renderer.keyInput.on('keypress', (key: KeyEvent) => {
 
 ```typescript
 class ChunkedCodeLoader {
-  private chunkSize = 10000;  // Lines per chunk
+  private chunkSize = 10000; // Lines per chunk
   private loadedChunks: Map<number, HighlightedLine[]> = new Map();
 
   async loadChunk(chunkIndex: number) {
@@ -506,11 +534,11 @@ class ChunkedCodeLoader {
     // Simulate async loading
     const startLine = chunkIndex * this.chunkSize;
     const endLine = Math.min(startLine + this.chunkSize, this.totalLines);
-    
+
     // In real scenario: read from file, process lines
     const chunk = await this.processLines(startLine, endLine);
     this.loadedChunks.set(chunkIndex, chunk);
-    
+
     return chunk;
   }
 
@@ -569,13 +597,13 @@ function createScrollbar(
 
 ### 5.1 Scaling Limits
 
-| File Size | Lines | Components | Performance | Recommendation |
-|-----------|-------|-----------|-------------|-----------------|
-| < 10 KB | < 100 | 100-200 | ✅ Excellent | Direct rendering |
-| 10-100 KB | 100-1K | 1K-2K | ✅ Good | Direct rendering |
-| 100 KB - 1 MB | 1K-10K | 2K-20K | ⚠️ Acceptable | Consider virtual scrolling |
-| 1-10 MB | 10K-100K | 20K-200K | ❌ Problematic | **MUST use virtual scrolling** |
-| > 10 MB | > 100K | > 200K | ❌ Not viable | Chunked loading required |
+| File Size     | Lines    | Components | Performance    | Recommendation                 |
+| ------------- | -------- | ---------- | -------------- | ------------------------------ |
+| < 10 KB       | < 100    | 100-200    | ✅ Excellent   | Direct rendering               |
+| 10-100 KB     | 100-1K   | 1K-2K      | ✅ Good        | Direct rendering               |
+| 100 KB - 1 MB | 1K-10K   | 2K-20K     | ⚠️ Acceptable  | Consider virtual scrolling     |
+| 1-10 MB       | 10K-100K | 20K-200K   | ❌ Problematic | **MUST use virtual scrolling** |
+| > 10 MB       | > 100K   | > 200K     | ❌ Not viable  | Chunked loading required       |
 
 ### 5.2 Performance Tips
 
@@ -588,13 +616,13 @@ visibleLines.forEach(line => container.add(createLineElement(line)));
 // ✅ DO: Batch container operations
 const batch = new GroupRenderable(renderer, { id: 'batch' });
 for (const line of lines) batch.add(createLineElement(line));
-renderer.root.add(batch);  // Add once
+renderer.root.add(batch); // Add once
 
 // ❌ DON'T: Add items one by one
 lines.forEach(line => renderer.root.add(createLineElement(line)));
 
 // ❌ DON'T: Render entire 10MB file
-const allLines = hugeFile.split('\n');  // Creates massive array
+const allLines = hugeFile.split('\n'); // Creates massive array
 allLines.forEach(line => container.add(createLineElement(line)));
 
 // ✅ DO: Use passive mode for static code display
@@ -623,7 +651,7 @@ const linesCount = 10000;
 const segmentsPerLine = 3;
 const charsPerSegment = 17;
 
-const totalComponents = linesCount + (linesCount * segmentsPerLine);
+const totalComponents = linesCount + linesCount * segmentsPerLine;
 const contentSize = linesCount * segmentsPerLine * charsPerSegment * 2;
 const objectOverhead = totalComponents * 150;
 
@@ -656,12 +684,12 @@ CodeBlock = TextRenderable + SyntaxHighlighting + Layout + Scrolling
 
 ### 6.2 Compared to Other Frameworks
 
-| Framework | Approach | Ease | Flexibility | Performance |
-|-----------|----------|------|-------------|------------|
-| **OpenTUI** | Composition | Medium | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| **Ink** (React) | JSX + HTML | Easy | ⭐⭐⭐⭐ | ⭐⭐⭐ |
-| **Blessed** | jQuery-like | Hard | ⭐⭐ | ⭐⭐⭐⭐ |
-| **Rich** (Python) | High-level | Easy | ⭐⭐⭐ | ⭐⭐⭐ |
+| Framework         | Approach    | Ease   | Flexibility | Performance |
+| ----------------- | ----------- | ------ | ----------- | ----------- |
+| **OpenTUI**       | Composition | Medium | ⭐⭐⭐⭐⭐  | ⭐⭐⭐⭐    |
+| **Ink** (React)   | JSX + HTML  | Easy   | ⭐⭐⭐⭐    | ⭐⭐⭐      |
+| **Blessed**       | jQuery-like | Hard   | ⭐⭐        | ⭐⭐⭐⭐    |
+| **Rich** (Python) | High-level  | Easy   | ⭐⭐⭐      | ⭐⭐⭐      |
 
 ---
 
@@ -672,6 +700,7 @@ CodeBlock = TextRenderable + SyntaxHighlighting + Layout + Scrolling
 **File: `src/utils/syntax-highlighting.ts`**
 
 Core features:
+
 - Language detection from file extension
 - HTML → color segment parsing
 - Support for 20+ languages
@@ -680,6 +709,7 @@ Core features:
 **File: `src/ui/preview-pane-react.tsx`**
 
 Features:
+
 - React component wrapper
 - Syntax highlighting integration
 - Line count display
@@ -716,13 +746,13 @@ lines.map((line, idx) => (
 ```typescript
 // Map highlight.js token classes to terminal colors
 function mapHighlightColor(hlToken: string): string {
-  if (hlToken.includes('string')) return '#a6e3a1';    // Green
-  if (hlToken.includes('keyword')) return '#cba6f7';   // Purple
-  if (hlToken.includes('number')) return '#f8b88b';    // Orange
-  if (hlToken.includes('comment')) return '#6c7086';   // Gray
-  if (hlToken.includes('function')) return '#89b4fa';  // Blue
+  if (hlToken.includes('string')) return '#a6e3a1'; // Green
+  if (hlToken.includes('keyword')) return '#cba6f7'; // Purple
+  if (hlToken.includes('number')) return '#f8b88b'; // Orange
+  if (hlToken.includes('comment')) return '#6c7086'; // Gray
+  if (hlToken.includes('function')) return '#89b4fa'; // Blue
   // ... more token types
-  return '#cdd6f4';  // Default text color
+  return '#cdd6f4'; // Default text color
 }
 ```
 
@@ -732,15 +762,15 @@ function mapHighlightColor(hlToken: string): string {
 
 ### 8.1 Known Limitations
 
-| Issue | Workaround |
-|-------|-----------|
-| **No built-in text wrapping** | Split long lines manually or use Container with fixed width |
-| **No text selection** | Not supported in terminal TUIs generally |
-| **No copy-to-clipboard** | Implement custom keybinding |
-| **Single rendering layer** | Use absolute positioning for overlays |
-| **Line wrapping breaks layout** | Use monospace assumptions (1 char = 1 column) |
-| **Large files freeze UI** | Use virtual scrolling |
-| **No search/find** | Build custom search component |
+| Issue                           | Workaround                                                  |
+| ------------------------------- | ----------------------------------------------------------- |
+| **No built-in text wrapping**   | Split long lines manually or use Container with fixed width |
+| **No text selection**           | Not supported in terminal TUIs generally                    |
+| **No copy-to-clipboard**        | Implement custom keybinding                                 |
+| **Single rendering layer**      | Use absolute positioning for overlays                       |
+| **Line wrapping breaks layout** | Use monospace assumptions (1 char = 1 column)               |
+| **Large files freeze UI**       | Use virtual scrolling                                       |
+| **No search/find**              | Build custom search component                               |
 
 ### 8.2 Gotchas
 
@@ -748,24 +778,24 @@ function mapHighlightColor(hlToken: string): string {
 // ❌ WRONG: Content extends beyond container
 const text = new TextRenderable(renderer, {
   content: 'Very long line ' * 100,
-  width: 30,  // Doesn't wrap!
+  width: 30, // Doesn't wrap!
 });
 
 // ✅ CORRECT: Pre-wrap content
 const lines = content
   .split('\n')
-  .map(line => line.substring(0, 30))  // Truncate
+  .map(line => line.substring(0, 30)) // Truncate
   .join('\n');
 
 // ❌ WRONG: Assuming text renders instantly
-const lines = highlightCode(bigFile, 'file.js');  // Synchronous - blocks UI!
+const lines = highlightCode(bigFile, 'file.js'); // Synchronous - blocks UI!
 
 // ✅ CORRECT: Highlight in chunks
 async function highlightChunked(file: string, chunkSize: number) {
   for (let i = 0; i < file.length; i += chunkSize) {
     const chunk = file.substring(i, i + chunkSize);
     await processChunk(chunk);
-    await new Promise(resolve => setTimeout(resolve, 0));  // Yield
+    await new Promise(resolve => setTimeout(resolve, 0)); // Yield
   }
 }
 
@@ -776,10 +806,12 @@ code.split('').forEach(char => {
 
 // ✅ CORRECT: Group by color, not by character
 line.segments.forEach(segment => {
-  box.add(new TextRenderable(renderer, { 
-    content: segment.text,  // Entire segment
-    fg: segment.color 
-  }));
+  box.add(
+    new TextRenderable(renderer, {
+      content: segment.text, // Entire segment
+      fg: segment.color,
+    })
+  );
 });
 ```
 
@@ -793,8 +825,8 @@ line.segments.forEach(segment => {
 // - Control characters (cause layout issues)
 
 const cleanContent = content
-  .replace(/[\x00-\x1F\x7F]/g, '')  // Remove control chars
-  .replace(/[\u2000-\u200D]/g, '');  // Remove zero-width chars
+  .replace(/[\x00-\x1F\x7F]/g, '') // Remove control chars
+  .replace(/[\u2000-\u200D]/g, ''); // Remove zero-width chars
 ```
 
 ---
@@ -831,7 +863,7 @@ try {
 } catch (err) {
   // Fallback to plaintext
   const lines = content.split('\n').map(text => ({
-    segments: [{ text }]
+    segments: [{ text }],
   }));
 }
 ```
@@ -852,11 +884,11 @@ content.split('').forEach((char, i) => {
 // Account for ANSI codes, emoji, special chars
 
 // ❌ Don't forget to clean up containers
-renderer.root.removeAll();  // Before adding new content
+renderer.root.removeAll(); // Before adding new content
 
 // ❌ Don't use live rendering for static code
 const renderer = await createCliRenderer();
-await renderer.start();  // Wastes CPU if not animating!
+await renderer.start(); // Wastes CPU if not animating!
 ```
 
 ---
@@ -897,6 +929,7 @@ await renderer.start();  // Wastes CPU if not animating!
 ### 11.3 Further Reading
 
 See related research docs:
+
 - `comprehensive-guide.md` - Full OpenTUI API
 - `architecture-guide.md` - Deep dive on rendering pipeline
 - `implementation-patterns.md` - Common patterns
