@@ -872,6 +872,21 @@ Providers can override `nativeMove()` or `nativeCopy()` if they have optimized i
 
 **Why**: SFTP/FTP need explicit `connect()` and `disconnect()` methods to manage TCP connections. Cloud providers (S3/GCS) can be stateless per-request. The `connect()` and `isConnected()` methods are optional on the interface.
 
+### 7. No Cross-Provider Operations
+
+**Limitation**: This design explicitly does **not** support cross-provider operations (e.g., copying directly from S3 to SFTP, or moving files between GCS and SMB).
+
+**Rationale**:
+
+- Cross-provider transfers would require streaming data through the client, negating server-side copy benefits
+- Each provider has different semantics for metadata, permissions, and path handling
+- Error handling and rollback for partial transfers across providers is complex
+- The UI/UX for selecting source and destination providers adds significant complexity
+
+**Workaround**: Users can download files locally first, then upload to the target provider. This makes the two-step process explicit and keeps each provider's operations self-contained.
+
+**Future consideration**: If cross-provider support is needed, it should be implemented as a separate `TransferService` layer above the provider abstraction, not within the providers themselves.
+
 ---
 
 ## Migration Path
@@ -2239,11 +2254,11 @@ if (provider.disconnect) {
 
 2. **Connection Pooling**: For SFTP/FTP, should we pool connections or create new ones per operation?
 
-3. **Cross-Provider Operations**: Should we support copy/move between different providers (e.g., S3 to SFTP)?
+3. ~~**Cross-Provider Operations**: Should we support copy/move between different providers (e.g., S3 to SFTP)?~~ **Resolved**: Not supported. See "Key Design Decisions §7: No Cross-Provider Operations".
 
 4. **Progress Aggregation**: How should progress be reported for recursive operations across providers with different progress reporting capabilities?
 
-5. **Offline/Cached Mode**: Should we cache directory listings for offline browsing?
+5. ~~**Offline/Cached Mode**: Should we cache directory listings for offline browsing?~~ **Resolved**: Not supported. This is a real-time file browser; offline mode is out of scope.
 
 6. **NFS/SMB Mount Strategy**: Should we require OS-level mounts (using fs module) or implement native protocol clients?
 
