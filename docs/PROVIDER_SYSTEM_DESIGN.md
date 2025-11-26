@@ -220,7 +220,52 @@ export type Profile =
   | NFSProfile
   | SMBProfile
   | GoogleDriveProfile;
+
+/**
+ * Credential source types for secure credential management
+ * Profiles should NOT store plaintext credentials - use these source types instead
+ */
+export type CredentialSource =
+  | { type: 'keychain'; service: string; account: string } // OS keychain (preferred)
+  | { type: 'environment'; variable: string } // Environment variable
+  | { type: 'sshAgent' } // SSH agent (SFTP only)
+  | { type: 'awsProfile'; profileName: string } // AWS credentials file
+  | { type: 'gcpAdc' } // Google ADC chain
+  | { type: 'file'; path: string } // Key/credential file
+  | { type: 'prompt' }; // Interactive prompt
+
+/**
+ * Example: S3 profile with secure credential reference
+ */
+// {
+//   id: 'prod-s3',
+//   displayName: 'Production S3',
+//   provider: 's3',
+//   config: {
+//     region: 'us-east-1',
+//     credentialSource: { type: 'awsProfile', profileName: 'prod' }
+//   }
+// }
+
+/**
+ * Example: SFTP profile using SSH agent (most secure)
+ */
+// {
+//   id: 'sftp-server',
+//   displayName: 'Dev Server',
+//   provider: 'sftp',
+//   config: {
+//     host: 'dev.example.com',
+//     username: 'deploy',
+//     credentialSource: { type: 'sshAgent' }
+//   }
+// }
 ```
+
+> **Security Note**: Profiles support inline credentials for backward compatibility,
+> but new implementations should use `credentialSource` references to avoid storing
+> secrets in config files. The credential provider chain (P3-5 through P3-8) handles
+> resolution of these references at runtime.
 
 ### 2. Capability System
 
@@ -1304,43 +1349,122 @@ src/
 - Add unit tests
 - Estimated: 4 hours
 
-**P3-5: Implement sensitive data handling**
+**P3-5: Implement credential provider chain architecture**
 
-- Create `src/providers/services/credential-helper.ts`
+- Create `src/providers/credentials/` directory
+- Create `src/providers/credentials/types.ts`:
+  - Define `Credentials` interface (generic credential container)
+  - Define `CredentialProvider` interface with `name`, `priority`, `getCredentials(profileId): Promise<Credentials | null>`
+  - Define `CredentialSource` union type: `'keychain' | 'environment' | 'config' | 'prompt' | 'sshAgent'`
+- Create `src/providers/credentials/credential-chain.ts`:
+  - Implement `CredentialChain` class that tries providers in priority order
+  - Support adding/removing providers dynamically
+  - Return first successful credential match
+- Add unit tests for chain resolution logic
+- Export from `src/providers/credentials/index.ts`
+- Estimated: 3 hours
+
+**P3-6: Implement OS keychain integration with keytar**
+
+- Add `keytar` dependency to package.json (native bindings for macOS Keychain, Windows Credential Manager, Linux secret-service)
+- Create `src/providers/credentials/keychain-provider.ts`:
+  - Implement `KeychainCredentialProvider` class
+  - `getCredentials(profileId)` - retrieve from OS keychain
+  - `setCredentials(profileId, credentials)` - store in OS keychain
+  - `deleteCredentials(profileId)` - remove from OS keychain
+- Handle cross-platform differences:
+  - macOS: Keychain Services
+  - Windows: Credential Manager
+  - Linux: libsecret (GNOME Keyring, KWallet)
+- Add fallback for environments without native keychain (CI/CD)
+- Add unit tests with mocked keytar
+- Estimated: 4 hours
+
+**P3-7: Implement per-provider credential resolvers**
+
+- Create `src/providers/credentials/resolvers/`:
+  - `s3-credential-resolver.ts`:
+    - Priority: 1) Keychain 2) AWS profile 3) Environment vars 4) SDK default chain
+    - Wrap existing `@aws-sdk/credential-providers` functionality
+    - Support `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`
+  - `gcs-credential-resolver.ts`:
+    - Priority: 1) Keychain 2) Service account JSON 3) ADC (`GOOGLE_APPLICATION_CREDENTIALS`)
+    - Use `google-auth-library` for ADC chain
+  - `sftp-credential-resolver.ts`:
+    - Priority: 1) SSH Agent (`SSH_AUTH_SOCK`) 2) Key file 3) Keychain (password) 4) Interactive prompt
+    - SSH Agent is preferred (most secure, no stored credentials)
+  - `ftp-credential-resolver.ts`:
+    - Priority: 1) Keychain 2) Environment vars 3) Interactive prompt
+    - Warn if using plaintext password in config
+  - `smb-credential-resolver.ts`:
+    - Priority: 1) Kerberos ticket 2) Keychain 3) Environment vars
+    - Support domain credentials
+- Add factory function `getCredentialResolver(providerType): CredentialResolver`
+- Add unit tests for each resolver
+- Estimated: 6 hours
+
+**P3-8: Implement config file encryption**
+
+- Create `src/providers/credentials/config-encryption.ts`:
+  - Add `tweetnacl` dependency for NaCl secretbox encryption
+  - Implement `encryptConfig(config: string, password: string): Buffer`:
+    - Derive key from password using scrypt
+    - Generate random nonce
+    - Encrypt with NaCl secretbox
+    - Return nonce + ciphertext
+  - Implement `decryptConfig(encrypted: Buffer, password: string): string`
+  - Implement `isEncrypted(data: Buffer): boolean` (magic header check)
+- Support encrypted profile storage (rclone-style):
+  - Prompt for password on first access
+  - Cache decrypted config in memory during session
+  - Re-encrypt on save
+- Add `--encrypt-config` CLI flag to encrypt existing config
+- Add unit tests for encryption/decryption roundtrip
+- Estimated: 3 hours
+
+**P3-9: Implement sensitive data handling**
+
+- Create `src/providers/credentials/sanitizer.ts`
 - Implement `maskSensitiveFields(profile: Profile): Profile` (for logging/display)
 - Implement `hasSensitiveData(profile: Profile): boolean`
+- Implement `sanitizeForLogging(obj: object): object` - recursively mask sensitive keys
+- Sensitive key patterns: `password`, `secret`, `token`, `key`, `pass`, `credential`
 - Add warning when saving profiles with plaintext passwords
-- Document security considerations (recommend env vars or keychain in future)
+- Document security considerations in code comments
 - Add unit tests
 - Estimated: 2 hours
 
-**P3-6: Add profile import/export utilities**
+**P3-10: Add profile import/export utilities**
 
 - Implement `exportProfiles(profiles: Profile[], includeSensitive: boolean): string` (JSON)
 - Implement `importProfiles(json: string): Profile[]`
 - Validate imported profiles
 - Handle merge vs replace on import
+- Strip sensitive data by default on export (require explicit flag)
 - Add unit tests
 - Estimated: 2 hours
 
-**P3-7: Integration tests for ProfileManager**
+**P3-11: Integration tests for ProfileManager**
 
 - Test full lifecycle: create → save → load → update → delete
 - Test persistence across ProfileManager instances
 - Test validation error scenarios
 - Test createProviderFromProfile integration
+- Test credential resolution chain
+- Test keychain storage and retrieval
 - Estimated: 3 hours
 
-**P3-8: CLI commands for profile management (optional)**
+**P3-12: CLI commands for profile management (optional)**
 
 - Add `open-s3 profile list` command
 - Add `open-s3 profile add` command (interactive prompts)
 - Add `open-s3 profile remove <id>` command
 - Add `open-s3 profile show <id>` command (masked sensitive data)
 - Add `open-s3 profile test <id>` command (test connection)
+- Add `open-s3 profile set-credential <id>` command (store in keychain)
 - Estimated: 6 hours (optional, can defer)
 
-**Phase 3 Total Estimate: 19-25 hours (depending on CLI)**
+**Phase 3 Total Estimate: 35-41 hours (depending on CLI)**
 
 ### Phase 4: Additional Providers
 
@@ -2294,7 +2418,7 @@ const provider = createProvider(profile);
 | --------- | ----------------------------- | ------- | --------------- |
 | 1         | Foundation Types & Interfaces | 8       | 14.5            |
 | 2         | S3 Provider                   | 16      | 34              |
-| 3         | Profile Manager               | 8       | 19-25           |
+| 3         | Profile Manager & Credentials | 12      | 35-41           |
 | 4A        | GCS Provider                  | 7       | 17.5            |
 | 4B        | SFTP Provider                 | 8       | 19.5            |
 | 4C        | FTP Provider                  | 7       | 15.5            |
@@ -2305,7 +2429,7 @@ const provider = createProvider(profile);
 | 5         | UI Abstraction Layer          | 17      | 45              |
 | 6         | Cutover                       | 7       | 22              |
 | 7         | Cleanup                       | 9       | 16              |
-| **Total** |                               | **113** | **~276 hours**  |
+| **Total** |                               | **117** | **~292 hours**  |
 
 **Notes:**
 
@@ -2371,7 +2495,7 @@ if (provider.disconnect) {
 
 ## Open Questions
 
-1. **Credential Storage**: Should sensitive credentials (passwords, keys) be stored in profiles, or should we integrate with system keychains?
+1. ~~**Credential Storage**: Should sensitive credentials (passwords, keys) be stored in profiles, or should we integrate with system keychains?~~ **Resolved**: Use credential provider chain with OS keychain integration (keytar) as primary secure storage, environment variables for CI/CD, and encrypted config file as fallback. See Phase 3 tickets P3-5 through P3-8 for implementation details.
 
 2. **Connection Pooling**: For SFTP/FTP, should we pool connections or create new ones per operation?
 
