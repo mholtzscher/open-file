@@ -264,7 +264,7 @@ export type CredentialSource =
 
 > **Security Note**: Profiles support inline credentials for backward compatibility,
 > but new implementations should use `credentialSource` references to avoid storing
-> secrets in config files. The credential provider chain (P3-5 through P3-8) handles
+> secrets in config files. The credential provider chain (P2-5 through P2-9) handles
 > resolution of these references at runtime.
 
 ### 2. Capability System
@@ -970,6 +970,69 @@ Providers can override `nativeMove()` or `nativeCopy()` if they have optimized i
 
 Build the new provider system alongside the existing implementation, then cutover.
 
+### Phase 0: Prerequisites & Inventory
+
+Before starting implementation, audit existing code and establish infrastructure.
+
+**Rationale:** The existing codebase has types (`Entry`, `ProgressEvent`, `ProgressCallback`) and patterns that must be explicitly reconciled with the new design. Skipping this leads to duplicate types and integration pain.
+
+#### Tickets
+
+**P0-1: Audit existing types and interfaces**
+
+- Document all types in `src/types/entry.ts` (Entry, EntryType, EntryMetadata)
+- Document all types in `src/adapters/adapter.ts` (ProgressEvent, ProgressCallback, ListOptions, ListResult)
+- Create mapping table: existing type → new provider type (with `Provider` prefix)
+- New provider types will use `Provider` prefix to avoid conflicts:
+  - `Entry` → `ProviderEntry`
+  - `EntryType` → `ProviderEntryType`
+  - `EntryMetadata` → `ProviderEntryMetadata`
+  - `ProgressEvent` → `ProviderProgressEvent`
+  - `ProgressCallback` → `ProviderProgressCallback`
+  - `ListOptions` → `ProviderListOptions`
+  - `ListResult` → `ProviderListResult`
+- Prefix will be removed in Phase 7 (Cleanup) after legacy code removal
+- Estimated: 2 hours
+
+**P0-2: Audit UI adapter usage patterns**
+
+- Search codebase for all `S3Adapter` and `AdapterContext` imports
+- Document all adapter methods called from UI components
+- Document all adapter methods called from hooks
+- List UI assumptions about adapter behavior (error handling, return types)
+- Create migration checklist for each component
+- **This must complete before P5-2 (StorageContext design)**
+- Estimated: 3 hours
+
+**P0-3: Set up test infrastructure**
+
+- Create `src/providers/__tests__/` directory structure
+- Create shared test fixtures (mock entries, mock profiles)
+- Create `MockStorageProvider` for testing UI without real backends
+- Create test utilities for `OperationResult` assertions
+- Add test helper for creating test profiles
+- Estimated: 3 hours
+
+**P0-4: Establish logging standards**
+
+- Document existing logger usage (`src/utils/logger.ts`)
+- Decision: providers use existing logger vs provider-specific logging
+- Create logging interface for providers if different from existing
+- Document log levels and when to use each
+- Estimated: 1 hour
+
+**P0-5: Document dependency additions**
+
+- Create `docs/PROVIDER_DEPENDENCIES.md`
+- List all new dependencies by phase with versions
+- Document peer dependencies and version constraints
+- Note any dependencies with native bindings (keytar)
+- Estimated: 1 hour
+
+**Phase 0 Total Estimate: 10 hours**
+
+---
+
 ### Phase 1: Foundation (Parallel to Existing)
 
 Create new types and interfaces in a separate directory structure:
@@ -1080,180 +1143,60 @@ src/
 - Export from index
 - Estimated: 1 hour
 
-**P1-8: Finalize Phase 1 exports and documentation**
+**P1-8: Implement prefixed provider types**
+
+- Create `src/providers/types/entry.ts` with prefixed types:
+  - `ProviderEntryType` enum (File, Directory, Bucket, Symlink)
+  - `ProviderEntryMetadata` interface (extended with permissions, owner, group, symlinkTarget, providerData)
+  - `ProviderEntry` interface
+- Create `src/providers/types/progress.ts` with prefixed types:
+  - `ProviderProgressEvent` interface
+  - `ProviderProgressCallback` type
+- Create `src/providers/types/list.ts` with prefixed types:
+  - `ProviderListOptions` interface
+  - `ProviderListResult` interface
+- Export all prefixed types from `src/providers/types/index.ts`
+- Estimated: 2 hours
+
+**P1-9: Implement type mapper functions**
+
+- Create `src/providers/types/mappers.ts`
+- Implement mapper functions for UI/legacy compatibility:
+  - `toProviderEntry(entry: Entry): ProviderEntry`
+  - `fromProviderEntry(entry: ProviderEntry): Entry`
+  - `toProviderProgressEvent(event: ProgressEvent): ProviderProgressEvent`
+  - `fromProviderProgressEvent(event: ProviderProgressEvent): ProgressEvent`
+  - `toProviderListResult(result: ListResult): ProviderListResult`
+  - `fromProviderListResult(result: ProviderListResult): ListResult`
+- Add unit tests for all mappers (roundtrip tests)
+- Estimated: 2 hours
+
+**P1-10: Implement cancellation token support**
+
+- Create `src/providers/types/cancellation.ts`
+- Define `ProviderCancellationToken` interface with `isCancelled`, `onCancel(callback)`
+- Define `ProviderCancellationTokenSource` for creating tokens
+- Add `cancellationToken?: ProviderCancellationToken` to all operation options
+- Integrate with existing `ProgressState.cancelled` pattern
+- Add unit tests
+- Estimated: 2 hours
+
+**P1-11: Finalize Phase 1 exports and documentation**
 
 - Update `src/providers/index.ts` to export all public types and functions
 - Add README.md to providers directory explaining the architecture
+- Document the `Provider` prefix convention and removal timeline
 - Verify all types compile correctly
 - Run linter and fix any issues
 - Estimated: 1 hour
 
-**Phase 1 Total Estimate: 14.5 hours**
+**Phase 1 Total Estimate: 22.5 hours**
 
-### Phase 2: S3 Provider (Parallel Implementation)
+---
 
-Create `S3Provider` that wraps the existing `S3Adapter`:
+### Phase 2: Profile Manager & Credentials
 
-```typescript
-// src/providers/s3-provider.ts
-import { S3Adapter } from '../adapters/s3-adapter';
-
-export class S3Provider extends BaseStorageProvider {
-  private adapter: S3Adapter;
-
-  constructor(profile: S3Profile) {
-    this.adapter = new S3Adapter(/* map profile to adapter config */);
-    // ... delegate all operations to adapter
-  }
-}
-```
-
-**Key principle:** The existing `S3Adapter` continues to work. `S3Provider` is a thin wrapper that translates between the new interface and the existing implementation.
-
-**Deliverables:**
-
-- `S3Provider` class wrapping `S3Adapter`
-- Unit tests for `S3Provider`
-- Verify feature parity with direct `S3Adapter` usage
-
-#### Tickets
-
-**P2-1: Create S3Provider class skeleton**
-
-- Create `src/providers/s3/s3-provider.ts`
-- Extend `BaseStorageProvider`
-- Define constructor accepting `S3Profile`
-- Declare S3 capabilities in constructor (List, Read, Write, Delete, Mkdir, Rmdir, Copy, Move, ServerSideCopy, Resume, Versioning, Metadata, PresignedUrls, BatchDelete, Containers)
-- Add placeholder methods that throw "not implemented"
-- Estimated: 1 hour
-
-**P2-2: Implement profile-to-adapter configuration mapping**
-
-- Create `src/providers/s3/config-mapper.ts`
-- Implement `mapProfileToAdapterConfig(profile: S3Profile): S3AdapterConfig`
-- Handle region, credentials (profile vs direct), endpoint, forcePathStyle
-- Add unit tests for config mapping
-- Estimated: 2 hours
-
-**P2-3: Implement S3Provider.list()**
-
-- Delegate to `S3Adapter.listObjects()`
-- Map adapter response to `OperationResult<ListResult>`
-- Handle pagination (continuationToken)
-- Convert adapter entries to provider Entry type
-- Map errors to OperationResult errors
-- Add unit tests
-- Estimated: 3 hours
-
-**P2-4: Implement S3Provider.read()**
-
-- Delegate to `S3Adapter.getObject()`
-- Support offset/length options via Range header
-- Map response to `OperationResult<Buffer>`
-- Wire up progress callback if provided
-- Map errors to OperationResult errors
-- Add unit tests
-- Estimated: 2 hours
-
-**P2-5: Implement S3Provider.write()**
-
-- Delegate to `S3Adapter.putObject()` for small files
-- Delegate to multipart upload for large files (>5MB threshold)
-- Support contentType and metadata options
-- Wire up progress callback
-- Map errors to OperationResult errors
-- Add unit tests
-- Estimated: 3 hours
-
-**P2-6: Implement S3Provider.delete()**
-
-- Delegate to `S3Adapter.deleteObject()` for single objects
-- Delegate to `S3Adapter.deleteObjects()` for recursive deletes
-- Map errors to OperationResult errors
-- Add unit tests
-- Estimated: 2 hours
-
-**P2-7: Implement S3Provider.mkdir()**
-
-- Create empty object with trailing `/` (S3 directory convention)
-- Delegate to `S3Adapter.putObject()` with empty body
-- Map errors to OperationResult errors
-- Add unit tests
-- Estimated: 1 hour
-
-**P2-8: Implement S3Provider.copy() and nativeCopy()**
-
-- Delegate to `S3Adapter.copyObject()` for server-side copy
-- Handle cross-bucket copies
-- Support recursive directory copies
-- Map errors to OperationResult errors
-- Add unit tests
-- Estimated: 3 hours
-
-**P2-9: Implement S3Provider.move()**
-
-- Implement as copy + delete (S3 has no native move)
-- Reuse copy() and delete() implementations
-- Ensure atomic-ish behavior (don't delete if copy fails)
-- Add unit tests
-- Estimated: 2 hours
-
-**P2-10: Implement S3Provider.getMetadata() and exists()**
-
-- Delegate to `S3Adapter.headObject()`
-- Map S3 metadata to Entry.metadata
-- Handle 404 → NotFound result
-- Add unit tests
-- Estimated: 2 hours
-
-**P2-11: Implement S3Provider container operations**
-
-- Implement `listContainers()` → `S3Adapter.listBuckets()`
-- Implement `setContainer(name)` and `getContainer()`
-- Store current bucket in provider instance
-- Add unit tests
-- Estimated: 2 hours
-
-**P2-12: Implement S3Provider.downloadToLocal() and uploadFromLocal()**
-
-- Delegate to existing adapter transfer operations
-- Wire up progress callbacks
-- Handle recursive transfers
-- Map errors to OperationResult errors
-- Add unit tests
-- Estimated: 3 hours
-
-**P2-13: Implement S3Provider advanced operations**
-
-- Implement `getPresignedUrl()` for read/write operations
-- Implement `setMetadata()` via copy-in-place with new metadata
-- Add unit tests
-- Estimated: 2 hours
-
-**P2-14: Update provider factory for S3**
-
-- Update `createProvider()` to instantiate `S3Provider` for 's3' type
-- Add integration test creating provider from profile
-- Estimated: 1 hour
-
-**P2-15: S3Provider integration tests**
-
-- Create integration test suite using LocalStack or mock
-- Test full workflow: list → read → write → copy → delete
-- Test error handling scenarios
-- Verify feature parity with direct S3Adapter usage
-- Estimated: 4 hours
-
-**P2-16: S3Provider documentation**
-
-- Add JSDoc comments to all public methods
-- Document S3-specific behavior and limitations
-- Add usage examples
-- Estimated: 1 hour
-
-**Phase 2 Total Estimate: 34 hours**
-
-### Phase 3: Profile Manager
+Profile and credential management must be implemented before providers so that providers can use the credential resolution chain.
 
 ```
 src/
@@ -1261,18 +1204,24 @@ src/
     services/
       profile-manager.ts    # FileProfileManager
       profile-storage.ts    # Config file I/O
+    credentials/
+      types.ts              # Credential interfaces
+      credential-chain.ts   # Resolution chain
+      keychain-provider.ts  # OS keychain integration
+      resolvers/            # Per-provider resolvers
 ```
 
 **Deliverables:**
 
 - `ProfileManager` interface and `FileProfileManager` implementation
 - Profile persistence to `~/.config/open-s3/profiles.json`
-- Profile validation
+- Profile validation for all provider types
+- Credential provider chain with keychain integration
 - CLI integration for profile management (optional)
 
 #### Tickets
 
-**P3-1: Define ProfileManager interface**
+**P2-1: Define ProfileManager interface**
 
 - Create `src/providers/services/profile-manager.ts`
 - Define `ProfileManager` interface with methods:
@@ -1286,7 +1235,7 @@ src/
 - Export from providers index
 - Estimated: 1 hour
 
-**P3-2: Implement profile storage utilities**
+**P2-2: Implement profile storage utilities**
 
 - Create `src/providers/services/profile-storage.ts`
 - Implement `getConfigDir(): string` (platform-aware: ~/.config/open-s3 on Unix, %APPDATA%/open-s3 on Windows)
@@ -1298,7 +1247,7 @@ src/
 - Add unit tests with temp directories
 - Estimated: 3 hours
 
-**P3-3: Implement profile validation**
+**P2-3: Implement profile validation**
 
 - Create `src/providers/services/profile-validator.ts`
 - Implement `validateBaseProfile(profile: Profile): ValidationError[]`
@@ -1325,10 +1274,14 @@ src/
 - Implement `validateSMBProfile(profile: SMBProfile): ValidationError[]`
   - Require host
   - Require share
+- Implement `validateGoogleDriveProfile(profile: GoogleDriveProfile): ValidationError[]`
+  - Require clientId
+  - Require clientSecret
+  - Validate rootFolderId format if provided
 - Add unit tests for all validators
-- Estimated: 4 hours
+- Estimated: 5 hours
 
-**P3-4: Implement FileProfileManager class**
+**P2-4: Implement FileProfileManager class**
 
 - Create `FileProfileManager` class implementing `ProfileManager`
 - Constructor loads profiles from disk
@@ -1345,11 +1298,12 @@ src/
 - Implement `validateProfile(profile)` - delegate to validators
 - Implement `createProviderFromProfile(id)`:
   - Get profile by id
+  - Resolve credentials via credential chain
   - Call `createProvider(profile)` from factory
 - Add unit tests
 - Estimated: 4 hours
 
-**P3-5: Implement credential provider chain architecture**
+**P2-5: Implement credential provider chain architecture**
 
 - Create `src/providers/credentials/` directory
 - Create `src/providers/credentials/types.ts`:
@@ -1364,7 +1318,7 @@ src/
 - Export from `src/providers/credentials/index.ts`
 - Estimated: 3 hours
 
-**P3-6: Implement OS keychain integration with keytar**
+**P2-6: Implement OS keychain integration with keytar**
 
 - Add `keytar` dependency to package.json (native bindings for macOS Keychain, Windows Credential Manager, Linux secret-service)
 - Create `src/providers/credentials/keychain-provider.ts`:
@@ -1376,11 +1330,15 @@ src/
   - macOS: Keychain Services
   - Windows: Credential Manager
   - Linux: libsecret (GNOME Keyring, KWallet)
-- Add fallback for environments without native keychain (CI/CD)
+- **Implement graceful fallback for environments without keychain:**
+  - Detect CI/CD environment (CI env var, no TTY)
+  - Detect Docker/container (/.dockerenv, cgroup check)
+  - Fall back to environment variables or config file
+  - Log warning when keychain unavailable
 - Add unit tests with mocked keytar
-- Estimated: 4 hours
+- Estimated: 5 hours
 
-**P3-7: Implement per-provider credential resolvers**
+**P2-7: Implement per-provider credential resolvers**
 
 - Create `src/providers/credentials/resolvers/`:
   - `s3-credential-resolver.ts`:
@@ -1393,22 +1351,27 @@ src/
   - `sftp-credential-resolver.ts`:
     - Priority: 1) SSH Agent (`SSH_AUTH_SOCK`) 2) Key file 3) Keychain (password) 4) Interactive prompt
     - SSH Agent is preferred (most secure, no stored credentials)
+    - Detect SSH_AUTH_SOCK environment variable
   - `ftp-credential-resolver.ts`:
     - Priority: 1) Keychain 2) Environment vars 3) Interactive prompt
     - Warn if using plaintext password in config
   - `smb-credential-resolver.ts`:
     - Priority: 1) Kerberos ticket 2) Keychain 3) Environment vars
     - Support domain credentials
+  - `gdrive-credential-resolver.ts`:
+    - Priority: 1) Keychain (refresh token) 2) Service account JSON 3) OAuth flow
+    - Handle token refresh automatically
 - Add factory function `getCredentialResolver(providerType): CredentialResolver`
 - Add unit tests for each resolver
-- Estimated: 6 hours
+- Estimated: 7 hours
 
-**P3-8: Implement config file encryption**
+**P2-8: Implement config file encryption**
 
 - Create `src/providers/credentials/config-encryption.ts`:
+  - Use Node.js built-in `crypto.scryptSync()` for key derivation (no extra dependency)
   - Add `tweetnacl` dependency for NaCl secretbox encryption
   - Implement `encryptConfig(config: string, password: string): Buffer`:
-    - Derive key from password using scrypt
+    - Derive key from password using scrypt (N=16384, r=8, p=1)
     - Generate random nonce
     - Encrypt with NaCl secretbox
     - Return nonce + ciphertext
@@ -1422,19 +1385,19 @@ src/
 - Add unit tests for encryption/decryption roundtrip
 - Estimated: 3 hours
 
-**P3-9: Implement sensitive data handling**
+**P2-9: Implement sensitive data handling**
 
 - Create `src/providers/credentials/sanitizer.ts`
 - Implement `maskSensitiveFields(profile: Profile): Profile` (for logging/display)
 - Implement `hasSensitiveData(profile: Profile): boolean`
 - Implement `sanitizeForLogging(obj: object): object` - recursively mask sensitive keys
-- Sensitive key patterns: `password`, `secret`, `token`, `key`, `pass`, `credential`
+- Sensitive key patterns: `password`, `secret`, `token`, `key`, `pass`, `credential`, `refreshToken`
 - Add warning when saving profiles with plaintext passwords
 - Document security considerations in code comments
 - Add unit tests
 - Estimated: 2 hours
 
-**P3-10: Add profile import/export utilities**
+**P2-10: Add profile import/export utilities**
 
 - Implement `exportProfiles(profiles: Profile[], includeSensitive: boolean): string` (JSON)
 - Implement `importProfiles(json: string): Profile[]`
@@ -1444,17 +1407,17 @@ src/
 - Add unit tests
 - Estimated: 2 hours
 
-**P3-11: Integration tests for ProfileManager**
+**P2-11: Integration tests for ProfileManager**
 
 - Test full lifecycle: create → save → load → update → delete
 - Test persistence across ProfileManager instances
 - Test validation error scenarios
 - Test createProviderFromProfile integration
 - Test credential resolution chain
-- Test keychain storage and retrieval
+- Test keychain storage and retrieval (with mocks)
 - Estimated: 3 hours
 
-**P3-12: CLI commands for profile management (optional)**
+**P2-12: CLI commands for profile management (optional)**
 
 - Add `open-s3 profile list` command
 - Add `open-s3 profile add` command (interactive prompts)
@@ -1464,7 +1427,199 @@ src/
 - Add `open-s3 profile set-credential <id>` command (store in keychain)
 - Estimated: 6 hours (optional, can defer)
 
-**Phase 3 Total Estimate: 35-41 hours (depending on CLI)**
+**Phase 2 Total Estimate: 38-44 hours (depending on CLI)**
+
+---
+
+### Phase 3: S3 Provider (First Provider Implementation)
+
+Create `S3Provider` that wraps the existing `S3Adapter`:
+
+```typescript
+// src/providers/s3/s3-provider.ts
+import { S3Adapter } from '../../adapters/s3-adapter';
+import { getCredentialResolver } from '../credentials/resolvers';
+
+export class S3Provider extends BaseStorageProvider {
+  private adapter: S3Adapter;
+
+  constructor(profile: S3Profile, credentials?: ResolvedCredentials) {
+    // Credentials resolved by ProfileManager before construction
+    this.adapter = new S3Adapter(mapProfileToConfig(profile, credentials));
+    // ... delegate all operations to adapter
+  }
+}
+```
+
+**Key principle:** The existing `S3Adapter` continues to work. `S3Provider` is a thin wrapper that:
+
+1. Uses credentials resolved by Phase 2 credential chain
+2. Translates between new interface and existing implementation
+3. Maps exceptions to `OperationResult` pattern
+
+**Deliverables:**
+
+- `S3Provider` class wrapping `S3Adapter`
+- Error-to-OperationResult mapping
+- Unit tests for `S3Provider`
+- Verify feature parity with direct `S3Adapter` usage
+
+#### Tickets
+
+**P3-1: Create S3Provider class skeleton**
+
+- Create `src/providers/s3/s3-provider.ts`
+- Extend `BaseStorageProvider`
+- Define constructor accepting `S3Profile` and optional `ResolvedCredentials`
+- Declare S3 capabilities in constructor (List, Read, Write, Delete, Mkdir, Rmdir, Copy, Move, ServerSideCopy, Resume, Versioning, Metadata, PresignedUrls, BatchDelete, Containers)
+- Add placeholder methods that throw "not implemented"
+- Estimated: 1 hour
+
+**P3-2: Implement profile-to-adapter configuration mapping**
+
+- Create `src/providers/s3/config-mapper.ts`
+- Implement `mapProfileToAdapterConfig(profile: S3Profile, credentials?: ResolvedCredentials): S3AdapterConfig`
+- Handle region, credentials (profile vs direct vs resolved), endpoint, forcePathStyle
+- Integrate with S3 credential resolver from Phase 2
+- Preserve existing `S3AdapterDependencies` pattern for DI
+- Add unit tests for config mapping
+- Estimated: 3 hours
+
+**P3-3: Implement error-to-OperationResult mapping**
+
+- Create `src/providers/s3/error-mapper.ts`
+- Implement `mapS3Error(error: unknown, operation: string): OperationResult`
+- Wrap existing `parseAwsError()` from `src/utils/errors.ts`
+- Map AWS error codes to OperationStatus:
+  - `NoSuchKey`, `NotFound` → `NotFound`
+  - `AccessDenied`, `Forbidden` → `PermissionDenied`
+  - `ServiceUnavailable`, `SlowDown` → `Error` with `retryable: true`
+  - Network errors → `ConnectionFailed`
+- Preserve original error in `OperationError.cause`
+- Add unit tests for all error mappings
+- Estimated: 2 hours
+
+**P3-4: Implement S3Provider.list()**
+
+- Delegate to `S3Adapter.listObjects()`
+- Map adapter response to `OperationResult<ListResult>`
+- Handle pagination (continuationToken)
+- Convert adapter entries to provider Entry type
+- Map errors to OperationResult errors
+- Add unit tests
+- Estimated: 3 hours
+
+**P3-5: Implement S3Provider.read()**
+
+- Delegate to `S3Adapter.read()`
+- Support offset/length options via Range header
+- Map response to `OperationResult<Buffer>`
+- Wire up progress callback if provided
+- Use error mapper from P3-3
+- Add unit tests
+- Estimated: 2 hours
+
+**P3-6: Implement S3Provider.write() and mkdir()**
+
+- Implement `write()`:
+  - Delegate to `S3Adapter.create()` with `EntryType.File`
+  - Delegate to multipart upload for large files (>5MB threshold)
+  - Support contentType and metadata options
+  - Wire up progress callback
+- Implement `mkdir()`:
+  - Delegate to `S3Adapter.create()` with `EntryType.Directory`
+  - Create empty object with trailing `/` (S3 directory convention)
+- Implement `rmdir()`:
+  - Delegate to `S3Adapter.delete()` with `recursive: true`
+- Map errors to OperationResult errors
+- Add unit tests
+- Estimated: 4 hours
+
+**P3-7: Implement S3Provider.delete()**
+
+- Delegate to `S3Adapter.delete()` for single objects
+- Delegate to `S3Adapter.delete(recursive: true)` for recursive deletes
+- Map errors to OperationResult errors
+- Add unit tests
+- Estimated: 2 hours
+
+**P3-8: Implement S3Provider.copy() and nativeCopy()**
+
+- Override `nativeCopy()` for server-side copy
+- Delegate to `S3Adapter.copy()`
+- Handle cross-bucket copies
+- Support recursive directory copies
+- Map errors to OperationResult errors
+- Add unit tests
+- Estimated: 3 hours
+
+**P3-9: Implement S3Provider.move()**
+
+- S3 has no native move - rely on BaseStorageProvider fallback (copy + delete)
+- Verify fallback works correctly with S3Provider.copy() and S3Provider.delete()
+- Ensure atomic-ish behavior (don't delete if copy fails)
+- Add unit tests
+- Estimated: 1 hour
+
+**P3-10: Implement S3Provider.getMetadata() and exists()**
+
+- Delegate to `S3Adapter.getMetadata()`
+- Map S3 metadata to Entry.metadata using type reconciliation from P1-8
+- Handle 404 → NotFound result
+- Implement `exists()` by delegating to `S3Adapter.exists()`
+- Add unit tests
+- Estimated: 2 hours
+
+**P3-11: Implement S3Provider container operations**
+
+- Implement `listContainers()` → `S3Adapter.getBucketEntries()`
+- Implement `setContainer(name)` → `S3Adapter.setBucket()`
+- Implement `getContainer()` → return stored bucket name
+- Store current bucket in provider instance
+- Add unit tests
+- Estimated: 2 hours
+
+**P3-12: Implement S3Provider.downloadToLocal() and uploadFromLocal()**
+
+- Delegate to existing `S3Adapter.downloadToLocal()` and `S3Adapter.uploadFromLocal()`
+- Wire up progress callbacks
+- Handle recursive transfers
+- Map errors to OperationResult errors
+- Add unit tests
+- Estimated: 3 hours
+
+**P3-13: Implement S3Provider advanced operations**
+
+- Implement `getPresignedUrl()` for read/write operations (requires adding to S3Adapter if not present)
+- Implement `setMetadata()` via copy-in-place with new metadata
+- Add unit tests
+- Estimated: 3 hours
+
+**P3-14: Update provider factory for S3**
+
+- Update `createProvider()` to instantiate `S3Provider` for 's3' type
+- Wire credential resolution: call `getCredentialResolver('s3')` before constructing provider
+- Add integration test creating provider from profile
+- Estimated: 2 hours
+
+**P3-15: S3Provider integration tests**
+
+- Create integration test suite using LocalStack or mock
+- Test full workflow: list → read → write → copy → delete
+- Test error handling scenarios (NotFound, PermissionDenied, etc.)
+- Verify feature parity with direct S3Adapter usage
+- Test with credentials from different sources (env vars, profile, keychain mock)
+- Estimated: 5 hours
+
+**P3-16: S3Provider documentation**
+
+- Add JSDoc comments to all public methods
+- Document S3-specific behavior and limitations
+- Document method signature differences from S3Adapter
+- Add usage examples
+- Estimated: 1 hour
+
+**Phase 3 Total Estimate: 38 hours**
 
 ### Phase 4: Additional Providers
 
@@ -1473,7 +1628,7 @@ Add providers incrementally, each in isolation:
 ```
 src/
   providers/
-    s3/                 # ✅ Done in Phase 2
+    s3/                 # ✅ Done in Phase 3
     gcs/                # Google Cloud Storage
     sftp/               # SSH File Transfer Protocol
     ftp/                # FTP/FTPS
@@ -2291,6 +2446,7 @@ const provider = createProvider(profile);
 
 - Remove legacy `S3Adapter` and related code
 - Remove feature flags
+- **Remove `Provider` prefix from all provider types**
 - Update documentation
 - Archive migration code
 
@@ -2309,18 +2465,26 @@ const provider = createProvider(profile);
 - Delete `src/adapters/s3-adapter.ts`
 - Delete `src/adapters/adapter.ts` (old interfaces)
 - Delete related test files
-- Delete `src/adapters/s3/` subdirectory if exists
-- Keep mock-adapter.ts if still useful for testing
+- Delete `src/adapters/s3/` subdirectory
+- Delete `src/adapters/mock-adapter.ts` (replaced by MockStorageProvider)
 - Estimated: 2 hours
 
-**P7-3: Remove legacy context code**
+**P7-3: Remove legacy types**
+
+- Delete `src/types/entry.ts` (replaced by provider types)
+- Delete `src/types/progress.ts` (replaced by provider types)
+- Delete type mapper functions from `src/providers/types/mappers.ts`
+- Update all imports that referenced legacy types
+- Estimated: 2 hours
+
+**P7-4: Remove legacy context code**
 
 - Delete `src/contexts/AdapterContext.tsx`
 - Delete `LegacyStorageAdapter.ts`
 - Remove legacy-related imports from all files
 - Estimated: 2 hours
 
-**P7-4: Remove feature flag system**
+**P7-5: Remove feature flag system**
 
 - Delete `src/utils/feature-flags.ts`
 - Remove all feature flag checks from codebase
@@ -2328,7 +2492,33 @@ const provider = createProvider(profile);
 - Simplify StorageContext to only use new system
 - Estimated: 2 hours
 
-**P7-5: Clean up dependencies**
+**P7-6: Remove `Provider` prefix from types**
+
+- Rename all prefixed types to final names:
+  - `ProviderEntry` → `Entry`
+  - `ProviderEntryType` → `EntryType`
+  - `ProviderEntryMetadata` → `EntryMetadata`
+  - `ProviderProgressEvent` → `ProgressEvent`
+  - `ProviderProgressCallback` → `ProgressCallback`
+  - `ProviderListOptions` → `ListOptions`
+  - `ProviderListResult` → `ListResult`
+  - `ProviderCancellationToken` → `CancellationToken`
+  - `ProviderCancellationTokenSource` → `CancellationTokenSource`
+- Update all imports across codebase
+- Update all type references in code
+- Run TypeScript compiler to verify no errors
+- Estimated: 3 hours
+
+**P7-7: Relocate provider types to canonical locations**
+
+- Move `src/providers/types/entry.ts` → `src/types/entry.ts`
+- Move `src/providers/types/progress.ts` → `src/types/progress.ts`
+- Move `src/providers/types/list.ts` → `src/types/list.ts`
+- Keep provider-specific types in `src/providers/types/` (capabilities, result, profile, cancellation)
+- Update all imports
+- Estimated: 2 hours
+
+**P7-8: Clean up dependencies**
 
 - Review package.json for unused dependencies
 - Remove any packages only used by legacy system
@@ -2336,39 +2526,43 @@ const provider = createProvider(profile);
 - Update lock file
 - Estimated: 1 hour
 
-**P7-6: Consolidate and reorganize**
+**P7-9: Consolidate and reorganize**
 
-- Move `src/providers/` to `src/adapters/` if preferred
-- Or keep as `src/providers/` - decide on final naming
+- Evaluate final directory structure:
+  - Option A: Keep `src/providers/` for provider implementations
+  - Option B: Rename to `src/storage/` for clarity
 - Update all imports
 - Ensure consistent directory structure
 - Estimated: 2 hours
 
-**P7-7: Update all documentation**
+**P7-10: Update all documentation**
 
 - Update README.md
 - Update any architecture docs
 - Remove references to legacy system
+- Remove references to `Provider` prefix convention
 - Update code comments
 - Update JSDoc
 - Estimated: 2 hours
 
-**P7-8: Final testing**
+**P7-11: Final testing**
 
 - Run full test suite
 - Manual testing of all features
 - Verify no dead code or broken imports
+- Verify no `Provider` prefixed types remain (except intentional ones)
 - Estimated: 2 hours
 
-**P7-9: Archive migration artifacts**
+**P7-12: Archive migration artifacts**
 
 - Create `docs/archive/` directory
 - Move migration-related docs to archive
+- Move `src/providers/types/mappers.ts` to archive (historical reference)
 - Keep for historical reference
 - Tag git commit as "post-migration"
 - Estimated: 1 hour
 
-**Phase 7 Total Estimate: 16 hours**
+**Phase 7 Total Estimate: 23 hours**
 
 ---
 
@@ -2416,9 +2610,10 @@ const provider = createProvider(profile);
 
 | Phase     | Description                   | Tickets | Estimated Hours |
 | --------- | ----------------------------- | ------- | --------------- |
-| 1         | Foundation Types & Interfaces | 8       | 14.5            |
-| 2         | S3 Provider                   | 16      | 34              |
-| 3         | Profile Manager & Credentials | 12      | 35-41           |
+| 0         | Prerequisites & Inventory     | 5       | 10              |
+| 1         | Foundation Types & Interfaces | 11      | 22.5            |
+| 2         | Profile Manager & Credentials | 12      | 38-44           |
+| 3         | S3 Provider                   | 16      | 38              |
 | 4A        | GCS Provider                  | 7       | 17.5            |
 | 4B        | SFTP Provider                 | 8       | 19.5            |
 | 4C        | FTP Provider                  | 7       | 15.5            |
@@ -2428,14 +2623,17 @@ const provider = createProvider(profile);
 | 4G        | Google Drive Provider         | 8       | 34              |
 | 5         | UI Abstraction Layer          | 17      | 45              |
 | 6         | Cutover                       | 7       | 22              |
-| 7         | Cleanup                       | 9       | 16              |
-| **Total** |                               | **117** | **~292 hours**  |
+| 7         | Cleanup & Prefix Removal      | 12      | 23              |
+| **Total** |                               | **128** | **~324 hours**  |
 
 **Notes:**
 
+- Phase 0 must complete before Phase 1 (establishes type strategy)
+- Phase 2 (Profile Manager) must complete before Phase 3 (S3 Provider) for credential integration
 - Phase 4 providers can be implemented in parallel by different developers
 - Phase 4 providers can be shipped incrementally (S3 first, others as ready)
-- CLI commands in P3-8 are optional and can be deferred
+- CLI commands in P2-12 are optional and can be deferred
+- Phase 7 includes removal of `Provider` prefix from all types
 - Estimates assume familiarity with codebase; add 20% for ramp-up
 
 ### Risk Mitigation
@@ -2495,7 +2693,7 @@ if (provider.disconnect) {
 
 ## Open Questions
 
-1. ~~**Credential Storage**: Should sensitive credentials (passwords, keys) be stored in profiles, or should we integrate with system keychains?~~ **Resolved**: Use credential provider chain with OS keychain integration (keytar) as primary secure storage, environment variables for CI/CD, and encrypted config file as fallback. See Phase 3 tickets P3-5 through P3-8 for implementation details.
+1. ~~**Credential Storage**: Should sensitive credentials (passwords, keys) be stored in profiles, or should we integrate with system keychains?~~ **Resolved**: Use credential provider chain with OS keychain integration (keytar) as primary secure storage, environment variables for CI/CD, and encrypted config file as fallback. See Phase 2 tickets P2-5 through P2-9 for implementation details.
 
 2. **Connection Pooling**: For SFTP/FTP, should we pool connections or create new ones per operation?
 
@@ -3222,7 +3420,7 @@ export interface GoogleDriveProfile extends BaseProfile {
 
 4. **Eventual Consistency:** Some Drive operations are not immediately consistent. Listing may not show just-created files.
 
-### Recommended Phase: 5 or 6
+### Recommended Phase: 4G (after core providers)
 
 **Rationale:**
 
@@ -3231,16 +3429,16 @@ export interface GoogleDriveProfile extends BaseProfile {
 3. OAuth complexity adds development overhead
 4. High user demand likely - cloud storage is expected
 
-### Phase 5/6 Tickets (Estimated)
+### Phase 4G Tickets (see main Phase 4G section)
 
 | Ticket    | Description                              | Hours   |
 | --------- | ---------------------------------------- | ------- |
-| P5-GD-1   | Add `googleapis` dependency, OAuth utils | 2h      |
-| P5-GD-2   | Implement OAuth flow with local callback | 4h      |
-| P5-GD-3   | Create path-to-ID resolution layer       | 6h      |
-| P5-GD-4   | Implement core operations                | 8h      |
-| P5-GD-5   | Implement Shared Drive support           | 4h      |
-| P5-GD-6   | Handle Google Workspace document export  | 3h      |
-| P5-GD-7   | Rate limiting and error handling         | 3h      |
-| P5-GD-8   | Integration tests                        | 4h      |
+| P4G-1     | Add `googleapis` dependency, OAuth utils | 2h      |
+| P4G-2     | Implement OAuth flow with local callback | 4h      |
+| P4G-3     | Create path-to-ID resolution layer       | 6h      |
+| P4G-4     | Implement core operations                | 8h      |
+| P4G-5     | Implement Shared Drive support           | 4h      |
+| P4G-6     | Handle Google Workspace document export  | 3h      |
+| P4G-7     | Rate limiting and error handling         | 3h      |
+| P4G-8     | Integration tests                        | 4h      |
 | **Total** |                                          | **34h** |
