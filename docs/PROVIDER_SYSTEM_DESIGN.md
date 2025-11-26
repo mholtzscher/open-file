@@ -40,29 +40,29 @@ ReadableStorageAdapter
 
 Based on research of AWS S3, Google Cloud Storage, FTP (RFC 959), SFTP (SSH File Transfer Protocol), NFS (RFC 8881), and SMB (MS-SMB2):
 
-| Capability          |  S3  | GCS | SFTP | FTP | NFS | SMB |
-| ------------------- | :--: | :-: | :--: | :-: | :-: | :-: |
-| List                |  ✅  | ✅  |  ✅  | ✅  | ✅  | ✅  |
-| Read                |  ✅  | ✅  |  ✅  | ✅  | ✅  | ✅  |
-| Write               |  ✅  | ✅  |  ✅  | ✅  | ✅  | ✅  |
-| Delete              |  ✅  | ✅  |  ✅  | ✅  | ✅  | ✅  |
-| Mkdir               | ✅\* | ✅  |  ✅  | ✅  | ✅  | ✅  |
-| Rmdir               | ✅\* | ✅  |  ✅  | ✅  | ✅  | ✅  |
-| Copy                |  ✅  | ✅  |  ❌  | ❌  | ✅  | ✅  |
-| Move                |  ✅  | ✅  |  ✅  | ✅  | ✅  | ✅  |
-| ServerSideCopy      |  ✅  | ✅  |  ❌  | ❌  | ✅² | ✅³ |
-| Resume              |  ✅  | ✅  |  ✅  | ⚠️  | ✅  | ✅  |
-| Versioning          |  ✅  | ✅  |  ❌  | ❌  | ❌  | ❌  |
-| Metadata            |  ✅  | ✅  |  ❌  | ❌  | ✅⁴ | ⚠️  |
-| Permissions         |  ❌  | ❌  |  ✅  | ❌  | ✅  | ✅⁵ |
-| Symlinks            |  ❌  | ❌  |  ✅  | ❌  | ✅  | ⚠️  |
-| Hardlinks           |  ❌  | ❌  |  ⚠️  | ❌  | ✅  | ❌  |
-| PresignedUrls       |  ✅  | ✅  |  ❌  | ❌  | ❌  | ❌  |
-| BatchDelete         |  ✅  | ✅  |  ❌  | ❌  | ❌  | ❌  |
-| Buckets/Containers  |  ✅  | ✅  |  ❌  | ❌  | ❌  | ✅⁶ |
-| FileLocking         |  ❌  | ❌  |  ❌  | ❌  | ✅  | ✅  |
-| ExtendedAttrs       |  ❌  | ❌  |  ❌  | ❌  | ✅⁷ | ⚠️⁸ |
-| Delegations/Oplocks |  ❌  | ❌  |  ❌  | ❌  | ✅  | ✅  |
+| Capability          |  S3  | GCS | SFTP | FTP | NFS | SMB | GDrive |
+| ------------------- | :--: | :-: | :--: | :-: | :-: | :-: | :----: |
+| List                |  ✅  | ✅  |  ✅  | ✅  | ✅  | ✅  |   ✅   |
+| Read                |  ✅  | ✅  |  ✅  | ✅  | ✅  | ✅  |   ✅   |
+| Write               |  ✅  | ✅  |  ✅  | ✅  | ✅  | ✅  |   ✅   |
+| Delete              |  ✅  | ✅  |  ✅  | ✅  | ✅  | ✅  |   ✅   |
+| Mkdir               | ✅\* | ✅  |  ✅  | ✅  | ✅  | ✅  |   ✅   |
+| Rmdir               | ✅\* | ✅  |  ✅  | ✅  | ✅  | ✅  |   ✅   |
+| Copy                |  ✅  | ✅  |  ❌  | ❌  | ✅  | ✅  |   ✅   |
+| Move                |  ✅  | ✅  |  ✅  | ✅  | ✅  | ✅  |   ✅   |
+| ServerSideCopy      |  ✅  | ✅  |  ❌  | ❌  | ✅² | ✅³ |   ✅   |
+| Resume              |  ✅  | ✅  |  ✅  | ⚠️  | ✅  | ✅  |   ✅   |
+| Versioning          |  ✅  | ✅  |  ❌  | ❌  | ❌  | ❌  |   ✅   |
+| Metadata            |  ✅  | ✅  |  ❌  | ❌  | ✅⁴ | ⚠️  |   ✅   |
+| Permissions         |  ❌  | ❌  |  ✅  | ❌  | ✅  | ✅⁵ |  ⚠️⁹   |
+| Symlinks            |  ❌  | ❌  |  ✅  | ❌  | ✅  | ⚠️  |   ❌   |
+| Hardlinks           |  ❌  | ❌  |  ⚠️  | ❌  | ✅  | ❌  |   ❌   |
+| PresignedUrls       |  ✅  | ✅  |  ❌  | ❌  | ❌  | ❌  |  ⚠️¹⁰  |
+| BatchDelete         |  ✅  | ✅  |  ❌  | ❌  | ❌  | ❌  |   ❌   |
+| Buckets/Containers  |  ✅  | ✅  |  ❌  | ❌  | ❌  | ✅⁶ |  ✅¹¹  |
+| FileLocking         |  ❌  | ❌  |  ❌  | ❌  | ✅  | ✅  |   ❌   |
+| ExtendedAttrs       |  ❌  | ❌  |  ❌  | ❌  | ✅⁷ | ⚠️⁸ |  ⚠️¹²  |
+| Delegations/Oplocks |  ❌  | ❌  |  ❌  | ❌  | ✅  | ✅  |   ❌   |
 
 \*S3 directories are simulated via empty objects with trailing `/`
 
@@ -75,6 +75,10 @@ Based on research of AWS S3, Google Cloud Storage, FTP (RFC 959), SFTP (SSH File
 - ⁶ SMB shares are similar to containers
 - ⁷ NFSv4.2 only, via GETXATTR/SETXATTR operations
 - ⁸ SMB alternate data streams (different paradigm)
+- ⁹ Google Drive uses ACL-based sharing model, not POSIX permissions
+- ¹⁰ Google Drive has `webContentLink` but not true presigned URLs
+- ¹¹ Google Drive: My Drive + Shared Drives as containers
+- ¹² Google Drive custom properties serve similar purpose
 
 ---
 
@@ -85,7 +89,7 @@ Based on research of AWS S3, Google Cloud Storage, FTP (RFC 959), SFTP (SSH File
 ```typescript
 // types/profile.ts
 
-export type ProviderType = 's3' | 'gcs' | 'sftp' | 'ftp' | 'nfs' | 'smb';
+export type ProviderType = 's3' | 'gcs' | 'sftp' | 'ftp' | 'nfs' | 'smb' | 'gdrive';
 
 /**
  * Base profile that all providers share
@@ -190,7 +194,32 @@ export interface SMBProfile extends BaseProfile {
   };
 }
 
-export type Profile = S3Profile | GCSProfile | SFTPProfile | FTPProfile | NFSProfile | SMBProfile;
+/**
+ * Google Drive-specific profile configuration
+ */
+export interface GoogleDriveProfile extends BaseProfile {
+  provider: 'gdrive';
+  config: {
+    clientId: string;
+    clientSecret: string;
+    refreshToken?: string; // Obtained after OAuth flow
+    keyFilePath?: string; // For service accounts
+    impersonateEmail?: string; // User to impersonate (service account)
+    rootFolderId?: string; // Starting folder (default: 'root')
+    includeSharedDrives?: boolean; // List shared drives as containers
+    exportFormat?: 'pdf' | 'docx' | 'txt'; // For Google Workspace docs
+    cacheTtlMs?: number; // Path cache TTL (default: 60000)
+  };
+}
+
+export type Profile =
+  | S3Profile
+  | GCSProfile
+  | SFTPProfile
+  | FTPProfile
+  | NFSProfile
+  | SMBProfile
+  | GoogleDriveProfile;
 ```
 
 ### 2. Capability System
@@ -710,13 +739,16 @@ export function createProvider(profile: Profile): StorageProvider {
     case 'smb':
       // return new SMBProvider(profile as SMBProfile);
       throw new Error('SMBProvider not yet implemented');
+    case 'gdrive':
+      // return new GoogleDriveProvider(profile as GoogleDriveProfile);
+      throw new Error('GoogleDriveProvider not yet implemented');
     default:
       throw new Error(`Unknown provider type: ${(profile as any).provider}`);
   }
 }
 
 export function getSupportedProviders(): string[] {
-  return ['s3', 'gcs', 'sftp', 'ftp', 'nfs', 'smb'];
+  return ['s3', 'gcs', 'sftp', 'ftp', 'nfs', 'smb', 'gdrive'];
 }
 ```
 
@@ -1737,7 +1769,95 @@ Each provider should be independently testable without affecting existing functi
 
 ---
 
-**Phase 4 Grand Total: ~91 hours**
+#### Phase 4G: Google Drive Provider
+
+> **Note:** Google Drive has a fundamentally different data model (ID-based, not path-based). See Appendix D for detailed research. Recommended to implement after core filesystem providers are stable.
+
+**P4G-1: Add googleapis dependency and OAuth utilities**
+
+- Add `googleapis` and `@google-cloud/local-auth` to package.json
+- Create OAuth utility functions for token management
+- Verify installation and basic import
+- Estimated: 2 hours
+
+**P4G-2: Implement OAuth flow with local callback server**
+
+- Create `src/providers/gdrive/auth.ts`
+- Implement browser-based OAuth consent flow
+- Create local HTTP server for OAuth callback
+- Handle token storage and refresh
+- Support service account authentication as alternative
+- Add unit tests with mocked OAuth
+- Estimated: 4 hours
+
+**P4G-3: Create path-to-ID resolution layer with caching**
+
+- Create `src/providers/gdrive/path-resolver.ts`
+- Implement `resolvePath(path: string): Promise<string>` (returns file ID)
+- Implement path segment walking with Drive API queries
+- Add LRU cache with configurable TTL
+- Handle cache invalidation on mutations (write, delete, move)
+- Handle edge cases: duplicate names, trashed files
+- Add unit tests
+- Estimated: 6 hours
+
+**P4G-4: Create GoogleDriveProvider class and core operations**
+
+- Create `src/providers/gdrive/gdrive-provider.ts`
+- Extend `BaseStorageProvider`
+- Define constructor accepting `GoogleDriveProfile`
+- Declare capabilities (List, Read, Write, Delete, Mkdir, Rmdir, Copy, Move, ServerSideCopy, Resume, Versioning, Metadata, Containers, Download, Upload)
+- Implement `list()` using `files.list()` with path resolution
+- Implement `read()` using `files.get()` with `alt=media`
+- Implement `write()` using `files.create()` / `files.update()`
+- Implement `delete()` using `files.delete()`
+- Implement `mkdir()` with folder MIME type
+- Implement `getMetadata()` and `exists()`
+- Map Drive API errors to OperationResult
+- Add unit tests
+- Estimated: 8 hours
+
+**P4G-5: Implement Shared Drive support**
+
+- Implement `listContainers()` returning My Drive + Shared Drives
+- Implement `setContainer()` / `getContainer()` for drive switching
+- Handle `supportsAllDrives` and `includeItemsFromAllDrives` params
+- Update path resolution for shared drive context
+- Add unit tests
+- Estimated: 4 hours
+
+**P4G-6: Handle Google Workspace document export**
+
+- Detect Google Docs/Sheets/Slides by MIME type
+- Implement export to configured format (PDF, DOCX, etc.)
+- Handle in `read()` method transparently
+- Add `exportFormat` config option
+- Document limitation: exported files are read-only snapshots
+- Estimated: 3 hours
+
+**P4G-7: Rate limiting and error handling**
+
+- Implement exponential backoff for rate limit errors (403, 429)
+- Map Google Drive error codes to OperationResult statuses
+- Handle quota exceeded, auth failures, not found
+- Add retry logic with configurable max attempts
+- Estimated: 3 hours
+
+**P4G-8: Integration tests**
+
+- Create integration test suite (requires Google Cloud project)
+- Test OAuth flow (manual verification)
+- Test full workflow: list → read → write → copy → delete
+- Test Shared Drive operations
+- Test Google Workspace doc export
+- Document test setup (create test project, enable API)
+- Estimated: 4 hours
+
+**Phase 4G Total: 34 hours**
+
+---
+
+**Phase 4 Grand Total: ~125 hours**
 
 ### Phase 5: UI Abstraction Layer
 
@@ -2181,10 +2301,11 @@ const provider = createProvider(profile);
 | 4D        | SMB Provider                  | 8       | 18.5            |
 | 4E        | NFS Provider                  | 7       | 15              |
 | 4F        | Local Provider                | 3       | 5               |
+| 4G        | Google Drive Provider         | 8       | 34              |
 | 5         | UI Abstraction Layer          | 17      | 45              |
 | 6         | Cutover                       | 7       | 22              |
 | 7         | Cleanup                       | 9       | 16              |
-| **Total** |                               | **105** | **~242 hours**  |
+| **Total** |                               | **113** | **~276 hours**  |
 
 **Notes:**
 
@@ -2711,3 +2832,291 @@ try {
 const nfsProvider = new NFSProvider(profile);
 // Just use fs module, OS handles connection
 ```
+
+---
+
+## Appendix D: Google Drive Research
+
+### Overview
+
+Google Drive can be supported as a storage provider, but with significant architectural considerations due to its fundamentally different data model. Recommended for **Phase 5 or later** after core filesystem providers are stable.
+
+### API Capabilities
+
+| Operation            | Support | API Method                        | Notes                                           |
+| -------------------- | ------- | --------------------------------- | ----------------------------------------------- |
+| List files/folders   | ✅ Full | `files.list()`                    | Pagination via `pageToken`, max 1000 items/page |
+| Read/download files  | ✅ Full | `files.get()` with `alt=media`    | Supports partial downloads via Range headers    |
+| Write/upload files   | ✅ Full | `files.create()`                  | Simple (<5MB), multipart (<5MB), resumable      |
+| Delete files         | ✅ Full | `files.delete()`                  | Also supports trash/untrash                     |
+| Create folders       | ✅ Full | `files.create()` with folder MIME | `application/vnd.google-apps.folder`            |
+| Copy files           | ✅ Full | `files.copy()`                    | Server-side copy within same Drive              |
+| Move/rename files    | ✅ Full | `files.update()`                  | Via `addParents`/`removeParents` params         |
+| File metadata        | ✅ Rich | `files.get()` / `files.update()`  | Custom properties, labels, thumbnails           |
+| Revisions/versioning | ✅ Full | `revisions.*` methods             | Full revision history                           |
+
+### Key Architectural Challenge: ID-based vs Path-based
+
+**Critical difference:** Google Drive uses **file IDs**, not paths.
+
+```
+Filesystem:   /documents/reports/q1-2024.pdf
+Google Drive: 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs04 (opaque file ID)
+              + parent: 0AHV9S5FKlmnMUk9PVA (folder ID)
+```
+
+**Solution: Path-to-ID resolution layer**
+
+```typescript
+class GoogleDriveProvider extends BaseStorageProvider {
+  private pathCache = new Map<string, string>(); // path -> fileId
+
+  async resolvePath(path: string): Promise<string> {
+    if (path === '/' || path === 'root') return 'root';
+
+    // Walk path segments, resolving each to ID
+    const segments = path.split('/').filter(Boolean);
+    let currentId = 'root';
+
+    for (const segment of segments) {
+      const cacheKey = `${currentId}/${segment}`;
+      if (this.pathCache.has(cacheKey)) {
+        currentId = this.pathCache.get(cacheKey)!;
+      } else {
+        // Query Drive for child with this name
+        const response = await this.drive.files.list({
+          q: `'${currentId}' in parents and name = '${segment}' and trashed = false`,
+          fields: 'files(id)',
+        });
+        if (response.data.files?.length !== 1) {
+          throw new Error(`Path not found: ${path}`);
+        }
+        currentId = response.data.files[0].id!;
+        this.pathCache.set(cacheKey, currentId);
+      }
+    }
+    return currentId;
+  }
+}
+```
+
+### Authentication Methods
+
+**OAuth 2.0 (Required for user files):**
+
+```typescript
+// Recommended scopes
+const SCOPES = [
+  'https://www.googleapis.com/auth/drive.file', // Non-sensitive, per-file access
+  'https://www.googleapis.com/auth/drive.readonly', // Restricted, full read access
+  'https://www.googleapis.com/auth/drive', // Restricted, full access
+];
+```
+
+| Method          | Use Case              | Notes                                 |
+| --------------- | --------------------- | ------------------------------------- |
+| OAuth 2.0       | User files (required) | Browser-based consent flow            |
+| Service Account | Workspace domains     | Cannot own files; needs impersonation |
+| API Key         | ❌ Not supported      | Cannot access user Drive files        |
+
+**Security considerations:**
+
+- Refresh tokens should be stored securely (keychain/credential manager)
+- OAuth flow requires browser-based consent (complicates CLI/headless usage)
+- Token refresh handled automatically by `googleapis` library
+
+### Node.js Library
+
+**Official library: `googleapis`**
+
+```bash
+npm install googleapis @google-cloud/local-auth
+```
+
+- ✅ Official Google-maintained
+- ✅ ~2.5M weekly npm downloads
+- ✅ TypeScript definitions included
+- ✅ Active development
+- ✅ Built-in resumable uploads, batching, media downloads
+
+```typescript
+import { google } from 'googleapis';
+
+const drive = google.drive({ version: 'v3', auth });
+const response = await drive.files.list({
+  pageSize: 100,
+  fields: 'nextPageToken, files(id, name, mimeType, size, modifiedTime)',
+});
+```
+
+### Capability Mapping
+
+**Supported (15/19):**
+
+| Capability       | Google Drive Support                         |
+| ---------------- | -------------------------------------------- |
+| `List`           | ✅ Via `files.list()` with query params      |
+| `Read`           | ✅ Via `files.get()` with `alt=media`        |
+| `Write`          | ✅ Via `files.create()` / `files.update()`   |
+| `Delete`         | ✅ Via `files.delete()` (also trash/untrash) |
+| `Mkdir`          | ✅ Create with folder MIME type              |
+| `Rmdir`          | ✅ Same as delete                            |
+| `Copy`           | ✅ Via `files.copy()` (server-side)          |
+| `Move`           | ✅ Via `files.update()` with parent changes  |
+| `ServerSideCopy` | ✅ `files.copy()` is server-side             |
+| `Resume`         | ✅ Resumable uploads built-in                |
+| `Versioning`     | ✅ Full revision history via `revisions.*`   |
+| `Metadata`       | ✅ Rich metadata + custom properties         |
+| `Containers`     | ✅ My Drive + Shared Drives as containers    |
+| `Download`       | ✅ To local filesystem                       |
+| `Upload`         | ✅ From local filesystem                     |
+
+**Not Supported:**
+
+| Capability      | Notes                                           |
+| --------------- | ----------------------------------------------- |
+| `Permissions`   | ACL-based, not POSIX (different model)          |
+| `Symlinks`      | Has "shortcuts" but different concept           |
+| `Hardlinks`     | Not applicable                                  |
+| `PresignedUrls` | `webContentLink` exists but not true presigned  |
+| `BatchDelete`   | Must delete one-by-one (can batch API requests) |
+| `ExtendedAttrs` | Custom properties serve similar purpose         |
+| `FileLocking`   | Not supported                                   |
+| `Delegations`   | Not applicable                                  |
+
+### Folder Structure Differences
+
+- **My Drive:** Files can have **multiple parents** (same file in multiple folders)
+- **Shared Drives:** Files can only have **one parent**
+- **No true hierarchy:** Files reference parents, not paths
+- **Folder limits:** 500,000 items per folder, 100 levels of nesting
+
+### Shared Drives / Team Drives
+
+```typescript
+// List shared drives
+const drives = await drive.drives.list();
+
+// Access files in shared drive
+const files = await drive.files.list({
+  driveId: 'SHARED_DRIVE_ID',
+  corpora: 'drive',
+  supportsAllDrives: true,
+  includeItemsFromAllDrives: true,
+});
+```
+
+**Container mapping:**
+
+- S3/GCS: Buckets
+- SMB: Shares
+- Google Drive: My Drive + Shared Drives (as separate "containers")
+
+### Rate Limits
+
+| Limit                         | Value       |
+| ----------------------------- | ----------- |
+| Queries per minute            | 12,000      |
+| Queries per minute per user   | 12,000      |
+| Upload limit per user per day | 750 GB      |
+| Maximum file size             | 5 TB        |
+| Maximum items per user        | 500 million |
+
+**Error handling:**
+
+- `403 User rate limit exceeded` → Exponential backoff
+- `429 Too many requests` → Exponential backoff
+- Recommended: `min(((2^n)+random_ms), 64000)`
+
+### Google Workspace Documents
+
+Google Docs, Sheets, and Slides have no "raw" content - they must be exported:
+
+```typescript
+// Export Google Doc as PDF
+const response = await drive.files.export({
+  fileId: 'DOC_ID',
+  mimeType: 'application/pdf',
+});
+
+// Export formats by type
+const EXPORT_FORMATS = {
+  'application/vnd.google-apps.document': 'application/pdf', // or docx, txt
+  'application/vnd.google-apps.spreadsheet': 'text/csv', // or xlsx
+  'application/vnd.google-apps.presentation': 'application/pdf', // or pptx
+};
+```
+
+### Profile Configuration
+
+```typescript
+export interface GoogleDriveProfile extends BaseProfile {
+  provider: 'gdrive';
+  config: {
+    // OAuth 2.0 credentials (from Google Cloud Console)
+    clientId: string;
+    clientSecret: string;
+
+    // Obtained after OAuth flow
+    refreshToken?: string;
+
+    // Optional: for service accounts
+    keyFilePath?: string;
+    impersonateEmail?: string;
+
+    // Behavior settings
+    rootFolderId?: string; // Default: 'root' (My Drive)
+    includeSharedDrives?: boolean; // List shared drives as containers
+    exportFormat?: 'pdf' | 'docx' | 'txt'; // For Google Workspace docs
+
+    // Performance
+    cacheTtlMs?: number; // Path cache TTL (default: 60000)
+  };
+}
+```
+
+### Implementation Complexity
+
+| Task                           | Hours      | Notes                           |
+| ------------------------------ | ---------- | ------------------------------- |
+| OAuth flow implementation      | 4-6h       | Browser consent for CLI app     |
+| Path-to-ID resolution layer    | 6-8h       | Cache, invalidation, edge cases |
+| Core operations                | 6-8h       | Straightforward mapping         |
+| Folder operations              | 2-3h       | Different semantics             |
+| Shared Drive support           | 3-4h       | Additional parameters needed    |
+| Google Workspace doc export    | 2-3h       | Optional but useful             |
+| Error handling & rate limiting | 2-3h       | Exponential backoff             |
+| **Total**                      | **25-35h** |                                 |
+
+### Implementation Concerns
+
+1. **Path Resolution Performance:** Every operation requires path → ID lookup. Solution: Aggressive caching with TTL and invalidation on mutations.
+
+2. **OAuth Flow in CLI:** Requires opening browser for consent. Solution: Local HTTP server callback or OAuth device flow.
+
+3. **Multiple Parents:** Same file can appear in multiple folders (My Drive only). Your model assumes single path per file. Solution: Pick canonical parent or document limitation.
+
+4. **Eventual Consistency:** Some Drive operations are not immediately consistent. Listing may not show just-created files.
+
+### Recommended Phase: 5 or 6
+
+**Rationale:**
+
+1. Core providers (S3, SFTP, FTP) should be stable first
+2. Google Drive's different model will stress-test the abstraction
+3. OAuth complexity adds development overhead
+4. High user demand likely - cloud storage is expected
+
+### Phase 5/6 Tickets (Estimated)
+
+| Ticket    | Description                              | Hours   |
+| --------- | ---------------------------------------- | ------- |
+| P5-GD-1   | Add `googleapis` dependency, OAuth utils | 2h      |
+| P5-GD-2   | Implement OAuth flow with local callback | 4h      |
+| P5-GD-3   | Create path-to-ID resolution layer       | 6h      |
+| P5-GD-4   | Implement core operations                | 8h      |
+| P5-GD-5   | Implement Shared Drive support           | 4h      |
+| P5-GD-6   | Handle Google Workspace document export  | 3h      |
+| P5-GD-7   | Rate limiting and error handling         | 3h      |
+| P5-GD-8   | Integration tests                        | 4h      |
+| **Total** |                                          | **34h** |
