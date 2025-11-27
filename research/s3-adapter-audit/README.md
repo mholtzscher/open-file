@@ -11,17 +11,23 @@ This directory contains a complete audit of S3Adapter usage patterns across the 
 ## Documents
 
 ### 1. **00_START_HERE.txt** (5-10 min read)
+
 Quick overview of the audit with key findings, critical issues, and next steps.
+
 - Best for: Quick understanding of what was audited
 - Includes: Statistics, quick fixes, reading guide
 
 ### 2. **QUICK_REFERENCE.md** (5 min read)
+
 One-page reference listing all adapter calls with line numbers and copy-paste fixes.
+
 - Best for: Finding specific call sites quickly
 - Includes: All 17 adapter calls, issue summary, code snippets
 
 ### 3. **S3_ADAPTER_AUDIT.md** (30-60 min read)
+
 Comprehensive detailed analysis with full context and recommendations.
+
 - Best for: Understanding complete picture and planning remediation
 - Includes: Executive summary, detailed findings, recommendations by priority
 
@@ -38,12 +44,12 @@ Comprehensive detailed analysis with full context and recommendations.
 
 ### Issues Found ⚠️
 
-| Issue | Location | Severity | Fix Time |
-|-------|----------|----------|----------|
-| Unguarded `setBucket()` | Lines 264, 603 | Medium | 5 min |
-| Unguarded `setRegion()` | Line 267 | Medium | 5 min |
-| S3 bucket type checking | Line 259 | Medium | 15 min |
-| Region metadata assumption | Line 261 | Medium | 10 min |
+| Issue                      | Location       | Severity | Fix Time |
+| -------------------------- | -------------- | -------- | -------- |
+| Unguarded `setBucket()`    | Lines 264, 603 | Medium   | 5 min    |
+| Unguarded `setRegion()`    | Line 267       | Medium   | 5 min    |
+| S3 bucket type checking    | Line 259       | Medium   | 15 min   |
+| Region metadata assumption | Line 261       | Medium   | 10 min   |
 
 ### Statistics
 
@@ -80,6 +86,7 @@ Adapter Architecture:
 ## Usage Patterns
 
 ### 1. Adapter Access (s3-explorer.tsx: 80-92)
+
 ```typescript
 // Dual pattern: prop or context
 const contextAdapter = useHasAdapter() ? useAdapter() : null;
@@ -87,6 +94,7 @@ const adapter = adapterProp ?? contextAdapter;
 ```
 
 ### 2. Capability Guards
+
 ```typescript
 // Properly guarded optional operations
 if (adapter.downloadToLocal) {
@@ -99,6 +107,7 @@ if (adapter.uploadFromLocal) {
 ```
 
 ### 3. S3-Specific Code (Not Properly Guarded)
+
 ```typescript
 // ⚠️ Lines 263-268: S3-specific, needs guarding
 if (adapter.setBucket) {
@@ -112,6 +121,7 @@ if (adapter.setRegion) {
 ## Call Sites by Category
 
 ### Core Operations (Backend-Agnostic) ✅
+
 - `list()` - 4 calls
 - `read()` - 1 call
 - `create()` - 1 call
@@ -120,10 +130,12 @@ if (adapter.setRegion) {
 - `copy()` - 1 call
 
 ### Transfer Operations (Guarded) ✅
+
 - `downloadToLocal()` - 1 call (guarded)
 - `uploadFromLocal()` - 1 call (guarded)
 
 ### S3-Specific Operations (Unguarded) ⚠️
+
 - `getBucketEntries()` - 2 calls (guarded)
 - `setBucket()` - 2 calls ⚠️ (NOT properly guarded)
 - `setRegion()` - 1 call ⚠️ (NOT properly guarded)
@@ -131,32 +143,44 @@ if (adapter.setRegion) {
 ## S3-Specific Assumptions in UI
 
 ### 1. Bucket-Based Root View Model
+
 **Code**: Lines 1048-1051
+
 ```typescript
-if (!bucket) {  // No bucket = list buckets (S3-specific)
+if (!bucket) {
+  // No bucket = list buckets (S3-specific)
   if (adapter.getBucketEntries) {
     const entries = await adapter.getBucketEntries();
   }
 }
 ```
+
 **Impact**: Doesn't work for flat storage (GCS, Azure Blob)
 
 ### 2. Region Metadata
+
 **Code**: Line 261
+
 ```typescript
 const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
 ```
+
 **Impact**: Assumes S3 region model; other backends don't have regions
 
 ### 3. Entry Type 'bucket'
+
 **Code**: Line 259
+
 ```typescript
 if (!bucket && currentEntry.type === 'bucket') {
 ```
+
 **Impact**: 'bucket' type is S3-specific; other backends need different logic
 
 ### 4. Path-Based Directories
+
 **Impact**: S3 uses '/' delimiters for "virtual directories"
+
 - ✅ Works for S3-compatible services
 - ⚠️ Doesn't work for flat namespaces (GCS)
 
@@ -165,6 +189,7 @@ if (!bucket && currentEntry.type === 'bucket') {
 ### Priority 1: Immediate Fixes (20 min)
 
 1. **Guard setBucket/setRegion calls** (5 min)
+
    ```typescript
    if (isBucketAwareAdapter(adapter)) {
      adapter.setBucket(bucketName);
@@ -181,6 +206,7 @@ if (!bucket && currentEntry.type === 'bucket') {
 ### Priority 2: Enhancement (1-2 hours)
 
 1. **Add capability detection hook**
+
    ```typescript
    export function useAdapterCapabilities(adapter: Adapter) {
      return {
@@ -201,23 +227,25 @@ if (!bucket && currentEntry.type === 'bucket') {
 
 ## Files to Review
 
-| File | Lines | Adapter Usage |
-|------|-------|---------------|
-| `src/ui/s3-explorer.tsx` | Multiple | PRIMARY - All adapter calls |
-| `src/adapters/adapter.ts` | All | Interface definitions |
-| `src/adapters/s3-adapter.ts` | 100-240 | Implementation details |
-| `src/contexts/AdapterContext.tsx` | 107-156 | Context hooks |
-| `src/index.tsx` | 97-126 | Initialization |
+| File                              | Lines    | Adapter Usage               |
+| --------------------------------- | -------- | --------------------------- |
+| `src/ui/s3-explorer.tsx`          | Multiple | PRIMARY - All adapter calls |
+| `src/adapters/adapter.ts`         | All      | Interface definitions       |
+| `src/adapters/s3-adapter.ts`      | 100-240  | Implementation details      |
+| `src/contexts/AdapterContext.tsx` | 107-156  | Context hooks               |
+| `src/index.tsx`                   | 97-126   | Initialization              |
 
 ## Testing Coverage
 
 ### What's Tested
+
 - ✅ Adapter interfaces (adapter.test.ts)
-- ✅ S3Adapter implementation (s3-adapter.*.test.ts)
+- ✅ S3Adapter implementation (s3-adapter.\*.test.ts)
 - ✅ Dependency injection (s3-adapter.di.test.ts)
-- ✅ Integration scenarios (integration/*.test.ts)
+- ✅ Integration scenarios (integration/\*.test.ts)
 
 ### What's Not Tested
+
 - ❌ UI component adapter usage (no s3-explorer.test.tsx)
 - ❌ AdapterContext usage in components
 - ❌ Mock adapter with UI layer
@@ -247,23 +275,26 @@ To support GCS, Azure, or other backends:
 
 ## Version History
 
-| Date | Author | Change | Status |
-|------|--------|--------|--------|
+| Date       | Author   | Change        | Status   |
+| ---------- | -------- | ------------- | -------- |
 | 2025-11-27 | AI Agent | Initial audit | Complete |
 
 ## How to Use This Audit
 
 ### For Code Review
+
 1. Read "00_START_HERE.txt" for overview
 2. Reference specific lines in "QUICK_REFERENCE.md"
 3. Use "S3_ADAPTER_AUDIT.md" for detailed context
 
 ### For Implementation
+
 1. Start with Priority 1 fixes in S3_ADAPTER_AUDIT.md
 2. Copy code snippets from QUICK_REFERENCE.md
 3. Use detailed context from S3_ADAPTER_AUDIT.md for edge cases
 
 ### For Architecture Decisions
+
 1. Review "S3-Specific Assumptions in UI" section
 2. Understand migration path for new backends
 3. Plan abstraction layer improvements
@@ -278,6 +309,7 @@ A: Unguarded setBucket/setRegion calls will crash if adapter doesn't support Buc
 
 **Q: Can we support GCS/Azure?**  
 A: Yes, but would need refactoring:
+
 1. Remove bucket type check
 2. Generalize root view logic
 3. Map different namespace models
@@ -285,6 +317,7 @@ A: Yes, but would need refactoring:
 
 **Q: How long would refactoring take?**  
 A: Approximately:
+
 - Quick fixes (guard calls): 20 min
 - Medium fixes (capability detection): 1-2 hours
 - Major refactoring (multi-backend): 1-2 days
@@ -298,6 +331,7 @@ A: Approximately:
 ## Contact & Support
 
 For questions about specific findings, refer to:
+
 1. The detailed analysis in S3_ADAPTER_AUDIT.md
 2. Specific line numbers in QUICK_REFERENCE.md
 3. Code snippets in recommendations section

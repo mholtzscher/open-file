@@ -33,6 +33,7 @@ s3-explorer.tsx:603    adapter.setBucket(name)                 // S3 only (ungua
 ## S3-Specific Code
 
 **Bucket handling** (Lines 259-268):
+
 ```typescript
 // Checks entry type 'bucket' - S3-specific
 if (!bucket && currentEntry.type === 'bucket') {
@@ -43,6 +44,7 @@ if (!bucket && currentEntry.type === 'bucket') {
 ```
 
 **Root view mode**:
+
 ```typescript
 // Assumes bucket mode: no bucket = list buckets, has bucket = list objects
 if (!bucket) {
@@ -54,12 +56,12 @@ if (!bucket) {
 
 ## Issues Found
 
-| Issue | Location | Severity | Impact |
-|-------|----------|----------|--------|
-| Unguarded `setBucket()` calls | Lines 264, 603 | Medium | Will crash non-BucketAware adapters |
-| Unguarded `setRegion()` call | Line 267 | Medium | Will crash non-BucketAware adapters |
-| S3 bucket type in UI | Line 259 | Medium | Breaks abstraction for GCS/Azure |
-| Region metadata assumption | Line 261 | Medium | Assumes region in bucket metadata |
+| Issue                         | Location       | Severity | Impact                              |
+| ----------------------------- | -------------- | -------- | ----------------------------------- |
+| Unguarded `setBucket()` calls | Lines 264, 603 | Medium   | Will crash non-BucketAware adapters |
+| Unguarded `setRegion()` call  | Line 267       | Medium   | Will crash non-BucketAware adapters |
+| S3 bucket type in UI          | Line 259       | Medium   | Breaks abstraction for GCS/Azure    |
+| Region metadata assumption    | Line 261       | Medium   | Assumes region in bucket metadata   |
 
 ## Good Patterns
 
@@ -68,7 +70,7 @@ if (!bucket) {
 ✅ Download/Upload operations are properly guarded  
 ✅ Using generic `Adapter` interface, not `S3Adapter`  
 ✅ AdapterContext properly implemented  
-✅ Capability checks before optional operations  
+✅ Capability checks before optional operations
 
 ## To Support New Backend
 
@@ -96,6 +98,7 @@ src/
 ## Quick Copy-Paste Fixes
 
 ### Fix 1: Guard setBucket/setRegion
+
 ```typescript
 // Line 263-268: Current
 if (adapter.setBucket) {
@@ -116,6 +119,7 @@ if (isBucketAwareAdapter(adapter)) {
 ```
 
 ### Fix 2: Add feature detection hook
+
 ```typescript
 // In AdapterContext.tsx
 export function useAdapterCapabilities(adapter: Adapter) {
@@ -128,6 +132,7 @@ export function useAdapterCapabilities(adapter: Adapter) {
 ```
 
 ### Fix 3: Protect bucket type check
+
 ```typescript
 // Line 259: Current
 if (!bucket && currentEntry.type === 'bucket') {
@@ -135,4 +140,3 @@ if (!bucket && currentEntry.type === 'bucket') {
 // Better: Only show if bucket-aware
 if (!bucket && currentEntry.type === 'bucket' && isBucketAwareAdapter(adapter)) {
 ```
-

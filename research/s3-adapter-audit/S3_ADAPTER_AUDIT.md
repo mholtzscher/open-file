@@ -37,20 +37,20 @@ The S3Adapter is **tightly integrated** into the UI layer through the main `S3Ex
 
 ### Direct S3Adapter Imports
 
-| File | Line | Purpose | Type |
-|------|------|---------|------|
-| `src/index.tsx` | 9 | Main initialization | Direct import |
-| `src/adapters/s3-adapter.copy.test.ts` | 6 | Testing | Test import |
-| `src/adapters/s3-adapter.localstack.test.ts` | 21 | Integration testing | Test import |
-| `src/adapters/adapter.test.ts` | 7 | Adapter contract testing | Test import |
-| `src/adapters/s3-adapter.di.test.ts` | 15 | Dependency injection testing | Test import |
+| File                                         | Line | Purpose                      | Type          |
+| -------------------------------------------- | ---- | ---------------------------- | ------------- |
+| `src/index.tsx`                              | 9    | Main initialization          | Direct import |
+| `src/adapters/s3-adapter.copy.test.ts`       | 6    | Testing                      | Test import   |
+| `src/adapters/s3-adapter.localstack.test.ts` | 21   | Integration testing          | Test import   |
+| `src/adapters/adapter.test.ts`               | 7    | Adapter contract testing     | Test import   |
+| `src/adapters/s3-adapter.di.test.ts`         | 15   | Dependency injection testing | Test import   |
 
 ### Adapter Interface Imports
 
-| File | Line | Usage |
-|------|------|-------|
-| `src/ui/s3-explorer.tsx` | 9 | `import { Adapter, ProgressEvent }` |
-| `src/ui/progress-window-integration.test.tsx` | 8 | `import { ProgressEvent, ProgressCallback }` |
+| File                                          | Line | Usage                                        |
+| --------------------------------------------- | ---- | -------------------------------------------- |
+| `src/ui/s3-explorer.tsx`                      | 9    | `import { Adapter, ProgressEvent }`          |
+| `src/ui/progress-window-integration.test.tsx` | 8    | `import { ProgressEvent, ProgressCallback }` |
 
 **Key Finding**: Only test files directly import `S3Adapter`. Production code uses the generic `Adapter` interface, which is good for abstraction.
 
@@ -63,6 +63,7 @@ The S3Adapter is **tightly integrated** into the UI layer through the main `S3Ex
 **Role**: Main application component managing all storage operations and UI state
 
 **Adapter Access Pattern** (lines 80-92):
+
 ```typescript
 // Dual adapter resolution: prop or context
 const hasAdapterContext = useHasAdapter();
@@ -77,12 +78,14 @@ if (!adapter) {
 **Adapter Usage Locations**:
 
 #### 1. Navigation Loading (Line 194)
+
 ```typescript
 const result = await adapter.list(path);
 // Used in navigationConfig.onLoadBuffer callback
 ```
 
 #### 2. Root View Initialization (Lines 1050-1051)
+
 ```typescript
 if (adapter.getBucketEntries) {
   const entries = await adapter.getBucketEntries();
@@ -91,6 +94,7 @@ if (adapter.getBucketEntries) {
 ```
 
 #### 3. Bucket Selection Handler (Lines 263-268)
+
 ```typescript
 if (adapter.setBucket) {
   adapter.setBucket(bucketName);
@@ -102,24 +106,26 @@ if (adapter.setRegion) {
 ```
 
 #### 4. Bucket Refresh (Lines 470-472)
+
 ```typescript
 if (adapter.getBucketEntries) {
-  adapter.getBucketEntries()
-    .then((entries: Entry[]) => {
-      // Refresh root view
-    })
+  adapter.getBucketEntries().then((entries: Entry[]) => {
+    // Refresh root view
+  });
 }
 ```
 
 #### 5. File Operations (Lines 776-821)
 
 **Create Operation** (Line 781):
+
 ```typescript
 case 'create':
   await adapter.create(op.path, createType, undefined, { onProgress });
 ```
 
 **Delete Operation** (Line 789):
+
 ```typescript
 case 'delete':
   const isDirectory = op.entry?.type === 'directory';
@@ -127,18 +133,21 @@ case 'delete':
 ```
 
 **Move Operation** (Line 795):
+
 ```typescript
 case 'move':
   await adapter.move(op.source, op.destination, { onProgress });
 ```
 
 **Copy Operation** (Line 801):
+
 ```typescript
 case 'copy':
   await adapter.copy(op.source, op.destination, { onProgress });
 ```
 
 **Download Operation** (Lines 806-809):
+
 ```typescript
 if (adapter.downloadToLocal && op.source && op.destination) {
   await adapter.downloadToLocal(op.source, op.destination, op.recursive || false, {
@@ -149,6 +158,7 @@ if (adapter.downloadToLocal && op.source && op.destination) {
 ```
 
 **Upload Operation** (Lines 814-817):
+
 ```typescript
 if (adapter.uploadFromLocal && op.source && op.destination) {
   await adapter.uploadFromLocal(op.source, op.destination, op.recursive || false, {
@@ -159,12 +169,14 @@ if (adapter.uploadFromLocal && op.source && op.destination) {
 ```
 
 #### 6. Post-Operation Refresh (Line 840)
+
 ```typescript
 const result = await adapter.list(currentBufferState.currentPath);
 currentBufferState.setEntries([...result.entries]);
 ```
 
 #### 7. File Preview Loading (Line 1138)
+
 ```typescript
 const buffer = await adapter.read(fullPath);
 const content = buffer.toString('utf-8');
@@ -174,14 +186,17 @@ setPreviewContent(content);
 ### Other UI Components
 
 **PreviewPane** (`src/ui/preview-pane-react.tsx`):
+
 - ✅ **No adapter usage** - Pure presentation component
 - Displays file content passed as props
 
 **UploadDialog** (`src/ui/upload-dialog-react.tsx`):
+
 - ✅ **No adapter usage** - Handles local file browsing only
 - Returns selected files to parent for processing
 
 **Other Components** (tested via grep):
+
 - `s3-explorer-dialogs.tsx`: No adapter usage
 - `confirmation-dialog-react.tsx`: No adapter usage
 - `error-dialog-react.tsx`: No adapter usage
@@ -200,23 +215,24 @@ setPreviewContent(content);
 
 ### Summary Table
 
-| Method | Type | Location | S3-Specific | Line(s) |
-|--------|------|----------|-------------|---------|
-| `list()` | ReadableStorageAdapter | s3-explorer.tsx | No | 194, 487, 840, 1063 |
-| `read()` | ReadableStorageAdapter | s3-explorer.tsx | No | 1138 |
-| `getBucketEntries()` | BucketAwareAdapter | s3-explorer.tsx | **YES** | 470-472, 1050-1051 |
-| `setBucket()` | BucketAwareAdapter | s3-explorer.tsx | **YES** | 263-264, 602-603 |
-| `setRegion()` | BucketAwareAdapter | s3-explorer.tsx | **YES** | 266-267 |
-| `create()` | MutableStorageAdapter | s3-explorer.tsx | No | 781 |
-| `delete()` | MutableStorageAdapter | s3-explorer.tsx | No | 789 |
-| `move()` | MutableStorageAdapter | s3-explorer.tsx | No | 795 |
-| `copy()` | MutableStorageAdapter | s3-explorer.tsx | No | 801 |
-| `downloadToLocal()` | TransferableStorageAdapter | s3-explorer.tsx | No | 806-809 |
-| `uploadFromLocal()` | TransferableStorageAdapter | s3-explorer.tsx | No | 814-817 |
+| Method               | Type                       | Location        | S3-Specific | Line(s)             |
+| -------------------- | -------------------------- | --------------- | ----------- | ------------------- |
+| `list()`             | ReadableStorageAdapter     | s3-explorer.tsx | No          | 194, 487, 840, 1063 |
+| `read()`             | ReadableStorageAdapter     | s3-explorer.tsx | No          | 1138                |
+| `getBucketEntries()` | BucketAwareAdapter         | s3-explorer.tsx | **YES**     | 470-472, 1050-1051  |
+| `setBucket()`        | BucketAwareAdapter         | s3-explorer.tsx | **YES**     | 263-264, 602-603    |
+| `setRegion()`        | BucketAwareAdapter         | s3-explorer.tsx | **YES**     | 266-267             |
+| `create()`           | MutableStorageAdapter      | s3-explorer.tsx | No          | 781                 |
+| `delete()`           | MutableStorageAdapter      | s3-explorer.tsx | No          | 789                 |
+| `move()`             | MutableStorageAdapter      | s3-explorer.tsx | No          | 795                 |
+| `copy()`             | MutableStorageAdapter      | s3-explorer.tsx | No          | 801                 |
+| `downloadToLocal()`  | TransferableStorageAdapter | s3-explorer.tsx | No          | 806-809             |
+| `uploadFromLocal()`  | TransferableStorageAdapter | s3-explorer.tsx | No          | 814-817             |
 
 ### Method Call Patterns
 
 #### 1. **Core Operations** (Well-abstracted, backend-independent)
+
 - `list()` - 4 calls - List directory contents
 - `read()` - 1 call - Read file for preview
 - `create()` - 1 call - Create file/directory
@@ -225,10 +241,12 @@ setPreviewContent(content);
 - `copy()` - 1 call - Copy operations
 
 #### 2. **Transfer Operations** (Optional, with capability checks)
+
 - `downloadToLocal()` - Protected with `if (adapter.downloadToLocal)`
 - `uploadFromLocal()` - Protected with `if (adapter.uploadFromLocal)`
 
 #### 3. **Bucket-Specific Operations** (S3-only, unprotected)
+
 - `getBucketEntries()` - 2 calls - Root view bucket listing (S3-specific)
 - `setBucket()` - 2 calls - Set active bucket (S3-specific)
 - `setRegion()` - 1 call - Set AWS region (S3-specific)
@@ -242,6 +260,7 @@ setPreviewContent(content);
 **Location**: `s3-explorer.tsx` lines 258-269, 470-483, 1048-1071
 
 **Assumption**:
+
 ```typescript
 if (!bucket && currentEntry.type === 'bucket') {
   // When bucket is undefined, lists buckets
@@ -250,14 +269,17 @@ if (!bucket && currentEntry.type === 'bucket') {
 ```
 
 **S3 Concept**: AWS S3's two-level model:
+
 - Account level: List buckets
 - Bucket level: List objects with prefix
 
-**Impact**: 
+**Impact**:
+
 - ✅ Works for S3-compatible services (Minio, Wasabi, DigitalOcean Spaces)
 - ❌ Doesn't work for flat storage backends (GCS, Azure Blob - different hierarchies)
 
 **Code**:
+
 ```typescript
 // Line 1048-1051
 if (!bucket) {
@@ -272,6 +294,7 @@ if (!bucket) {
 **Location**: `s3-explorer.tsx` lines 260-268
 
 **Code**:
+
 ```typescript
 const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
 
@@ -283,6 +306,7 @@ if (adapter.setRegion) {
 **S3 Concept**: AWS S3 buckets are region-specific; region must be set for operations
 
 **Impact**:
+
 - ❌ Assumes buckets have region metadata (S3-specific)
 - ❌ Falls back to 'us-east-1' (AWS assumption)
 - ❌ Would require region tracking for other backends
@@ -292,15 +316,17 @@ if (adapter.setRegion) {
 **Location**: `s3-explorer.tsx` throughout
 
 **Assumption**:
+
 ```typescript
 // Paths are strings with '/' delimiters
 // Directories are identified by trailing '/'
-const path = "bucket/dir/subdir/";
+const path = 'bucket/dir/subdir/';
 ```
 
 **S3 Concept**: AWS S3 uses "virtual directories" via prefixes with '/' delimiters
 
 **Impact**:
+
 - ✅ Works for S3-compatible services
 - ⚠️ Requires careful implementation in other backends
 - GCS: Uses flat namespace, no directories
@@ -311,6 +337,7 @@ const path = "bucket/dir/subdir/";
 **Location**: `s3-explorer.tsx` lines 259, 788
 
 **Code**:
+
 ```typescript
 if (currentEntry.type === 'bucket') {
   // S3-specific: bucket type
@@ -319,11 +346,13 @@ if (currentEntry.type === 'bucket') {
 const isDirectory = op.entry?.type === 'directory';
 ```
 
-**S3 Concepts**: 
+**S3 Concepts**:
+
 - Bucket type (S3-specific)
 - Directory vs. File distinction (virtual in S3)
 
 **Impact**:
+
 - ✅ Entry interface is abstract and reusable
 - ❌ But UI logic branches on 'bucket' type
 - ❌ Only entry types: 'bucket' | 'file' | 'directory'
@@ -341,6 +370,7 @@ const isDirectory = op.entry?.type === 'directory';
 **Location**: `s3-explorer.tsx` line 261
 
 **Code**:
+
 ```typescript
 const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
 ```
@@ -348,6 +378,7 @@ const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
 **Assumption**: Bucket entries have `metadata.region` property
 
 **Impact**:
+
 - ✅ Abstracted as optional metadata
 - ❌ But assumes `region` exists for S3 buckets
 - Hard to test: Requires mocking bucket metadata with regions
@@ -363,6 +394,7 @@ const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
 **Three hooks provided**:
 
 #### 1. `useAdapter()` (Line 107)
+
 ```typescript
 export function useAdapter(): Adapter {
   const context = useContext(AdapterContext);
@@ -373,11 +405,13 @@ export function useAdapter(): Adapter {
 }
 ```
 
-**Usage**: 
+**Usage**:
+
 - `s3-explorer.tsx` line 85: `const contextAdapter = useAdapter()`
 - Throws error if used outside provider
 
 #### 2. `useTypedAdapter<T>()` (Line 130)
+
 ```typescript
 export function useTypedAdapter<T extends ReadableStorageAdapter>(): T {
   const adapter = useAdapter();
@@ -388,6 +422,7 @@ export function useTypedAdapter<T extends ReadableStorageAdapter>(): T {
 **Status**: ✅ Defined but not used in current codebase
 
 #### 3. `useHasAdapter()` (Line 153)
+
 ```typescript
 export function useHasAdapter(): boolean {
   const context = useContext(AdapterContext);
@@ -396,6 +431,7 @@ export function useHasAdapter(): boolean {
 ```
 
 **Usage**:
+
 - `s3-explorer.tsx` line 84: `const hasAdapterContext = useHasAdapter()`
 - Enables graceful degradation (optional context)
 
@@ -411,7 +447,8 @@ export function useHasAdapter(): boolean {
 </KeyboardProvider>
 ```
 
-**Pattern**: 
+**Pattern**:
+
 - ✅ Adapter provided at app root
 - ✅ Also passed as prop to App component (dual pattern)
 - ⚠️ Redundant: Both context and prop passed
@@ -452,56 +489,66 @@ return <AdapterContext.Provider value={value}>{children}</AdapterContext.Provide
 ## Key Findings
 
 ### 1. ✅ **Good: Centralized Adapter Usage**
+
 - **Location**: Almost exclusively in `s3-explorer.tsx`
 - **Benefit**: Easy to audit, refactor, or swap implementations
 - **Impact**: 95%+ of adapter calls in one component
 
 ### 2. ✅ **Good: Interface Segregation**
+
 - **Interfaces**: ReadableStorageAdapter, MutableStorageAdapter, TransferableStorageAdapter, BucketAwareAdapter
 - **Benefit**: Clear capability contracts
 - **Status**: Well-designed adapter abstraction
 
 ### 3. ✅ **Good: Capability-Based Guards**
+
 ```typescript
 if (adapter.getBucketEntries) {
   await adapter.getBucketEntries();
 }
 ```
+
 - **Benefit**: Gracefully handles adapters without certain capabilities
 - **Locations**: Lines 470, 806, 814, 1050
 
 ### 4. ⚠️ **Issue: S3-Specific Bucket Handling**
+
 - **Locations**: Lines 259, 263-268, 470, 1048-1051
 - **Problem**: Entry type 'bucket' only exists in S3 model
 - **Impact**: Requires re-architecting for GCS/Azure support
 - **Severity**: Medium - Breaks abstraction at UI level
 
 ### 5. ⚠️ **Issue: Region Metadata Assumption**
+
 - **Location**: Line 261: `currentEntry.metadata?.region`
 - **Problem**: Assumes buckets have region metadata
 - **Impact**: GCS/Azure would need to provide synthetic region data
 - **Severity**: Medium
 
 ### 6. ⚠️ **Issue: Unprotected setBucket/setRegion Calls**
+
 - **Locations**: Lines 263-268, 602-603
 - **Problem**: Calls made without checking if adapter supports them
 - **Compare to**: `downloadToLocal` is protected with `if` check
 - **Severity**: Medium - Should be guarded like transfer operations
 
 ### 7. ✅ **Good: Error Handling**
+
 - **Pattern**: All adapter calls wrapped in try-catch
 - **Parsing**: `parseAwsError()` used for error normalization
 - **Locations**: Throughout s3-explorer.tsx
 
 ### 8. ✅ **Good: Progress Tracking**
+
 - **Pattern**: All long-running operations pass `{ onProgress }` callback
 - **Locations**: Lines 781, 789, 795, 801, 807, 815
 - **Status**: Properly implemented across operations
 
 ### 9. ⚠️ **Issue: No Adapter Feature Detection Hook**
+
 - **Gap**: No standard way to check adapter capabilities
 - **Workaround**: Manual checks like `if (adapter.getBucketEntries)`
-- **Better Approach**: 
+- **Better Approach**:
   ```typescript
   // Could have:
   isBucketAware(adapter): boolean
@@ -510,6 +557,7 @@ if (adapter.getBucketEntries) {
   ```
 
 ### 10. ✅ **Good: AdapterContext Integration**
+
 - **Provider**: Correctly set up at app root
 - **Hooks**: Three hooks provided (useAdapter, useTypedAdapter, useHasAdapter)
 - **Status**: Well-implemented dependency injection
@@ -521,6 +569,7 @@ if (adapter.getBucketEntries) {
 ### Priority 1: Immediate (Breaking Issues)
 
 #### 1.1 Protect setBucket/setRegion Calls
+
 ```typescript
 // Current (Line 263-268):
 if (adapter.setBucket) {
@@ -538,9 +587,11 @@ if (isBucketAwareAdapter(adapter)) {
 ```
 
 **Files to update**:
+
 - `src/ui/s3-explorer.tsx` lines 263-268, 602-603
 
 #### 1.2 Extract Bucket-Specific Logic
+
 Create a separate component or hook for bucket selection:
 
 ```typescript
@@ -554,7 +605,7 @@ export function useBucketSelection(adapter: Adapter) {
       }
     }
   };
-  
+
   return { handleBucketSelect };
 }
 ```
@@ -564,6 +615,7 @@ export function useBucketSelection(adapter: Adapter) {
 ### Priority 2: Enhancement (Better Abstraction)
 
 #### 2.1 Add Feature Detection Hook
+
 ```typescript
 // In AdapterContext.tsx
 export function useAdapterCapabilities(adapter: Adapter) {
@@ -578,6 +630,7 @@ export function useAdapterCapabilities(adapter: Adapter) {
 ```
 
 **Usage**:
+
 ```typescript
 const caps = useAdapterCapabilities(adapter);
 if (caps.isBucketAware) {
@@ -586,6 +639,7 @@ if (caps.isBucketAware) {
 ```
 
 #### 2.2 Generalize Root View Logic
+
 ```typescript
 // Current assumption:
 // - No bucket → List buckets (S3-specific)
@@ -601,6 +655,7 @@ interface RootViewProvider {
 ### Priority 3: Documentation (Lower Risk)
 
 #### 3.1 Document S3-Specific Assumptions
+
 Add comments to UI code explaining which patterns are S3-specific:
 
 ```typescript
@@ -614,7 +669,9 @@ const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
 ```
 
 #### 3.2 Add Migration Guide
+
 For supporting new backends (GCS, Azure, etc.):
+
 1. Map backend container/bucket model to Entry type
 2. Provide region metadata (or synthetic values)
 3. Implement directory path handling
@@ -627,63 +684,73 @@ For supporting new backends (GCS, Azure, etc.):
 ### All Adapter Method Calls in Production Code
 
 #### `adapter.list()`
+
 1. **s3-explorer.tsx:194** - Navigation loading
 2. **s3-explorer.tsx:487** - Current path refresh
 3. **s3-explorer.tsx:840** - Post-operation refresh
 4. **s3-explorer.tsx:1063** - Initial data load
 
 #### `adapter.read()`
+
 1. **s3-explorer.tsx:1138** - File preview loading
 
 #### `adapter.create()`
+
 1. **s3-explorer.tsx:781** - File/directory creation with progress
 
 #### `adapter.delete()`
+
 1. **s3-explorer.tsx:789** - File/directory deletion with progress
 
 #### `adapter.move()`
+
 1. **s3-explorer.tsx:795** - File/directory rename/move with progress
 
 #### `adapter.copy()`
+
 1. **s3-explorer.tsx:801** - File/directory copy with progress
 
 #### `adapter.getBucketEntries()`
+
 1. **s3-explorer.tsx:471** - Root view refresh
 2. **s3-explorer.tsx:1051** - Initial data load (root view)
 
 #### `adapter.setBucket()`
+
 1. **s3-explorer.tsx:264** - Bucket selection from root view
 2. **s3-explorer.tsx:603** - Bucket selection in keyboard handler
 
 #### `adapter.setRegion()`
+
 1. **s3-explorer.tsx:267** - Region update during bucket selection
 
 #### `adapter.downloadToLocal()`
+
 1. **s3-explorer.tsx:807** - Download with progress (optional, guarded)
 
 #### `adapter.uploadFromLocal()`
+
 1. **s3-explorer.tsx:815** - Upload with progress (optional, guarded)
 
 ---
 
 ## Summary Statistics
 
-| Metric | Value |
-|--------|-------|
-| **Total Adapter Method Calls** | 14 |
-| **Unique Methods Called** | 11 |
-| **UI Components Using Adapter** | 1 |
-| **Files with Adapter Imports** | 5 (1 prod + 4 test) |
-| **S3-Specific Method Calls** | 3 (getBucketEntries, setBucket, setRegion) |
-| **Backend-Agnostic Calls** | 11 |
-| **Guarded Optional Calls** | 2 (downloadToLocal, uploadFromLocal) |
-| **Unguarded S3-Specific Calls** | 3 ⚠️ |
+| Metric                          | Value                                      |
+| ------------------------------- | ------------------------------------------ |
+| **Total Adapter Method Calls**  | 14                                         |
+| **Unique Methods Called**       | 11                                         |
+| **UI Components Using Adapter** | 1                                          |
+| **Files with Adapter Imports**  | 5 (1 prod + 4 test)                        |
+| **S3-Specific Method Calls**    | 3 (getBucketEntries, setBucket, setRegion) |
+| **Backend-Agnostic Calls**      | 11                                         |
+| **Guarded Optional Calls**      | 2 (downloadToLocal, uploadFromLocal)       |
+| **Unguarded S3-Specific Calls** | 3 ⚠️                                       |
 
 ---
 
 ## Version History
 
-| Date | Author | Status | Changes |
-|------|--------|--------|---------|
+| Date       | Author   | Status   | Changes                     |
+| ---------- | -------- | -------- | --------------------------- |
 | 2025-11-27 | AI Agent | Complete | Initial comprehensive audit |
-
