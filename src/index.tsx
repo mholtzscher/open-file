@@ -6,7 +6,6 @@ import { useEffect } from 'react';
 import { S3Explorer } from './ui/s3-explorer.jsx';
 import { StorageProvider } from './providers/provider.js';
 import { S3Provider } from './providers/s3/s3-provider.js';
-import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger.js';
 import { getActiveAwsRegion } from './utils/aws-profile.js';
@@ -39,13 +38,12 @@ export function getGlobalKeyboardDispatcher() {
 interface AppProps {
   bucket?: string;
   provider: StorageProvider;
-  configManager: ConfigManager;
 }
 
 /**
  * App component that connects keyboard events to the React context
  */
-function App({ bucket, provider, configManager }: AppProps) {
+function App({ bucket, provider }: AppProps) {
   const dispatch = useKeyboardDispatch();
 
   // Connect the context dispatch to the global dispatcher
@@ -57,7 +55,7 @@ function App({ bucket, provider, configManager }: AppProps) {
     };
   }, [dispatch]);
 
-  return <S3Explorer bucket={bucket} configManager={configManager} />;
+  return <S3Explorer bucket={bucket} />;
 }
 
 /**
@@ -87,19 +85,13 @@ async function main() {
       process.exit(0);
     }
 
-    // Create config manager
-    const configManager = new ConfigManager(cliArgs.config);
-
-    // Determine adapter
+    // Determine adapter type from CLI args (defaults to 's3')
     let provider: StorageProvider;
-    const adapterType = cliArgs.adapter || configManager.getAdapter();
+    const adapterType = cliArgs.adapter || 's3';
 
     if (adapterType === 's3') {
-      // Get S3 config from CLI args or config file
-      const s3Config = configManager.getS3Config();
-
-      // Determine region priority: CLI > config file > active profile > us-east-1
-      let region = cliArgs.region || s3Config.region;
+      // Determine region priority: CLI > active profile > env var > us-east-1
+      let region = cliArgs.region;
 
       if (!region) {
         const profileRegion = getActiveAwsRegion();
@@ -108,11 +100,11 @@ async function main() {
 
       const finalS3Config = {
         region,
-        bucket: cliArgs.bucket || s3Config.bucket || 'my-bucket',
+        bucket: cliArgs.bucket || 'my-bucket',
         profile: cliArgs.profile,
-        endpoint: cliArgs.endpoint || s3Config.endpoint,
-        accessKeyId: cliArgs.accessKey || s3Config.accessKeyId,
-        secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
+        endpoint: cliArgs.endpoint,
+        accessKeyId: cliArgs.accessKey,
+        secretAccessKey: cliArgs.secretKey,
       };
 
       const s3Profile: S3Profile = {
@@ -140,7 +132,7 @@ async function main() {
     }
 
     // Get bucket name - can be undefined for root view mode
-    const bucket = cliArgs.bucket || configManager.getS3Config().bucket;
+    const bucket = cliArgs.bucket;
 
     // Create and start renderer
     // Note: Using type assertion for external library type
@@ -201,7 +193,7 @@ async function main() {
       root.render(
         <KeyboardProvider>
           <StorageContextProvider provider={provider}>
-            <App bucket={bucket} provider={provider} configManager={configManager} />
+            <App bucket={bucket} provider={provider} />
           </StorageContextProvider>
         </KeyboardProvider>
       );

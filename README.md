@@ -65,21 +65,16 @@ After installing open-s3, follow these steps to get started:
    export AWS_REGION=us-east-1
    ```
 
-   Option B - Create config file (`~/.open-s3rc.json`):
-
-   ```json
-   {
-     "s3": {
-       "region": "us-east-1",
-       "bucket": "my-bucket"
-     }
-   }
-   ```
-
-   Option C - Use AWS CLI configuration:
+   Option B - Use AWS CLI configuration:
 
    ```bash
    aws configure
+   ```
+
+   Option C - Pass credentials via command line:
+
+   ```bash
+   bun run src/index.ts --access-key your-key --secret-key your-secret --region us-east-1
    ```
 
 2. **Verify credentials work**:
@@ -223,27 +218,47 @@ After making changes (creates, deletes, moves), you must save them:
 
 ## Configuration
 
-Configuration file: `~/.open-s3rc.json`
+### Command Line Options
 
-The configuration file allows you to customize how open-s3 behaves and appears. Here are the available options:
+open-s3 is configured primarily through command-line arguments:
+
+```bash
+open-s3 [OPTIONS] [BUCKET]
+
+OPTIONS:
+  -b, --bucket NAME       S3 bucket name
+  -p, --profile NAME      AWS profile name (default: active profile or 'default')
+  -r, --region REGION     AWS region (default: from profile, then us-east-1)
+  --endpoint URL          Custom S3 endpoint (for LocalStack, etc.)
+  --access-key KEY        AWS access key
+  --secret-key KEY        AWS secret key
+  --debug                 Enable debug logging to file
+  -h, --help              Show help message
+  -v, --version           Show version
+```
 
 ### Configuration Options
 
+All configuration is done through CLI arguments and environment variables:
+
+```bash
+# Use specific AWS profile
+open-s3 --profile production my-bucket
+
+# Override region
+open-s3 --region us-west-2 my-bucket
+
+# Use custom endpoint (LocalStack)
+open-s3 --endpoint http://localhost:4566 test-bucket
+
+# Specify credentials explicitly
+open-s3 --access-key KEY --secret-key SECRET --region us-east-1 my-bucket
+```
+
+### Customization
+
 ```json
 {
-  "s3": {
-    "region": "us-east-1",
-    "bucket": "my-bucket",
-    "endpoint": "https://s3.amazonaws.com",
-    "accessKeyId": "optional-key",
-    "secretAccessKey": "optional-secret"
-  },
-  "display": {
-    "showIcons": true,
-    "showSizes": true,
-    "showDates": false,
-    "defaultSort": "name"
-  },
   "keybindings": {
     "moveDown": "j",
     "moveUp": "k",
@@ -335,14 +350,14 @@ The configuration file allows you to customize how open-s3 behaves and appears. 
 }
 ```
 
-### Configuration Locations
+### Credential Resolution Order
 
-open-s3 looks for configuration in this order:
+open-s3 looks for AWS credentials in this order:
 
-1. `~/.open-s3rc.json` - User configuration file
-2. `./.open-s3rc.json` - Local project configuration
-3. Environment variables - AWS credentials from environment
-4. `~/.aws/credentials` - Standard AWS credentials file
+1. Command-line arguments (`--access-key`, `--secret-key`, `--region`)
+2. Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`)
+3. AWS CLI profile (`~/.aws/credentials` and `~/.aws/config`)
+4. AWS profile specified with `--profile` flag
 
 ## Architecture
 
@@ -558,20 +573,14 @@ The S3 adapter uses AWS SDK v3 and supports multiple credential methods:
    export AWS_REGION=us-east-1
    ```
 
-2. **Configuration File** (`~/.open-s3rc.json`)
-
-   ```json
-   {
-     "s3": {
-       "accessKeyId": "your-key",
-       "secretAccessKey": "your-secret",
-       "region": "us-east-1"
-     }
-   }
-   ```
-
-3. **AWS Credentials File** (`~/.aws/credentials`)
+2. **AWS Credentials File** (`~/.aws/credentials`)
    - Standard AWS credentials file
+
+3. **Command Line Arguments**
+
+   ```bash
+   open-s3 --access-key your-key --secret-key your-secret --region us-east-1
+   ```
 
 ## Troubleshooting
 
@@ -591,13 +600,7 @@ The S3 adapter uses AWS SDK v3 and supports multiple credential methods:
    echo $AWS_SECRET_ACCESS_KEY
    ```
 
-2. If using config file, verify credentials are correct:
-
-   ```bash
-   cat ~/.open-s3rc.json
-   ```
-
-3. Ensure your IAM user has S3 permissions:
+2. Ensure your IAM user has S3 permissions:
    ```json
    {
      "Version": "2012-10-17",

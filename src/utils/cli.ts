@@ -14,7 +14,6 @@ export interface CliArgs {
   endpoint?: string;
   accessKey?: string;
   secretKey?: string;
-  config?: string;
   debug?: boolean;
   help?: boolean;
   version?: boolean;
@@ -55,8 +54,6 @@ export function parseArgs(args: string[]): CliArgs {
       result.accessKey = args[++i];
     } else if (arg === '--secret-key') {
       result.secretKey = args[++i];
-    } else if (arg === '--config' || arg === '-c') {
-      result.config = args[++i];
     } else if (!arg.startsWith('-')) {
       // First non-flag argument is the bucket
       if (!result.bucket) {
@@ -79,7 +76,7 @@ USAGE:
   open-s3 [OPTIONS] [BUCKET]
 
 ARGUMENTS:
-  BUCKET              S3 bucket to open (default: from config)
+  BUCKET              S3 bucket to open (optional - omit to list all buckets)
 
 OPTIONS:
     -b, --bucket NAME       S3 bucket name
@@ -90,12 +87,14 @@ OPTIONS:
     --endpoint URL          Custom S3 endpoint (for LocalStack, etc.)
     --access-key KEY        AWS access key
     --secret-key KEY        AWS secret key
-    -c, --config FILE       Config file path (default: ~/.open-s3rc.json)
     --debug                 Enable debug logging to file
     -h, --help              Show this help message
     -v, --version           Show version
 
 EXAMPLES:
+   # List all buckets
+   open-s3
+
    # Open bucket using active AWS profile
    open-s3 my-bucket
 

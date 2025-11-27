@@ -4,13 +4,10 @@
  * Manages feature flags for progressive migration and experimental features.
  * Flags can be set via:
  * 1. Environment variables (highest priority)
- * 2. Config file (~/.open-s3rc.json)
- * 3. Default values (lowest priority)
+ * 2. Default values (lowest priority)
  *
  * This enables safe, gradual rollout of new features like the provider system.
  */
-
-import { ConfigManager } from './config.js';
 
 // ============================================================================
 // Feature Flag Definitions
@@ -120,18 +117,16 @@ export interface FeatureFlagsConfig {
 /**
  * Feature flag manager
  *
- * Resolves feature flag values from multiple sources with proper precedence.
+ * Resolves feature flag values from environment variables and defaults.
  */
 export class FeatureFlagManager {
-  private configManager?: ConfigManager;
   private cache: Map<FeatureFlag, boolean> = new Map();
 
   /**
    * Create a new feature flag manager
-   * @param configManager - Optional config manager for reading flags from config file
    */
-  constructor(configManager?: ConfigManager) {
-    this.configManager = configManager;
+  constructor() {
+    // No-op constructor
   }
 
   /**
@@ -140,8 +135,7 @@ export class FeatureFlagManager {
    * Resolution order:
    * 1. Legacy escape hatch (OPEN_S3_USE_LEGACY=true disables new provider system)
    * 2. Environment variable
-   * 3. Config file (if ConfigManager provided)
-   * 4. Default value
+   * 3. Default value
    *
    * @param flag - The feature flag to check
    * @returns true if the flag is enabled
@@ -172,22 +166,7 @@ export class FeatureFlagManager {
       return enabled;
     }
 
-    // 2. Check config file
-    if (this.configManager) {
-      const config = this.configManager.getConfig();
-      const featureFlags = (config as any).featureFlags as FeatureFlagsConfig | undefined;
-      if (featureFlags) {
-        const configKey = CONFIG_KEY_MAP[flag];
-        const configValue = (featureFlags as any)[configKey];
-        if (configValue !== undefined) {
-          const enabled = Boolean(configValue);
-          this.cache.set(flag, enabled);
-          return enabled;
-        }
-      }
-    }
-
-    // 3. Use default value
+    // 2. Use default value
     const enabled = DEFAULT_VALUES[flag];
     this.cache.set(flag, enabled);
     return enabled;
@@ -237,10 +216,9 @@ let globalManager: FeatureFlagManager | null = null;
 
 /**
  * Initialize the global feature flag manager
- * @param configManager - Optional config manager
  */
-export function initializeFeatureFlags(configManager?: ConfigManager): void {
-  globalManager = new FeatureFlagManager(configManager);
+export function initializeFeatureFlags(): void {
+  globalManager = new FeatureFlagManager();
 }
 
 /**

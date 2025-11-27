@@ -14,33 +14,18 @@ import {
   initializeFeatureFlags,
   getAllFeatureFlags,
 } from './feature-flags.js';
-import { ConfigManager } from './config.js';
-import { mkdtempSync, rmSync } from 'fs';
-import { tmpdir } from 'os';
-import { join } from 'path';
 
 describe('FeatureFlagManager', () => {
-  let tempDir: string;
-  let configPath: string;
   let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
     // Save original environment
     originalEnv = { ...process.env };
-
-    // Create temp directory for config files
-    tempDir = mkdtempSync(join(tmpdir(), 'open-s3-test-'));
-    configPath = join(tempDir, 'test-config.json');
   });
 
   afterEach(() => {
     // Restore original environment
     process.env = originalEnv;
-
-    // Clean up temp directory
-    if (tempDir) {
-      rmSync(tempDir, { recursive: true, force: true });
-    }
   });
 
   describe('Default values', () => {
@@ -168,77 +153,17 @@ describe('FeatureFlagManager', () => {
     });
   });
 
-  describe('Config file resolution', () => {
-    it('should read from config file when provided', () => {
-      const configManager = new ConfigManager(configPath);
-      configManager.setConfig({
-        featureFlags: {
-          useProviders: true,
-        },
-      });
-      configManager.save();
-
-      const manager = new FeatureFlagManager(configManager);
-      expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
-    });
-
-    it('should read multiple flags from config file', () => {
-      const configManager = new ConfigManager(configPath);
-      configManager.setConfig({
-        featureFlags: {
-          useProviders: true,
-          multiProvider: true,
-          experimental: false,
-          debug: true,
-        },
-      });
-      configManager.save();
-
-      const manager = new FeatureFlagManager(configManager);
-      expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
-      expect(manager.isEnabled(FeatureFlag.MULTI_PROVIDER)).toBe(true);
-      expect(manager.isEnabled(FeatureFlag.EXPERIMENTAL)).toBe(false);
-      expect(manager.isEnabled(FeatureFlag.DEBUG)).toBe(true);
-    });
-  });
-
   describe('Precedence order', () => {
-    it('should prefer environment variable over config file', () => {
-      // Config says false
-      const configManager = new ConfigManager(configPath);
-      configManager.setConfig({
-        featureFlags: {
-          useProviders: false,
-        },
-      });
-      configManager.save();
+    it('should prefer environment variable over default', () => {
+      // Environment says false (overrides default true)
+      process.env.OPEN_S3_USE_PROVIDERS = 'false';
 
-      // Environment says true
-      process.env.OPEN_S3_USE_PROVIDERS = 'true';
-
-      const manager = new FeatureFlagManager(configManager);
-      expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
+      const manager = new FeatureFlagManager();
+      expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
     });
 
-    it('should prefer config file over default', () => {
-      const configManager = new ConfigManager(configPath);
-      configManager.setConfig({
-        featureFlags: {
-          useProviders: true,
-        },
-      });
-      configManager.save();
-
-      // No environment variable set, default is false
-      const manager = new FeatureFlagManager(configManager);
-      expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
-    });
-
-    it('should use default when neither env nor config is set', () => {
-      const configManager = new ConfigManager(configPath);
-      // Don't set featureFlags in config
-
-      const manager = new FeatureFlagManager(configManager);
+    it('should use default when env is not set', () => {
+      const manager = new FeatureFlagManager();
       // Default is now TRUE after cutover
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
     });

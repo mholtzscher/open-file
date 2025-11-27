@@ -6,7 +6,6 @@
  */
 
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { ConfigManager } from '../utils/config.js';
 import { useBufferState } from '../hooks/useBufferState.js';
 import { useKeyboardDispatcher } from '../hooks/useKeyboardDispatcher.js';
 import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
@@ -33,7 +32,6 @@ import { Capability } from '../providers/types/capabilities.js';
 
 interface S3ExplorerProps {
   bucket?: string;
-  configManager: ConfigManager;
 }
 
 /**
