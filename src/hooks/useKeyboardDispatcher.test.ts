@@ -70,6 +70,9 @@ class TestKeyboardDispatcher {
       ['?', 'dialog:help'],
       ['ctrl+n', 'cursor:pageDown'],
       ['ctrl+p', 'cursor:pageUp'],
+      // Shifted sequence starter keys (should NOT be treated as sequence starters)
+      ['shift+d', 'entry:download'],
+      ['shift+y', 'entry:copy'], // Different from yy which also copies - this is direct copy
     ]);
     map.set(EditMode.Normal, normal);
 
@@ -136,8 +139,21 @@ class TestKeyboardDispatcher {
     return parts.join('+');
   }
 
-  private handleSequence(key: KeyboardKey): { handled: boolean; action?: KeyAction } {
+  private handleSequence(key: KeyboardKey): {
+    handled: boolean;
+    action?: KeyAction;
+    waitingForMore?: boolean;
+  } {
     const keyName = key.name;
+
+    // If this is a shifted key for a sequence starter (e.g., D = shift+d, Y = shift+y),
+    // don't treat it as a sequence - let it fall through to keybinding lookup
+    // Exception: G (shift+g) for cursor:bottom is handled as a valid action
+    if (key.shift && TestKeyboardDispatcher.SEQUENCE_STARTERS.has(keyName) && keyName !== 'g') {
+      this.keySequence = [];
+      return { handled: false, waitingForMore: false };
+    }
+
     this.keySequence.push(keyName);
 
     const sequence = this.keySequence.join('');
@@ -156,7 +172,7 @@ class TestKeyboardDispatcher {
 
     // Waiting for sequence continuation
     if (this.keySequence.length === 1 && TestKeyboardDispatcher.SEQUENCE_STARTERS.has(keyName)) {
-      return { handled: false };
+      return { handled: false, waitingForMore: true };
     }
 
     // Unrecognized sequence
@@ -164,7 +180,7 @@ class TestKeyboardDispatcher {
       this.keySequence = [];
     }
 
-    return { handled: false };
+    return { handled: false, waitingForMore: false };
   }
 
   dispatch(key: KeyboardKey): boolean {
@@ -212,10 +228,8 @@ class TestKeyboardDispatcher {
       if (seqResult.handled && seqResult.action) {
         return this.executeAction(seqResult.action, key);
       }
-      if (
-        this.keySequence.length > 0 &&
-        TestKeyboardDispatcher.SEQUENCE_STARTERS.has(this.keySequence[0])
-      ) {
+      // If sequence is in progress (waiting for more keys), don't process further
+      if (seqResult.waitingForMore) {
         return true; // Waiting for sequence
       }
     }
@@ -419,6 +433,55 @@ describe('useKeyboardDispatcher', () => {
       dispatcher.dispatch(createKey('j')); // Should work normally
 
       expect(downHandler).toHaveBeenCalledTimes(1);
+    });
+
+    it('handles shift+d (D) as entry:download, not as start of dd sequence', () => {
+      const downloadHandler = mock(() => {});
+      const deleteHandler = mock(() => {});
+      dispatcher.registerActions({
+        'entry:download': downloadHandler,
+        'entry:delete': deleteHandler,
+      });
+
+      // Pressing D (shift+d) should immediately trigger download
+      // It should NOT wait for a second 'd' like the dd sequence does
+      dispatcher.dispatch(createKey('d', { shift: true }));
+
+      expect(downloadHandler).toHaveBeenCalledTimes(1);
+      expect(deleteHandler).not.toHaveBeenCalled();
+      // Key sequence should be clear (not waiting for more keys)
+      expect(dispatcher.getKeySequence()).toEqual([]);
+    });
+
+    it('handles shift+y (Y) as direct action, not as start of yy sequence', () => {
+      const copyHandler = mock(() => {});
+      dispatcher.registerAction('entry:copy', copyHandler);
+
+      // Pressing Y (shift+y) should immediately trigger the shift+y binding
+      // It should NOT wait for a second 'y' like the yy sequence does
+      dispatcher.dispatch(createKey('y', { shift: true }));
+
+      expect(copyHandler).toHaveBeenCalledTimes(1);
+      // Key sequence should be clear (not waiting for more keys)
+      expect(dispatcher.getKeySequence()).toEqual([]);
+    });
+
+    it('still handles dd sequence correctly after D is pressed', () => {
+      const downloadHandler = mock(() => {});
+      const deleteHandler = mock(() => {});
+      dispatcher.registerActions({
+        'entry:download': downloadHandler,
+        'entry:delete': deleteHandler,
+      });
+
+      // First press D (shift+d) for download
+      dispatcher.dispatch(createKey('d', { shift: true }));
+      expect(downloadHandler).toHaveBeenCalledTimes(1);
+
+      // Then press dd for delete - should still work
+      dispatcher.dispatch(createKey('d'));
+      dispatcher.dispatch(createKey('d'));
+      expect(deleteHandler).toHaveBeenCalledTimes(1);
     });
   });
 

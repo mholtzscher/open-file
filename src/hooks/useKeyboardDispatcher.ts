@@ -149,8 +149,16 @@ export function useKeyboardDispatcher(
 
   // Handle multi-key sequences
   const handleSequence = useCallback(
-    (key: KeyboardKey): { handled: boolean; action?: KeyAction } => {
+    (key: KeyboardKey): { handled: boolean; action?: KeyAction; waitingForMore?: boolean } => {
       const keyName = key.name;
+
+      // If this is a shifted key for a sequence starter (e.g., D = shift+d, Y = shift+y),
+      // don't treat it as a sequence - let it fall through to keybinding lookup
+      // Exception: G (shift+g) for cursor:bottom is handled as a valid action
+      if (key.shift && SEQUENCE_STARTERS.has(keyName) && keyName !== 'g') {
+        keySequenceRef.current = [];
+        return { handled: false, waitingForMore: false };
+      }
 
       // Add to sequence
       keySequenceRef.current.push(keyName);
@@ -185,7 +193,7 @@ export function useKeyboardDispatcher(
 
       // If waiting for sequence continuation
       if (keySequenceRef.current.length === 1 && SEQUENCE_STARTERS.has(keyName)) {
-        return { handled: false }; // Wait for next key
+        return { handled: false, waitingForMore: true }; // Wait for next key
       }
 
       // Unrecognized sequence - clear and don't handle
@@ -193,7 +201,7 @@ export function useKeyboardDispatcher(
         keySequenceRef.current = [];
       }
 
-      return { handled: false };
+      return { handled: false, waitingForMore: false };
     },
     [sequenceTimeout]
   );
@@ -262,7 +270,7 @@ export function useKeyboardDispatcher(
           return executeAction(seqResult.action, key);
         }
         // If sequence is in progress (waiting for more keys), don't process further
-        if (keySequenceRef.current.length > 0 && SEQUENCE_STARTERS.has(keySequenceRef.current[0])) {
+        if (seqResult.waitingForMore) {
           return true; // Consumed, waiting for sequence
         }
       }
