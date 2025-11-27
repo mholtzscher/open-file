@@ -5,7 +5,14 @@
  * Supports lazy loading of provider implementations to minimize bundle size.
  */
 
-import type { Profile, ProviderType, S3Profile, GCSProfile } from './types/profile.js';
+import type {
+  Profile,
+  ProviderType,
+  S3Profile,
+  GCSProfile,
+  SFTPProfile,
+  FTPProfile,
+} from './types/profile.js';
 import type { StorageProvider } from './provider.js';
 
 /**
@@ -44,17 +51,15 @@ export async function createProvider(profile: Profile): Promise<StorageProvider>
       return new GCSProvider(profile as GCSProfile);
     }
 
-    case 'sftp':
-      // Phase 4B: SFTP Provider
-      // const { SFTPProvider } = await import('./sftp/sftp-provider.js');
-      // return new SFTPProvider(profile);
-      throw new Error('SFTPProvider not yet implemented');
+    case 'sftp': {
+      const { SFTPProvider } = await import('./sftp/sftp-provider.js');
+      return new SFTPProvider(profile as SFTPProfile);
+    }
 
-    case 'ftp':
-      // Phase 4C: FTP Provider
-      // const { FTPProvider } = await import('./ftp/ftp-provider.js');
-      // return new FTPProvider(profile);
-      throw new Error('FTPProvider not yet implemented');
+    case 'ftp': {
+      const { FTPProvider } = await import('./ftp/ftp-provider.js');
+      return new FTPProvider(profile as FTPProfile);
+    }
 
     case 'nfs':
       // Phase 4E: NFS Provider
@@ -119,7 +124,9 @@ export function isProviderImplemented(providerType: ProviderType): boolean {
     case 'gcs':
       return true; // GCSProvider implemented
     case 'sftp':
+      return true; // SFTPProvider implemented
     case 'ftp':
+      return true; // FTPProvider implemented
     case 'nfs':
     case 'smb':
     case 'gdrive':

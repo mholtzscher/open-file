@@ -71,6 +71,14 @@ export * from './credentials/index.js';
 export { GCSProvider } from './gcs/index.js';
 export type { GCSProviderLogger, GCSProviderDependencies } from './gcs/index.js';
 
+// SFTP Provider
+export { SFTPProvider } from './sftp/index.js';
+export type { SFTPProviderLogger, SFTPProviderDependencies } from './sftp/index.js';
+
+// FTP Provider
+export { FTPProvider } from './ftp/index.js';
+export type { FTPProviderLogger, FTPProviderDependencies } from './ftp/index.js';
+
 // Test utilities (for consumers that need to test provider integrations)
 export * from './__tests__/fixtures.js';
 export * from './__tests__/test-utils.js';
