@@ -5,7 +5,7 @@
  * Supports lazy loading of provider implementations to minimize bundle size.
  */
 
-import type { Profile, ProviderType } from './types/profile.js';
+import type { Profile, ProviderType, S3Profile } from './types/profile.js';
 import type { StorageProvider } from './provider.js';
 
 /**
@@ -25,8 +25,8 @@ const SUPPORTED_PROVIDERS: ProviderType[] = [
 /**
  * Create a storage provider instance from a profile
  *
- * Currently all providers throw "not implemented" as concrete implementations
- * will be added in subsequent phases.
+ * Uses lazy loading to minimize bundle size - providers are only loaded
+ * when needed.
  *
  * @param profile - Profile configuration for the provider
  * @returns Storage provider instance
@@ -34,11 +34,10 @@ const SUPPORTED_PROVIDERS: ProviderType[] = [
  */
 export async function createProvider(profile: Profile): Promise<StorageProvider> {
   switch (profile.provider) {
-    case 's3':
-      // Phase 3: S3 Provider
-      // const { S3Provider } = await import('./s3/s3-provider.js');
-      // return new S3Provider(profile);
-      throw new Error('S3Provider not yet implemented');
+    case 's3': {
+      const { S3Provider } = await import('./s3/s3-provider.js');
+      return new S3Provider(profile as S3Profile);
+    }
 
     case 'gcs':
       // Phase 4A: GCS Provider
@@ -115,10 +114,9 @@ export function isProviderSupported(providerType: string): providerType is Provi
  * @returns true if the provider implementation is available
  */
 export function isProviderImplemented(providerType: ProviderType): boolean {
-  // Currently no providers are implemented
-  // This will be updated as providers are added
   switch (providerType) {
     case 's3':
+      return true; // S3Provider implemented
     case 'gcs':
     case 'sftp':
     case 'ftp':
