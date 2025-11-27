@@ -216,7 +216,7 @@ export abstract class BaseStorageProvider implements StorageProvider {
     ) {
       const readResult = await this.read(source);
       if (!isSuccess(readResult)) {
-        return readResult;
+        return readResult as OperationResult;
       }
 
       const writeResult = await this.write(dest, readResult.data);
@@ -267,7 +267,7 @@ export abstract class BaseStorageProvider implements StorageProvider {
     if (this.hasCapability(Capability.Read) && this.hasCapability(Capability.Write)) {
       const readResult = await this.read(source);
       if (!isSuccess(readResult)) {
-        return readResult;
+        return readResult as OperationResult;
       }
 
       return this.write(dest, readResult.data);

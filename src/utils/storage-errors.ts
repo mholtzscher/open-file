@@ -122,7 +122,7 @@ const SUGGESTED_ACTIONS: Partial<Record<OperationStatus, string>> = {
  * }
  * ```
  */
-export function toUserError(result: OperationResult): UserError {
+export function toUserError<T = void>(result: OperationResult<T>): UserError {
   const status = result.status;
   const error = result.error;
 
@@ -152,8 +152,8 @@ export function toUserError(result: OperationResult): UserError {
  * }
  * ```
  */
-export function formatErrorForDisplay(
-  result: OperationResult,
+export function formatErrorForDisplay<T = void>(
+  result: OperationResult<T>,
   options: ErrorDisplayOptions = {}
 ): string {
   const { maxLength = 120, includeTechnical = false, includeActions = true } = options;
@@ -193,7 +193,7 @@ export function formatErrorForDisplay(
  * }
  * ```
  */
-export function isRetryable(result: OperationResult): boolean {
+export function isRetryable<T = void>(result: OperationResult<T>): boolean {
   return result.error?.retryable ?? false;
 }
 
@@ -203,27 +203,21 @@ export function isRetryable(result: OperationResult): boolean {
  * @param result - The operation result
  * @returns True if this is a connection error
  */
-export function isConnectionError(result: OperationResult): boolean {
+export function isConnectionError<T = void>(result: OperationResult<T>): boolean {
   return result.status === OperationStatus.ConnectionFailed;
 }
 
 /**
  * Check if an error is a permission error
- *
- * @param result - The operation result
- * @returns True if this is a permission error
  */
-export function isPermissionError(result: OperationResult): boolean {
+export function isPermissionError<T = void>(result: OperationResult<T>): boolean {
   return result.status === OperationStatus.PermissionDenied;
 }
 
 /**
  * Check if an error is a not found error
- *
- * @param result - The operation result
- * @returns True if this is a not found error
  */
-export function isNotFoundError(result: OperationResult): boolean {
+export function isNotFoundError<T = void>(result: OperationResult<T>): boolean {
   return result.status === OperationStatus.NotFound;
 }
 
@@ -355,7 +349,9 @@ export function createContextualError(
  * showMessage(`${summary.successCount} deleted, ${summary.failureCount} failed`);
  * ```
  */
-export function summarizeResults(results: OperationResult[]): {
+export function summarizeResults<T = void>(
+  results: OperationResult<T>[]
+): {
   successCount: number;
   failureCount: number;
   unsupportedCount: number;
@@ -389,7 +385,7 @@ export function summarizeResults(results: OperationResult[]): {
  * @param results - Array of operation results
  * @returns The most severe error, or null if all succeeded
  */
-export function getMostSevereError(results: OperationResult[]): UserError | null {
+export function getMostSevereError<T = void>(results: OperationResult<T>[]): UserError | null {
   // Priority order (most to least severe)
   const priorities = [
     OperationStatus.PermissionDenied,

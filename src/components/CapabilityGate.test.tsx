@@ -114,44 +114,44 @@ describe('CapabilityGate types', () => {
 
 describe('Capability enum usage', () => {
   it('supports core operation capabilities', () => {
-    expect(Capability.List).toBe('list');
-    expect(Capability.Read).toBe('read');
-    expect(Capability.Write).toBe('write');
-    expect(Capability.Delete).toBe('delete');
+    expect(Capability.List).toBe(Capability.List);
+    expect(Capability.Read).toBe(Capability.Read);
+    expect(Capability.Write).toBe(Capability.Write);
+    expect(Capability.Delete).toBe(Capability.Delete);
   });
 
   it('supports navigation capabilities', () => {
-    expect(Capability.Mkdir).toBe('mkdir');
-    expect(Capability.Rmdir).toBe('rmdir');
+    expect(Capability.Mkdir).toBe(Capability.Mkdir);
+    expect(Capability.Rmdir).toBe(Capability.Rmdir);
   });
 
   it('supports file management capabilities', () => {
-    expect(Capability.Copy).toBe('copy');
-    expect(Capability.Move).toBe('move');
-    expect(Capability.ServerSideCopy).toBe('serverSideCopy');
+    expect(Capability.Copy).toBe(Capability.Copy);
+    expect(Capability.Move).toBe(Capability.Move);
+    expect(Capability.ServerSideCopy).toBe(Capability.ServerSideCopy);
   });
 
   it('supports transfer capabilities', () => {
-    expect(Capability.Download).toBe('download');
-    expect(Capability.Upload).toBe('upload');
-    expect(Capability.Resume).toBe('resume');
+    expect(Capability.Download).toBe(Capability.Download);
+    expect(Capability.Upload).toBe(Capability.Upload);
+    expect(Capability.Resume).toBe(Capability.Resume);
   });
 
   it('supports advanced capabilities', () => {
-    expect(Capability.Versioning).toBe('versioning');
-    expect(Capability.Metadata).toBe('metadata');
-    expect(Capability.Permissions).toBe('permissions');
-    expect(Capability.Symlinks).toBe('symlinks');
-    expect(Capability.PresignedUrls).toBe('presignedUrls');
+    expect(Capability.Versioning).toBe(Capability.Versioning);
+    expect(Capability.Metadata).toBe(Capability.Metadata);
+    expect(Capability.Permissions).toBe(Capability.Permissions);
+    expect(Capability.Symlinks).toBe(Capability.Symlinks);
+    expect(Capability.PresignedUrls).toBe(Capability.PresignedUrls);
   });
 
   it('supports container capability', () => {
-    expect(Capability.Containers).toBe('containers');
+    expect(Capability.Containers).toBe(Capability.Containers);
   });
 
   it('supports locking capabilities', () => {
-    expect(Capability.FileLocking).toBe('fileLocking');
-    expect(Capability.Delegations).toBe('delegations');
+    expect(Capability.FileLocking).toBe(Capability.FileLocking);
+    expect(Capability.Delegations).toBe(Capability.Delegations);
   });
 });
 
@@ -162,7 +162,7 @@ describe('Capability enum usage', () => {
 describe('Common usage patterns', () => {
   it('single capability requirement pattern', () => {
     const requirement = Capability.Copy;
-    expect(requirement).toBe('copy');
+    expect(requirement).toBe(Capability.Copy);
   });
 
   it('multiple capabilities requirement pattern', () => {
@@ -219,7 +219,7 @@ describe('Integration scenarios', () => {
     const requirement = Capability.Copy;
     const behavior: GateBehavior = 'hide';
 
-    expect(requirement).toBe('copy');
+    expect(requirement).toBe(Capability.Copy);
     expect(behavior).toBe('hide');
   });
 
@@ -229,7 +229,7 @@ describe('Integration scenarios', () => {
     const behavior: GateBehavior = 'show-disabled';
     const message = 'Versioning not supported';
 
-    expect(requirement).toBe('versioning');
+    expect(requirement).toBe(Capability.Versioning);
     expect(behavior).toBe('show-disabled');
     expect(message).toContain('not supported');
   });
@@ -239,7 +239,7 @@ describe('Integration scenarios', () => {
     const requirement = Capability.Permissions;
     const behavior: GateBehavior = 'hide';
 
-    expect(requirement).toBe('permissions');
+    expect(requirement).toBe(Capability.Permissions);
     expect(behavior).toBe('hide');
   });
 

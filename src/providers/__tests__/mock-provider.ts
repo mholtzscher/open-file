@@ -160,7 +160,7 @@ export class MockStorageProvider {
     }
 
     if (!this.connected) {
-      return Result.connectionFailed('Not connected');
+      return Result.connectionFailed('Not connected') as OperationResult<MockListResult>;
     }
 
     const normalizedPath = path.endsWith('/') ? path : path + '/';
@@ -199,11 +199,11 @@ export class MockStorageProvider {
     await this.simulateLatency();
 
     if (this.shouldFail('getMetadata')) {
-      return this.getFailureResult('getMetadata');
+      return this.getFailureResult<Entry>('getMetadata');
     }
 
     if (!this.fs.exists(path)) {
-      return Result.notFound(path);
+      return Result.notFound(path) as OperationResult<Entry>;
     }
 
     const isDir = this.fs.directories.has(path) || this.fs.directories.has(path + '/');
@@ -234,16 +234,16 @@ export class MockStorageProvider {
     await this.simulateLatency();
 
     if (this.shouldFail('read')) {
-      return this.getFailureResult('read');
+      return this.getFailureResult<Buffer>('read');
     }
 
     if (!this.hasCapability(Capability.Read)) {
-      return Result.unimplemented('read');
+      return Result.unimplemented('read') as OperationResult<Buffer>;
     }
 
     const content = this.fs.getContent(path);
     if (!content) {
-      return Result.notFound(path);
+      return Result.notFound(path) as OperationResult<Buffer>;
     }
 
     return Result.success(content);
@@ -369,11 +369,11 @@ export class MockStorageProvider {
     await this.simulateLatency();
 
     if (this.shouldFail('listContainers')) {
-      return this.getFailureResult('listContainers');
+      return this.getFailureResult<Entry[]>('listContainers');
     }
 
     if (!this.hasCapability(Capability.Containers)) {
-      return Result.unimplemented('listContainers');
+      return Result.unimplemented('listContainers') as OperationResult<Entry[]>;
     }
 
     // Return mock containers
@@ -464,22 +464,24 @@ export class MockStorageProvider {
     return this.config.failOperations?.has(operation) ?? false;
   }
 
-  private getFailureResult(operation: string): OperationResult {
+  private getFailureResult<T = void>(operation: string): OperationResult<T> {
     const status = this.config.failOperations?.get(operation) ?? OperationStatus.Error;
 
     switch (status) {
       case OperationStatus.NotFound:
-        return Result.notFound(operation);
+        return Result.notFound(operation) as OperationResult<T>;
       case OperationStatus.PermissionDenied:
-        return Result.permissionDenied(operation);
+        return Result.permissionDenied(operation) as OperationResult<T>;
       case OperationStatus.Unimplemented:
-        return Result.unimplemented(operation);
+        return Result.unimplemented(operation) as OperationResult<T>;
       case OperationStatus.ConnectionFailed:
-        return Result.connectionFailed(`${operation} failed: connection error`);
+        return Result.connectionFailed(
+          `${operation} failed: connection error`
+        ) as OperationResult<T>;
       case OperationStatus.Cancelled:
-        return Result.cancelled();
+        return Result.cancelled() as OperationResult<T>;
       default:
-        return Result.error('MOCK_ERROR', `Mock failure for ${operation}`);
+        return Result.error('MOCK_ERROR', `Mock failure for ${operation}`) as OperationResult<T>;
     }
   }
 }
