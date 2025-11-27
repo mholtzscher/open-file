@@ -65,3 +65,6 @@ export {
   type MaskOptions,
   type SensitiveDataWarning,
 } from './sanitizer.js';
+
+// Provider-specific resolvers
+export * from './resolvers/index.js';
