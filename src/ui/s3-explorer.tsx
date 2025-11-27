@@ -943,15 +943,13 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
         return true; // Block all other keys when help dialog is open
       }
 
-      // Profile selector dialog shortcuts
+      // Profile selector dialog - delegate to dialog handler
       if (showProfileSelectorDialog) {
-        // Note: The ProfileSelectorDialog component handles j/k/up/down/enter internally
-        // We just need to handle escape here to close it
-        if (key.name === 'escape' || key.name === 'q') {
-          closeDialog();
-          return true;
+        const handler = getDialogHandler('profile-selector-dialog');
+        if (handler) {
+          handler(key.name);
         }
-        return true; // Block all other keys when profile selector is open
+        return true; // Consumed by dialog
       }
 
       // Quit confirmation dialog
