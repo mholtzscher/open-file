@@ -1,14 +1,7 @@
 /**
- * Provider Progress Types
+ * Progress Types
  *
- * Provider-specific progress event types for tracking long-running operations.
- * These types use the 'Provider' prefix to avoid conflicts with
- * the existing UI types (ProgressEvent, ProgressCallback).
- *
- * The prefix will be removed in Phase 7 (Cleanup) after legacy code removal.
- *
- * Use mapper functions (see mappers.ts) to convert between:
- * - ProviderProgressEvent <-> ProgressEvent (for UI compatibility)
+ * Progress event types for tracking long-running operations.
  */
 
 /**
@@ -17,7 +10,7 @@
  * Emitted during uploads, downloads, copies, and other transfers
  * to track progress and provide user feedback.
  */
-export interface ProviderProgressEvent {
+export interface ProgressEvent {
   /** Type of operation (e.g., 'upload', 'download', 'copy', 'delete') */
   operation: string;
   /** Bytes transferred so far */
@@ -41,4 +34,4 @@ export interface ProviderProgressEvent {
 /**
  * Callback for receiving progress updates
  */
-export type ProviderProgressCallback = (event: ProviderProgressEvent) => void;
+export type ProgressCallback = (event: ProgressEvent) => void;

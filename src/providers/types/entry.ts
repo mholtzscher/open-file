@@ -1,20 +1,15 @@
 /**
- * Provider Entry Types
+ * Entry Types
  *
- * Provider-specific entry types with extended metadata support.
- * These types use the 'Provider' prefix to avoid conflicts with
- * the existing UI types (Entry, EntryType, EntryMetadata).
- *
- * The prefix will be removed in Phase 7 (Cleanup) after legacy code removal.
- *
- * Use mapper functions (see mappers.ts) to convert between:
- * - ProviderEntry <-> Entry (for UI compatibility)
+ * Entry types with extended metadata support for all provider types.
+ * Supports files, directories, buckets, and symlinks with metadata
+ * for cloud storage (S3/GCS), POSIX filesystems (SFTP/NFS), and more.
  */
 
 /**
  * Type of entry in the storage provider
  */
-export enum ProviderEntryType {
+export enum EntryType {
   /** Regular file */
   File = 'file',
   /** Directory/folder */
@@ -26,11 +21,11 @@ export enum ProviderEntryType {
 }
 
 /**
- * Extended metadata for provider entries
+ * Extended metadata for entries
  *
  * Includes universal metadata plus provider-specific fields
  */
-export interface ProviderEntryMetadata {
+export interface EntryMetadata {
   // Universal metadata
   /** Content type / MIME type */
   contentType?: string;
@@ -80,13 +75,13 @@ export interface ProviderEntryMetadata {
  * Represents files, directories, buckets, and symlinks with
  * extended metadata support for all provider types.
  */
-export interface ProviderEntry {
+export interface Entry {
   /** Unique identifier for tracking this entry */
   id: string;
   /** Entry name (without path) */
   name: string;
   /** Type of entry */
-  type: ProviderEntryType;
+  type: EntryType;
   /** Full path to this entry */
   path: string;
   /** Size in bytes (undefined for directories) */
@@ -94,5 +89,5 @@ export interface ProviderEntry {
   /** Last modified timestamp */
   modified?: Date;
   /** Extended metadata */
-  metadata?: ProviderEntryMetadata;
+  metadata?: EntryMetadata;
 }

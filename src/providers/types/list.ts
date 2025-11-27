@@ -1,26 +1,18 @@
 /**
- * Provider List Types
+ * List Types
  *
- * Provider-specific list operation types with pagination support.
- * These types use the 'Provider' prefix to avoid conflicts with
- * the existing UI types (ListOptions, ListResult).
- *
- * The prefix will be removed in Phase 7 (Cleanup) after legacy code removal.
- *
- * Use mapper functions (see mappers.ts) to convert between:
- * - ProviderListOptions <-> ListOptions (for UI compatibility)
- * - ProviderListResult <-> ListResult (for UI compatibility)
+ * List operation types with pagination support.
  */
 
-import { ProviderEntry } from './entry.js';
+import { Entry } from './entry.js';
 
 /**
  * Options for listing directory contents
  */
-export interface ProviderListOptions {
+export interface ListOptions {
   /** Maximum number of entries to return per page */
   limit?: number;
-  /** Token for pagination (from previous ProviderListResult) */
+  /** Token for pagination (from previous ListResult) */
   continuationToken?: string;
   /** Include subdirectories recursively */
   recursive?: boolean;
@@ -39,9 +31,9 @@ export interface ProviderListOptions {
 /**
  * Result of a list operation with pagination support
  */
-export interface ProviderListResult {
+export interface ListResult {
   /** Entries in the directory */
-  entries: ProviderEntry[];
+  entries: Entry[];
   /** Token for fetching next page (if hasMore is true) */
   continuationToken?: string;
   /** Whether more entries are available */
