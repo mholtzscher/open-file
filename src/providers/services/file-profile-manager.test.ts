@@ -21,6 +21,7 @@ function createTestS3Profile(id: string, overrides: Partial<S3Profile> = {}): S3
     provider: 's3',
     config: {
       region: 'us-east-1',
+      profile: 'default',
     },
     ...overrides,
   };

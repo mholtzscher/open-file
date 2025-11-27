@@ -178,24 +178,40 @@ function validateS3Profile(profile: S3Profile): ValidationError[] {
     errors.push(invalidType('config.forcePathStyle', 'a boolean'));
   }
 
-  // Logical validation: if accessKeyId is provided, secretAccessKey should be too
-  if (config.accessKeyId && !config.secretAccessKey) {
+  // Logical validation: must have either profile OR explicit credentials
+  const hasProfile = typeof config.profile === 'string' && config.profile.length > 0;
+  const hasAccessKey = typeof config.accessKeyId === 'string' && config.accessKeyId.length > 0;
+  const hasSecretKey =
+    typeof config.secretAccessKey === 'string' && config.secretAccessKey.length > 0;
+
+  if (!hasProfile && !hasAccessKey && !hasSecretKey) {
     errors.push(
       error(
-        'config.secretAccessKey',
-        'secretAccessKey is required when accessKeyId is provided',
+        'config',
+        'Authentication required: provide either "profile" (AWS CLI profile name) or "accessKeyId" + "secretAccessKey"',
         'required'
       )
     );
-  }
-  if (config.secretAccessKey && !config.accessKeyId) {
-    errors.push(
-      error(
-        'config.accessKeyId',
-        'accessKeyId is required when secretAccessKey is provided',
-        'required'
-      )
-    );
+  } else if (!hasProfile) {
+    // Using explicit credentials - both accessKeyId and secretAccessKey required
+    if (hasAccessKey && !hasSecretKey) {
+      errors.push(
+        error(
+          'config.secretAccessKey',
+          'secretAccessKey is required when accessKeyId is provided',
+          'required'
+        )
+      );
+    }
+    if (hasSecretKey && !hasAccessKey) {
+      errors.push(
+        error(
+          'config.accessKeyId',
+          'accessKeyId is required when secretAccessKey is provided',
+          'required'
+        )
+      );
+    }
   }
 
   return errors;

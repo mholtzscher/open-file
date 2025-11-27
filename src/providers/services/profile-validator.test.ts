@@ -96,7 +96,7 @@ describe('Profile Validator - Base Profile', () => {
         id: 'my-profile_123',
         displayName: 'Test',
         provider: 's3',
-        config: {},
+        config: { profile: 'default' },
       });
       expectValid(result);
     });
@@ -106,7 +106,7 @@ describe('Profile Validator - Base Profile', () => {
         id: 123,
         displayName: 'Test',
         provider: 's3',
-        config: {},
+        config: { profile: 'default' },
       });
       expectInvalid(result);
       expectErrorOnField(result, 'id');
@@ -141,7 +141,7 @@ describe('Profile Validator - Base Profile', () => {
         id: 'test',
         displayName: '',
         provider: 's3',
-        config: {},
+        config: { profile: 'default' },
       });
       expectValid(result);
     });
@@ -181,7 +181,9 @@ describe('Profile Validator - Base Profile', () => {
         };
 
         // Add required fields for each provider
-        if (provider === 'sftp') {
+        if (provider === 's3') {
+          profile.config = { profile: 'default' };
+        } else if (provider === 'sftp') {
           profile.config = { host: 'example.com', username: 'user', authMethod: 'agent' };
         } else if (provider === 'nfs') {
           profile.config = { host: 'example.com', exportPath: '/exports' };
@@ -224,21 +226,38 @@ describe('Profile Validator - Base Profile', () => {
 // ============================================================================
 
 describe('Profile Validator - S3', () => {
-  const validS3Profile: S3Profile = {
+  const validS3ProfileWithAwsProfile: S3Profile = {
     id: 'test-s3',
     displayName: 'Test S3',
     provider: 's3',
-    config: {},
+    config: {
+      profile: 'default',
+    },
   };
 
-  it('should accept minimal valid S3 profile', () => {
-    const result = validateProfile(validS3Profile);
+  const validS3ProfileWithCredentials: S3Profile = {
+    id: 'test-s3',
+    displayName: 'Test S3',
+    provider: 's3',
+    config: {
+      accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
+      secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
+    },
+  };
+
+  it('should accept S3 profile with AWS CLI profile', () => {
+    const result = validateProfile(validS3ProfileWithAwsProfile);
+    expectValid(result);
+  });
+
+  it('should accept S3 profile with explicit credentials', () => {
+    const result = validateProfile(validS3ProfileWithCredentials);
     expectValid(result);
   });
 
   it('should accept S3 profile with all optional fields', () => {
     const profile: S3Profile = {
-      ...validS3Profile,
+      ...validS3ProfileWithAwsProfile,
       config: {
         region: 'us-east-1',
         profile: 'default',
@@ -253,6 +272,18 @@ describe('Profile Validator - S3', () => {
     expectValid(result);
   });
 
+  it('should reject S3 profile without authentication', () => {
+    const profile: S3Profile = {
+      id: 'test-s3',
+      displayName: 'Test S3',
+      provider: 's3',
+      config: {},
+    };
+    const result = validateProfile(profile);
+    expectInvalid(result);
+    expectErrorOnField(result, 'config');
+  });
+
   it('should reject missing config', () => {
     const result = validateProfile({
       id: 'test',
@@ -265,7 +296,7 @@ describe('Profile Validator - S3', () => {
 
   it('should reject accessKeyId without secretAccessKey', () => {
     const profile: S3Profile = {
-      ...validS3Profile,
+      ...validS3ProfileWithAwsProfile,
       config: { accessKeyId: 'AKIAIOSFODNN7EXAMPLE' },
     };
     const result = validateProfile(profile);
@@ -275,7 +306,7 @@ describe('Profile Validator - S3', () => {
 
   it('should reject secretAccessKey without accessKeyId', () => {
     const profile: S3Profile = {
-      ...validS3Profile,
+      ...validS3ProfileWithAwsProfile,
       config: { secretAccessKey: 'secret' },
     };
     const result = validateProfile(profile);
@@ -285,8 +316,8 @@ describe('Profile Validator - S3', () => {
 
   it('should reject non-boolean forcePathStyle', () => {
     const result = validateProfile({
-      ...validS3Profile,
-      config: { forcePathStyle: 'true' },
+      ...validS3ProfileWithAwsProfile,
+      config: { profile: 'default', forcePathStyle: 'true' as unknown as boolean },
     });
     expectInvalid(result);
     expectErrorOnField(result, 'config.forcePathStyle');
