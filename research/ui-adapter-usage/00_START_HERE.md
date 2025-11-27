@@ -31,14 +31,18 @@ src/ui/s3-explorer.tsx
 ## 📖 How to Use This Research
 
 ### Quick Lookup
+
 Need fast answers? Start with **QUICK_REFERENCE.md**
+
 - Adapter methods table
 - Common code patterns
 - Implementation checklist
 - Error scenarios
 
 ### Deep Understanding
+
 Want to understand everything? Start with **COMPREHENSIVE_REPORT.md**
+
 - Complete adapter interface documentation
 - Detailed usage for each method
 - Assumptions about adapter behavior
@@ -46,7 +50,9 @@ Want to understand everything? Start with **COMPREHENSIVE_REPORT.md**
 - Recommendations for implementation
 
 ### Code Investigation
+
 Debugging specific code? Start with **FILE_BY_FILE_ANALYSIS.md**
+
 - Breakdown of s3-explorer.tsx by section
 - Line numbers for every call
 - Context imports and props
@@ -56,17 +62,17 @@ Debugging specific code? Start with **FILE_BY_FILE_ANALYSIS.md**
 
 ## 🚀 Quick Facts
 
-| Aspect | Details |
-|--------|---------|
-| **Primary File** | `src/ui/s3-explorer.tsx` (1,288 lines) |
-| **Adapter Methods Called** | 11 total |
-| **Required Methods** | 6 (list, read, create, delete, move, copy) |
-| **Optional Methods** | 5 (download, upload, bucket ops) |
-| **Error Handling** | Try-catch at every call site |
-| **Progress Tracking** | Built-in via callbacks |
-| **Context Provider** | `src/contexts/AdapterContext.tsx` |
-| **Files Using Adapters** | 3 (explorer, test, context) |
-| **Adapter-Agnostic Files** | 28+ (all other UI/hooks) |
+| Aspect                     | Details                                    |
+| -------------------------- | ------------------------------------------ |
+| **Primary File**           | `src/ui/s3-explorer.tsx` (1,288 lines)     |
+| **Adapter Methods Called** | 11 total                                   |
+| **Required Methods**       | 6 (list, read, create, delete, move, copy) |
+| **Optional Methods**       | 5 (download, upload, bucket ops)           |
+| **Error Handling**         | Try-catch at every call site               |
+| **Progress Tracking**      | Built-in via callbacks                     |
+| **Context Provider**       | `src/contexts/AdapterContext.tsx`          |
+| **Files Using Adapters**   | 3 (explorer, test, context)                |
+| **Adapter-Agnostic Files** | 28+ (all other UI/hooks)                   |
 
 ---
 
@@ -107,24 +113,25 @@ Debugging specific code? Start with **FILE_BY_FILE_ANALYSIS.md**
 
 **I want to know...**
 
-| Question | Document | Section |
-|----------|----------|---------|
-| How adapter methods are called | COMPREHENSIVE_REPORT | Section 2 |
-| When each method is called | QUICK_REFERENCE | Adapter Methods Table |
-| Where each method is called | FILE_BY_FILE_ANALYSIS | s3-explorer.tsx breakdown |
-| What errors can happen | QUICK_REFERENCE | Error Recovery |
-| How progress tracking works | COMPREHENSIVE_REPORT | Section 5.3 |
-| How to implement a new adapter | QUICK_REFERENCE | Implementation Checklist |
-| How optional methods work | COMPREHENSIVE_REPORT | Section 5.5 |
-| How to pass the adapter | COMPREHENSIVE_REPORT | Section 7.1 |
-| What the UI expects | COMPREHENSIVE_REPORT | Section 5 |
-| Code examples | QUICK_REFERENCE | Common Patterns |
+| Question                       | Document              | Section                   |
+| ------------------------------ | --------------------- | ------------------------- |
+| How adapter methods are called | COMPREHENSIVE_REPORT  | Section 2                 |
+| When each method is called     | QUICK_REFERENCE       | Adapter Methods Table     |
+| Where each method is called    | FILE_BY_FILE_ANALYSIS | s3-explorer.tsx breakdown |
+| What errors can happen         | QUICK_REFERENCE       | Error Recovery            |
+| How progress tracking works    | COMPREHENSIVE_REPORT  | Section 5.3               |
+| How to implement a new adapter | QUICK_REFERENCE       | Implementation Checklist  |
+| How optional methods work      | COMPREHENSIVE_REPORT  | Section 5.5               |
+| How to pass the adapter        | COMPREHENSIVE_REPORT  | Section 7.1               |
+| What the UI expects            | COMPREHENSIVE_REPORT  | Section 5                 |
+| Code examples                  | QUICK_REFERENCE       | Common Patterns           |
 
 ---
 
 ## 📊 Adapter Methods at a Glance
 
 ### Must-Implement Methods
+
 ```typescript
 adapter.list(path) → Promise<ListResult>
 adapter.read(path) → Promise<Buffer>
@@ -135,6 +142,7 @@ adapter.copy(source, dest) → Promise<void>
 ```
 
 ### Should-Implement Methods
+
 ```typescript
 adapter.downloadToLocal(remote, local, recursive) → Promise<void>
 adapter.uploadFromLocal(local, remote, recursive) → Promise<void>
@@ -144,6 +152,7 @@ adapter.setRegion(region) → void
 ```
 
 ### All Methods Support Progress
+
 ```typescript
 { onProgress: (event: ProgressEvent) => void }
 ```
@@ -153,6 +162,7 @@ adapter.setRegion(region) → void
 ## 💡 Key Patterns
 
 ### Pattern 1: Optional Methods
+
 ```typescript
 if (adapter.downloadToLocal) {
   await adapter.downloadToLocal(...);
@@ -160,6 +170,7 @@ if (adapter.downloadToLocal) {
 ```
 
 ### Pattern 2: Error Handling
+
 ```typescript
 try {
   const result = await adapter.list(path);
@@ -170,6 +181,7 @@ try {
 ```
 
 ### Pattern 3: Progress Aggregation
+
 ```typescript
 const onProgress = (event: ProgressEvent) => {
   const baseProgress = (opIndex / totalOps) * 100;
@@ -179,6 +191,7 @@ const onProgress = (event: ProgressEvent) => {
 ```
 
 ### Pattern 4: Dependency Injection
+
 ```typescript
 const hasContext = useHasAdapter();
 const contextAdapter = hasContext ? useAdapter() : null;
@@ -220,12 +233,12 @@ const adapter = adapterProp ?? contextAdapter;
 
 ## 📚 Document Sizes
 
-| Document | Size | Sections | Best For |
-|----------|------|----------|----------|
-| COMPREHENSIVE_REPORT.md | 23 KB | 10 | Complete understanding |
-| FILE_BY_FILE_ANALYSIS.md | 21 KB | 6 | Code investigation |
-| QUICK_REFERENCE.md | 6 KB | 6 | Quick lookups |
-| README.md | 8.7 KB | 7 | Navigation guide |
+| Document                 | Size   | Sections | Best For               |
+| ------------------------ | ------ | -------- | ---------------------- |
+| COMPREHENSIVE_REPORT.md  | 23 KB  | 10       | Complete understanding |
+| FILE_BY_FILE_ANALYSIS.md | 21 KB  | 6        | Code investigation     |
+| QUICK_REFERENCE.md       | 6 KB   | 6        | Quick lookups          |
+| README.md                | 8.7 KB | 7        | Navigation guide       |
 
 **Total Research**: ~59 KB of documentation
 
@@ -234,6 +247,7 @@ const adapter = adapterProp ?? contextAdapter;
 ## ✅ Verification Checklist
 
 This research documents:
+
 - ✅ All imports of adapter-related code
 - ✅ All adapter methods called from UI
 - ✅ All adapter methods called from hooks
@@ -258,16 +272,19 @@ This research documents:
 ## 🔗 Related Files in Codebase
 
 **Core Adapter Files**:
+
 - `src/adapters/adapter.ts` - Interface definitions
 - `src/adapters/s3-adapter.ts` - S3 implementation
 - `src/adapters/mock-adapter.ts` - Mock implementation
 
 **UI Files**:
+
 - `src/ui/s3-explorer.tsx` - Primary component (CRITICAL)
 - `src/ui/progress-window-integration.test.tsx` - Progress tests
 - `src/contexts/AdapterContext.tsx` - Dependency injection
 
 **Type Definitions**:
+
 - `src/types/entry.ts` - Entry type
 - `src/types/dialog.ts` - Operation types
 
@@ -292,6 +309,7 @@ This research documents:
 ---
 
 **Research Metadata**:
+
 - Created: 2025-11-26
 - Scope: Open-S3 S3Explorer UI adapter patterns
 - Status: ✅ Complete

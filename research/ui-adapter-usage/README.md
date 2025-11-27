@@ -5,7 +5,9 @@ Complete research on how the S3Explorer UI components interact with storage adap
 ## 📚 Documents in This Research
 
 ### 1. **COMPREHENSIVE_REPORT.md** (START HERE)
+
 Full documentation of adapter usage patterns, including:
+
 - Complete inventory of all adapter method calls
 - Detailed usage patterns in S3Explorer component
 - Error handling strategies
@@ -16,8 +18,10 @@ Full documentation of adapter usage patterns, including:
 
 **Best For**: Understanding the complete picture of adapter usage
 
-### 2. **QUICK_REFERENCE.md** 
+### 2. **QUICK_REFERENCE.md**
+
 Quick lookup tables and common patterns:
+
 - Adapter methods called by UI (table)
 - Files using adapters
 - Common code patterns
@@ -28,7 +32,9 @@ Quick lookup tables and common patterns:
 **Best For**: Quick lookups during development
 
 ### 3. **FILE_BY_FILE_ANALYSIS.md**
+
 Detailed analysis of every file mentioned:
+
 - s3-explorer.tsx - with code sections and line numbers
 - progress-window-integration.test.tsx - test patterns
 - AdapterContext.tsx - context implementation
@@ -44,12 +50,14 @@ Detailed analysis of every file mentioned:
 ## 🎯 Key Findings
 
 ### Adapter Usage is Highly Centralized
+
 - **Primary Location**: `src/ui/s3-explorer.tsx` (1,288 lines, 31% adapter-related)
 - **11 adapter methods called** from this single component
 - **All error handling** at call sites
 - **Zero adapter calls** in other UI components or most hooks
 
 ### Architecture Pattern: Dependency Injection
+
 ```
 AdapterProvider
     ↓
@@ -60,20 +68,25 @@ S3Explorer (receives adapter via prop or context)
 ```
 
 ### Optional Methods Pattern
+
 Some adapter methods have guards:
+
 ```typescript
 if (adapter.downloadToLocal) {
   await adapter.downloadToLocal(...);
 }
 ```
+
 When not available, operation is skipped gracefully.
 
 ### All Operations Are Async
+
 - `list()`, `read()`, `create()`, `delete()`, `move()`, `copy()` → Promise-based
 - `downloadToLocal()`, `uploadFromLocal()`, `getBucketEntries()` → Promise-based
 - `setBucket()`, `setRegion()` → Synchronous side effects (optional)
 
 ### Error Handling is Consistent
+
 - All async operations wrapped in try-catch
 - Errors parsed with `parseAwsError()` utility
 - User messages formatted to 70 chars
@@ -81,10 +94,13 @@ When not available, operation is skipped gracefully.
 - Previous state preserved on error (no UI crash)
 
 ### Progress Tracking is Built-In
+
 Every adapter operation receives optional `onProgress` callback:
+
 ```typescript
-adapter.delete(path, recursive, { onProgress })
+adapter.delete(path, recursive, { onProgress });
 ```
+
 UI aggregates progress across multiple operations.
 
 ---
@@ -93,36 +109,36 @@ UI aggregates progress across multiple operations.
 
 **Looking for...**
 
-| Goal | Document | Section |
-|------|----------|---------|
-| How adapter.list() is called | COMPREHENSIVE_REPORT.md | Section 2.1 - Method 1 |
-| Error handling patterns | COMPREHENSIVE_REPORT.md | Section 6 |
-| All methods table | QUICK_REFERENCE.md | Adapter Methods table |
-| s3-explorer.tsx breakdown | FILE_BY_FILE_ANALYSIS.md | Section 1 |
-| Common code patterns | QUICK_REFERENCE.md | Common Patterns |
-| Entry structure | QUICK_REFERENCE.md | Entry Structure |
-| Progress callback details | COMPREHENSIVE_REPORT.md | Section 5.3 |
-| Optional methods | COMPREHENSIVE_REPORT.md | Section 5.5 |
-| Return type expectations | COMPREHENSIVE_REPORT.md | Section 5.4 |
-| Implementation checklist | QUICK_REFERENCE.md | Implementation Checklist |
+| Goal                         | Document                 | Section                  |
+| ---------------------------- | ------------------------ | ------------------------ |
+| How adapter.list() is called | COMPREHENSIVE_REPORT.md  | Section 2.1 - Method 1   |
+| Error handling patterns      | COMPREHENSIVE_REPORT.md  | Section 6                |
+| All methods table            | QUICK_REFERENCE.md       | Adapter Methods table    |
+| s3-explorer.tsx breakdown    | FILE_BY_FILE_ANALYSIS.md | Section 1                |
+| Common code patterns         | QUICK_REFERENCE.md       | Common Patterns          |
+| Entry structure              | QUICK_REFERENCE.md       | Entry Structure          |
+| Progress callback details    | COMPREHENSIVE_REPORT.md  | Section 5.3              |
+| Optional methods             | COMPREHENSIVE_REPORT.md  | Section 5.5              |
+| Return type expectations     | COMPREHENSIVE_REPORT.md  | Section 5.4              |
+| Implementation checklist     | QUICK_REFERENCE.md       | Implementation Checklist |
 
 ---
 
 ## 📋 Adapter Methods Called by UI
 
-| Method | Lines | When Called | Guard? |
-|--------|-------|-------------|--------|
-| `list()` | 194, 486, 840, 1063 | Navigation, refresh, init | ❌ |
-| `read()` | 1138 | File preview | ❌ |
-| `create()` | 781 | Create file/dir | ❌ |
-| `delete()` | 789 | Delete entry | ❌ |
-| `move()` | 795 | Move/rename | ❌ |
-| `copy()` | 801 | Copy entry | ❌ |
-| `downloadToLocal()` | 807 | Download | ✅ |
-| `uploadFromLocal()` | 814 | Upload | ✅ |
-| `setBucket()` | 264, 602 | Bucket selection | ✅ |
-| `setRegion()` | 267 | Bucket selection | ✅ |
-| `getBucketEntries()` | 471, 1050 | Root view, refresh | ✅ |
+| Method               | Lines               | When Called               | Guard? |
+| -------------------- | ------------------- | ------------------------- | ------ |
+| `list()`             | 194, 486, 840, 1063 | Navigation, refresh, init | ❌     |
+| `read()`             | 1138                | File preview              | ❌     |
+| `create()`           | 781                 | Create file/dir           | ❌     |
+| `delete()`           | 789                 | Delete entry              | ❌     |
+| `move()`             | 795                 | Move/rename               | ❌     |
+| `copy()`             | 801                 | Copy entry                | ❌     |
+| `downloadToLocal()`  | 807                 | Download                  | ✅     |
+| `uploadFromLocal()`  | 814                 | Upload                    | ✅     |
+| `setBucket()`        | 264, 602            | Bucket selection          | ✅     |
+| `setRegion()`        | 267                 | Bucket selection          | ✅     |
+| `getBucketEntries()` | 471, 1050           | Root view, refresh        | ✅     |
 
 ---
 
@@ -170,6 +186,7 @@ UI aggregates progress across multiple operations.
 ### Implementing a New Adapter
 
 Must implement:
+
 - ✅ `list(path: string): Promise<ListResult>`
 - ✅ `read(path: string): Promise<Buffer>`
 - ✅ `create(path: string, type: EntryType): Promise<void>`
@@ -178,6 +195,7 @@ Must implement:
 - ✅ `copy(source: string, destination: string): Promise<void>`
 
 Should implement (for full feature support):
+
 - 📦 `downloadToLocal(remote: string, local: string, recursive?: boolean): Promise<void>`
 - 📦 `uploadFromLocal(local: string, remote: string, recursive?: boolean): Promise<void>`
 - 📦 `getBucketEntries(): Promise<Entry[]>`
@@ -187,11 +205,13 @@ Should implement (for full feature support):
 ### Testing Your Adapter
 
 1. Pass to S3Explorer as prop:
+
 ```typescript
 <S3Explorer adapter={myAdapter} bucket="test-bucket" />
 ```
 
 2. Or use AdapterProvider:
+
 ```typescript
 <AdapterProvider adapter={myAdapter}>
   <S3Explorer bucket="test-bucket" />
@@ -224,24 +244,28 @@ Should implement (for full feature support):
 ## 🚀 Common Tasks
 
 ### Add Progress Tracking to Operation
+
 1. Implement progress callback in adapter
 2. UI creates `onProgress` callback automatically
 3. Adapter calls callback during operation
 4. UI updates progress bar and currentFile
 
 ### Handle New Error Type
+
 1. Update `parseAwsError()` utility if needed
 2. Error automatically caught in try-catch
 3. Message displayed in status bar
 4. Operation can be retried
 
 ### Support Optional Adapter Feature
+
 1. Add guard check: `if (adapter.method)`
 2. Skip operation gracefully if not available
 3. Show message to user
 4. No UI crash
 
 ### Pass Adapter as Prop vs Context
+
 1. **Prop**: `<S3Explorer adapter={adapter} />`
 2. **Context**: `<AdapterProvider adapter={adapter}><S3Explorer /></AdapterProvider>`
 3. **Both**: Prop takes precedence

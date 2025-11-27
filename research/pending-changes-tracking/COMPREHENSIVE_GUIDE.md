@@ -19,29 +19,30 @@ The heart of pending changes tracking. Manages the in-memory state of entries wi
 ```typescript
 export interface UseBufferStateReturn {
   // Entry management
-  entries: Entry[];                        // Current visible entries
-  originalEntries: Entry[];                // Unmodified entries
-  
+  entries: Entry[]; // Current visible entries
+  originalEntries: Entry[]; // Unmodified entries
+
   // Deletion tracking (core of pending changes system)
-  deletedEntryIds: Set<string>;            // IDs of entries marked for deletion
-  
+  deletedEntryIds: Set<string>; // IDs of entries marked for deletion
+
   // Deletion operations
   markForDeletion: (entryId: string) => void;
   unmarkForDeletion: (entryId: string) => void;
   isMarkedForDeletion: (entryId: string) => boolean;
-  getMarkedForDeletion: () => Entry[];     // Get all marked entries
-  clearDeletionMarks: () => void;          // Clear all marks
-  
+  getMarkedForDeletion: () => Entry[]; // Get all marked entries
+  clearDeletionMarks: () => void; // Clear all marks
+
   // Snapshots for undo/redo
-  saveSnapshot: () => void;                // Save current state to undo history
+  saveSnapshot: () => void; // Save current state to undo history
   undo: () => boolean;
   redo: () => boolean;
-  
+
   // ... other state
 }
 ```
 
 **How it works**:
+
 1. `deletedEntryIds` is a `Set<string>` tracking which entries are marked for deletion
 2. When user presses `dd` (vim-style delete), entry is marked but NOT removed from view
 3. Entry stays in `entries` array but appears with strikethrough + red color
@@ -55,24 +56,25 @@ Manages pending operations ready to be confirmed and executed.
 
 ```typescript
 export interface DialogState {
-  activeDialog: DialogType;           // Which dialog is open
-  pendingOperations: PendingOperation[];  // Operations waiting for confirmation
-  quitPendingChanges: number;         // Count of pending deletes for quit dialog
+  activeDialog: DialogType; // Which dialog is open
+  pendingOperations: PendingOperation[]; // Operations waiting for confirmation
+  quitPendingChanges: number; // Count of pending deletes for quit dialog
 }
 
 export interface PendingOperation {
   id: string;
   type: 'create' | 'delete' | 'move' | 'copy' | 'download' | 'upload';
-  path?: string;                      // For single-path operations
-  source?: string;                    // For source/dest operations
+  path?: string; // For single-path operations
+  source?: string; // For source/dest operations
   destination?: string;
-  entry?: Entry;                      // Associated entry
+  entry?: Entry; // Associated entry
   entryType?: 'file' | 'directory';
   recursive?: boolean;
 }
 ```
 
 **Flow**:
+
 1. `pendingOperations` is a list of operations waiting for user confirmation
 2. When user presses `w` (save), buffer state's marked entries become `PendingOperation` objects
 3. User sees confirmation dialog with list of operations
@@ -87,9 +89,9 @@ Each entry has metadata for tracking:
 
 ```typescript
 export interface Entry {
-  id: string;           // Unique ID tracked by system
+  id: string; // Unique ID tracked by system
   name: string;
-  path: string;         // Full S3 path
+  path: string; // Full S3 path
   type: 'file' | 'directory' | 'bucket';
   size?: number;
   modified?: Date;
@@ -115,7 +117,7 @@ export interface Entry {
          ↑                           ↑
          │                           │
     User presses 'w'            Confirm dialog
-         │                       
+         │
 ┌─────────────────────────────────────────────┐
 │ Layer 2: Buffer State (deletedEntryIds)     │
 │ - Entries marked for deletion                │
@@ -177,10 +179,10 @@ On success: reload buffer, clear marks
 'entry:delete': () => {
   const currentBufferState = getActiveBuffer();
   const selected = currentBufferState.getSelectedEntries();
-  
+
   if (selected.length > 0) {
     currentBufferState.saveSnapshot();  // Snapshot for undo
-    
+
     for (const entry of selected) {
       if (currentBufferState.isMarkedForDeletion(entry.id)) {
         currentBufferState.unmarkForDeletion(entry.id);
@@ -188,7 +190,7 @@ On success: reload buffer, clear marks
         currentBufferState.markForDeletion(entry.id);  // Mark or unmark
       }
     }
-    
+
     // Show status
     const markedCount = currentBufferState.getMarkedForDeletion().length;
     setStatusMessage(`${markedCount} item(s) marked for deletion...`);
@@ -197,6 +199,7 @@ On success: reload buffer, clear marks
 ```
 
 **Key Points**:
+
 - When user presses `dd`, `saveSnapshot()` is called first (for undo)
 - Entry is marked by adding ID to `deletedEntryIds` Set
 - Toggling works: pressing `dd` twice unmarked it
@@ -225,6 +228,7 @@ const color = getEntryColor(entry, isSelected, isMarkedForDeletion);  // Red col
 ```
 
 **Visual Output**:
+
 ```
 > ✗ file-to-delete.txt    ← Marked for deletion (strikethrough + red + ✗)
   normal-file.txt         ← Not marked (normal color)
@@ -240,7 +244,7 @@ When user presses `w` (save):
 'buffer:save': () => {
   const currentBufferState = getActiveBuffer();
   const markedForDeletion = currentBufferState.getMarkedForDeletion();
-  
+
   // Convert marked entries to operations
   const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
     id: entry.id,
@@ -248,12 +252,12 @@ When user presses `w` (save):
     path: entry.path,
     entry,
   }));
-  
+
   if (deleteOperations.length === 0) {
     setStatusMessage('No changes to save');
     return;
   }
-  
+
   // Show confirmation dialog with operations
   showConfirm(deleteOperations);
 },
@@ -269,9 +273,9 @@ When user presses `w` (save):
 
 ```typescript
 export interface DialogState {
-  activeDialog: DialogType;           // Current active dialog
-  pendingOperations: PendingOperation[];  // Operations pending confirmation
-  quitPendingChanges: number;         // For quit dialog
+  activeDialog: DialogType; // Current active dialog
+  pendingOperations: PendingOperation[]; // Operations pending confirmation
+  quitPendingChanges: number; // For quit dialog
 }
 
 export type DialogAction =
@@ -284,11 +288,13 @@ export type DialogAction =
 ### 4.2 Showing Confirmation
 
 From `s3-explorer.tsx`:
+
 ```typescript
-showConfirm(deleteOperations);  // Opens confirmation dialog
+showConfirm(deleteOperations); // Opens confirmation dialog
 ```
 
 Triggers:
+
 ```typescript
 const showConfirm = useCallback((operations: PendingOperation[]) => {
   dispatch({ type: 'SHOW_CONFIRM', payload: { operations } });
@@ -300,6 +306,7 @@ const showConfirm = useCallback((operations: PendingOperation[]) => {
 **File**: `src/ui/confirmation-dialog-react.tsx`
 
 User sees:
+
 - List of operations to be executed
 - "Confirm" (Return/Enter) or "Cancel" (Escape) buttons
 - Operations display:
@@ -323,20 +330,20 @@ const createConfirmHandler = useCallback(async () => {
   try {
     const abortController = new AbortController();
     let successCount = 0;
-    
+
     // Show progress window
     showProgress({
       title: `Executing ${pendingOperations[0]?.type || 'operation'}...`,
       totalNum: pendingOperations.length,
       cancellable: true,
     });
-    
+
     // Execute each operation sequentially
     for (let opIndex = 0; opIndex < pendingOperations.length; opIndex++) {
       const op = pendingOperations[opIndex];
-      
+
       if (abortController.signal.aborted) break;
-      
+
       try {
         // Update progress
         const progress = Math.round((opIndex / pendingOperations.length) * 100);
@@ -348,7 +355,7 @@ const createConfirmHandler = useCallback(async () => {
             currentNum: opIndex + 1,
           },
         });
-        
+
         // Execute based on operation type
         switch (op.type) {
           case 'delete':
@@ -371,28 +378,27 @@ const createConfirmHandler = useCallback(async () => {
         // Continue to next operation or abort
       }
     }
-    
+
     hideProgress();
-    
+
     // After all operations succeed
     if (successCount > 0) {
       // Reload buffer from S3
       const result = await adapter.list(currentBufferState.currentPath);
       currentBufferState.setEntries([...result.entries]);
-      
+
       // Clear deletion marks
       currentBufferState.clearDeletionMarks();
-      
+
       setStatusMessage(`${successCount} operation(s) completed successfully`);
       setStatusMessageColor(CatppuccinMocha.green);
     }
-    
+
     closeAndClearOperations();
-    
   } catch (err) {
     // Error handling
   }
-}, [pendingOperations, adapter, /* deps */]);
+}, [pendingOperations, adapter /* deps */]);
 ```
 
 ### 5.2 Operation Execution Phases
@@ -434,7 +440,7 @@ type BufferSnapshot = {
 
 const saveSnapshot = useCallback((): void => {
   setUndoHistory(prev => [...prev, { entries, deletedIds: new Set(deletedEntryIds) }]);
-  setRedoHistory([]);  // Clear redo on new change
+  setRedoHistory([]); // Clear redo on new change
 }, [entries, deletedEntryIds]);
 ```
 
@@ -454,6 +460,7 @@ When user presses `u`:
 ```
 
 Restores:
+
 - All entries to previous state
 - All deletion marks
 - Cursor position
@@ -471,13 +478,13 @@ Restores:
 'app:quit': () => {
   const currentBufferState = getActiveBuffer();
   const pendingChanges = currentBufferState.getMarkedForDeletion().length;
-  
+
   if (pendingChanges > 0) {
     // Show quit confirmation dialog
     showQuit(pendingChanges);
     return;
   }
-  
+
   // No pending changes - quit immediately
   process.exit(0);
 },
@@ -488,6 +495,7 @@ Restores:
 **File**: `src/ui/quit-dialog-react.tsx`
 
 Shows user:
+
 ```
 You have 5 unsaved changes.
 d - Discard changes and quit
@@ -496,10 +504,11 @@ q - Cancel (go back)
 ```
 
 If user chooses `w`:
+
 ```typescript
 if (quitAfterSaveRef.current) {
   quitAfterSaveRef.current = false;
-  process.exit(0);  // Exit after save completes
+  process.exit(0); // Exit after save completes
 }
 ```
 
@@ -507,17 +516,17 @@ if (quitAfterSaveRef.current) {
 
 ## 8. Files and Their Roles
 
-| File | Purpose | Key Functions |
-|------|---------|---|
-| `src/hooks/useBufferState.ts` | Core buffer state with deletion tracking | `markForDeletion`, `getMarkedForDeletion`, `saveSnapshot` |
-| `src/hooks/useDialogState.ts` | Dialog and pending operations state | `showConfirm`, `closeAndClearOperations` |
-| `src/types/dialog.ts` | Type definitions for dialog system | `DialogState`, `PendingOperation` |
-| `src/types/operations.ts` | Operation type definitions | `AdapterOperation`, `CreateOperation`, `DeleteOperation` |
-| `src/ui/s3-explorer.tsx` | Main component orchestrating everything | `buffer:save` action, `createConfirmHandler` |
-| `src/ui/buffer-view-react.tsx` | Renders pending changes visually | Strikethrough + red color for marked entries |
-| `src/ui/confirmation-dialog-react.tsx` | Shows operations for confirmation | User confirms or cancels |
-| `src/adapters/adapter.ts` | Executes operations on S3 | `delete`, `create`, `move`, `copy` |
-| `src/ui/quit-dialog-react.tsx` | Handles quit with pending changes | Shows pending change count |
+| File                                   | Purpose                                  | Key Functions                                             |
+| -------------------------------------- | ---------------------------------------- | --------------------------------------------------------- |
+| `src/hooks/useBufferState.ts`          | Core buffer state with deletion tracking | `markForDeletion`, `getMarkedForDeletion`, `saveSnapshot` |
+| `src/hooks/useDialogState.ts`          | Dialog and pending operations state      | `showConfirm`, `closeAndClearOperations`                  |
+| `src/types/dialog.ts`                  | Type definitions for dialog system       | `DialogState`, `PendingOperation`                         |
+| `src/types/operations.ts`              | Operation type definitions               | `AdapterOperation`, `CreateOperation`, `DeleteOperation`  |
+| `src/ui/s3-explorer.tsx`               | Main component orchestrating everything  | `buffer:save` action, `createConfirmHandler`              |
+| `src/ui/buffer-view-react.tsx`         | Renders pending changes visually         | Strikethrough + red color for marked entries              |
+| `src/ui/confirmation-dialog-react.tsx` | Shows operations for confirmation        | User confirms or cancels                                  |
+| `src/adapters/adapter.ts`              | Executes operations on S3                | `delete`, `create`, `move`, `copy`                        |
+| `src/ui/quit-dialog-react.tsx`         | Handles quit with pending changes        | Shows pending change count                                |
 
 ---
 
@@ -533,11 +542,13 @@ if (quitAfterSaveRef.current) {
 ### 9.2 Multi-Pane Support
 
 Changes tracked per-pane:
+
 ```typescript
 const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
 ```
 
 Each pane has independent:
+
 - `deletedEntryIds` set
 - Undo/redo history
 - Pending marks
@@ -545,6 +556,7 @@ Each pane has independent:
 ### 9.3 Progress Tracking
 
 During execution:
+
 - Progress window shows current operation
 - File-by-file feedback
 - Estimated completion
@@ -553,6 +565,7 @@ During execution:
 ### 9.4 Error Handling
 
 If operation fails:
+
 - Continues with next operation
 - Shows error message in status bar
 - User can retry later

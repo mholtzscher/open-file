@@ -2,14 +2,14 @@
 
 ## Summary Table
 
-| File | Category | Adapter Imports | Methods Used | Error Handling | Status |
-|------|----------|-----------------|---------------|----------------|--------|
-| src/ui/s3-explorer.tsx | Primary UI | Adapter, ProgressEvent, useAdapter, useHasAdapter | 11 methods | Comprehensive try-catch | ✅ CRITICAL |
-| src/ui/progress-window-integration.test.tsx | Tests | ProgressEvent, ProgressCallback | None (types only) | N/A | ⚪ Info |
-| src/ui/upload-dialog-react.tsx | UI Dialog | None | None | N/A | ⚪ N/A |
-| src/contexts/AdapterContext.tsx | Context | Adapter | None (provides access) | useContext error | ⚪ N/A |
-| src/hooks/useNavigationHandlers.ts | Hook | None | None (callbacks) | Error callback | ⚪ N/A |
-| All other UI/hooks | UI/Hooks | None | None | N/A | ⚪ N/A |
+| File                                        | Category   | Adapter Imports                                   | Methods Used           | Error Handling          | Status      |
+| ------------------------------------------- | ---------- | ------------------------------------------------- | ---------------------- | ----------------------- | ----------- |
+| src/ui/s3-explorer.tsx                      | Primary UI | Adapter, ProgressEvent, useAdapter, useHasAdapter | 11 methods             | Comprehensive try-catch | ✅ CRITICAL |
+| src/ui/progress-window-integration.test.tsx | Tests      | ProgressEvent, ProgressCallback                   | None (types only)      | N/A                     | ⚪ Info     |
+| src/ui/upload-dialog-react.tsx              | UI Dialog  | None                                              | None                   | N/A                     | ⚪ N/A      |
+| src/contexts/AdapterContext.tsx             | Context    | Adapter                                           | None (provides access) | useContext error        | ⚪ N/A      |
+| src/hooks/useNavigationHandlers.ts          | Hook       | None                                              | None (callbacks)       | Error callback          | ⚪ N/A      |
+| All other UI/hooks                          | UI/Hooks   | None                                              | None                   | N/A                     | ⚪ N/A      |
 
 ---
 
@@ -23,16 +23,18 @@
 **Adapter-Related Code**: ~400 lines (31%)
 
 #### Imports Related to Adapters
+
 ```typescript
 import { Adapter, ProgressEvent } from '../adapters/adapter.js';
 import { useAdapter, useHasAdapter } from '../contexts/AdapterContext.js';
 ```
 
 #### Props Interface
+
 ```typescript
 interface S3ExplorerProps {
   bucket?: string;
-  adapter?: Adapter;  // Optional prop - takes precedence over context
+  adapter?: Adapter; // Optional prop - takes precedence over context
   configManager: ConfigManager;
 }
 ```
@@ -40,6 +42,7 @@ interface S3ExplorerProps {
 #### Component Structure with Adapter Usage
 
 **Section 1: Adapter Resolution (Lines 80-92)**
+
 ```typescript
 const hasAdapterContext = useHasAdapter();
 const contextAdapter = hasAdapterContext ? useAdapter() : null;
@@ -51,7 +54,9 @@ if (!adapter) {
   );
 }
 ```
-**Analysis**: 
+
+**Analysis**:
+
 - Supports both prop and context injection
 - Prop takes precedence (destructuring with ??)
 - Throws if neither source provides adapter
@@ -60,20 +65,22 @@ if (!adapter) {
 ---
 
 **Section 2: Navigation Configuration (Lines 189-213)**
+
 ```typescript
 const navigationConfig = useMemo(
   () => ({
     onLoadBuffer: async (path: string) => {
       const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
       try {
-        const result = await adapter.list(path);  // ← adapter.list() CALL
+        const result = await adapter.list(path); // ← adapter.list() CALL
         activeBufferState.setEntries([...result.entries]);
         activeBufferState.setCurrentPath(path);
         setOriginalEntries([...result.entries]);
         activeBufferState.cursorToTop();
         setStatusMessage(`Navigated to ${path}`);
         setStatusMessageColor(CatppuccinMocha.green);
-      } catch (err) {  // ← ERROR HANDLING
+      } catch (err) {
+        // ← ERROR HANDLING
         const parsedError = parseAwsError(err, 'Navigation failed');
         setStatusMessage(formatErrorForDisplay(parsedError, 70));
         setStatusMessageColor(CatppuccinMocha.red);
@@ -87,13 +94,16 @@ const navigationConfig = useMemo(
   [adapter, bufferState, multiPaneLayout]
 );
 ```
+
 **Adapter Methods**:
+
 - `adapter.list(path)` - Line 194
 - **Return Type Assumption**: `ListResult` with `{entries: Entry[]}`
 - **Error Handling**: Try-catch, parseAwsError, status message
 - **Dependencies**: Dependency array includes `adapter` - re-runs if adapter changes
 
 **Analysis**:
+
 - Navigation config is memoized to prevent unnecessary re-renders
 - onLoadBuffer is used by useNavigationHandlers hook
 - Comprehensive error handling with user-friendly messages
@@ -101,6 +111,7 @@ const navigationConfig = useMemo(
 ---
 
 **Section 3: Action Handlers - Entry:Open (Lines 252-284)**
+
 ```typescript
 'entry:open': async () => {
   const currentBufferState = getActiveBuffer();
@@ -135,7 +146,9 @@ const navigationConfig = useMemo(
   await navigationHandlers.navigateInto();
 }
 ```
+
 **Adapter Methods**:
+
 - `adapter.setBucket(bucketName)` - Line 264 (optional)
 - `adapter.setRegion(bucketRegion)` - Line 267 (optional)
 - **Pattern**: Guard checks with `if (adapter.method)`
@@ -144,6 +157,7 @@ const navigationConfig = useMemo(
 ---
 
 **Section 4: Refresh Action (Lines 466-500)**
+
 ```typescript
 'buffer:refresh': () => {
   const currentBufferState = getActiveBuffer();
@@ -181,7 +195,9 @@ const navigationConfig = useMemo(
   }
 }
 ```
+
 **Adapter Methods**:
+
 - `adapter.getBucketEntries()` - Line 471 (optional, then/catch pattern)
 - `adapter.list()` - Line 487 (then/catch pattern)
 - **Note**: Uses Promise .then()/.catch() instead of async/await
@@ -215,7 +231,8 @@ const createConfirmHandler = useCallback(async () => {
       }
 
       try {
-        const onProgress = (event: ProgressEvent) => {  // ← PROGRESS CALLBACK
+        const onProgress = (event: ProgressEvent) => {
+          // ← PROGRESS CALLBACK
           const baseProgress = (opIndex / pendingOperations.length) * 100;
           const opProgress = event.percentage / pendingOperations.length;
           const totalProgress = Math.round(baseProgress + opProgress);
@@ -243,47 +260,50 @@ const createConfirmHandler = useCallback(async () => {
             if (op.path) {
               const createType =
                 op.entryType === 'directory' ? EntryType.Directory : EntryType.File;
-              await adapter.create(op.path, createType, undefined, { onProgress });  // ← CALL
+              await adapter.create(op.path, createType, undefined, { onProgress }); // ← CALL
               successCount++;
             }
             break;
           case 'delete':
             if (op.path) {
               const isDirectory = op.entry?.type === 'directory';
-              await adapter.delete(op.path, isDirectory, { onProgress });  // ← CALL
+              await adapter.delete(op.path, isDirectory, { onProgress }); // ← CALL
               successCount++;
             }
             break;
           case 'move':
             if (op.source && op.destination) {
-              await adapter.move(op.source, op.destination, { onProgress });  // ← CALL
+              await adapter.move(op.source, op.destination, { onProgress }); // ← CALL
               successCount++;
             }
             break;
           case 'copy':
             if (op.source && op.destination) {
-              await adapter.copy(op.source, op.destination, { onProgress });  // ← CALL
+              await adapter.copy(op.source, op.destination, { onProgress }); // ← CALL
               successCount++;
             }
             break;
           case 'download':
-            if (adapter.downloadToLocal && op.source && op.destination) {  // ← GUARD
+            if (adapter.downloadToLocal && op.source && op.destination) {
+              // ← GUARD
               await adapter.downloadToLocal(op.source, op.destination, op.recursive || false, {
                 onProgress,
-              });  // ← CALL
+              }); // ← CALL
               successCount++;
             }
             break;
           case 'upload':
-            if (adapter.uploadFromLocal && op.source && op.destination) {  // ← GUARD
+            if (adapter.uploadFromLocal && op.source && op.destination) {
+              // ← GUARD
               await adapter.uploadFromLocal(op.source, op.destination, op.recursive || false, {
                 onProgress,
-              });  // ← CALL
+              }); // ← CALL
               successCount++;
             }
             break;
         }
-      } catch (opError) {  // ← ERROR HANDLING
+      } catch (opError) {
+        // ← ERROR HANDLING
         if (opError instanceof Error && opError.name === 'AbortError') {
           setStatusMessage('Operation cancelled by user');
           setStatusMessageColor(CatppuccinMocha.yellow);
@@ -301,7 +321,7 @@ const createConfirmHandler = useCallback(async () => {
     if (successCount > 0) {
       try {
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        const result = await adapter.list(currentBufferState.currentPath);  // ← RELOAD
+        const result = await adapter.list(currentBufferState.currentPath); // ← RELOAD
         currentBufferState.setEntries([...result.entries]);
         currentBufferState.clearDeletionMarks();
         setOriginalEntries([...result.entries]);
@@ -312,7 +332,8 @@ const createConfirmHandler = useCallback(async () => {
           quitAfterSaveRef.current = false;
           process.exit(0);
         }
-      } catch (reloadError) {  // ← RELOAD ERROR HANDLING
+      } catch (reloadError) {
+        // ← RELOAD ERROR HANDLING
         console.error('Failed to reload buffer:', reloadError);
         setStatusMessage('Operations completed but failed to reload buffer');
         setStatusMessageColor(CatppuccinMocha.yellow);
@@ -327,6 +348,7 @@ const createConfirmHandler = useCallback(async () => {
 ```
 
 **Adapter Methods Called**:
+
 - `adapter.create(path, type, content?, {onProgress})` - Line 781
 - `adapter.delete(path, recursive, {onProgress})` - Line 789
 - `adapter.move(source, dest, {onProgress})` - Line 795
@@ -336,6 +358,7 @@ const createConfirmHandler = useCallback(async () => {
 - `adapter.list(path)` - Line 840 (reload after success)
 
 **Error Handling**:
+
 1. Catch operation errors (opError)
 2. Check for AbortError (user cancellation)
 3. Parse AWS errors
@@ -343,6 +366,7 @@ const createConfirmHandler = useCallback(async () => {
 5. Catch reload errors separately (degraded mode)
 
 **Progress Tracking**:
+
 - Creates onProgress callback for each operation
 - Aggregates progress: `baseProgress + (opProgress / totalOps)`
 - Updates UI with `currentFile` and `operation` description
@@ -351,10 +375,11 @@ const createConfirmHandler = useCallback(async () => {
 ---
 
 **Section 6: Preview Effect (Lines 1099-1157)**
+
 ```typescript
 const fetchPreview = async () => {
   // ... validation checks ...
-  
+
   try {
     const maxPreviewSize = 100 * 1024;
     if (selectedEntry.size && selectedEntry.size > maxPreviewSize) {
@@ -367,11 +392,12 @@ const fetchPreview = async () => {
       ? `${currentBufferState.currentPath}${selectedEntry.name}`
       : selectedEntry.name;
 
-    const buffer = await adapter.read(fullPath);  // ← adapter.read() CALL
+    const buffer = await adapter.read(fullPath); // ← adapter.read() CALL
     const content = buffer.toString('utf-8');
     setPreviewContent(content);
     setPreviewFilename(selectedEntry.name);
-  } catch (err) {  // ← ERROR HANDLING
+  } catch (err) {
+    // ← ERROR HANDLING
     console.error('Failed to load preview:', err);
     setPreviewContent('Failed to load preview');
   }
@@ -379,6 +405,7 @@ const fetchPreview = async () => {
 ```
 
 **Adapter Methods**:
+
 - `adapter.read(fullPath)` - Line 1138
 - **Assumptions**: Returns Buffer, UTF-8 decodable
 - **Size limit**: 100KB (prevents memory issues)
@@ -387,6 +414,7 @@ const fetchPreview = async () => {
 ---
 
 **Section 7: Initial Data Load (Lines 1042-1094)**
+
 ```typescript
 useEffect(() => {
   const initializeData = async () => {
@@ -396,8 +424,9 @@ useEffect(() => {
       const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
       if (!bucket) {
         console.error(`[S3Explorer] Root view mode detected, loading buckets...`);
-        if (adapter.getBucketEntries) {  // ← GUARD
-          const entries = await adapter.getBucketEntries();  // ← CALL
+        if (adapter.getBucketEntries) {
+          // ← GUARD
+          const entries = await adapter.getBucketEntries(); // ← CALL
           console.error(`[S3Explorer] Received ${entries.length} buckets`);
           currentBufferState.setEntries([...entries]);
           currentBufferState.setCurrentPath('');
@@ -409,7 +438,7 @@ useEffect(() => {
       } else {
         const path = currentBufferState.currentPath;
         console.error(`[S3Explorer] Loading bucket: ${bucket}, path: "${path}"`);
-        const result = await adapter.list(path);  // ← CALL
+        const result = await adapter.list(path); // ← CALL
         console.error(`[S3Explorer] Received ${result.entries.length} entries`);
 
         currentBufferState.setEntries([...result.entries]);
@@ -419,7 +448,8 @@ useEffect(() => {
       }
 
       setIsInitialized(true);
-    } catch (err) {  // ← ERROR HANDLING
+    } catch (err) {
+      // ← ERROR HANDLING
       console.error('[S3Explorer] Error loading data:', err);
       const parsedError = parseAwsError(
         err,
@@ -435,10 +465,11 @@ useEffect(() => {
 
   initializeData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-}, [bucket, adapter]);  // ← DEPENDENCY: adapter
+}, [bucket, adapter]); // ← DEPENDENCY: adapter
 ```
 
 **Adapter Methods**:
+
 - `adapter.getBucketEntries()` - Line 1050 (optional)
 - `adapter.list(path)` - Line 1063
 
@@ -452,17 +483,20 @@ useEffect(() => {
 **Adapter-Related Code**: All lines (test code)
 
 #### Imports
+
 ```typescript
 import { ProgressEvent, ProgressCallback } from '../adapters/adapter.js';
 ```
 
 #### Usage
+
 - Only imports types (ProgressEvent, ProgressCallback)
 - No adapter method calls
 - Tests progress calculation logic
 - Tests abort controller for cancellation
 
 **Key Test Patterns**:
+
 1. Simulates progress events with percentage 0-100
 2. Tests batch operation progress aggregation
 3. Tests AbortController for cancellation
@@ -479,6 +513,7 @@ import { ProgressEvent, ProgressCallback } from '../adapters/adapter.js';
 #### Exports
 
 **1. AdapterProvider Component**
+
 ```typescript
 export function AdapterProvider({ children, adapter }: AdapterProviderProps) {
   const value = useMemo<AdapterContextValue>(
@@ -491,10 +526,12 @@ export function AdapterProvider({ children, adapter }: AdapterProviderProps) {
   return <AdapterContext.Provider value={value}>{children}</AdapterContext.Provider>;
 }
 ```
+
 - Wraps adapter in context value
 - Memoizes to prevent unnecessary re-renders
 
 **2. useAdapter Hook**
+
 ```typescript
 export function useAdapter(): Adapter {
   const context = useContext(AdapterContext);
@@ -504,28 +541,34 @@ export function useAdapter(): Adapter {
   return context.adapter;
 }
 ```
+
 - Retrieves adapter from context
 - Throws if not in provider
 
 **3. useTypedAdapter Hook**
+
 ```typescript
 export function useTypedAdapter<T extends ReadableStorageAdapter>(): T {
   const adapter = useAdapter();
   return adapter as unknown as T;
 }
 ```
+
 - Type-safe adapter access for specific interface types
 
 **4. useHasAdapter Hook**
+
 ```typescript
 export function useHasAdapter(): boolean {
   const context = useContext(AdapterContext);
   return context !== null;
 }
 ```
+
 - Optional adapter checking
 
 #### Usage in s3-explorer.tsx
+
 ```typescript
 const hasAdapterContext = useHasAdapter();
 const contextAdapter = hasAdapterContext ? useAdapter() : null;
@@ -542,6 +585,7 @@ const adapter = adapterProp ?? contextAdapter;
 **Adapter-Related Code**: 0 lines (uses callbacks)
 
 #### Structure
+
 ```typescript
 export function useNavigationHandlers(
   bufferState: UseBufferStateReturn,
@@ -550,20 +594,22 @@ export function useNavigationHandlers(
   const navigateInto = useCallback(async () => {
     // ...
     if (config.onLoadBuffer) {
-      await config.onLoadBuffer(selected.path);  // ← Callback receives adapter call
+      await config.onLoadBuffer(selected.path); // ← Callback receives adapter call
     }
   }, [bufferState, config]);
-  
+
   // ... more handlers
 }
 ```
 
 #### Integration
+
 - Receives `NavigationConfig` with callbacks
 - S3Explorer injects `onLoadBuffer` that calls `adapter.list()`
 - Hook is adapter-agnostic, testable in isolation
 
 #### Used By
+
 - s3-explorer.tsx (receives navigationConfig with onLoadBuffer)
 
 ---
@@ -573,6 +619,7 @@ export function useNavigationHandlers(
 **Category**: ADAPTER-AGNOSTIC
 
 **Files**:
+
 - src/ui/buffer-state.ts
 - src/ui/buffer-view-react.tsx
 - src/ui/confirmation-dialog-react.tsx
@@ -598,6 +645,7 @@ export function useNavigationHandlers(
 **Category**: ADAPTER-AGNOSTIC
 
 **Files**:
+
 - src/hooks/useBufferState.ts
 - src/hooks/useKeyboardDispatcher.ts
 - src/hooks/useKeyboardEvents.ts
@@ -617,21 +665,25 @@ export function useNavigationHandlers(
 ### Adapter Usage Patterns
 
 **Pattern 1: Configuration Callbacks**
+
 - Component provides callbacks to hooks
 - Hooks invoke callbacks without knowing implementation
 - Example: navigationHandlers receives onLoadBuffer
 
 **Pattern 2: Direct Adapter Calls**
+
 - Main component (S3Explorer) makes direct calls
 - All error handling at call site
 - Async/await pattern
 
 **Pattern 3: Optional Method Guards**
+
 - Check method exists before calling
 - Skip gracefully if not available
 - Used for: downloadToLocal, uploadFromLocal, getBucketEntries, setBucket, setRegion
 
 **Pattern 4: Progress Aggregation**
+
 - Create onProgress callback
 - Aggregate multiple operations into single progress bar
 - UI calculates: baseProgress + (eventProgress / totalOps)
@@ -641,16 +693,19 @@ export function useNavigationHandlers(
 ## Dependency Analysis
 
 ### S3Explorer Dependencies on Adapter
+
 1. Direct calls to adapter methods
 2. Depends on adapter being available (throws if missing)
 3. Passes adapter to: navigationHandlers config, confirmHandler
 
 ### useNavigationHandlers Dependencies on Adapter
+
 1. Indirect: receives onLoadBuffer callback
 2. Does NOT depend on adapter directly
 3. Can be tested without adapter
 
 ### Context Dependencies
+
 1. AdapterProvider must wrap S3Explorer
 2. S3Explorer can also receive adapter as prop
 3. Prop takes precedence over context
@@ -666,4 +721,3 @@ export function useNavigationHandlers(
 5. **Progress Support**: Built into operation callbacks
 6. **Optional Features**: Transfer and bucket operations have guards
 7. **Type Safety**: TypeScript interfaces for adapter contracts
-

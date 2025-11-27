@@ -472,4 +472,3 @@ Marked+Selected   muted highlight     red      ✗        yes
 Not marked+Sel.   highlighted         normal   -        none
 In search result  found match         normal   -        none
 ```
-

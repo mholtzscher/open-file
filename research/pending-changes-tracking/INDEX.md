@@ -26,6 +26,7 @@
 ### State Management
 
 **`src/hooks/useBufferState.ts`** (507 lines)
+
 - Main hook managing buffer state
 - Key exports:
   - `markForDeletion(entryId)` - Mark entry for deletion
@@ -41,6 +42,7 @@
 - Related file: `src/ui/buffer-state.ts` (1040 lines) - Original class-based implementation
 
 **`src/hooks/useDialogState.ts`** (150+ lines)
+
 - Dialog and pending operations state
 - Key exports:
   - `showConfirm(operations)` - Show confirmation dialog
@@ -54,12 +56,14 @@
 ### Type Definitions
 
 **`src/types/dialog.ts`** (66 lines)
+
 - `DialogState` - Current dialog state
 - `PendingOperation` - Operation for confirmation
 - `DialogAction` - Dialog reducer actions
 - `DialogType` - Which dialog is open
 
 **`src/types/operations.ts`** (117 lines)
+
 - `CreateOperation` - Create file/directory
 - `DeleteOperation` - Delete file/directory
 - `MoveOperation` - Rename/move
@@ -70,6 +74,7 @@
 - `OperationPlan` - Collection of operations
 
 **`src/types/entry.ts`**
+
 - `Entry` - File/directory entry
   - `id: string` - Unique ID for tracking
   - `name: string` - Display name
@@ -82,6 +87,7 @@
 ### UI Components
 
 **`src/ui/s3-explorer.tsx`** (1200+ lines)
+
 - Main application component
 - Key action handlers (lines 446-600+):
   - `'entry:delete'` (lines 318-347) - Mark/unmark for deletion
@@ -92,6 +98,7 @@
   - `createConfirmHandler()` (lines 731-865) - Execute operations sequentially
 
 **`src/ui/buffer-view-react.tsx`** (200+ lines)
+
 - Renders entry list with pending changes visualization
 - Visual indicators (lines 174-189):
   - `isMarkedForDeletion()` check
@@ -103,11 +110,13 @@
   - `formatEntry()` - Format entry for display
 
 **`src/ui/confirmation-dialog-react.tsx`**
+
 - Shows pending operations for user confirmation
 - Lists operations to be executed
 - Confirm/Cancel buttons
 
 **`src/ui/quit-dialog-react.tsx`**
+
 - Shows pending changes when quitting
 - Options: Discard, Save first, Cancel
 
@@ -158,30 +167,35 @@ Component (S3Explorer)
 ## Key Concepts to Understand
 
 ### 1. Entry ID Tracking
+
 - Each entry has unique `id` field
 - IDs are used to track entries, not paths
 - Allows entries to be safely renamed/moved
 - IDs are consistent within a session
 
 ### 2. Two-Set Pattern
+
 - `entries[]` - All entries currently visible
 - `deletedEntryIds` - Which entries are marked
 - Entry stays in array but marked in set
 - Visual rendering uses both
 
 ### 3. Snapshot-Based Undo
+
 - Full buffer state snapshots saved on change
 - Snapshots include entries + deletedEntryIds
 - Redo history cleared on new change
 - Per-session only (no persistence)
 
 ### 4. Sequential Execution
+
 - Operations execute one-by-one
 - Progress updated for each
 - Failures don't stop others
 - All successful operations counted
 
 ### 5. Confirmation Pattern
+
 - Mark changes locally (buffer layer)
 - Collect marked changes (buffer:save action)
 - Convert to operations (PendingOperation[])
@@ -210,6 +224,7 @@ To find specific behavior, search for:
 ## Testing Checklist
 
 ### Manual Testing
+
 - [ ] Press `dd` on a file → see strikethrough + ✗ + red
 - [ ] Press `dd` again → unmark
 - [ ] Mark multiple files → status shows count
@@ -224,6 +239,7 @@ To find specific behavior, search for:
 - [ ] Choose `w` in quit dialog → save then exit
 
 ### Code Testing
+
 - [ ] `getMarkedForDeletion()` returns correct entries
 - [ ] `deletedEntryIds` is a Set for O(1) lookup
 - [ ] Snapshots include `deletedIds` not just entries
@@ -249,17 +265,20 @@ Where n = total entries, m = pending operations
 ## Future Extensions
 
 ### To Add More Operation Types
+
 1. Extend `PendingOperation` type in `src/types/dialog.ts`
 2. Add new case in `createConfirmHandler()` switch
 3. Add UI rendering in confirmation dialog
 4. Add action handler in `s3-explorer.tsx`
 
 ### To Add Dry-Run Preview
+
 1. Execute operations without making changes
 2. Show what would happen
 3. Let user choose to proceed
 
 ### To Add Batch Operations
+
 1. Group by type
 2. Show grouped confirmation
 3. Execute in priority order
@@ -283,4 +302,3 @@ Where n = total entries, m = pending operations
 - No partial undo (undo restores full state)
 - No transaction support (operations are independent)
 - Buffer always consistent with S3 (reloaded after changes)
-

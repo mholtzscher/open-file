@@ -5,6 +5,7 @@
 ### 1. Data Structures
 
 #### Buffer State (`useBufferState.ts`)
+
 - **`deletedEntryIds: Set<string>`** - Tracks which entries are marked for deletion
 - **`markForDeletion(entryId)`** - Mark entry for deletion
 - **`getMarkedForDeletion(): Entry[]`** - Get all marked entries
@@ -12,11 +13,13 @@
 - **`saveSnapshot()`** - Save state for undo
 
 #### Dialog State (`useDialogState.ts`)
+
 - **`pendingOperations: PendingOperation[]`** - Operations waiting for confirmation
 - **`showConfirm(operations)`** - Show confirmation dialog
 - **`closeAndClearOperations()`** - Close dialog and clear operations
 
 #### Pending Operation Type
+
 ```typescript
 interface PendingOperation {
   id: string;
@@ -35,6 +38,7 @@ interface PendingOperation {
 ## Workflow Stages
 
 ### Stage 1: User Marks Changes (Buffer Layer)
+
 ```
 User presses 'dd'
     ↓
@@ -51,6 +55,7 @@ UI shows: ✗ file.txt (red + strikethrough)
 ```
 
 ### Stage 2: User Reviews Changes (Confirmation Layer)
+
 ```
 User presses 'w'
     ↓
@@ -67,6 +72,7 @@ User reviews what will happen
 ```
 
 ### Stage 3: User Confirms (Execution Layer)
+
 ```
 User presses Enter
     ↓
@@ -89,6 +95,7 @@ Show success message
 ```
 
 ### Stage 4: User Undoes (Before Save)
+
 ```
 User presses 'u'
     ↓
@@ -106,6 +113,7 @@ Re-render with restored state
 ## Key Functions by File
 
 ### `useBufferState.ts`
+
 - `markForDeletion(entryId)` - Add to deletedEntryIds set
 - `unmarkForDeletion(entryId)` - Remove from deletedEntryIds set
 - `isMarkedForDeletion(entryId)` - Check if in set
@@ -116,18 +124,21 @@ Re-render with restored state
 - `redo()` - Restore from redoHistory
 
 ### `s3-explorer.tsx` Actions
+
 - `'entry:delete'` - Toggle mark for deletion
 - `'buffer:save'` - Collect marks → show confirmation
 - `'buffer:undo'` - Undo last change
 - `'app:quit'` - Check for pending changes
 
 ### `buffer-view-react.tsx`
+
 - `isMarkedForDeletion(entry.id)` - Check UI state
 - `applyStrikethrough(text)` - Unicode strikethrough effect
 - Color entries red if marked
 - Add `✗` marker prefix
 
 ### `createConfirmHandler()`
+
 - Loop through `pendingOperations`
 - Call adapter methods sequentially
 - Track success/failure
@@ -140,12 +151,14 @@ Re-render with restored state
 ## Visual Indicators
 
 ### Marked for Deletion
+
 ```
 ✗ file-to-delete.txt  ← Red color, strikethrough, ✗ marker
   normal-file.txt     ← Normal color, no marker
 ```
 
 ### Status Messages
+
 ```
 "5 item(s) marked for deletion. Press 'w' to save or 'u' to undo."
 "No changes to save"
@@ -158,6 +171,7 @@ Re-render with restored state
 ## Multi-Pane Consideration
 
 Each pane has independent state:
+
 ```typescript
 const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
 ```
@@ -171,6 +185,7 @@ const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
 ## Error Handling
 
 If operation fails:
+
 1. Continue to next operation
 2. Show error in status bar
 3. User can retry
@@ -183,6 +198,7 @@ No partial success - buffer always consistent with S3.
 ## Quit Behavior
 
 ### No Pending Changes
+
 ```
 User presses 'q'
     ↓
@@ -192,6 +208,7 @@ process.exit(0) immediately
 ```
 
 ### Pending Changes
+
 ```
 User presses 'q'
     ↓
@@ -219,10 +236,11 @@ User sees options:
 ## Entry ID Tracking
 
 Each entry has unique ID:
+
 ```typescript
 interface Entry {
-  id: string;  // "entry_timestamp_random"
-  path: string;  // Full S3 path
+  id: string; // "entry_timestamp_random"
+  path: string; // Full S3 path
   // ...
 }
 ```
@@ -257,11 +275,13 @@ interface Entry {
 ## Common Patterns
 
 ### Get Pending Changes Count
+
 ```typescript
 const pendingCount = bufferState.getMarkedForDeletion().length;
 ```
 
 ### Check if Changes Exist
+
 ```typescript
 if (bufferState.getMarkedForDeletion().length > 0) {
   // Show warning
@@ -269,6 +289,7 @@ if (bufferState.getMarkedForDeletion().length > 0) {
 ```
 
 ### Build Delete Operations
+
 ```typescript
 const ops = bufferState.getMarkedForDeletion().map(entry => ({
   id: entry.id,
@@ -279,6 +300,7 @@ const ops = bufferState.getMarkedForDeletion().map(entry => ({
 ```
 
 ### Execute Operations
+
 ```typescript
 for (const op of pendingOperations) {
   await adapter.delete(op.path, isDirectory, { onProgress });
@@ -286,6 +308,7 @@ for (const op of pendingOperations) {
 ```
 
 ### Cleanup After Success
+
 ```typescript
 bufferState.clearDeletionMarks();
 const result = await adapter.list(currentPath);

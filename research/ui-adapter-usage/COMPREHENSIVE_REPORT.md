@@ -90,12 +90,14 @@ const typedAdapter = useTypedAdapter<T>(); // type-safe access
 **Purpose**: Main application UI - orchestrates all operations
 
 #### Imports:
+
 ```typescript
 import { Adapter, ProgressEvent } from '../adapters/adapter.js';
 import { useAdapter, useHasAdapter } from '../contexts/AdapterContext.js';
 ```
 
 #### Adapter Resolution (Line 80-92):
+
 ```typescript
 export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3ExplorerProps) {
   // Dual mode: prop-based or context-based
@@ -112,7 +114,8 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 }
 ```
 
-**Assumption about adapter behavior**: 
+**Assumption about adapter behavior**:
+
 - Adapter is required (non-null)
 - Either passed as prop OR available via AdapterContext
 - If both missing, throws Error
@@ -120,6 +123,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 #### Adapter Methods Called:
 
 **1. `adapter.list(path)` - List directory contents**
+
 - Lines 194, 486-487, 840, 1063
 - Called when: navigating to path, refreshing buffer, loading initial data
 - Usage pattern:
@@ -131,6 +135,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 - Return type assumption: `Promise<ListResult>` with `{entries: Entry[], hasMore: boolean, continuationToken?: string}`
 
 **2. `adapter.setBucket(bucketName)` - Set current bucket**
+
 - Lines 264, 602
 - Called when: user navigates into bucket from root view, switches buckets via command
 - Usage pattern:
@@ -143,6 +148,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 - Assumption: Prepares adapter to operate within bucket context
 
 **3. `adapter.setRegion(region)` - Set current region**
+
 - Lines 267, (implicit in bucket selection)
 - Called when: user navigates into bucket (region from metadata)
 - Usage pattern:
@@ -154,6 +160,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 - Assumption: Configures adapter for region-specific operations
 
 **4. `adapter.getBucketEntries()` - List all buckets**
+
 - Lines 471-472, 1050-1051
 - Called when: in root view mode (no bucket selected), refresh pressed, initial data load
 - Usage pattern:
@@ -168,6 +175,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 - Error handling: `.catch()` handler updates status message
 
 **5. `adapter.read(fullPath)` - Read file contents**
+
 - Line 1138
 - Called when: user enables preview on text file
 - Usage pattern:
@@ -181,6 +189,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 - Size limit: 100KB max (prevents large file read)
 
 **6. `adapter.create(path, type, content?, options)` - Create file/directory**
+
 - Line 781
 - Called in operation confirmation handler
 - Usage pattern:
@@ -196,6 +205,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
   - `options`: `{onProgress}` callback for progress tracking
 
 **7. `adapter.delete(path, recursive?, options)` - Delete file/directory**
+
 - Line 789
 - Called in operation confirmation handler
 - Usage pattern:
@@ -207,6 +217,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 - Error handling: Caught in try-catch within operation loop
 
 **8. `adapter.move(source, destination, options)` - Move/rename**
+
 - Line 795
 - Called in operation confirmation handler
 - Usage pattern:
@@ -216,6 +227,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 - Error handling: Caught in try-catch within operation loop
 
 **9. `adapter.copy(source, destination, options)` - Copy file/directory**
+
 - Line 801
 - Called in operation confirmation handler
 - Usage pattern:
@@ -225,6 +237,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 - Error handling: Caught in try-catch within operation loop
 
 **10. `adapter.downloadToLocal(remotePath, localPath, recursive?, options)` - Download to local**
+
 - Line 807
 - Called in operation confirmation handler
 - Usage pattern:
@@ -238,6 +251,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 - Error handling: Caught in try-catch within operation loop
 
 **11. `adapter.uploadFromLocal(localPath, remotePath, recursive?, options)` - Upload from local**
+
 - Line 814
 - Called in operation confirmation handler
 - Usage pattern:
@@ -250,6 +264,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
 - Error handling: Caught in try-catch within operation loop
 
 #### Progress Tracking Pattern (Lines 753-774):
+
 ```typescript
 const onProgress = (event: ProgressEvent) => {
   const baseProgress = (opIndex / pendingOperations.length) * 100;
@@ -265,12 +280,14 @@ const onProgress = (event: ProgressEvent) => {
 ```
 
 **Assumptions about ProgressEvent**:
+
 - Contains: `operation`, `percentage`, `currentFile` (optional), `bytesTransferred`, `totalBytes` (optional)
 - Percentage should be 0-100 for current operation
 - Can be called multiple times during operation
 - GUI handles aggregation across multiple operations
 
 #### Error Handling Pattern:
+
 ```typescript
 try {
   const result = await adapter.list(path);
@@ -283,6 +300,7 @@ try {
 ```
 
 **Assumptions about error behavior**:
+
 - Errors can be AWS-specific (parsed by `parseAwsError`)
 - Error messages shown to user in status bar
 - Previous state preserved on error (UI doesn't crash)
@@ -295,11 +313,13 @@ try {
 **Purpose**: Tests for progress window integration with adapter progress events
 
 #### Imports:
+
 ```typescript
 import { ProgressEvent, ProgressCallback } from '../adapters/adapter.js';
 ```
 
 #### Usage:
+
 - Simulates adapter progress callbacks
 - Tests batch operation progress calculation
 - Tests abort controller for cancellation
@@ -313,6 +333,7 @@ import { ProgressEvent, ProgressCallback } from '../adapters/adapter.js';
 **Purpose**: File selection dialog for uploads
 
 #### No adapter imports or usage
+
 - Uses local filesystem via `listFiles()` utility
 - Adapter integration happens in S3Explorer component that calls `uploadFromLocal`
 
@@ -346,11 +367,13 @@ import { ProgressEvent, ProgressCallback } from '../adapters/adapter.js';
 **Purpose**: Navigation logic (navigate into directory, go back, etc.)
 
 #### No direct adapter usage
+
 - Receives configuration callbacks: `onLoadBuffer`, `onErrorOccurred`, `onBucketSelected`
 - These callbacks are configured by S3Explorer to call adapter methods
 - Hook is adapter-agnostic
 
 **Pattern**:
+
 ```typescript
 export function useNavigationHandlers(
   bufferState: UseBufferStateReturn,
@@ -374,6 +397,7 @@ export function useNavigationHandlers(
 **Purpose**: Test specifications for async operations
 
 #### Comments only (no implementation)
+
 - References: `adapter.list()`, `adapter.delete()` as intended behaviors
 - No actual code - just test placeholders
 
@@ -412,6 +436,7 @@ useHasAdapter(): boolean // optional access
 ```
 
 #### Usage in S3Explorer:
+
 ```typescript
 const hasAdapterContext = useHasAdapter();
 const contextAdapter = hasAdapterContext ? useAdapter() : null;
@@ -426,29 +451,31 @@ const adapter = adapterProp ?? contextAdapter;
 
 ### 5.1 Synchronous vs Asynchronous
 
-| Method | Async | Return Type | Optional? |
-|--------|-------|-------------|-----------|
-| `list()` | ✅ Yes | Promise<ListResult> | ❌ No |
-| `read()` | ✅ Yes | Promise<Buffer> | ❌ No |
-| `create()` | ✅ Yes | Promise<void> | ❌ No |
-| `delete()` | ✅ Yes | Promise<void> | ❌ No |
-| `move()` | ✅ Yes | Promise<void> | ❌ No |
-| `copy()` | ✅ Yes | Promise<void> | ❌ No |
-| `downloadToLocal()` | ✅ Yes | Promise<void> | ✅ Yes (checked with if) |
-| `uploadFromLocal()` | ✅ Yes | Promise<void> | ✅ Yes (checked with if) |
-| `getBucketEntries()` | ✅ Yes | Promise<Entry[]> | ✅ Yes (checked with if) |
-| `setBucket()` | ❌ No | void | ✅ Yes (checked with if) |
-| `setRegion()` | ❌ No | void | ✅ Yes (checked with if) |
+| Method               | Async  | Return Type         | Optional?                |
+| -------------------- | ------ | ------------------- | ------------------------ |
+| `list()`             | ✅ Yes | Promise<ListResult> | ❌ No                    |
+| `read()`             | ✅ Yes | Promise<Buffer>     | ❌ No                    |
+| `create()`           | ✅ Yes | Promise<void>       | ❌ No                    |
+| `delete()`           | ✅ Yes | Promise<void>       | ❌ No                    |
+| `move()`             | ✅ Yes | Promise<void>       | ❌ No                    |
+| `copy()`             | ✅ Yes | Promise<void>       | ❌ No                    |
+| `downloadToLocal()`  | ✅ Yes | Promise<void>       | ✅ Yes (checked with if) |
+| `uploadFromLocal()`  | ✅ Yes | Promise<void>       | ✅ Yes (checked with if) |
+| `getBucketEntries()` | ✅ Yes | Promise<Entry[]>    | ✅ Yes (checked with if) |
+| `setBucket()`        | ❌ No  | void                | ✅ Yes (checked with if) |
+| `setRegion()`        | ❌ No  | void                | ✅ Yes (checked with if) |
 
 ### 5.2 Error Handling Assumptions
 
 **Expected behavior when adapter method throws**:
+
 - Error caught at call site with try-catch
 - Error message displayed in status bar
 - Previous UI state preserved (no crash)
 - Operation skipped if optional method not available
 
 **Example error types adapter might throw**:
+
 - `NoSuchBucket` - S3 bucket doesn't exist
 - `AccessDenied` - AWS credentials insufficient
 - `NoSuchKey` - File/object not found
@@ -456,12 +483,14 @@ const adapter = adapterProp ?? contextAdapter;
 - Network errors - Connection issues
 
 **UI handles errors via**:
+
 - `parseAwsError()` utility - parses AWS SDK errors
 - `formatErrorForDisplay()` utility - truncates to 70 chars for status bar
 
 ### 5.3 Progress Tracking Assumptions
 
 **Progress callback expectations**:
+
 - Called multiple times during operation (not just start/end)
 - `percentage` field should be 0-100 for current operation
 - `operation` field describes current action
@@ -469,6 +498,7 @@ const adapter = adapterProp ?? contextAdapter;
 - `bytesTransferred` and `totalBytes` for monitoring data transfer
 
 **UI aggregation logic**:
+
 ```
 totalProgress = (opIndex / totalOps) * 100 + (eventProgress / totalOps)
 ```
@@ -476,6 +506,7 @@ totalProgress = (opIndex / totalOps) * 100 + (eventProgress / totalOps)
 ### 5.4 Return Type Assumptions
 
 **ListResult structure**:
+
 ```typescript
 {
   entries: Entry[],
@@ -485,6 +516,7 @@ totalProgress = (opIndex / totalOps) * 100 + (eventProgress / totalOps)
 ```
 
 **Entry structure** (from `src/types/entry.ts`):
+
 ```typescript
 {
   id: string,
@@ -503,6 +535,7 @@ totalProgress = (opIndex / totalOps) * 100 + (eventProgress / totalOps)
 ### 5.5 Optional Methods Pattern
 
 **Methods that are checked before calling**:
+
 - `adapter.downloadToLocal` - guarded with `if (adapter.downloadToLocal)`
 - `adapter.uploadFromLocal` - guarded with `if (adapter.uploadFromLocal)`
 - `adapter.getBucketEntries` - guarded with `if (adapter.getBucketEntries)`
@@ -510,12 +543,14 @@ totalProgress = (opIndex / totalOps) * 100 + (eventProgress / totalOps)
 - `adapter.setRegion` - guarded with `if (adapter.setRegion)`
 
 **When not available**:
+
 - Transfer operations: Skip the operation gracefully
 - Bucket operations: Show error message
 
 ### 5.6 Path Format Assumptions
 
 **Path formats observed**:
+
 - S3 paths: `"bucket/prefix/"` or `"prefix/file.txt"`
 - Relative paths used in listing: `""` for root, `"folder/subfolder/"` for directories
 - Full paths constructed by combining: `currentPath + entryName`
@@ -525,6 +560,7 @@ totalProgress = (opIndex / totalOps) * 100 + (eventProgress / totalOps)
 ## 6. Error Handling Patterns Observed
 
 ### 6.1 Navigation Errors (Lines 201-205)
+
 ```typescript
 try {
   const result = await adapter.list(path);
@@ -537,6 +573,7 @@ try {
 ```
 
 ### 6.2 Operation Loop Errors (Lines 822-831)
+
 ```typescript
 try {
   // ... execute adapter operation
@@ -555,6 +592,7 @@ try {
 ```
 
 ### 6.3 Reload Errors (Lines 854-858)
+
 ```typescript
 try {
   const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
@@ -568,6 +606,7 @@ try {
 ```
 
 ### 6.4 Preview Errors (Lines 1142-1145)
+
 ```typescript
 try {
   const buffer = await adapter.read(fullPath);
@@ -586,6 +625,7 @@ try {
 ### 7.1 Entry Points Where Adapter Is Provided
 
 **1. Application entry point (index.tsx or similar)**:
+
 ```typescript
 const adapter = new S3Adapter({ region: 'us-east-1' });
 
@@ -606,6 +646,7 @@ const adapter = new S3Adapter({ region: 'us-east-1' });
 ### 7.2 Adapter Implementation Assumptions
 
 **S3Adapter specific** (from `src/adapters/s3-adapter.ts`):
+
 - Implements all required methods
 - Supports progress tracking
 - Supports bucket-aware operations (getBucketEntries, setBucket, setRegion)
@@ -613,6 +654,7 @@ const adapter = new S3Adapter({ region: 'us-east-1' });
 - Uses AWS SDK v3
 
 **MockAdapter** (from `src/adapters/mock-adapter.ts`):
+
 - In-memory implementation for testing
 - May not support all operations
 
@@ -621,18 +663,22 @@ const adapter = new S3Adapter({ region: 'us-east-1' });
 ## 8. Summary of UI/Adapter Integration Points
 
 ### Files That Use Adapters:
+
 1. **src/ui/s3-explorer.tsx** - MAIN (11 adapter methods called)
 2. **src/ui/progress-window-integration.test.tsx** - TYPES ONLY (ProgressEvent, ProgressCallback)
 
 ### Files That Are Adapter-Aware (Use Callbacks):
+
 1. **src/hooks/useNavigationHandlers.ts** - Receives `onLoadBuffer` callback
 
 ### Files That Are Adapter-Agnostic:
+
 - All other UI components
 - All other hooks
 - Buffer state and entry management
 
 ### Context-Based Injection:
+
 1. **src/contexts/AdapterContext.tsx** - Provides `useAdapter()`, `useHasAdapter()`, `useTypedAdapter<T>()`
 2. **src/ui/s3-explorer.tsx** - Uses `useAdapter()` and `useHasAdapter()`
 
@@ -661,24 +707,29 @@ const adapter = new S3Adapter({ region: 'us-east-1' });
 ## 10. Recommendations for Adapter Implementations
 
 ### Must Support:
+
 - ✅ `list()` - Required for core functionality
 - ✅ `read()` - Required for preview
 - ✅ `create()`, `delete()`, `move()`, `copy()` - Required for file operations
 - ✅ Progress callbacks in OperationOptions
 
 ### Should Support:
+
 - 📦 `getBucketEntries()` - For bucket listing
 - 📦 `setBucket()`, `setRegion()` - For multi-bucket support
 
 ### May Support:
+
 - 📦 `downloadToLocal()`, `uploadFromLocal()` - For transfer operations (optional)
 
 ### Error Handling:
+
 - All methods should throw on error (not return error objects)
 - Error messages should be descriptive for user display
 - Consider AWS SDK error types
 
 ### Progress Tracking:
+
 - Call progress callback regularly during long operations
 - Set `percentage` to 0-100 for current operation
 - Provide meaningful `operation` string
@@ -688,24 +739,24 @@ const adapter = new S3Adapter({ region: 'us-east-1' });
 
 ## Appendix: Code Location Quick Reference
 
-| Feature | File | Lines |
-|---------|------|-------|
-| Adapter resolution | s3-explorer.tsx | 80-92 |
-| list() calls | s3-explorer.tsx | 194, 486, 840, 1063 |
-| read() call | s3-explorer.tsx | 1138 |
-| create() call | s3-explorer.tsx | 781 |
-| delete() call | s3-explorer.tsx | 789 |
-| move() call | s3-explorer.tsx | 795 |
-| copy() call | s3-explorer.tsx | 801 |
-| downloadToLocal() call | s3-explorer.tsx | 807 |
-| uploadFromLocal() call | s3-explorer.tsx | 814 |
-| setBucket() calls | s3-explorer.tsx | 264, 602 |
-| setRegion() call | s3-explorer.tsx | 267 |
-| getBucketEntries() calls | s3-explorer.tsx | 471, 1050 |
-| Progress tracking | s3-explorer.tsx | 753-774 |
-| Error handling | s3-explorer.tsx | 201-205, 822-831, 854-858, 1142-1145 |
-| Context hook | AdapterContext.tsx | useAdapter(), useHasAdapter() |
-| Context provider | AdapterContext.tsx | <AdapterProvider> |
+| Feature                  | File               | Lines                                |
+| ------------------------ | ------------------ | ------------------------------------ |
+| Adapter resolution       | s3-explorer.tsx    | 80-92                                |
+| list() calls             | s3-explorer.tsx    | 194, 486, 840, 1063                  |
+| read() call              | s3-explorer.tsx    | 1138                                 |
+| create() call            | s3-explorer.tsx    | 781                                  |
+| delete() call            | s3-explorer.tsx    | 789                                  |
+| move() call              | s3-explorer.tsx    | 795                                  |
+| copy() call              | s3-explorer.tsx    | 801                                  |
+| downloadToLocal() call   | s3-explorer.tsx    | 807                                  |
+| uploadFromLocal() call   | s3-explorer.tsx    | 814                                  |
+| setBucket() calls        | s3-explorer.tsx    | 264, 602                             |
+| setRegion() call         | s3-explorer.tsx    | 267                                  |
+| getBucketEntries() calls | s3-explorer.tsx    | 471, 1050                            |
+| Progress tracking        | s3-explorer.tsx    | 753-774                              |
+| Error handling           | s3-explorer.tsx    | 201-205, 822-831, 854-858, 1142-1145 |
+| Context hook             | AdapterContext.tsx | useAdapter(), useHasAdapter()        |
+| Context provider         | AdapterContext.tsx | <AdapterProvider>                    |
 
 ---
 

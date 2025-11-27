@@ -18,21 +18,21 @@ This open-s3 file manager uses an **oil.nvim-inspired staging system** where:
 
 ### The Core Trio
 
-| File | Role | Key State |
-|------|------|-----------|
-| `src/hooks/useBufferState.ts` | Track marked entries | `deletedEntryIds: Set<string>` |
+| File                          | Role                     | Key State                               |
+| ----------------------------- | ------------------------ | --------------------------------------- |
+| `src/hooks/useBufferState.ts` | Track marked entries     | `deletedEntryIds: Set<string>`          |
 | `src/hooks/useDialogState.ts` | Track pending operations | `pendingOperations: PendingOperation[]` |
-| `src/ui/s3-explorer.tsx` | Orchestrate workflow | Action handlers + execution |
+| `src/ui/s3-explorer.tsx`      | Orchestrate workflow     | Action handlers + execution             |
 
 ### Supporting Cast
 
-| File | Purpose |
-|------|---------|
-| `src/types/dialog.ts` | Type defs: `DialogState`, `PendingOperation` |
-| `src/types/operations.ts` | Operation type union |
-| `src/ui/buffer-view-react.tsx` | Show marked entries with strikethrough |
-| `src/ui/confirmation-dialog-react.tsx` | User confirms operations |
-| `src/ui/quit-dialog-react.tsx` | Handle quit with pending changes |
+| File                                   | Purpose                                      |
+| -------------------------------------- | -------------------------------------------- |
+| `src/types/dialog.ts`                  | Type defs: `DialogState`, `PendingOperation` |
+| `src/types/operations.ts`              | Operation type union                         |
+| `src/ui/buffer-view-react.tsx`         | Show marked entries with strikethrough       |
+| `src/ui/confirmation-dialog-react.tsx` | User confirms operations                     |
+| `src/ui/quit-dialog-react.tsx`         | Handle quit with pending changes             |
 
 ---
 
@@ -59,24 +59,30 @@ u   →  Undo last change (before save)
 ## The Three Layers
 
 ### Layer 1: Buffer State (Local)
+
 ```typescript
 deletedEntryIds: Set<string>  // Which entries are marked
 entries: Entry[]              // All entries (stay visible even when marked)
 ```
+
 **What**: Entries stay in the list even when marked for deletion
 **Why**: Vim-like philosophy - see what you're doing before committing
 
 ### Layer 2: Dialog State (Staging)
+
 ```typescript
 pendingOperations: PendingOperation[]  // Ready for execution
 ```
+
 **What**: Marked entries converted to executable operations
 **Why**: Show user exactly what will happen before executing
 
 ### Layer 3: Adapter (Execution)
+
 ```typescript
-adapter.delete(path, recursive, {onProgress})
+adapter.delete(path, recursive, { onProgress });
 ```
+
 **What**: Actually delete from S3
 **Why**: Only changes that user confirmed and reviewed get executed
 
@@ -85,23 +91,27 @@ adapter.delete(path, recursive, {onProgress})
 ## Key Design Patterns
 
 ### 1. Mark vs. Delete
+
 - **Mark** = Add to `deletedEntryIds` set (non-destructive, local)
 - **Delete** = Execute operation (destructive, syncs to S3)
 - Entry can be unmarked if user changes mind
 
 ### 2. Snapshot-Based Undo
+
 - Before each change, full buffer state saved
 - Snapshots include both entries AND deletion marks
 - Undo restores everything to previous state
 - Redo history cleared on new change
 
 ### 3. Two-Source Data Model
+
 - `entries[]` - Source of truth for what's visible
 - `deletedEntryIds` - Metadata about entries
 - UI checks both to render correctly
 - Both updated together for consistency
 
 ### 4. Sequential Execution
+
 - Operations execute one-by-one (not parallel)
 - Progress updated for each
 - Failures don't block others
@@ -112,12 +122,14 @@ adapter.delete(path, recursive, {onProgress})
 ## Visual Indicators
 
 ### When Entry Is Marked
+
 ```
 > ✗ file-to-delete.txt    ← Cursor, ✗ marker, strikethrough, red color
   normal-file.txt         ← Not marked (normal appearance)
 ```
 
 ### Status Messages
+
 - Marking: `"5 item(s) marked for deletion. Press 'w' to save or 'u' to undo."`
 - Executing: `"Executing delete..."`
 - Success: `"5 operation(s) completed successfully"`
@@ -130,20 +142,20 @@ adapter.delete(path, recursive, {onProgress})
 
 ```
 1. User at /bucket/path/
-   
+
 2. Press 'dd' on file1.txt
    → bufferState.saveSnapshot()
    → bufferState.markForDeletion(file1_id)
    → deletedEntryIds = {file1_id}
    → Status: "1 item(s) marked for deletion..."
    → UI: file1 shows ✗ + strikethrough + red
-   
+
 3. Press 'dd' on file2.txt
    → bufferState.saveSnapshot()
    → bufferState.markForDeletion(file2_id)
    → deletedEntryIds = {file1_id, file2_id}
    → Status: "2 item(s) marked for deletion..."
-   
+
 4. Press 'w' (save)
    → getMarkedForDeletion() = [file1, file2]
    → Create: [
@@ -152,7 +164,7 @@ adapter.delete(path, recursive, {onProgress})
      ]
    → showConfirm(operations)
    → Dialog opens showing what will happen
-   
+
 5. User presses Enter (confirm)
    → createConfirmHandler() starts
    → showProgress()
@@ -163,7 +175,7 @@ adapter.delete(path, recursive, {onProgress})
    → setEntries([...newList])
    → clearDeletionMarks()
    → Status: "2 operation(s) completed successfully"
-   
+
 6. Buffer now shows updated list without deleted files
 ```
 
@@ -171,41 +183,45 @@ adapter.delete(path, recursive, {onProgress})
 
 ## What Happens On Different Keys
 
-| Key | Action | Triggers | Effect |
-|-----|--------|----------|--------|
-| `dd` | Delete | `entry:delete` | Mark/unmark for deletion |
-| `w` | Save | `buffer:save` | Show confirmation dialog |
-| `Enter` | Confirm | Confirmation handler | Execute operations |
-| `Escape` | Cancel | Dialog handler | Close confirmation |
-| `u` | Undo | `buffer:undo` | Restore previous state |
-| `Ctrl+R` | Redo | `buffer:redo` | Restore undone state |
-| `q` | Quit | `app:quit` | Check for pending changes |
+| Key      | Action  | Triggers             | Effect                    |
+| -------- | ------- | -------------------- | ------------------------- |
+| `dd`     | Delete  | `entry:delete`       | Mark/unmark for deletion  |
+| `w`      | Save    | `buffer:save`        | Show confirmation dialog  |
+| `Enter`  | Confirm | Confirmation handler | Execute operations        |
+| `Escape` | Cancel  | Dialog handler       | Close confirmation        |
+| `u`      | Undo    | `buffer:undo`        | Restore previous state    |
+| `Ctrl+R` | Redo    | `buffer:redo`        | Restore undone state      |
+| `q`      | Quit    | `app:quit`           | Check for pending changes |
 
 ---
 
 ## State Management Code Pattern
 
 ### Marking an Entry
+
 ```typescript
-bufferState.markForDeletion(entry.id)
+bufferState.markForDeletion(entry.id);
 // Inside: deletedEntryIds.add(id)
 ```
 
 ### Checking if Marked
+
 ```typescript
-bufferState.isMarkedForDeletion(entry.id)
+bufferState.isMarkedForDeletion(entry.id);
 // Inside: deletedEntryIds.has(id)
 ```
 
 ### Getting All Marked
+
 ```typescript
-bufferState.getMarkedForDeletion()
+bufferState.getMarkedForDeletion();
 // Inside: entries.filter(e => deletedEntryIds.has(e.id))
 ```
 
 ### Clearing All Marks
+
 ```typescript
-bufferState.clearDeletionMarks()
+bufferState.clearDeletionMarks();
 // Inside: deletedEntryIds.clear()
 ```
 
@@ -218,6 +234,7 @@ const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
 ```
 
 Each pane has:
+
 - Independent `deletedEntryIds` set
 - Independent undo/redo history
 - Independent entries list
@@ -285,16 +302,19 @@ n = total entries, m = pending operations
 ## Extensions Possible
 
 ### Add More Operation Types
+
 1. Add to `PendingOperation` type
 2. Add case in `createConfirmHandler()` switch
 3. Add UI rendering in confirmation dialog
 
 ### Add Dry-Run
+
 1. Execute in read-only mode
 2. Show what would happen
 3. Let user proceed or cancel
 
 ### Add Batch Grouping
+
 1. Group operations by type
 2. Show grouped in confirmation
 3. Execute with priority order
@@ -304,6 +324,7 @@ n = total entries, m = pending operations
 ## Testing Checklist
 
 Manual:
+
 - [ ] Mark entry with `dd` → see visual indicators
 - [ ] Unmark with `dd` again
 - [ ] Check status message shows count
@@ -320,12 +341,14 @@ Manual:
 ## Documentation Guide
 
 **Start here**:
+
 1. `README.md` (this file) - Overview and quick reference
 2. `QUICK_REFERENCE.md` - Common tasks and patterns
 3. `COMPREHENSIVE_GUIDE.md` - Deep dive with code examples
 4. `INDEX.md` - File locations and detailed structure
 
 **When you need to**:
+
 - Understand the system → Read COMPREHENSIVE_GUIDE
 - Find a function → Search INDEX for file locations
 - Quick lookup → Use QUICK_REFERENCE
@@ -343,4 +366,3 @@ Manual:
 6. **Buffer reloads after** changes to stay in sync with S3
 
 This design prioritizes **safety and clarity** over performance - users always see what will happen before it happens.
-
