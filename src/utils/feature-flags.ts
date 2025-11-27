@@ -22,9 +22,12 @@ import { ConfigManager } from './config.js';
 export enum FeatureFlag {
   /**
    * Use the new provider system instead of legacy adapters
+   *
    * Environment: OPEN_S3_USE_PROVIDERS=true|false
    * Config: featureFlags.useProviders
-   * Default: false
+   * Default: true (as of 2025-11-27 cutover)
+   *
+   * ROLLBACK: Set OPEN_S3_USE_LEGACY=true to revert to legacy adapter system
    */
   USE_NEW_PROVIDER_SYSTEM = 'USE_NEW_PROVIDER_SYSTEM',
 
@@ -64,6 +67,12 @@ const ENV_VAR_MAP: Record<FeatureFlag, string> = {
 };
 
 /**
+ * Legacy escape hatch environment variable
+ * Set OPEN_S3_USE_LEGACY=true to revert to the legacy adapter system
+ */
+const LEGACY_ESCAPE_HATCH = 'OPEN_S3_USE_LEGACY';
+
+/**
  * Config file keys for feature flags
  */
 const CONFIG_KEY_MAP: Record<FeatureFlag, string> = {
@@ -75,9 +84,12 @@ const CONFIG_KEY_MAP: Record<FeatureFlag, string> = {
 
 /**
  * Default values for feature flags
+ *
+ * NOTE: USE_NEW_PROVIDER_SYSTEM defaults to TRUE as of 2025-11-27 cutover.
+ * To use the legacy system, set OPEN_S3_USE_LEGACY=true
  */
 const DEFAULT_VALUES: Record<FeatureFlag, boolean> = {
-  [FeatureFlag.USE_NEW_PROVIDER_SYSTEM]: false,
+  [FeatureFlag.USE_NEW_PROVIDER_SYSTEM]: true, // CUTOVER: New provider system is now the default
   [FeatureFlag.MULTI_PROVIDER]: false,
   [FeatureFlag.EXPERIMENTAL]: false,
   [FeatureFlag.DEBUG]: false,
@@ -126,9 +138,10 @@ export class FeatureFlagManager {
    * Check if a feature flag is enabled
    *
    * Resolution order:
-   * 1. Environment variable
-   * 2. Config file (if ConfigManager provided)
-   * 3. Default value
+   * 1. Legacy escape hatch (OPEN_S3_USE_LEGACY=true disables new provider system)
+   * 2. Environment variable
+   * 3. Config file (if ConfigManager provided)
+   * 4. Default value
    *
    * @param flag - The feature flag to check
    * @returns true if the flag is enabled
@@ -137,6 +150,17 @@ export class FeatureFlagManager {
     // Check cache first
     if (this.cache.has(flag)) {
       return this.cache.get(flag)!;
+    }
+
+    // 0. Check legacy escape hatch for USE_NEW_PROVIDER_SYSTEM
+    // This allows users to rollback to legacy system with OPEN_S3_USE_LEGACY=true
+    if (flag === FeatureFlag.USE_NEW_PROVIDER_SYSTEM) {
+      const legacyEscapeValue = process.env[LEGACY_ESCAPE_HATCH];
+      if (legacyEscapeValue !== undefined && this.parseBoolean(legacyEscapeValue)) {
+        // Legacy mode requested - disable new provider system
+        this.cache.set(flag, false);
+        return false;
+      }
     }
 
     // 1. Check environment variable

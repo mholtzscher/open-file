@@ -44,10 +44,12 @@ describe('FeatureFlagManager', () => {
   });
 
   describe('Default values', () => {
-    it('should return false for all flags by default', () => {
+    it('should return correct default values for all flags', () => {
       const manager = new FeatureFlagManager();
 
-      expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
+      // USE_NEW_PROVIDER_SYSTEM defaults to TRUE after cutover
+      expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
+      // Other flags still default to false
       expect(manager.isEnabled(FeatureFlag.MULTI_PROVIDER)).toBe(false);
       expect(manager.isEnabled(FeatureFlag.EXPERIMENTAL)).toBe(false);
       expect(manager.isEnabled(FeatureFlag.DEBUG)).toBe(false);
@@ -57,7 +59,9 @@ describe('FeatureFlagManager', () => {
       const manager = new FeatureFlagManager();
       const flags = manager.getAllFlags();
 
-      expect(flags[FeatureFlag.USE_NEW_PROVIDER_SYSTEM]).toBe(false);
+      // USE_NEW_PROVIDER_SYSTEM defaults to TRUE after cutover
+      expect(flags[FeatureFlag.USE_NEW_PROVIDER_SYSTEM]).toBe(true);
+      // Other flags still default to false
       expect(flags[FeatureFlag.MULTI_PROVIDER]).toBe(false);
       expect(flags[FeatureFlag.EXPERIMENTAL]).toBe(false);
       expect(flags[FeatureFlag.DEBUG]).toBe(false);
@@ -235,7 +239,45 @@ describe('FeatureFlagManager', () => {
       // Don't set featureFlags in config
 
       const manager = new FeatureFlagManager(configManager);
+      // Default is now TRUE after cutover
+      expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
+    });
+  });
+
+  describe('Legacy escape hatch', () => {
+    it('should disable new provider system when OPEN_S3_USE_LEGACY=true', () => {
+      process.env.OPEN_S3_USE_LEGACY = 'true';
+      const manager = new FeatureFlagManager();
+
+      // Despite default being true, legacy escape hatch overrides
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
+    });
+
+    it('should not affect new provider system when OPEN_S3_USE_LEGACY=false', () => {
+      process.env.OPEN_S3_USE_LEGACY = 'false';
+      const manager = new FeatureFlagManager();
+
+      // Default is true, and legacy escape hatch is false, so still true
+      expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
+    });
+
+    it('should have legacy escape hatch take highest precedence', () => {
+      // Even if OPEN_S3_USE_PROVIDERS=true, legacy escape hatch wins
+      process.env.OPEN_S3_USE_PROVIDERS = 'true';
+      process.env.OPEN_S3_USE_LEGACY = 'true';
+      const manager = new FeatureFlagManager();
+
+      expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
+    });
+
+    it('should only affect USE_NEW_PROVIDER_SYSTEM flag', () => {
+      process.env.OPEN_S3_USE_LEGACY = 'true';
+      const manager = new FeatureFlagManager();
+
+      // Legacy escape hatch should not affect other flags
+      expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
+      expect(manager.isEnabled(FeatureFlag.MULTI_PROVIDER)).toBe(false);
+      expect(manager.isEnabled(FeatureFlag.DEBUG)).toBe(false);
     });
   });
 

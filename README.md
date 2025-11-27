@@ -350,6 +350,48 @@ open-s3 looks for configuration in this order:
 3. Environment variables - AWS credentials from environment
 4. `~/.aws/credentials` - Standard AWS credentials file
 
+## Environment Variables
+
+### Feature Flags
+
+| Variable                 | Default | Description                                              |
+| ------------------------ | ------- | -------------------------------------------------------- |
+| `OPEN_S3_USE_PROVIDERS`  | `true`  | Use new provider system (recommended)                    |
+| `OPEN_S3_USE_LEGACY`     | `false` | **Rollback**: Set to `true` to use legacy adapter system |
+| `OPEN_S3_MULTI_PROVIDER` | `false` | Enable multi-provider support                            |
+| `OPEN_S3_DEBUG`          | `false` | Enable debug mode with verbose logging                   |
+
+### Provider System
+
+As of version 2025-11-27, open-s3 uses a new provider-based architecture that supports multiple storage backends. The new system is the default and provides:
+
+- **Better error handling** with structured `OperationResult` types
+- **Multi-provider support** for future backends (GCS, SFTP, etc.)
+- **Capability-based UI** that adapts to provider features
+- **Connection status tracking** for reliable operations
+
+#### Rollback to Legacy System
+
+If you experience issues with the new provider system, you can temporarily rollback:
+
+```bash
+# Use the legacy adapter system
+export OPEN_S3_USE_LEGACY=true
+bun run src/index.tsx
+```
+
+Or add to your config file (`~/.open-s3rc.json`):
+
+```json
+{
+  "featureFlags": {
+    "useProviders": false
+  }
+}
+```
+
+**Note**: The legacy system is deprecated and will be removed in a future release.
+
 ## Architecture
 
 The application follows a clean, modular architecture with a React-based UI:
