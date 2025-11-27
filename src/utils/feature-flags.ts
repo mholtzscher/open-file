@@ -1,0 +1,293 @@
+/**
+ * Feature Flag System for open-s3
+ *
+ * Manages feature flags for progressive migration and experimental features.
+ * Flags can be set via:
+ * 1. Environment variables (highest priority)
+ * 2. Config file (~/.open-s3rc.json)
+ * 3. Default values (lowest priority)
+ *
+ * This enables safe, gradual rollout of new features like the provider system.
+ */
+
+import { ConfigManager } from './config.js';
+
+// ============================================================================
+// Feature Flag Definitions
+// ============================================================================
+
+/**
+ * Available feature flags
+ */
+export enum FeatureFlag {
+  /**
+   * Use the new provider system instead of legacy adapters
+   * Environment: OPEN_S3_USE_PROVIDERS=true|false
+   * Config: featureFlags.useProviders
+   * Default: false
+   */
+  USE_NEW_PROVIDER_SYSTEM = 'USE_NEW_PROVIDER_SYSTEM',
+
+  /**
+   * Enable multi-provider support (switching between different storage backends)
+   * Environment: OPEN_S3_MULTI_PROVIDER=true|false
+   * Config: featureFlags.multiProvider
+   * Default: false
+   */
+  MULTI_PROVIDER = 'MULTI_PROVIDER',
+
+  /**
+   * Enable experimental features
+   * Environment: OPEN_S3_EXPERIMENTAL=true|false
+   * Config: featureFlags.experimental
+   * Default: false
+   */
+  EXPERIMENTAL = 'EXPERIMENTAL',
+
+  /**
+   * Enable debug mode (verbose logging, diagnostics)
+   * Environment: OPEN_S3_DEBUG=true|false
+   * Config: featureFlags.debug
+   * Default: false
+   */
+  DEBUG = 'DEBUG',
+}
+
+/**
+ * Environment variable names for feature flags
+ */
+const ENV_VAR_MAP: Record<FeatureFlag, string> = {
+  [FeatureFlag.USE_NEW_PROVIDER_SYSTEM]: 'OPEN_S3_USE_PROVIDERS',
+  [FeatureFlag.MULTI_PROVIDER]: 'OPEN_S3_MULTI_PROVIDER',
+  [FeatureFlag.EXPERIMENTAL]: 'OPEN_S3_EXPERIMENTAL',
+  [FeatureFlag.DEBUG]: 'OPEN_S3_DEBUG',
+};
+
+/**
+ * Config file keys for feature flags
+ */
+const CONFIG_KEY_MAP: Record<FeatureFlag, string> = {
+  [FeatureFlag.USE_NEW_PROVIDER_SYSTEM]: 'useProviders',
+  [FeatureFlag.MULTI_PROVIDER]: 'multiProvider',
+  [FeatureFlag.EXPERIMENTAL]: 'experimental',
+  [FeatureFlag.DEBUG]: 'debug',
+};
+
+/**
+ * Default values for feature flags
+ */
+const DEFAULT_VALUES: Record<FeatureFlag, boolean> = {
+  [FeatureFlag.USE_NEW_PROVIDER_SYSTEM]: false,
+  [FeatureFlag.MULTI_PROVIDER]: false,
+  [FeatureFlag.EXPERIMENTAL]: false,
+  [FeatureFlag.DEBUG]: false,
+};
+
+// ============================================================================
+// Feature Flags Interface
+// ============================================================================
+
+/**
+ * Feature flags configuration in config file
+ */
+export interface FeatureFlagsConfig {
+  /** Use new provider system instead of legacy adapters */
+  useProviders?: boolean;
+  /** Enable multi-provider support */
+  multiProvider?: boolean;
+  /** Enable experimental features */
+  experimental?: boolean;
+  /** Enable debug mode */
+  debug?: boolean;
+}
+
+// ============================================================================
+// Feature Flag Manager
+// ============================================================================
+
+/**
+ * Feature flag manager
+ *
+ * Resolves feature flag values from multiple sources with proper precedence.
+ */
+export class FeatureFlagManager {
+  private configManager?: ConfigManager;
+  private cache: Map<FeatureFlag, boolean> = new Map();
+
+  /**
+   * Create a new feature flag manager
+   * @param configManager - Optional config manager for reading flags from config file
+   */
+  constructor(configManager?: ConfigManager) {
+    this.configManager = configManager;
+  }
+
+  /**
+   * Check if a feature flag is enabled
+   *
+   * Resolution order:
+   * 1. Environment variable
+   * 2. Config file (if ConfigManager provided)
+   * 3. Default value
+   *
+   * @param flag - The feature flag to check
+   * @returns true if the flag is enabled
+   */
+  isEnabled(flag: FeatureFlag): boolean {
+    // Check cache first
+    if (this.cache.has(flag)) {
+      return this.cache.get(flag)!;
+    }
+
+    // 1. Check environment variable
+    const envVar = ENV_VAR_MAP[flag];
+    const envValue = process.env[envVar];
+    if (envValue !== undefined) {
+      const enabled = this.parseBoolean(envValue);
+      this.cache.set(flag, enabled);
+      return enabled;
+    }
+
+    // 2. Check config file
+    if (this.configManager) {
+      const config = this.configManager.getConfig();
+      const featureFlags = (config as any).featureFlags as FeatureFlagsConfig | undefined;
+      if (featureFlags) {
+        const configKey = CONFIG_KEY_MAP[flag];
+        const configValue = (featureFlags as any)[configKey];
+        if (configValue !== undefined) {
+          const enabled = Boolean(configValue);
+          this.cache.set(flag, enabled);
+          return enabled;
+        }
+      }
+    }
+
+    // 3. Use default value
+    const enabled = DEFAULT_VALUES[flag];
+    this.cache.set(flag, enabled);
+    return enabled;
+  }
+
+  /**
+   * Clear the cache
+   * Call this after changing environment variables or config to pick up new values
+   */
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  /**
+   * Get all feature flags and their current values
+   * Useful for debugging and diagnostics
+   */
+  getAllFlags(): Record<string, boolean> {
+    const result: Record<string, boolean> = {};
+    for (const flag of Object.values(FeatureFlag)) {
+      result[flag] = this.isEnabled(flag as FeatureFlag);
+    }
+    return result;
+  }
+
+  /**
+   * Parse a string value to boolean
+   * Accepts: true, false, 1, 0, yes, no, on, off (case-insensitive)
+   */
+  private parseBoolean(value: string): boolean {
+    const normalized = value.toLowerCase().trim();
+    return (
+      normalized === 'true' || normalized === '1' || normalized === 'yes' || normalized === 'on'
+    );
+  }
+}
+
+// ============================================================================
+// Global Instance (Convenience)
+// ============================================================================
+
+/**
+ * Global feature flag manager instance
+ * Used by convenience functions
+ */
+let globalManager: FeatureFlagManager | null = null;
+
+/**
+ * Initialize the global feature flag manager
+ * @param configManager - Optional config manager
+ */
+export function initializeFeatureFlags(configManager?: ConfigManager): void {
+  globalManager = new FeatureFlagManager(configManager);
+}
+
+/**
+ * Get the global feature flag manager
+ * Creates one if it doesn't exist
+ */
+export function getFeatureFlagManager(): FeatureFlagManager {
+  if (!globalManager) {
+    globalManager = new FeatureFlagManager();
+  }
+  return globalManager;
+}
+
+// ============================================================================
+// Convenience Functions
+// ============================================================================
+
+/**
+ * Check if a feature flag is enabled
+ * Uses the global feature flag manager
+ *
+ * @param flag - The feature flag to check
+ * @returns true if the flag is enabled
+ */
+export function isFeatureEnabled(flag: FeatureFlag): boolean {
+  return getFeatureFlagManager().isEnabled(flag);
+}
+
+/**
+ * Check if the new provider system is enabled
+ * Convenience wrapper for the most important flag during migration
+ *
+ * @returns true if new provider system should be used
+ */
+export function isNewProviderSystemEnabled(): boolean {
+  return isFeatureEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM);
+}
+
+/**
+ * Check if multi-provider support is enabled
+ *
+ * @returns true if multi-provider support is enabled
+ */
+export function isMultiProviderEnabled(): boolean {
+  return isFeatureEnabled(FeatureFlag.MULTI_PROVIDER);
+}
+
+/**
+ * Check if experimental features are enabled
+ *
+ * @returns true if experimental features are enabled
+ */
+export function isExperimentalEnabled(): boolean {
+  return isFeatureEnabled(FeatureFlag.EXPERIMENTAL);
+}
+
+/**
+ * Check if debug mode is enabled
+ *
+ * @returns true if debug mode is enabled
+ */
+export function isDebugEnabled(): boolean {
+  return isFeatureEnabled(FeatureFlag.DEBUG);
+}
+
+/**
+ * Get all feature flags and their current values
+ * Useful for diagnostics
+ *
+ * @returns Object mapping flag names to their values
+ */
+export function getAllFeatureFlags(): Record<string, boolean> {
+  return getFeatureFlagManager().getAllFlags();
+}

@@ -74,6 +74,20 @@ export interface DisplayConfig {
 }
 
 /**
+ * Feature flags configuration
+ */
+export interface FeatureFlagsConfig {
+  /** Use new provider system instead of legacy adapters */
+  useProviders?: boolean;
+  /** Enable multi-provider support */
+  multiProvider?: boolean;
+  /** Enable experimental features */
+  experimental?: boolean;
+  /** Enable debug mode */
+  debug?: boolean;
+}
+
+/**
  * Main configuration object
  */
 export interface AppConfig {
@@ -82,6 +96,7 @@ export interface AppConfig {
   colors?: ColorScheme;
   s3?: S3Config;
   display?: DisplayConfig;
+  featureFlags?: FeatureFlagsConfig;
 }
 
 /**
