@@ -61,7 +61,10 @@ bd close bd-42 --reason "Completed" --json
 4. **Discover new work?** Create linked issue:
    - `bd create "Found bug" -p 1 --deps discovered-from:<parent-id>`
 5. **Complete**: `bd close <id> --reason "Done"`
-6. **Commit together**: Always commit the `.beads/issues.jsonl` file together with the code changes so issue state stays in sync with code state
+6. **Stage changes**: Stage all modified files with `git add`
+7. **DO NOT COMMIT**: Let the human review and commit changes
+
+**IMPORTANT**: Agents should NEVER create git commits. Always stage changes and let the human review before committing.
 
 ### Auto-Sync
 
@@ -170,11 +173,13 @@ bd dep add $TASK2 $TASK3 --json
 - ✅ Use `bd dep add` to manage task dependencies and workflows
 - ✅ Check `bd ready` before asking "what should I work on?"
 - ✅ Store AI planning docs in `history/` directory
+- ✅ Stage changes with `git add` when work is complete
 - ❌ Do NOT create markdown TODO lists
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
 - ❌ Do NOT clutter repo root with planning documents
 - ❌ **NEVER manually edit `.beads/beads.jsonl`** - Always use bd commands
-- ❌ Do NOT directly read issues.json always use the mcp server.
+- ❌ Do NOT directly read issues.json always use the mcp server
+- ❌ **NEVER create git commits** - Always let the human review and commit
 
 For more details, see README.md and QUICKSTART.md.
