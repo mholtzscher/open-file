@@ -7,7 +7,7 @@ A Terminal User Interface (TUI) for exploring and managing AWS S3 buckets, inspi
 - 🗂️ **Browse S3 buckets** - Navigate through S3 buckets like a file system
 - ✏️ **Edit as buffer** - Edit bucket contents like a text buffer (create, delete, rename, move)
 - 🎨 **Beautiful UI** - Color-coded entries, vim-style keybindings
-- 🔄 **Multiple adapters** - Support for S3 and mock adapter for testing
+- 🔄 **Provider system** - Extensible storage provider architecture for S3 and future backends
 - ⚡ **Fast** - Built with Bun runtime for superior performance
 - 🧪 **Well-tested** - Comprehensive test suite for reliability
 
@@ -69,7 +69,6 @@ After installing open-s3, follow these steps to get started:
 
    ```json
    {
-     "adapter": "s3",
      "s3": {
        "region": "us-east-1",
        "bucket": "my-bucket"
@@ -232,7 +231,6 @@ The configuration file allows you to customize how open-s3 behaves and appears. 
 
 ```json
 {
-  "adapter": "s3",
   "s3": {
     "region": "us-east-1",
     "bucket": "my-bucket",
@@ -275,7 +273,6 @@ The configuration file allows you to customize how open-s3 behaves and appears. 
 
 ```json
 {
-  "adapter": "s3",
   "s3": {
     "region": "us-east-1"
   }
@@ -286,7 +283,6 @@ The configuration file allows you to customize how open-s3 behaves and appears. 
 
 ```json
 {
-  "adapter": "s3",
   "s3": {
     "region": "us-east-1",
     "bucket": "my-bucket"
@@ -298,7 +294,6 @@ The configuration file allows you to customize how open-s3 behaves and appears. 
 
 ```json
 {
-  "adapter": "s3",
   "s3": {
     "region": "eu-west-1",
     "bucket": "production-bucket",
@@ -329,7 +324,6 @@ The configuration file allows you to customize how open-s3 behaves and appears. 
 
 ```json
 {
-  "adapter": "s3",
   "s3": {
     "region": "us-east-1",
     "bucket": "test-bucket",
@@ -350,58 +344,17 @@ open-s3 looks for configuration in this order:
 3. Environment variables - AWS credentials from environment
 4. `~/.aws/credentials` - Standard AWS credentials file
 
-## Environment Variables
-
-### Feature Flags
-
-| Variable                 | Default | Description                                              |
-| ------------------------ | ------- | -------------------------------------------------------- |
-| `OPEN_S3_USE_PROVIDERS`  | `true`  | Use new provider system (recommended)                    |
-| `OPEN_S3_USE_LEGACY`     | `false` | **Rollback**: Set to `true` to use legacy adapter system |
-| `OPEN_S3_MULTI_PROVIDER` | `false` | Enable multi-provider support                            |
-| `OPEN_S3_DEBUG`          | `false` | Enable debug mode with verbose logging                   |
-
-### Provider System
-
-As of version 2025-11-27, open-s3 uses a new provider-based architecture that supports multiple storage backends. The new system is the default and provides:
-
-- **Better error handling** with structured `OperationResult` types
-- **Multi-provider support** for future backends (GCS, SFTP, etc.)
-- **Capability-based UI** that adapts to provider features
-- **Connection status tracking** for reliable operations
-
-#### Rollback to Legacy System
-
-If you experience issues with the new provider system, you can temporarily rollback:
-
-```bash
-# Use the legacy adapter system
-export OPEN_S3_USE_LEGACY=true
-bun run src/index.tsx
-```
-
-Or add to your config file (`~/.open-s3rc.json`):
-
-```json
-{
-  "featureFlags": {
-    "useProviders": false
-  }
-}
-```
-
-**Note**: The legacy system is deprecated and will be removed in a future release.
-
 ## Architecture
 
-The application follows a clean, modular architecture with a React-based UI:
+The application follows a clean, modular architecture with a React-based UI. As of November 2025, open-s3 uses a provider-based architecture that supports multiple storage backends with better error handling, capability-based UI, and connection status tracking.
 
-### Adapters (`src/adapters/`)
+### Providers (`src/providers/`)
 
-- **Adapter Interface** - Abstract interface for storage backends
-- **MockAdapter** - In-memory adapter for testing
-- **S3Adapter** - AWS S3 implementation using SDK v3
-- **AdapterRegistry** - Registry for managing multiple adapters
+- **StorageProvider Interface** - Unified interface for storage backends
+- **S3Provider** - AWS S3 implementation using SDK v3
+- **MockStorageProvider** - In-memory provider for testing
+- **Profile Management** - Credential and configuration management
+- **Provider Factory** - Provider creation and registration
 
 ### React Components (`src/ui/`)
 
@@ -452,12 +405,7 @@ just dev
 bun test
 ```
 
-All tests must pass:
-
-```bash
-src/adapters/adapter.test.ts - 11 tests
-src/utils/change-detection.test.ts - 12 tests
-```
+All tests must pass. The project currently has **1469 tests** across 65 test files covering providers, hooks, UI components, and utilities.
 
 ### Build for Production
 
@@ -476,18 +424,23 @@ just build
 ```
 open-s3/
 ├── src/
-│   ├── adapters/          # Storage backends
-│   │   ├── adapter.ts     # Base adapter interface
-│   │   ├── mock-adapter.ts
-│   │   ├── s3-adapter.ts
-│   │   └── registry.ts
-│   ├── hooks/             # React hooks for state & effects
+│   ├── providers/         # Storage provider system
+│   │   ├── provider.ts   # StorageProvider interface
+│   │   ├── base-provider.ts
+│   │   ├── factory.ts
+│   │   ├── s3/           # S3 provider implementation
+│   │   │   ├── s3-provider.ts
+│   │   │   └── utils/    # S3-specific utilities
+│   │   ├── services/     # Profile management
+│   │   ├── credentials/  # Credential management
+│   │   └── types/        # Provider-specific types
+│   ├── hooks/            # React hooks for state & effects
 │   │   ├── useBufferState.ts
 │   │   ├── useKeyboardEvents.ts
 │   │   ├── useNavigationHandlers.ts
 │   │   ├── useBufferOperations.ts
 │   │   └── useTerminalSize.ts
-│   ├── ui/                # React components & UI utilities
+│   ├── ui/               # React components & UI utilities
 │   │   ├── s3-explorer.tsx         # Main React component
 │   │   ├── buffer-view-react.tsx   # Buffer rendering
 │   │   ├── status-bar-react.tsx    # Status bar
@@ -495,11 +448,13 @@ open-s3/
 │   │   ├── buffer-state.ts         # Editor state management
 │   │   ├── theme.ts                # Color theme definitions
 │   │   └── keybindings.ts          # Keybinding utilities
-│   ├── types/             # Type definitions
-│   │   ├── entry.ts
+│   ├── types/            # Common type definitions
+│   │   ├── entry.ts      # Entry, EntryType, EntryMetadata
+│   │   ├── progress.ts   # Progress tracking types
+│   │   ├── list.ts       # List operation types
 │   │   ├── operations.ts
-│   │   └── edit-mode.ts    # Editor mode enum
-│   ├── utils/             # Utilities
+│   │   └── edit-mode.ts
+│   ├── utils/            # Utilities
 │   │   ├── change-detection.ts
 │   │   ├── entry-id.ts
 │   │   ├── config.ts
@@ -507,11 +462,14 @@ open-s3/
 │   │   ├── errors.ts
 │   │   ├── sorting.ts
 │   │   └── cli.ts
-│   └── index.tsx          # Main application & keyboard dispatcher
-├── justfile               # Development commands
-├── package.json           # Dependencies
-├── tsconfig.json          # TypeScript configuration
-└── README.md              # This file
+│   ├── contexts/         # React contexts
+│   │   └── StorageContext.tsx
+│   ├── components/       # Reusable React components
+│   └── index.tsx         # Main application & keyboard dispatcher
+├── justfile              # Development commands
+├── package.json          # Dependencies
+├── tsconfig.json         # TypeScript configuration
+└── README.md             # This file
 ```
 
 ## React Architecture
