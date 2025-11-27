@@ -33,31 +33,27 @@ import type {
 import { Entry, EntryType } from '../../types/entry.js';
 import { generateEntryId } from '../../utils/entry-id.js';
 
-// Import existing S3 adapter helper modules
-import {
-  createS3Client,
-  S3ClientOptions,
-  S3ClientResult,
-} from '../../adapters/s3/client-factory.js';
-import { uploadLargeFile, shouldUseMultipartUpload } from '../../adapters/s3/multipart-upload.js';
-import { normalizeS3Path, getS3KeyName } from '../../adapters/s3/path-utils.js';
-import { parseBucketToEntry } from '../../adapters/s3/entry-parser.js';
-import { listAllObjects, batchDeleteObjects } from '../../adapters/s3/batch-operations.js';
+// Import S3 utility modules
+import { createS3Client, S3ClientOptions, S3ClientResult } from './utils/client-factory.js';
+import { uploadLargeFile, shouldUseMultipartUpload } from './utils/multipart-upload.js';
+import { normalizeS3Path, getS3KeyName } from './utils/path-utils.js';
+import { parseBucketToEntry } from './utils/entry-parser.js';
+import { listAllObjects, batchDeleteObjects } from './utils/batch-operations.js';
 import {
   copyObject,
   copyDirectory as copyDirectoryOp,
   moveObject,
   moveDirectory as moveDirectoryOp,
-} from '../../adapters/s3/object-operations.js';
+} from './utils/object-operations.js';
 import {
   downloadFileToLocal,
   downloadDirectoryToLocal as downloadDirToLocal,
   uploadFileToS3,
   uploadDirectoryToS3,
-} from '../../adapters/s3/transfer-operations.js';
-import { createProgressAdapter } from '../../adapters/s3/progress-adapter.js';
-import { readObject } from '../../adapters/s3/read-operations.js';
-import { listObjects, listBuckets as listBucketsOp } from '../../adapters/s3/list-operations.js';
+} from './utils/transfer-operations.js';
+import { createProgressAdapter } from './utils/progress-adapter.js';
+import { readObject } from './utils/read-operations.js';
+import { listObjects, listBuckets as listBucketsOp } from './utils/list-operations.js';
 import { retryWithBackoff, getS3RetryConfig } from '../../utils/retry.js';
 import { getLogger } from '../../utils/logger.js';
 

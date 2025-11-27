@@ -6,7 +6,7 @@
  */
 
 import { S3Client, ListObjectsV2Command, DeleteObjectsCommand } from '@aws-sdk/client-s3';
-import { retryWithBackoff, getS3RetryConfig } from '../../utils/retry.js';
+import { retryWithBackoff, getS3RetryConfig } from '../../../utils/retry.js';
 
 /**
  * Options for listing all objects

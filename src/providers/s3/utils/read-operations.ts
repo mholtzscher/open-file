@@ -6,8 +6,8 @@
  */
 
 import { S3Client, HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
-import { ProgressCallback } from '../../types/progress.js';
-import { retryWithBackoff, getS3RetryConfig } from '../../utils/retry.js';
+import { ProgressCallback } from '../../../types/progress.js';
+import { retryWithBackoff, getS3RetryConfig } from '../../../utils/retry.js';
 
 /**
  * Logger interface for read operations

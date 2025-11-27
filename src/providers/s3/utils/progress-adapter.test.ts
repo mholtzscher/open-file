@@ -4,7 +4,7 @@
 
 import { describe, it, expect, mock } from 'bun:test';
 import { createProgressAdapter, OperationProgressCallback } from './progress-adapter.js';
-import { ProgressEvent } from '../../types/progress.js';
+import { ProgressEvent } from '../../../types/progress.js';
 
 describe('createProgressAdapter', () => {
   describe('when onProgress is undefined', () => {

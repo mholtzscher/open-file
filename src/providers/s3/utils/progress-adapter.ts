@@ -6,7 +6,7 @@
  * This eliminates duplicated progress adapter patterns across S3Adapter methods.
  */
 
-import { ProgressCallback, ProgressEvent } from '../../types/progress.js';
+import { ProgressCallback, ProgressEvent } from '../../../types/progress.js';
 
 /**
  * Callback type for internal S3 operations (count-based progress)

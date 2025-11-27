@@ -7,7 +7,7 @@ import {
   sortEntries,
   BucketInfo,
 } from './entry-parser.js';
-import { Entry, EntryType } from '../../types/entry.js';
+import { Entry, EntryType } from '../../../types/entry.js';
 
 describe('parseS3ObjectToEntry', () => {
   describe('file parsing', () => {

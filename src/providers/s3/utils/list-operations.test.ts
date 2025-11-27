@@ -4,7 +4,7 @@
 
 import { describe, it, expect, mock } from 'bun:test';
 import { listObjects, listBuckets, ListOperationsLogger } from './list-operations.js';
-import { EntryType } from '../../types/entry.js';
+import { EntryType } from '../../../types/entry.js';
 
 // Mock S3Client - returns responses in order
 function createMockClient(responses: any[]) {

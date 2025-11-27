@@ -12,9 +12,9 @@ import {
   CompleteMultipartUploadCommand,
   AbortMultipartUploadCommand,
 } from '@aws-sdk/client-s3';
-import { retryWithBackoff, getS3RetryConfig } from '../../utils/retry.js';
-import { ProgressCallback } from '../../types/progress.js';
-import { getLogger } from '../../utils/logger.js';
+import { retryWithBackoff, getS3RetryConfig } from '../../../utils/retry.js';
+import { ProgressCallback } from '../../../types/progress.js';
+import { getLogger } from '../../../utils/logger.js';
 
 /** Threshold above which to use multipart upload (5MB) */
 export const MULTIPART_THRESHOLD = 5 * 1024 * 1024;

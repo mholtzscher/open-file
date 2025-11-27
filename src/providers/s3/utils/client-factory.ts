@@ -9,8 +9,8 @@ import {
   loadAwsProfile,
   getActiveAwsProfile,
   getActiveAwsRegion,
-} from '../../utils/aws-profile.js';
-import { getLogger } from '../../utils/logger.js';
+} from '../../../utils/aws-profile.js';
+import { getLogger } from '../../../utils/logger.js';
 
 /**
  * Configuration for S3 client creation

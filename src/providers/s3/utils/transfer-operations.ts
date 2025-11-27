@@ -7,7 +7,7 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
-import { retryWithBackoff, getS3RetryConfig } from '../../utils/retry.js';
+import { retryWithBackoff, getS3RetryConfig } from '../../../utils/retry.js';
 import { listAllObjects } from './batch-operations.js';
 import { uploadLargeFile, shouldUseMultipartUpload, OperationOptions } from './multipart-upload.js';
 

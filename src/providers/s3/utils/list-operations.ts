@@ -12,8 +12,8 @@ import {
   ListBucketsCommand,
   GetBucketLocationCommand,
 } from '@aws-sdk/client-s3';
-import { Entry, EntryType } from '../../types/entry.js';
-import { retryWithBackoff, getS3RetryConfig } from '../../utils/retry.js';
+import { Entry, EntryType } from '../../../types/entry.js';
+import { retryWithBackoff, getS3RetryConfig } from '../../../utils/retry.js';
 import {
   parseS3ObjectToEntry,
   parseCommonPrefixToEntry,

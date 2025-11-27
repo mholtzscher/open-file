@@ -6,7 +6,7 @@
  */
 
 import { S3Client, CopyObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { retryWithBackoff, getS3RetryConfig } from '../../utils/retry.js';
+import { retryWithBackoff, getS3RetryConfig } from '../../../utils/retry.js';
 import { listAllObjects } from './batch-operations.js';
 
 /**

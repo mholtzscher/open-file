@@ -6,8 +6,8 @@
  */
 
 import type { _Object, CommonPrefix } from '@aws-sdk/client-s3';
-import { Entry, EntryType } from '../../types/entry.js';
-import { generateEntryId } from '../../utils/entry-id.js';
+import { Entry, EntryType } from '../../../types/entry.js';
+import { generateEntryId } from '../../../utils/entry-id.js';
 import { getS3RelativePath } from './path-utils.js';
 
 /**
