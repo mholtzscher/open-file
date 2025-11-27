@@ -35,6 +35,30 @@ export type {
   CreateProviderOptions,
 } from './services/profile-manager.js';
 
+// Profile manager implementation
+export {
+  FileProfileManager,
+  ProfileManagerError,
+  type ProfileManagerErrorCode,
+  type FileProfileManagerOptions,
+} from './services/file-profile-manager.js';
+
+// Profile validation
+export { validateProfile, isValidProfileId } from './services/profile-validator.js';
+
+// Profile storage utilities
+export {
+  getConfigDir,
+  getProfilesPath,
+  loadProfilesFromDisk,
+  saveProfilesToDisk,
+  ensureConfigDir,
+  type LoadProfilesResult,
+  type SaveProfilesResult,
+  type ProfileStorageError,
+  type ProfileStorageErrorCode,
+} from './services/profile-storage.js';
+
 // Test utilities (for consumers that need to test provider integrations)
 export * from './__tests__/fixtures.js';
 export * from './__tests__/test-utils.js';
