@@ -24,6 +24,17 @@ export {
   getImplementedProviders,
 } from './factory.js';
 
+// Profile management
+export type {
+  ProfileManager,
+  ValidationError,
+  ValidationErrorCode,
+  ValidationResult,
+  ListProfilesOptions,
+  SaveProfileOptions,
+  CreateProviderOptions,
+} from './services/profile-manager.js';
+
 // Test utilities (for consumers that need to test provider integrations)
 export * from './__tests__/fixtures.js';
 export * from './__tests__/test-utils.js';
