@@ -312,6 +312,12 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
       },
 
       'entry:delete': () => {
+        if (!storage.hasCapability(Capability.Delete)) {
+          setStatusMessage('Delete not supported by this storage provider');
+          setStatusMessageColor(CatppuccinMocha.red);
+          return;
+        }
+
         const currentBufferState = getActiveBuffer();
         const selected = currentBufferState.getSelectedEntries();
         if (selected.length > 0) {
@@ -343,12 +349,24 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
       },
 
       'entry:copy': () => {
+        if (!storage.hasCapability(Capability.Copy)) {
+          setStatusMessage('Copy not supported by this storage provider');
+          setStatusMessageColor(CatppuccinMocha.red);
+          return;
+        }
+
         getActiveBuffer().copySelection();
         setStatusMessage('Copied');
         setStatusMessageColor(CatppuccinMocha.green);
       },
 
       'entry:paste': () => {
+        if (!storage.hasCapability(Capability.Copy)) {
+          setStatusMessage('Paste not supported by this storage provider');
+          setStatusMessageColor(CatppuccinMocha.red);
+          return;
+        }
+
         // Paste is handled by buffer state
         setStatusMessage('Paste not yet implemented');
         setStatusMessageColor(CatppuccinMocha.yellow);
@@ -388,17 +406,35 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
       },
 
       'entry:upload': () => {
+        if (!storage.hasCapability(Capability.Upload)) {
+          setStatusMessage('Upload not supported by this storage provider');
+          setStatusMessageColor(CatppuccinMocha.red);
+          return;
+        }
+
         showUpload();
       },
 
       // Mode changes
       'mode:insert': () => {
+        if (!storage.hasCapability(Capability.Write)) {
+          setStatusMessage('Create not supported by this storage provider');
+          setStatusMessageColor(CatppuccinMocha.red);
+          return;
+        }
+
         getActiveBuffer().enterInsertMode();
         setStatusMessage('-- INSERT -- (type name, Enter to create, Esc to cancel)');
         setStatusMessageColor(CatppuccinMocha.blue);
       },
 
       'mode:edit': () => {
+        if (!storage.hasCapability(Capability.Move)) {
+          setStatusMessage('Rename not supported by this storage provider');
+          setStatusMessageColor(CatppuccinMocha.red);
+          return;
+        }
+
         getActiveBuffer().enterEditMode();
         setStatusMessage('-- EDIT -- (type to rename, Enter to confirm, Esc to cancel)');
         setStatusMessageColor(CatppuccinMocha.blue);
@@ -436,7 +472,15 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
       // Dialogs
       'dialog:help': () => toggleHelp(),
       'dialog:sort': () => toggleSort(),
-      'dialog:upload': () => showUpload(),
+      'dialog:upload': () => {
+        if (!storage.hasCapability(Capability.Upload)) {
+          setStatusMessage('Upload not supported by this storage provider');
+          setStatusMessageColor(CatppuccinMocha.red);
+          return;
+        }
+
+        showUpload();
+      },
       'dialog:profileSelector': () => {
         const profileManager = storage.getProfileManager();
         if (profileManager) {
