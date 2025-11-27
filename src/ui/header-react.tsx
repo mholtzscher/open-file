@@ -8,7 +8,6 @@
  */
 
 import { CatppuccinMocha } from './theme.js';
-import { getActiveAwsProfile } from '../utils/aws-profile.js';
 import { useHasStorage } from '../contexts/StorageContext.js';
 import { useStorageState, useStorageCapabilities } from '../hooks/useStorage.js';
 
@@ -46,17 +45,21 @@ export function Header({ bucket: legacyBucket }: HeaderProps) {
   const hasContainers = capabilities?.hasContainers ?? false;
   const container = state?.currentContainer;
   const providerName = state?.providerDisplayName;
+  const profileName = state?.profileName;
+  const providerId = state?.providerId;
 
   // Use StorageContext data if available, otherwise fall back to legacy prop
   const displayContainer = container ?? legacyBucket;
   const containerText = displayContainer || 'none';
   const containerColor = displayContainer ? CatppuccinMocha.text : CatppuccinMocha.overlay0;
 
-  // Get AWS profile (for legacy S3 adapter compatibility)
-  const awsProfile = getActiveAwsProfile();
-
   // Determine label based on provider
   const containerLabel = hasContainers ? 'container: ' : 'bucket: ';
+
+  // Build profile display string: "ProfileName [providerType]" or just provider name
+  const profileDisplay = profileName
+    ? `${profileName} [${providerId || 'unknown'}]`
+    : providerName || 'none';
 
   return (
     <box
@@ -79,21 +82,11 @@ export function Header({ bucket: legacyBucket }: HeaderProps) {
         </box>
       )}
 
-      {/* Middle: provider name (if available) */}
-      {providerName && (
-        <box flexDirection="row" alignItems="center">
-          <text fg={CatppuccinMocha.mauve}>provider: </text>
-          <text fg={CatppuccinMocha.text}>{providerName}</text>
-        </box>
-      )}
-
-      {/* Right side: AWS profile (for S3 compatibility) */}
-      {awsProfile && (
-        <box flexDirection="row" alignItems="center">
-          <text fg={CatppuccinMocha.mauve}>profile: </text>
-          <text fg={CatppuccinMocha.text}>{awsProfile}</text>
-        </box>
-      )}
+      {/* Right side: profile name with provider type */}
+      <box flexDirection="row" alignItems="center">
+        <text fg={CatppuccinMocha.mauve}>profile: </text>
+        <text fg={CatppuccinMocha.text}>{profileDisplay}</text>
+      </box>
     </box>
   );
 }

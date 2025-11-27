@@ -31,11 +31,14 @@ import type { ProfileManager } from '../providers/services/profile-manager.js';
  * Represents the state of the storage browser at any given time
  */
 export interface StorageState {
-  /** Current provider/adapter identifier */
+  /** Current provider/adapter identifier (e.g., 's3', 'gcs', 'sftp') */
   providerId: string;
 
-  /** Display name of the current provider/adapter */
+  /** Display name of the current provider/adapter (e.g., 'Amazon S3') */
   providerDisplayName: string;
+
+  /** Current profile name (e.g., 'LocalStack (Dev)', 'Personal AWS Account') */
+  profileName?: string;
 
   /** Current path being viewed */
   currentPath: string;

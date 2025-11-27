@@ -56,18 +56,21 @@ export class ProviderStorageAdapter implements StorageContextValue {
    * @param initialPath - Initial path to navigate to (defaults to "/")
    * @param initialContainer - Initial container (optional)
    * @param profileManager - Optional ProfileManager instance for profile switching
+   * @param profileName - Optional profile display name
    */
   constructor(
     provider: StorageProvider,
     initialPath: string = '/',
     initialContainer?: string,
-    profileManager?: ProfileManager
+    profileManager?: ProfileManager,
+    profileName?: string
   ) {
     this.provider = provider;
     this.profileManager = profileManager;
     this.internalState = {
       providerId: provider.name,
       providerDisplayName: provider.displayName,
+      profileName: profileName,
       currentPath: initialPath,
       currentContainer: initialContainer,
       entries: [],
@@ -587,6 +590,7 @@ export class ProviderStorageAdapter implements StorageContextValue {
 
       // 2. Load the new profile and create provider
       console.error(`[ProviderStorageAdapter] Creating provider from profile: ${profileId}`);
+      const profile = await this.profileManager.getProfile(profileId);
       const newProvider = await this.profileManager.createProviderFromProfile(profileId);
 
       // 3. Store reference to old provider for rollback
@@ -610,6 +614,7 @@ export class ProviderStorageAdapter implements StorageContextValue {
         this.setState({
           providerId: newProvider.name,
           providerDisplayName: newProvider.displayName,
+          profileName: profile?.displayName,
           isConnected: newProvider.isConnected?.() ?? true,
           currentPath: '/', // Reset to root on provider switch
           currentContainer: undefined, // Clear container context

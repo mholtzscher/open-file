@@ -39,6 +39,7 @@ export function getGlobalKeyboardDispatcher() {
  */
 interface AppWrapperProps {
   initialProvider?: StorageProvider;
+  initialProfileName?: string;
   profileManager: ProfileManager;
   bucket?: string;
 }
@@ -49,9 +50,15 @@ interface AppWrapperProps {
  * When no provider is available, shows the profile selector.
  * Once a profile is selected, creates the provider and renders S3Explorer.
  */
-function AppWrapper({ initialProvider, profileManager, bucket }: AppWrapperProps) {
+function AppWrapper({
+  initialProvider,
+  initialProfileName,
+  profileManager,
+  bucket,
+}: AppWrapperProps) {
   const dispatch = useKeyboardDispatch();
   const [provider, setProvider] = useState<StorageProvider | undefined>(initialProvider);
+  const [profileName, setProfileName] = useState<string | undefined>(initialProfileName);
   const [isSelectingProfile, setIsSelectingProfile] = useState(!initialProvider);
 
   // Connect the context dispatch to the global dispatcher
@@ -68,6 +75,7 @@ function AppWrapper({ initialProvider, profileManager, bucket }: AppWrapperProps
       try {
         const newProvider = await profileManager.createProviderFromProfile(profile.id);
         setProvider(newProvider);
+        setProfileName(profile.displayName);
         setIsSelectingProfile(false);
       } catch (err) {
         // Log error but stay on profile selector
@@ -100,7 +108,11 @@ function AppWrapper({ initialProvider, profileManager, bucket }: AppWrapperProps
 
   // We have a provider, render the full app
   return (
-    <StorageContextProvider provider={provider} profileManager={profileManager}>
+    <StorageContextProvider
+      provider={provider}
+      profileManager={profileManager}
+      profileName={profileName}
+    >
       <S3Explorer bucket={bucket} />
     </StorageContextProvider>
   );
@@ -143,11 +155,14 @@ async function main() {
     // 3. Otherwise, start with profile selector
 
     let provider: StorageProvider | undefined;
+    let initialProfileName: string | undefined;
 
     if (cliArgs.profile) {
       // Load provider from saved profile
       try {
+        const profile = await profileManager.getProfile(cliArgs.profile);
         provider = await profileManager.createProviderFromProfile(cliArgs.profile);
+        initialProfileName = profile?.displayName;
         logger.info('Provider loaded from profile', { profileId: cliArgs.profile });
       } catch (err) {
         logger.error(`Failed to load profile: ${cliArgs.profile}`, err);
@@ -173,6 +188,7 @@ async function main() {
         },
       };
       provider = new S3Provider(s3Profile);
+      initialProfileName = 'Ad-hoc Connection';
       logger.info('Ad-hoc S3 provider initialized', {
         region,
         endpoint: cliArgs.endpoint,
@@ -243,7 +259,12 @@ async function main() {
       const root = createRoot(renderer);
       root.render(
         <KeyboardProvider>
-          <AppWrapper initialProvider={provider} profileManager={profileManager} bucket={bucket} />
+          <AppWrapper
+            initialProvider={provider}
+            initialProfileName={initialProfileName}
+            profileManager={profileManager}
+            bucket={bucket}
+          />
         </KeyboardProvider>
       );
     } catch (renderError) {
