@@ -7,3 +7,6 @@ history/
 
 # Bun
 bun.lockb
+
+# LocalStack
+localstack-data/
