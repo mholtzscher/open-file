@@ -63,6 +63,12 @@ export function dialogReducer(state: DialogState, action: DialogAction): DialogS
         quitPendingChanges: action.payload.pendingChanges,
       };
 
+    case 'SHOW_PROFILE_SELECTOR':
+      return {
+        ...state,
+        activeDialog: 'profileSelector',
+      };
+
     case 'CLOSE':
       return {
         ...state,
@@ -98,6 +104,8 @@ export interface UseDialogStateReturn {
   isUploadOpen: boolean;
   /** Whether the quit confirmation dialog is open */
   isQuitOpen: boolean;
+  /** Whether the profile selector dialog is open */
+  isProfileSelectorOpen: boolean;
   /** Show the confirm dialog with pending operations */
   showConfirm: (operations: PendingOperation[]) => void;
   /** Show the help dialog */
@@ -112,6 +120,8 @@ export interface UseDialogStateReturn {
   showUpload: () => void;
   /** Show the quit confirmation dialog */
   showQuit: (pendingChanges: number) => void;
+  /** Show the profile selector dialog */
+  showProfileSelector: () => void;
   /** Close any open dialog */
   closeDialog: () => void;
   /** Close dialog and clear pending operations */
@@ -184,6 +194,10 @@ export function useDialogState(): UseDialogStateReturn {
     dispatch({ type: 'SHOW_QUIT', payload: { pendingChanges } });
   }, []);
 
+  const showProfileSelector = useCallback(() => {
+    dispatch({ type: 'SHOW_PROFILE_SELECTOR' });
+  }, []);
+
   const closeDialog = useCallback(() => {
     dispatch({ type: 'CLOSE' });
   }, []);
@@ -200,6 +214,7 @@ export function useDialogState(): UseDialogStateReturn {
   const isSortOpen = state.activeDialog === 'sort';
   const isUploadOpen = state.activeDialog === 'upload';
   const isQuitOpen = state.activeDialog === 'quit';
+  const isProfileSelectorOpen = state.activeDialog === 'profileSelector';
 
   return {
     dialog: state,
@@ -209,6 +224,7 @@ export function useDialogState(): UseDialogStateReturn {
     isSortOpen,
     isUploadOpen,
     isQuitOpen,
+    isProfileSelectorOpen,
     showConfirm,
     showHelp,
     toggleHelp,
@@ -216,6 +232,7 @@ export function useDialogState(): UseDialogStateReturn {
     toggleSort,
     showUpload,
     showQuit,
+    showProfileSelector,
     closeDialog,
     closeAndClearOperations,
     dispatch,

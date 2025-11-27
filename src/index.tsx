@@ -6,11 +6,13 @@ import { useEffect } from 'react';
 import { S3Explorer } from './ui/s3-explorer.jsx';
 import { StorageProvider } from './providers/provider.js';
 import { S3Provider } from './providers/s3/s3-provider.js';
+import { FileProfileManager } from './providers/services/file-profile-manager.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger.js';
 import { getActiveAwsRegion } from './utils/aws-profile.js';
 import { KeyboardProvider, useKeyboardDispatch } from './contexts/KeyboardContext.js';
 import { StorageContextProvider } from './contexts/StorageContextProvider.js';
+import { isNewProviderSystemEnabled } from './utils/feature-flags.js';
 import type { KeyboardKey, KeyboardDispatcher } from './types/keyboard.js';
 import type { S3Profile } from './providers/types/profile.js';
 
@@ -134,6 +136,13 @@ async function main() {
     // Get bucket name - can be undefined for root view mode
     const bucket = cliArgs.bucket;
 
+    // Create ProfileManager if new provider system is enabled
+    let profileManager;
+    if (isNewProviderSystemEnabled()) {
+      profileManager = new FileProfileManager();
+      logger.info('ProfileManager initialized');
+    }
+
     // Create and start renderer
     // Note: Using type assertion for external library type
     type CliRenderer = Awaited<ReturnType<typeof createCliRenderer>> & {
@@ -192,7 +201,7 @@ async function main() {
       const root = createRoot(renderer);
       root.render(
         <KeyboardProvider>
-          <StorageContextProvider provider={provider}>
+          <StorageContextProvider provider={provider} profileManager={profileManager}>
             <App bucket={bucket} provider={provider} />
           </StorageContextProvider>
         </KeyboardProvider>

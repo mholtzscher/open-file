@@ -103,6 +103,7 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
     isSortOpen: showSortMenu,
     isUploadOpen: showUploadDialog,
     isQuitOpen: showQuitDialog,
+    isProfileSelectorOpen: showProfileSelectorDialog,
     showConfirm,
     showHelp,
     toggleHelp,
@@ -110,6 +111,7 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
     toggleSort,
     showUpload,
     showQuit,
+    showProfileSelector,
     closeDialog,
     closeAndClearOperations,
   } = useDialogState();
@@ -214,7 +216,12 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   // ============================================
   // Check if any dialog is open (blocks normal keybindings)
   const isAnyDialogOpen =
-    showConfirmDialog || showHelpDialog || showSortMenu || showUploadDialog || showQuitDialog;
+    showConfirmDialog ||
+    showHelpDialog ||
+    showSortMenu ||
+    showUploadDialog ||
+    showQuitDialog ||
+    showProfileSelectorDialog;
 
   // Initialize the keyboard dispatcher
   const {
@@ -430,6 +437,15 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
       'dialog:help': () => toggleHelp(),
       'dialog:sort': () => toggleSort(),
       'dialog:upload': () => showUpload(),
+      'dialog:profileSelector': () => {
+        const profileManager = storage.getProfileManager();
+        if (profileManager) {
+          showProfileSelector();
+        } else {
+          setStatusMessage('Profile selector not available (multi-provider system not enabled)');
+          setStatusMessageColor(CatppuccinMocha.yellow);
+        }
+      },
 
       // Buffer operations
       'buffer:save': () => {
@@ -927,6 +943,17 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
         return true; // Block all other keys when help dialog is open
       }
 
+      // Profile selector dialog shortcuts
+      if (showProfileSelectorDialog) {
+        // Note: The ProfileSelectorDialog component handles j/k/up/down/enter internally
+        // We just need to handle escape here to close it
+        if (key.name === 'escape' || key.name === 'q') {
+          closeDialog();
+          return true;
+        }
+        return true; // Block all other keys when profile selector is open
+      }
+
       // Quit confirmation dialog
       if (showQuitDialog) {
         if (key.name === 'q') {
@@ -973,6 +1000,7 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
       showErrorDialog,
       showSortMenu,
       showQuitDialog,
+      showProfileSelectorDialog,
       closeDialog,
       closeAndClearOperations,
       bufferState,
@@ -1210,6 +1238,31 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
     quit: {
       visible: showQuitDialog,
       pendingChanges: dialogState.quitPendingChanges,
+    },
+    profileSelector: {
+      visible: showProfileSelectorDialog,
+      profileManager: storage.getProfileManager(),
+      currentProfileId: storage.state.providerId,
+      onProfileSelect: async profile => {
+        try {
+          setStatusMessage(`Switching to profile: ${profile.displayName}...`);
+          setStatusMessageColor(CatppuccinMocha.blue);
+          closeDialog();
+
+          // TODO: Implement profile switching
+          // This will require creating a new provider instance from the profile
+          // and reinitializing the storage context
+          setStatusMessage(`Profile switching not yet fully implemented`);
+          setStatusMessageColor(CatppuccinMocha.yellow);
+        } catch (err) {
+          console.error('Failed to switch profile:', err);
+          setStatusMessage(
+            `Failed to switch profile: ${err instanceof Error ? err.message : 'Unknown error'}`
+          );
+          setStatusMessageColor(CatppuccinMocha.red);
+        }
+      },
+      onCancel: () => closeDialog(),
     },
   };
 

@@ -32,6 +32,7 @@ import {
 import { Entry } from '../types/entry.js';
 import { Capability } from '../providers/types/capabilities.js';
 import { OperationResult, isSuccess, isUnimplemented } from '../providers/types/result.js';
+import type { ProfileManager } from '../providers/services/profile-manager.js';
 
 // ============================================================================
 // Implementation
@@ -45,6 +46,7 @@ import { OperationResult, isSuccess, isUnimplemented } from '../providers/types/
  */
 export class ProviderStorageAdapter implements StorageContextValue {
   private provider: StorageProvider;
+  private profileManager?: ProfileManager;
   private internalState: StorageState;
   private listeners: Set<() => void> = new Set();
 
@@ -53,9 +55,16 @@ export class ProviderStorageAdapter implements StorageContextValue {
    * @param provider - The storage provider to wrap
    * @param initialPath - Initial path to navigate to (defaults to "/")
    * @param initialContainer - Initial container (optional)
+   * @param profileManager - Optional ProfileManager instance for profile switching
    */
-  constructor(provider: StorageProvider, initialPath: string = '/', initialContainer?: string) {
+  constructor(
+    provider: StorageProvider,
+    initialPath: string = '/',
+    initialContainer?: string,
+    profileManager?: ProfileManager
+  ) {
     this.provider = provider;
+    this.profileManager = profileManager;
     this.internalState = {
       providerId: provider.name,
       providerDisplayName: provider.displayName,
@@ -576,5 +585,12 @@ export class ProviderStorageAdapter implements StorageContextValue {
     } else {
       this.setState({ isConnected: true });
     }
+  }
+
+  /**
+   * Get the ProfileManager instance (if available)
+   */
+  getProfileManager(): ProfileManager | undefined {
+    return this.profileManager;
   }
 }

@@ -59,6 +59,7 @@ export type KeyAction =
   | 'dialog:help'
   | 'dialog:sort'
   | 'dialog:upload'
+  | 'dialog:profileSelector'
   // Buffer operations
   | 'buffer:save'
   | 'buffer:refresh'

@@ -9,7 +9,7 @@
  * Types of dialogs available in the application.
  * Only one dialog can be active at a time.
  */
-export type DialogType = 'confirm' | 'help' | 'sort' | 'upload' | 'quit' | null;
+export type DialogType = 'confirm' | 'help' | 'sort' | 'upload' | 'quit' | 'profileSelector' | null;
 
 /**
  * State for the dialog system
@@ -61,5 +61,6 @@ export type DialogAction =
   | { type: 'SHOW_SORT' }
   | { type: 'SHOW_UPLOAD' }
   | { type: 'SHOW_QUIT'; payload: ShowQuitOptions }
+  | { type: 'SHOW_PROFILE_SELECTOR' }
   | { type: 'CLOSE' }
   | { type: 'CLEAR_OPERATIONS' };

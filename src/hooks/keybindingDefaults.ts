@@ -73,6 +73,8 @@ function createDefaultKeybindings(): KeybindingMap {
     // Dialogs
     ['?', 'dialog:help'],
     ['o', 'dialog:sort'],
+    ['shift+p', 'dialog:profileSelector'],
+    ['P', 'dialog:profileSelector'],
 
     // Buffer operations
     ['w', 'buffer:save'],
@@ -183,6 +185,7 @@ export const keybindingDescriptions: Partial<Record<KeyAction, string>> = {
   'dialog:help': 'Show help',
   'dialog:sort': 'Sort menu',
   'dialog:upload': 'Upload dialog',
+  'dialog:profileSelector': 'Profile selector',
 
   // Buffer operations
   'buffer:save': 'Save changes',

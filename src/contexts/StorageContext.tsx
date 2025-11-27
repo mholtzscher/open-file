@@ -20,6 +20,7 @@ import { createContext, useContext, ReactNode } from 'react';
 import { Entry } from '../types/entry.js';
 import { ProgressEvent } from '../types/progress.js';
 import { Capability } from '../providers/types/capabilities.js';
+import type { ProfileManager } from '../providers/services/profile-manager.js';
 
 // ============================================================================
 // Storage State
@@ -341,6 +342,17 @@ export interface StorageContextValue {
    * @returns Unsubscribe function
    */
   subscribe(listener: () => void): () => void;
+
+  // ==========================================================================
+  // Profile Management
+  // ==========================================================================
+
+  /**
+   * Get the ProfileManager instance (if available)
+   * Only available when new provider system is enabled
+   * @returns ProfileManager instance or undefined
+   */
+  getProfileManager(): ProfileManager | undefined;
 }
 
 // ============================================================================

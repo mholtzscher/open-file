@@ -13,6 +13,7 @@ import { useMemo, useEffect, ReactNode } from 'react';
 import { StorageContext, StorageContextValue, StorageProviderProps } from './StorageContext.js';
 import { ProviderStorageAdapter } from './ProviderStorageAdapter.js';
 import { StorageProvider } from '../providers/provider.js';
+import type { ProfileManager } from '../providers/services/profile-manager.js';
 
 // ============================================================================
 // Provider Props (Extended)
@@ -29,6 +30,11 @@ export interface StorageContextProviderProps extends Omit<StorageProviderProps, 
    * Storage provider (required)
    */
   provider: StorageProvider;
+
+  /**
+   * Optional ProfileManager for profile switching
+   */
+  profileManager?: ProfileManager;
 }
 
 // ============================================================================
@@ -56,6 +62,7 @@ export interface StorageContextProviderProps extends Omit<StorageProviderProps, 
 export function StorageContextProvider({
   children,
   provider,
+  profileManager,
   initialPath = '/',
   initialContainer,
 }: StorageContextProviderProps) {
@@ -66,8 +73,8 @@ export function StorageContextProvider({
 
   // Create the storage adapter wrapper
   const storageAdapter = useMemo<StorageContextValue>(() => {
-    return new ProviderStorageAdapter(provider, initialPath, initialContainer);
-  }, [provider, initialPath, initialContainer]);
+    return new ProviderStorageAdapter(provider, initialPath, initialContainer, profileManager);
+  }, [provider, initialPath, initialContainer, profileManager]);
 
   // Initialize on mount
   useEffect(() => {

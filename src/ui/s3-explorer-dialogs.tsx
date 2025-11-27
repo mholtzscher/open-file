@@ -12,8 +12,11 @@ import { UploadDialog } from './upload-dialog-react.js';
 import { SortMenu } from './sort-menu-react.js';
 import { ProgressWindow } from './progress-window-react.js';
 import { QuitDialog } from './quit-dialog-react.js';
+import { ProfileSelectorDialog } from './profile-selector-dialog-react.js';
 import { SortField, SortOrder } from '../utils/sorting.js';
 import type { PendingOperation } from '../types/dialog.js';
+import type { Profile } from '../providers/types/profile.js';
+import type { ProfileManager } from '../providers/services/profile-manager.js';
 
 /**
  * Props for individual dialog states
@@ -67,6 +70,14 @@ export interface QuitDialogState {
   pendingChanges: number;
 }
 
+export interface ProfileSelectorDialogState {
+  visible: boolean;
+  profileManager?: ProfileManager;
+  currentProfileId?: string;
+  onProfileSelect: (profile: Profile) => void;
+  onCancel: () => void;
+}
+
 /**
  * Combined dialog state for all dialogs
  */
@@ -78,6 +89,7 @@ export interface DialogsState {
   sortMenu: SortMenuState;
   progress: ProgressWindowState;
   quit: QuitDialogState;
+  profileSelector: ProfileSelectorDialogState;
 }
 
 interface S3ExplorerDialogsProps {
@@ -91,7 +103,7 @@ interface S3ExplorerDialogsProps {
  * Dialogs are rendered in a specific order to ensure proper z-index stacking.
  */
 export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
-  const { confirm, error, help, upload, sortMenu, progress, quit } = dialogs;
+  const { confirm, error, help, upload, sortMenu, progress, quit, profileSelector } = dialogs;
 
   return (
     <>
@@ -147,6 +159,17 @@ export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
 
       {/* Quit Confirmation Dialog */}
       {quit.visible && <QuitDialog visible={quit.visible} pendingChanges={quit.pendingChanges} />}
+
+      {/* Profile Selector Dialog */}
+      {profileSelector.visible && profileSelector.profileManager && (
+        <ProfileSelectorDialog
+          visible={profileSelector.visible}
+          profileManager={profileSelector.profileManager}
+          currentProfileId={profileSelector.currentProfileId}
+          onProfileSelect={profileSelector.onProfileSelect}
+          onCancel={profileSelector.onCancel}
+        />
+      )}
     </>
   );
 }
