@@ -51,3 +51,17 @@ export {
   type EncryptionErrorCode,
   type PasswordRequirements,
 } from './config-encryption.js';
+
+// Sensitive Data Sanitizer
+export {
+  isSensitiveFieldName,
+  hasSensitiveData,
+  getSensitiveFieldPaths,
+  maskValue,
+  maskSensitiveFields,
+  sanitizeForLogging,
+  safeStringify,
+  checkForSensitiveDataWarnings,
+  type MaskOptions,
+  type SensitiveDataWarning,
+} from './sanitizer.js';
