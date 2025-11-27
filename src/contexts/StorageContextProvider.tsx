@@ -27,9 +27,9 @@ export interface StorageContextProviderProps extends Omit<StorageProviderProps, 
   children: ReactNode;
 
   /**
-   * Storage provider (required)
+   * Storage provider (optional - can start without a provider for profile selection)
    */
-  provider: StorageProvider;
+  provider?: StorageProvider;
 
   /**
    * Optional ProfileManager for profile switching
@@ -66,18 +66,20 @@ export function StorageContextProvider({
   initialPath = '/',
   initialContainer,
 }: StorageContextProviderProps) {
-  // Validate that we have the required provider
-  if (!provider) {
-    throw new Error('StorageContextProvider: provider is required');
-  }
-
-  // Create the storage adapter wrapper
-  const storageAdapter = useMemo<StorageContextValue>(() => {
+  // Create the storage adapter wrapper (or null if no provider)
+  const storageAdapter = useMemo<StorageContextValue | null>(() => {
+    if (!provider) {
+      return null;
+    }
     return new ProviderStorageAdapter(provider, initialPath, initialContainer, profileManager);
   }, [provider, initialPath, initialContainer, profileManager]);
 
-  // Initialize on mount
+  // Initialize on mount (only if we have a provider)
   useEffect(() => {
+    if (!storageAdapter) {
+      return;
+    }
+
     // Perform initial navigation to load entries
     storageAdapter.navigate(initialPath).catch(error => {
       console.error('StorageContextProvider: Failed to initialize:', error);
@@ -100,7 +102,7 @@ export function StorageContextProvider({
 // ============================================================================
 
 // Re-export hooks for convenience
-export { useStorage, useHasStorage } from './StorageContext.js';
+export { useStorage, useHasStorage, useOptionalStorage } from './StorageContext.js';
 
 // Re-export types for convenience
 export type {

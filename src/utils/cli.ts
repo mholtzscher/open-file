@@ -10,7 +10,7 @@ export interface CliArgs {
   adapter?: 'mock' | 's3';
   mock?: boolean; // Shorthand for --adapter mock
   region?: string;
-  profile?: string; // AWS profile name
+  profile?: string; // open-s3 profile ID from profiles.json
   endpoint?: string;
   accessKey?: string;
   secretKey?: string;
@@ -70,48 +70,42 @@ export function parseArgs(args: string[]): CliArgs {
  */
 export function printHelp(): void {
   console.log(`
-open-s3 - Terminal UI for exploring AWS S3 buckets
+open-s3 - Terminal UI for exploring cloud storage
 
 USAGE:
   open-s3 [OPTIONS] [BUCKET]
 
 ARGUMENTS:
-  BUCKET              S3 bucket to open (optional - omit to list all buckets)
+  BUCKET              Bucket/container to open (optional)
 
 OPTIONS:
-    -b, --bucket NAME       S3 bucket name
-    --mock                  Use mock adapter for testing (no AWS required)
+    -p, --profile NAME      Use a saved profile from profiles.json
+    -b, --bucket NAME       Bucket/container name to open directly
+    --mock                  Use mock adapter for testing (no cloud required)
     -a, --adapter TYPE      Adapter type: mock or s3 (default: s3)
-    -p, --profile NAME      AWS profile name (default: active profile or 'default')
-    -r, --region REGION     AWS region (default: from profile, then us-east-1)
-    --endpoint URL          Custom S3 endpoint (for LocalStack, etc.)
-    --access-key KEY        AWS access key
-    --secret-key KEY        AWS secret key
+    -r, --region REGION     AWS region (for ad-hoc S3 connections)
+    --endpoint URL          Custom S3 endpoint (for LocalStack, MinIO, etc.)
+    --access-key KEY        AWS access key (for ad-hoc S3 connections)
+    --secret-key KEY        AWS secret key (for ad-hoc S3 connections)
     --debug                 Enable debug logging to file
     -h, --help              Show this help message
     -v, --version           Show version
 
 EXAMPLES:
-   # List all buckets
+   # Start with profile selector (default)
    open-s3
 
-   # Open bucket using active AWS profile
-   open-s3 my-bucket
+   # Use a saved profile
+   open-s3 --profile localstack
 
-   # Use specific AWS profile
-   open-s3 --profile production my-bucket
+   # Use a saved profile and open a specific bucket
+   open-s3 --profile production --bucket my-bucket
 
-   # Override region (takes precedence over profile region)
-   open-s3 --region us-west-2 my-bucket
+   # Ad-hoc connection with custom endpoint (LocalStack)
+   open-s3 --endpoint http://localhost:4566 --bucket test-bucket
 
-   # Use mock adapter for testing (no AWS required)
+   # Use mock adapter for testing (no cloud required)
    open-s3 --mock
-
-   # Use custom endpoint (LocalStack)
-   open-s3 --endpoint http://localhost:4566 test-bucket
-
-   # Specify AWS credentials explicitly
-   open-s3 --profile staging --region us-east-1 my-bucket
 
 KEYBINDINGS (vim-style):
   j/k         Navigate up/down
@@ -122,6 +116,7 @@ KEYBINDINGS (vim-style):
   d           Delete selected entries
   i/a         Enter edit mode
   w           Save changes
+  P           Switch profile
   q           Quit
 
 For more information, see the README.md file.

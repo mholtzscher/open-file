@@ -460,6 +460,28 @@ export function useHasStorage(): boolean {
   return context !== null;
 }
 
+/**
+ * Hook to access the storage context, returning null if not available
+ *
+ * Use this when storage is optional (e.g., during profile selection)
+ *
+ * @example
+ * ```tsx
+ * function OptionalStorageFeature() {
+ *   const storage = useOptionalStorage();
+ *
+ *   if (!storage) {
+ *     return <ProfileSelector />;
+ *   }
+ *
+ *   return <FileList storage={storage} />;
+ * }
+ * ```
+ */
+export function useOptionalStorage(): StorageContextValue | null {
+  return useContext(StorageContext);
+}
+
 // ============================================================================
 // Provider Implementation
 // ============================================================================
