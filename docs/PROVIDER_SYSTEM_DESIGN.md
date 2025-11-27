@@ -226,7 +226,8 @@ export type Profile =
  * Profiles should NOT store plaintext credentials - use these source types instead
  */
 export type CredentialSource =
-  | { type: 'keychain'; service: string; account: string } // OS keychain (preferred)
+  | { type: 'encryptedConfig' } // Encrypted file (preferred for portability)
+  | { type: 'keychain'; service: string; account: string } // OS keychain (desktop only)
   | { type: 'environment'; variable: string } // Environment variable
   | { type: 'sshAgent' } // SSH agent (SFTP only)
   | { type: 'awsProfile'; profileName: string } // AWS credentials file
@@ -531,10 +532,14 @@ export interface StorageProvider {
   list(path: string, options?: ListOptions): Promise<OperationResult<ListResult>>;
   getMetadata(path: string): Promise<OperationResult<Entry>>;
   exists(path: string): Promise<OperationResult<boolean>>;
-  read(path: string, options?: ReadOptions): Promise<OperationResult<Buffer>>;
+  read(path: string, options?: ReadOptions): Promise<OperationResult<ReadableStream>>;
 
   // === Mutable Operations ===
-  write(path: string, content: Buffer, options?: WriteOptions): Promise<OperationResult>;
+  write(
+    path: string,
+    content: ReadableStream | Buffer | string,
+    options?: WriteOptions
+  ): Promise<OperationResult>;
   mkdir(path: string): Promise<OperationResult>;
   delete(path: string, options?: DeleteOptions): Promise<OperationResult>;
 
@@ -622,11 +627,15 @@ export abstract class BaseStorageProvider implements StorageProvider {
   abstract list(path: string, options?: ListOptions): Promise<OperationResult<ListResult>>;
   abstract getMetadata(path: string): Promise<OperationResult<Entry>>;
   abstract exists(path: string): Promise<OperationResult<boolean>>;
-  abstract read(path: string, options?: ReadOptions): Promise<OperationResult<Buffer>>;
+  abstract read(path: string, options?: ReadOptions): Promise<OperationResult<ReadableStream>>;
 
   // === Default implementations (return unimplemented) ===
 
-  async write(_path: string, _content: Buffer, _options?: WriteOptions): Promise<OperationResult> {
+  async write(
+    _path: string,
+    _content: ReadableStream | Buffer | string,
+    _options?: WriteOptions
+  ): Promise<OperationResult> {
     return Result.unimplemented('write');
   }
 
@@ -760,31 +769,38 @@ import { StorageProvider } from './provider';
 // import { SMBProvider } from './smb-provider';
 
 export interface ProviderFactory {
-  createProvider(profile: Profile): StorageProvider;
+  createProvider(profile: Profile): Promise<StorageProvider>;
   getSupportedProviders(): string[];
 }
 
-export function createProvider(profile: Profile): StorageProvider {
+export async function createProvider(profile: Profile): Promise<StorageProvider> {
   switch (profile.provider) {
     case 's3':
+      // const { S3Provider } = await import('./s3/s3-provider');
       // return new S3Provider(profile as S3Profile);
       throw new Error('S3Provider not yet implemented');
     case 'gcs':
+      // const { GCSProvider } = await import('./gcs/gcs-provider');
       // return new GCSProvider(profile as GCSProfile);
       throw new Error('GCSProvider not yet implemented');
     case 'sftp':
+      // const { SFTPProvider } = await import('./sftp/sftp-provider');
       // return new SFTPProvider(profile as SFTPProfile);
       throw new Error('SFTPProvider not yet implemented');
     case 'ftp':
+      // const { FTPProvider } = await import('./ftp/ftp-provider');
       // return new FTPProvider(profile as FTPProfile);
       throw new Error('FTPProvider not yet implemented');
     case 'nfs':
+      // const { NFSProvider } = await import('./nfs/nfs-provider');
       // return new NFSProvider(profile as NFSProfile);
       throw new Error('NFSProvider not yet implemented');
     case 'smb':
+      // const { SMBProvider } = await import('./smb/smb-provider');
       // return new SMBProvider(profile as SMBProfile);
       throw new Error('SMBProvider not yet implemented');
     case 'gdrive':
+      // const { GoogleDriveProvider } = await import('./gdrive/gdrive-provider');
       // return new GoogleDriveProvider(profile as GoogleDriveProfile);
       throw new Error('GoogleDriveProvider not yet implemented');
     default:
@@ -949,20 +965,28 @@ Providers can override `nativeMove()` or `nativeCopy()` if they have optimized i
 
 **Why**: SFTP/FTP need explicit `connect()` and `disconnect()` methods to manage TCP connections. Cloud providers (S3/GCS) can be stateless per-request. The `connect()` and `isConnected()` methods are optional on the interface.
 
-### 7. No Cross-Provider Operations
+### 7. Cross-Provider Operations via TransferManager
 
-**Limitation**: This design explicitly does **not** support cross-provider operations (e.g., copying directly from S3 to SFTP, or moving files between GCS and SMB).
+**Decision**: Providers themselves do **not** handle cross-provider operations (e.g., S3Provider cannot copy to SFTPProvider).
+
+**Solution**: A higher-level `TransferManager` service handles data piping between providers using Streams.
 
 **Rationale**:
 
-- Cross-provider transfers would require streaming data through the client, negating server-side copy benefits
-- Each provider has different semantics for metadata, permissions, and path handling
-- Error handling and rollback for partial transfers across providers is complex
-- The UI/UX for selecting source and destination providers adds significant complexity
+- Decouples providers from each other
+- Allows efficient streaming without loading full files into memory
+- Centralizes transfer logic (retries, progress, cancellation)
+- Enables "Copy from S3 to SFTP" user stories without complex provider dependencies
 
-**Workaround**: Users can download files locally first, then upload to the target provider. This makes the two-step process explicit and keeps each provider's operations self-contained.
+**Implementation**:
 
-**Future consideration**: If cross-provider support is needed, it should be implemented as a separate `TransferService` layer above the provider abstraction, not within the providers themselves.
+```typescript
+await transferManager.transfer({
+  source: { provider: s3Provider, path: 'bucket/key' },
+  dest: { provider: sftpProvider, path: '/home/user/file' },
+  options: { onProgress: ... }
+});
+```
 
 ---
 
@@ -1318,54 +1342,7 @@ src/
 - Export from `src/providers/credentials/index.ts`
 - Estimated: 3 hours
 
-**P2-6: Implement OS keychain integration with keytar**
-
-- Add `keytar` dependency to package.json (native bindings for macOS Keychain, Windows Credential Manager, Linux secret-service)
-- Create `src/providers/credentials/keychain-provider.ts`:
-  - Implement `KeychainCredentialProvider` class
-  - `getCredentials(profileId)` - retrieve from OS keychain
-  - `setCredentials(profileId, credentials)` - store in OS keychain
-  - `deleteCredentials(profileId)` - remove from OS keychain
-- Handle cross-platform differences:
-  - macOS: Keychain Services
-  - Windows: Credential Manager
-  - Linux: libsecret (GNOME Keyring, KWallet)
-- **Implement graceful fallback for environments without keychain:**
-  - Detect CI/CD environment (CI env var, no TTY)
-  - Detect Docker/container (/.dockerenv, cgroup check)
-  - Fall back to environment variables or config file
-  - Log warning when keychain unavailable
-- Add unit tests with mocked keytar
-- Estimated: 5 hours
-
-**P2-7: Implement per-provider credential resolvers**
-
-- Create `src/providers/credentials/resolvers/`:
-  - `s3-credential-resolver.ts`:
-    - Priority: 1) Keychain 2) AWS profile 3) Environment vars 4) SDK default chain
-    - Wrap existing `@aws-sdk/credential-providers` functionality
-    - Support `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`
-  - `gcs-credential-resolver.ts`:
-    - Priority: 1) Keychain 2) Service account JSON 3) ADC (`GOOGLE_APPLICATION_CREDENTIALS`)
-    - Use `google-auth-library` for ADC chain
-  - `sftp-credential-resolver.ts`:
-    - Priority: 1) SSH Agent (`SSH_AUTH_SOCK`) 2) Key file 3) Keychain (password) 4) Interactive prompt
-    - SSH Agent is preferred (most secure, no stored credentials)
-    - Detect SSH_AUTH_SOCK environment variable
-  - `ftp-credential-resolver.ts`:
-    - Priority: 1) Keychain 2) Environment vars 3) Interactive prompt
-    - Warn if using plaintext password in config
-  - `smb-credential-resolver.ts`:
-    - Priority: 1) Kerberos ticket 2) Keychain 3) Environment vars
-    - Support domain credentials
-  - `gdrive-credential-resolver.ts`:
-    - Priority: 1) Keychain (refresh token) 2) Service account JSON 3) OAuth flow
-    - Handle token refresh automatically
-- Add factory function `getCredentialResolver(providerType): CredentialResolver`
-- Add unit tests for each resolver
-- Estimated: 7 hours
-
-**P2-8: Implement config file encryption**
+**P2-6: Implement portable encrypted config file (Primary storage)**
 
 - Create `src/providers/credentials/config-encryption.ts`:
   - Use Node.js built-in `crypto.scryptSync()` for key derivation (no extra dependency)
@@ -1383,6 +1360,52 @@ src/
   - Re-encrypt on save
 - Add `--encrypt-config` CLI flag to encrypt existing config
 - Add unit tests for encryption/decryption roundtrip
+- Estimated: 4 hours
+
+**P2-7: Implement per-provider credential resolvers**
+
+- Create `src/providers/credentials/resolvers/`:
+  - `s3-credential-resolver.ts`:
+    - Priority: 1) Encrypted Config 2) AWS profile 3) Environment vars 4) SDK default chain
+    - Wrap existing `@aws-sdk/credential-providers` functionality
+    - Support `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_SESSION_TOKEN`
+  - `gcs-credential-resolver.ts`:
+    - Priority: 1) Encrypted Config 2) Service account JSON 3) ADC (`GOOGLE_APPLICATION_CREDENTIALS`)
+    - Use `google-auth-library` for ADC chain
+  - `sftp-credential-resolver.ts`:
+    - Priority: 1) SSH Agent (`SSH_AUTH_SOCK`) 2) Key file 3) Encrypted Config (password) 4) Interactive prompt
+    - SSH Agent is preferred (most secure, no stored credentials)
+    - Detect SSH_AUTH_SOCK environment variable
+  - `ftp-credential-resolver.ts`:
+    - Priority: 1) Encrypted Config 2) Environment vars 3) Interactive prompt
+    - Warn if using plaintext password in config
+  - `smb-credential-resolver.ts`:
+    - Priority: 1) Kerberos ticket 2) Encrypted Config 3) Environment vars
+    - Support domain credentials
+  - `gdrive-credential-resolver.ts`:
+    - Priority: 1) Encrypted Config (refresh token) 2) Service account JSON 3) OAuth flow
+    - Handle token refresh automatically
+- Add factory function `getCredentialResolver(providerType): CredentialResolver`
+- Add unit tests for each resolver
+- Estimated: 7 hours
+
+**P2-8: Implement OS keychain integration (Secondary/Optional)**
+
+- Note: Optional dependency to support desktop environments, but not required for TUI operation.
+- Add `keytar` dependency to package.json (native bindings)
+- Create `src/providers/credentials/keychain-provider.ts`:
+  - Implement `KeychainCredentialProvider` class
+  - `getCredentials(profileId)` - retrieve from OS keychain
+  - `setCredentials(profileId, credentials)` - store in OS keychain
+  - `deleteCredentials(profileId)` - remove from OS keychain
+- Handle cross-platform differences:
+  - macOS: Keychain Services
+  - Windows: Credential Manager
+  - Linux: libsecret (GNOME Keyring, KWallet)
+- **Graceful degradation:**
+  - If keytar fails to load (headless environment), disable this provider
+  - Log warning only on debug level
+- Add unit tests with mocked keytar
 - Estimated: 3 hours
 
 **P2-9: Implement sensitive data handling**
@@ -1431,193 +1454,88 @@ src/
 
 ---
 
-### Phase 3: S3 Provider (First Provider Implementation)
+### Phase 3: S3 Provider (Legacy Refactor)
 
-Create `S3Provider` that wraps the existing `S3Adapter`:
+Refactor the existing `S3Adapter` logic into `S3Provider` implementing the new `StorageProvider` interface.
+
+**Strategy**: Port the logic directly rather than wrapping. This avoids "wrapper hell" and creates a clean S3 implementation immediately.
 
 ```typescript
 // src/providers/s3/s3-provider.ts
-import { S3Adapter } from '../../adapters/s3-adapter';
-import { getCredentialResolver } from '../credentials/resolvers';
-
 export class S3Provider extends BaseStorageProvider {
-  private adapter: S3Adapter;
+  // Ported logic from S3Adapter
+  private client: S3Client;
 
   constructor(profile: S3Profile, credentials?: ResolvedCredentials) {
-    // Credentials resolved by ProfileManager before construction
-    this.adapter = new S3Adapter(mapProfileToConfig(profile, credentials));
-    // ... delegate all operations to adapter
+    // ...
   }
 }
 ```
 
-**Key principle:** The existing `S3Adapter` continues to work. `S3Provider` is a thin wrapper that:
-
-1. Uses credentials resolved by Phase 2 credential chain
-2. Translates between new interface and existing implementation
-3. Maps exceptions to `OperationResult` pattern
-
 **Deliverables:**
 
-- `S3Provider` class wrapping `S3Adapter`
-- Error-to-OperationResult mapping
+- `S3Provider` class (direct implementation)
 - Unit tests for `S3Provider`
-- Verify feature parity with direct `S3Adapter` usage
+- Validation that all existing S3 features work
+- **Note on Implicit Directories**: Ensure `list()` handles S3 "folders" correctly by processing CommonPrefixes, even if no 0-byte object exists. This is crucial for compatibility with buckets created by other tools.
 
 #### Tickets
 
-**P3-1: Create S3Provider class skeleton**
+**P3-1: Port S3Adapter logic to S3Provider**
 
 - Create `src/providers/s3/s3-provider.ts`
-- Extend `BaseStorageProvider`
-- Define constructor accepting `S3Profile` and optional `ResolvedCredentials`
-- Declare S3 capabilities in constructor (List, Read, Write, Delete, Mkdir, Rmdir, Copy, Move, ServerSideCopy, Resume, Versioning, Metadata, PresignedUrls, BatchDelete, Containers)
-- Add placeholder methods that throw "not implemented"
-- Estimated: 1 hour
+- Copy relevant logic from `S3Adapter`
+- Update method signatures to match `StorageProvider` (Streams!)
+- Implement implicit directory handling in `list()`
+- Use `S3Profile` for configuration
+- Estimated: 6 hours
 
-**P3-2: Implement profile-to-adapter configuration mapping**
+**P3-2: Port tests and validation**
 
-- Create `src/providers/s3/config-mapper.ts`
-- Implement `mapProfileToAdapterConfig(profile: S3Profile, credentials?: ResolvedCredentials): S3AdapterConfig`
-- Handle region, credentials (profile vs direct vs resolved), endpoint, forcePathStyle
-- Integrate with S3 credential resolver from Phase 2
-- Preserve existing `S3AdapterDependencies` pattern for DI
-- Add unit tests for config mapping
-- Estimated: 3 hours
-
-**P3-3: Implement error-to-OperationResult mapping**
-
-- Create `src/providers/s3/error-mapper.ts`
-- Implement `mapS3Error(error: unknown, operation: string): OperationResult`
-- Wrap existing `parseAwsError()` from `src/utils/errors.ts`
-- Map AWS error codes to OperationStatus:
-  - `NoSuchKey`, `NotFound` → `NotFound`
-  - `AccessDenied`, `Forbidden` → `PermissionDenied`
-  - `ServiceUnavailable`, `SlowDown` → `Error` with `retryable: true`
-  - Network errors → `ConnectionFailed`
-- Preserve original error in `OperationError.cause`
-- Add unit tests for all error mappings
-- Estimated: 2 hours
-
-**P3-4: Implement S3Provider.list()**
-
-- Delegate to `S3Adapter.listObjects()`
-- Map adapter response to `OperationResult<ListResult>`
-- Handle pagination (continuationToken)
-- Convert adapter entries to provider Entry type
-- Map errors to OperationResult errors
-- Add unit tests
-- Estimated: 3 hours
-
-**P3-5: Implement S3Provider.read()**
-
-- Delegate to `S3Adapter.read()`
-- Support offset/length options via Range header
-- Map response to `OperationResult<Buffer>`
-- Wire up progress callback if provided
-- Use error mapper from P3-3
-- Add unit tests
-- Estimated: 2 hours
-
-**P3-6: Implement S3Provider.write() and mkdir()**
-
-- Implement `write()`:
-  - Delegate to `S3Adapter.create()` with `EntryType.File`
-  - Delegate to multipart upload for large files (>5MB threshold)
-  - Support contentType and metadata options
-  - Wire up progress callback
-- Implement `mkdir()`:
-  - Delegate to `S3Adapter.create()` with `EntryType.Directory`
-  - Create empty object with trailing `/` (S3 directory convention)
-- Implement `rmdir()`:
-  - Delegate to `S3Adapter.delete()` with `recursive: true`
-- Map errors to OperationResult errors
-- Add unit tests
+- Port existing `S3Adapter` tests to `S3Provider` tests
+- Ensure 1:1 feature parity
 - Estimated: 4 hours
 
-**P3-7: Implement S3Provider.delete()**
+**P3-3: Implement Core Operations**
 
-- Delegate to `S3Adapter.delete()` for single objects
-- Delegate to `S3Adapter.delete(recursive: true)` for recursive deletes
-- Map errors to OperationResult errors
-- Add unit tests
+- Implement `list()`: Delegate to client, map to `ListResult`, handle pagination.
+  - **Critical**: Handle implicit directories (prefixes) even if no object exists.
+- Implement `read()`: Return `OperationResult<ReadableStream>`.
+- Implement `write()`: Accept Stream/Buffer/String, use multipart for large files.
+- Implement `delete()`: Single and recursive deletion.
+- Implement `mkdir()`: Create empty object with trailing slash.
+- Implement `exists()`: Head object check.
+- Estimated: 6 hours
+
+**P3-4: Implement Transfer Operations**
+
+- Implement `copy()`: Native S3 copy.
+- Implement `downloadToLocal()`: Stream to file.
+- Implement `uploadFromLocal()`: Stream from file.
+- Handle progress events for all transfers.
+- Estimated: 4 hours
+
+**P3-5: Implement Advanced Operations & Error Mapping**
+
+- Implement `getMetadata()`: Map S3 metadata to Entry.metadata.
+- Implement `getPresignedUrl()`.
+- Implement `setMetadata()` (copy-replace).
+- Implement `mapS3Error(error)`: Map AWS SDK errors to `OperationResult` status codes.
+- Estimated: 4 hours
+
+**P3-6: Update Factory & Integration**
+
+- Update `createProvider` to instantiate `S3Provider`.
+- Wire up credential resolution.
+- Verify feature parity with direct usage.
 - Estimated: 2 hours
 
-**P3-8: Implement S3Provider.copy() and nativeCopy()**
+**P3-7: S3Provider Integration Tests**
 
-- Override `nativeCopy()` for server-side copy
-- Delegate to `S3Adapter.copy()`
-- Handle cross-bucket copies
-- Support recursive directory copies
-- Map errors to OperationResult errors
-- Add unit tests
-- Estimated: 3 hours
-
-**P3-9: Implement S3Provider.move()**
-
-- S3 has no native move - rely on BaseStorageProvider fallback (copy + delete)
-- Verify fallback works correctly with S3Provider.copy() and S3Provider.delete()
-- Ensure atomic-ish behavior (don't delete if copy fails)
-- Add unit tests
-- Estimated: 1 hour
-
-**P3-10: Implement S3Provider.getMetadata() and exists()**
-
-- Delegate to `S3Adapter.getMetadata()`
-- Map S3 metadata to Entry.metadata using type reconciliation from P1-8
-- Handle 404 → NotFound result
-- Implement `exists()` by delegating to `S3Adapter.exists()`
-- Add unit tests
-- Estimated: 2 hours
-
-**P3-11: Implement S3Provider container operations**
-
-- Implement `listContainers()` → `S3Adapter.getBucketEntries()`
-- Implement `setContainer(name)` → `S3Adapter.setBucket()`
-- Implement `getContainer()` → return stored bucket name
-- Store current bucket in provider instance
-- Add unit tests
-- Estimated: 2 hours
-
-**P3-12: Implement S3Provider.downloadToLocal() and uploadFromLocal()**
-
-- Delegate to existing `S3Adapter.downloadToLocal()` and `S3Adapter.uploadFromLocal()`
-- Wire up progress callbacks
-- Handle recursive transfers
-- Map errors to OperationResult errors
-- Add unit tests
-- Estimated: 3 hours
-
-**P3-13: Implement S3Provider advanced operations**
-
-- Implement `getPresignedUrl()` for read/write operations (requires adding to S3Adapter if not present)
-- Implement `setMetadata()` via copy-in-place with new metadata
-- Add unit tests
-- Estimated: 3 hours
-
-**P3-14: Update provider factory for S3**
-
-- Update `createProvider()` to instantiate `S3Provider` for 's3' type
-- Wire credential resolution: call `getCredentialResolver('s3')` before constructing provider
-- Add integration test creating provider from profile
-- Estimated: 2 hours
-
-**P3-15: S3Provider integration tests**
-
-- Create integration test suite using LocalStack or mock
-- Test full workflow: list → read → write → copy → delete
-- Test error handling scenarios (NotFound, PermissionDenied, etc.)
-- Verify feature parity with direct S3Adapter usage
-- Test with credentials from different sources (env vars, profile, keychain mock)
+- Create comprehensive test suite.
+- Test all operations against LocalStack or real S3.
+- Verify stream handling (backpressure, memory usage).
 - Estimated: 5 hours
-
-**P3-16: S3Provider documentation**
-
-- Add JSDoc comments to all public methods
-- Document S3-specific behavior and limitations
-- Document method signature differences from S3Adapter
-- Add usage examples
-- Estimated: 1 hour
 
 **Phase 3 Total Estimate: 38 hours**
 
@@ -2136,7 +2054,32 @@ Each provider should be independently testable without affecting existing functi
 
 ---
 
-**Phase 4 Grand Total: ~125 hours**
+#### Phase 4H: Transfer Manager (Cross-Provider Support)
+
+**P4H-1: Create TransferManager service**
+
+- Create `src/services/transfer-manager.ts`
+- Implement `transfer(source, dest, options)`
+- Use `source.provider.read(source.path)` to get ReadableStream
+- Use `dest.provider.write(dest.path, stream)` to write
+- Handle progress event aggregation
+- Handle cancellation propagation
+- Add unit tests with mock providers and streams
+- Estimated: 6 hours
+
+**P4H-2: Integration tests for cross-provider transfers**
+
+- Test S3 -> Local
+- Test Local -> S3
+- Test S3 -> S3 (should use native copy if same provider instance, otherwise stream)
+- Mock streams to verify backpressure handling
+- Estimated: 4 hours
+
+**Phase 4H Total: 10 hours**
+
+---
+
+**Phase 4 Grand Total: ~135 hours**
 
 ### Phase 5: UI Abstraction Layer
 
@@ -2608,23 +2551,24 @@ const provider = createProvider(profile);
 
 ### Effort Summary
 
-| Phase     | Description                   | Tickets | Estimated Hours |
-| --------- | ----------------------------- | ------- | --------------- |
-| 0         | Prerequisites & Inventory     | 5       | 10              |
-| 1         | Foundation Types & Interfaces | 11      | 22.5            |
-| 2         | Profile Manager & Credentials | 12      | 38-44           |
-| 3         | S3 Provider                   | 16      | 38              |
-| 4A        | GCS Provider                  | 7       | 17.5            |
-| 4B        | SFTP Provider                 | 8       | 19.5            |
-| 4C        | FTP Provider                  | 7       | 15.5            |
-| 4D        | SMB Provider                  | 8       | 18.5            |
-| 4E        | NFS Provider                  | 7       | 15              |
-| 4F        | Local Provider                | 3       | 5               |
-| 4G        | Google Drive Provider         | 8       | 34              |
-| 5         | UI Abstraction Layer          | 17      | 45              |
-| 6         | Cutover                       | 7       | 22              |
-| 7         | Cleanup & Prefix Removal      | 12      | 23              |
-| **Total** |                               | **128** | **~324 hours**  |
+| Phase     | Description                   | Tickets | Estimated Hours  |
+| --------- | ----------------------------- | ------- | ---------------- |
+| 0         | Prerequisites & Inventory     | 5       | 10               |
+| 1         | Foundation Types & Interfaces | 11      | 22.5             |
+| 2         | Profile Manager & Credentials | 12      | 44               |
+| 3         | S3 Provider (Refactor)        | 7       | 31               |
+| 4A        | GCS Provider                  | 7       | 17.5             |
+| 4B        | SFTP Provider                 | 8       | 19.5             |
+| 4C        | FTP Provider                  | 7       | 15.5             |
+| 4D        | SMB Provider                  | 8       | 18.5             |
+| 4E        | NFS Provider                  | 7       | 15               |
+| 4F        | Local Provider                | 3       | 5                |
+| 4G        | Google Drive Provider         | 8       | 34               |
+| 4H        | Transfer Manager              | 2       | 10               |
+| 5         | UI Abstraction Layer          | 17      | 45               |
+| 6         | Cutover                       | 7       | 22               |
+| 7         | Cleanup & Prefix Removal      | 12      | 23               |
+| **Total** |                               | **117** | **~332.5 hours** |
 
 **Notes:**
 
