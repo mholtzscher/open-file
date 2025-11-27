@@ -6,7 +6,12 @@
  * behind a unified interface.
  */
 
-// Types
+// Common types (from canonical locations)
+export * from '../types/entry.js';
+export * from '../types/progress.js';
+export * from '../types/list.js';
+
+// Provider-specific types
 export * from './types/index.js';
 
 // Provider interface and related types

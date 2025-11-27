@@ -1,13 +1,11 @@
 /**
  * Provider Types - Public API
  *
- * Re-exports all types from the provider type system.
+ * Re-exports provider-specific types. Common types (Entry, Progress, List)
+ * are now in src/types/ and re-exported from src/providers/index.ts
  */
 
 export * from './capabilities.js';
 export * from './result.js';
 export * from './profile.js';
-export * from './entry.js';
-export * from './progress.js';
-export * from './list.js';
 export * from './cancellation.js';

@@ -7,36 +7,13 @@
  */
 
 import { Entry } from '../types/entry.js';
+import { ListOptions, ListResult } from '../types/list.js';
+import { ProgressCallback, ProgressEvent } from '../types/progress.js';
 import { Capability } from './types/capabilities.js';
 import { OperationResult } from './types/result.js';
 
-// ============================================================================
-// List Operations
-// ============================================================================
-
-/**
- * Options for listing directory contents
- */
-export interface ListOptions {
-  /** Maximum number of entries to return */
-  limit?: number;
-  /** Token for pagination (from previous ListResult) */
-  continuationToken?: string;
-  /** Include subdirectories recursively */
-  recursive?: boolean;
-}
-
-/**
- * Result of a list operation
- */
-export interface ListResult {
-  /** Entries in the directory */
-  entries: Entry[];
-  /** Token for fetching next page (if hasMore is true) */
-  continuationToken?: string;
-  /** Whether more entries are available */
-  hasMore: boolean;
-}
+// Re-export common types for convenience
+export type { Entry, ListOptions, ListResult, ProgressCallback, ProgressEvent };
 
 // ============================================================================
 // Read/Write Operations
@@ -91,27 +68,6 @@ export interface TransferOptions {
   /** Progress callback for long transfers */
   onProgress?: ProgressCallback;
 }
-
-/**
- * Progress event for long-running operations
- */
-export interface ProgressEvent {
-  /** Type of operation (e.g., 'upload', 'download', 'copy') */
-  operation: string;
-  /** Bytes transferred so far */
-  bytesTransferred: number;
-  /** Total bytes to transfer (if known) */
-  totalBytes?: number;
-  /** Percentage complete (0-100) */
-  percentage: number;
-  /** Current file being processed (for recursive operations) */
-  currentFile?: string;
-}
-
-/**
- * Callback for receiving progress updates
- */
-export type ProgressCallback = (event: ProgressEvent) => void;
 
 // ============================================================================
 // StorageProvider Interface
