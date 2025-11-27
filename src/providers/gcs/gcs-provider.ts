@@ -155,6 +155,7 @@ export class GCSProvider extends BaseStorageProvider {
       projectId: profile.config.projectId,
       hasKeyFile: !!profile.config.keyFilePath,
       useADC: profile.config.useApplicationDefault,
+      apiEndpoint: profile.config.apiEndpoint,
     });
 
     this.projectId = profile.config.projectId;
@@ -173,6 +174,11 @@ export class GCSProvider extends BaseStorageProvider {
       if (profile.config.keyFilePath) {
         // Service account authentication
         storageOptions.keyFilename = profile.config.keyFilePath;
+      }
+
+      // Custom endpoint for emulators (e.g., fake-gcs-server)
+      if (profile.config.apiEndpoint) {
+        storageOptions.apiEndpoint = profile.config.apiEndpoint;
       }
       // If useApplicationDefault is true or no explicit auth, SDK uses ADC automatically
 

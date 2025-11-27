@@ -18,3 +18,29 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
+  fake-gcs:
+    image: fsouza/fake-gcs-server:latest
+    container_name: open-s3-fake-gcs
+    ports:
+      - '4443:4443'
+    command: ['-scheme', 'http', '-port', '4443', '-external-url', 'http://localhost:4443']
+    volumes:
+      - './fake-gcs-data:/data'
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:4443/storage/v1/b']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  fake-gcs-init:
+    image: curlimages/curl:latest
+    container_name: open-s3-fake-gcs-init
+    depends_on:
+      fake-gcs:
+        condition: service_healthy
+    volumes:
+      - './scripts/fake-gcs-init.sh:/init.sh:ro'
+    entrypoint: ['/bin/sh', '/init.sh']
+    environment:
+      - GCS_URL=http://fake-gcs:4443

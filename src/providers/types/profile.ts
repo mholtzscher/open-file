@@ -94,6 +94,8 @@ export interface GCSProfile extends BaseProfile {
     keyFilePath?: string;
     /** Use Application Default Credentials */
     useApplicationDefault?: boolean;
+    /** Custom API endpoint for emulators (e.g., fake-gcs-server) */
+    apiEndpoint?: string;
   };
 }
 
