@@ -59,6 +59,9 @@ export {
   type ProfileStorageErrorCode,
 } from './services/profile-storage.js';
 
+// Credential management
+export * from './credentials/index.js';
+
 // Test utilities (for consumers that need to test provider integrations)
 export * from './__tests__/fixtures.js';
 export * from './__tests__/test-utils.js';
