@@ -131,8 +131,13 @@ export function parseBucketToEntry(bucket: BucketInfo): Entry {
 export function sortEntries(entries: Entry[]): Entry[] {
   return entries.sort((a, b) => {
     if (a.type !== b.type) {
-      // Buckets first, then directories, then files
-      const typeOrder = { [EntryType.Bucket]: 0, [EntryType.Directory]: 1, [EntryType.File]: 2 };
+      // Buckets first, then directories, then files, then symlinks
+      const typeOrder: Record<EntryType, number> = {
+        [EntryType.Bucket]: 0,
+        [EntryType.Directory]: 1,
+        [EntryType.File]: 2,
+        [EntryType.Symlink]: 3,
+      };
       return typeOrder[a.type] - typeOrder[b.type];
     }
     return a.name.localeCompare(b.name);

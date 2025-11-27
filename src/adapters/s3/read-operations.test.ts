@@ -4,7 +4,7 @@
 
 import { describe, it, expect, mock } from 'bun:test';
 import { readObject, ReadOperationsLogger } from './read-operations.js';
-import { ProgressEvent } from '../adapter.js';
+import { ProgressEvent } from '../../types/progress.js';
 
 // Mock S3Client - returns responses in order (HeadObject first, then GetObject)
 function createMockClient(headResponse: any, getResponse: any) {

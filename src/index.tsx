@@ -6,7 +6,6 @@ import { useEffect } from 'react';
 import { S3Explorer } from './ui/s3-explorer.jsx';
 import { StorageProvider } from './providers/provider.js';
 import { S3Provider } from './providers/s3/s3-provider.js';
-import { MockAdapter } from './adapters/mock-adapter.js';
 import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger.js';

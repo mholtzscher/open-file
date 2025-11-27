@@ -13,7 +13,7 @@ import {
   AbortMultipartUploadCommand,
 } from '@aws-sdk/client-s3';
 import { retryWithBackoff, getS3RetryConfig } from '../../utils/retry.js';
-import { OperationOptions } from '../adapter.js';
+import { ProgressCallback } from '../../types/progress.js';
 import { getLogger } from '../../utils/logger.js';
 
 /** Threshold above which to use multipart upload (5MB) */
@@ -21,6 +21,14 @@ export const MULTIPART_THRESHOLD = 5 * 1024 * 1024;
 
 /** Size of each part in multipart upload (5MB - minimum allowed by S3) */
 export const PART_SIZE = 5 * 1024 * 1024;
+
+/**
+ * Options for operations with progress callbacks
+ */
+export interface OperationOptions {
+  /** Optional progress callback for tracking operation progress */
+  onProgress?: ProgressCallback;
+}
 
 /**
  * Options for multipart upload

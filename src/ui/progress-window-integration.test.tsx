@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { ProgressEvent, ProgressCallback } from '../adapters/adapter.js';
+import { ProgressEvent, ProgressCallback } from '../types/progress.js';
 
 describe('ProgressWindow Integration', () => {
   it('simulates a download operation with progress updates', () => {

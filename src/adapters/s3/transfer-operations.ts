@@ -9,8 +9,7 @@ import { promises as fs } from 'fs';
 import { join, dirname } from 'path';
 import { retryWithBackoff, getS3RetryConfig } from '../../utils/retry.js';
 import { listAllObjects } from './batch-operations.js';
-import { uploadLargeFile, shouldUseMultipartUpload } from './multipart-upload.js';
-import type { OperationOptions } from '../adapter.js';
+import { uploadLargeFile, shouldUseMultipartUpload, OperationOptions } from './multipart-upload.js';
 
 /**
  * Progress callback for transfer operations

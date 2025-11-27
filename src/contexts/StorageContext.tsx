@@ -18,7 +18,7 @@
 
 import { createContext, useContext, ReactNode } from 'react';
 import { Entry } from '../types/entry.js';
-import { ProgressEvent } from '../adapters/adapter.js';
+import { ProgressEvent } from '../types/progress.js';
 import { Capability } from '../providers/types/capabilities.js';
 
 // ============================================================================
