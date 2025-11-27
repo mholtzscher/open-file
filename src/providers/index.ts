@@ -9,6 +9,21 @@
 // Types
 export * from './types/index.js';
 
+// Provider interface and related types
+export * from './provider.js';
+
+// Base provider abstract class
+export { BaseStorageProvider } from './base-provider.js';
+
+// Provider factory
+export {
+  createProvider,
+  getSupportedProviders,
+  isProviderSupported,
+  isProviderImplemented,
+  getImplementedProviders,
+} from './factory.js';
+
 // Test utilities (for consumers that need to test provider integrations)
 export * from './__tests__/fixtures.js';
 export * from './__tests__/test-utils.js';
