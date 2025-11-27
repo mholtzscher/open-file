@@ -1,0 +1,318 @@
+================================================================================
+PENDING CHANGES TRACKING RESEARCH - COMPLETE MANIFEST
+================================================================================
+
+Location: /Users/michael/code/vibes/open-s3/research/pending-changes-tracking/
+
+Total Documentation: 2,308 lines across 6 files
+Research Completed: November 26, 2025
+
+================================================================================
+DOCUMENTATION FILES (Read in Recommended Order)
+================================================================================
+
+1. 00_START_HERE.txt (225 lines) - ENTRY POINT
+   Quick orientation guide with common questions answered
+   - What is this system?
+   - Key files to read in order
+   - Core concept in one sentence
+   - Quick facts and workflow
+   - Testing quick start
+   - Debugging tips
+   Read time: 5 minutes
+
+2. README.md (346 lines) - EXECUTIVE SUMMARY
+   Quick overview of the entire system
+   - Three layers of the architecture
+   - Key design patterns explained
+   - Complete workflow example
+   - Visual indicators guide
+   - Performance characteristics
+   - Limitations and design choices
+   Read time: 10 minutes
+
+3. QUICK_REFERENCE.md (293 lines) - LOOKUP GUIDE
+   Fast reference for common tasks and patterns
+   - Core components and data structures
+   - Workflow stages at a glance
+   - Key functions by file
+   - Visual indicators and status messages
+   - Multi-pane considerations
+   - Common code patterns
+   Read time: 5 minutes
+
+4. COMPREHENSIVE_GUIDE.md (683 lines) - DEEP DIVE
+   Complete architecture with full code examples
+   - Core data structures with TypeScript
+   - State management architecture with diagrams
+   - Detailed tracking mechanisms
+   - Confirmation dialog system
+   - Apply/sync mechanism with code
+   - Undo/redo system
+   - Quit behavior
+   - Complete file and role breakdown
+   - Key concepts explained
+   - Full workflow trace with code
+   - Complete data flow diagram
+   Read time: 20 minutes
+
+5. VISUAL_SUMMARY.md (475 lines) - DIAGRAMS
+   ASCII diagrams and visual references
+   - System architecture diagram
+   - State transition diagram
+   - Data structure layers
+   - Rendering logic flow
+   - Mark/unmark toggle state machine
+   - Execution phases diagram
+   - Undo/redo mechanism diagram
+   - Multi-pane independence diagram
+   - Error handling flow
+   - Status message timeline
+   - Keyboard event flow
+   - Confirmation dialog sequence
+   - Performance characteristics table
+   - Visual indicators quick reference
+   Read time: 10 minutes
+
+6. INDEX.md (286 lines) - NAVIGATION
+   Detailed file locations and cross-references
+   - Core source files with line numbers
+   - Type definitions
+   - UI components
+   - Connection diagrams
+   - Key concepts explained
+   - Common search terms
+   - Testing checklist
+   - Performance characteristics
+   - Future extensions guide
+   Read time: 5 minutes
+
+================================================================================
+CORE SOURCE FILES REFERENCED
+================================================================================
+
+Buffer State Management:
+  src/hooks/useBufferState.ts (507 lines)
+    - markForDeletion(), unmarkForDeletion()
+    - getMarkedForDeletion()
+    - clearDeletionMarks()
+    - saveSnapshot(), undo(), redo()
+    - deletedEntryIds: Set<string>
+
+Dialog State Management:
+  src/hooks/useDialogState.ts (150+ lines)
+    - showConfirm(), closeAndClearOperations()
+    - pendingOperations: PendingOperation[]
+
+Type Definitions:
+  src/types/dialog.ts (66 lines)
+    - DialogState, PendingOperation, DialogAction
+  
+  src/types/operations.ts (117 lines)
+    - Operation type definitions
+  
+  src/types/entry.ts
+    - Entry interface with id tracking
+
+UI Components:
+  src/ui/s3-explorer.tsx (1200+ lines)
+    - 'entry:delete', 'buffer:save', 'app:quit' actions
+    - createConfirmHandler() execution logic
+  
+  src/ui/buffer-view-react.tsx (200+ lines)
+    - Visual rendering with marks
+    - Strikethrough and red color logic
+  
+  src/ui/confirmation-dialog-react.tsx
+    - User confirmation flow
+  
+  src/ui/quit-dialog-react.tsx
+    - Quit with pending changes
+
+================================================================================
+KEY CONCEPTS SUMMARY
+================================================================================
+
+1. NON-DESTRUCTIVE MARKING
+   - Entries marked in Set<string>, not removed from list
+   - User can see exactly what will be deleted before confirming
+   - Entries can be unmarked at any time
+
+2. THREE-LAYER STACK
+   - Layer 1: entries[] (source of truth)
+   - Layer 2: deletedEntryIds Set (metadata)
+   - Layer 3: pendingOperations[] (executable)
+
+3. VISUAL STAGING
+   - Strikethrough + red color + ✗ marker
+   - Status bar shows count
+   - User always knows what will happen
+
+4. SNAPSHOT-BASED UNDO
+   - Full state saved on each change
+   - Includes entries AND deletion marks
+   - Can undo/redo to any previous state
+
+5. SEQUENTIAL EXECUTION
+   - Operations execute one-by-one
+   - Progress updated for each
+   - Failures don't stop others
+   - Buffer reloaded after completion
+
+================================================================================
+HOW TO USE THIS RESEARCH
+================================================================================
+
+For quick understanding:
+  1. Read 00_START_HERE.txt (5 min)
+  2. Read README.md (10 min)
+  3. Scan VISUAL_SUMMARY.md diagrams (10 min)
+
+For implementation work:
+  1. Use QUICK_REFERENCE.md to find function names
+  2. Use INDEX.md to find exact file locations
+  3. Read relevant section of COMPREHENSIVE_GUIDE.md
+
+For debugging:
+  1. Check DEBUGGING TIPS in 00_START_HERE.txt
+  2. Use INDEX.md to find what broke
+  3. Read COMPREHENSIVE_GUIDE.md section on that component
+
+For extending the system:
+  1. Read COMPREHENSIVE_GUIDE.md sections 7-9
+  2. Check INDEX.md section on future extensions
+  3. Modify files listed in INDEX.md
+
+================================================================================
+KEY QUESTIONS ANSWERED
+================================================================================
+
+Q: What state variable tracks pending changes?
+A: Set<string> called deletedEntryIds in useBufferState.ts
+
+Q: How do users see pending changes?
+A: Visual indicators: strikethrough + ✗ marker + red color
+
+Q: Can users undo marked changes?
+A: Yes, press 'u' before saving to restore previous state
+
+Q: How are operations executed?
+A: Sequentially with progress feedback in createConfirmHandler()
+
+Q: Is state persistent?
+A: Only after save → confirmed → S3 sync. Lost on quit without save.
+
+Q: Are multiple panes independent?
+A: Yes, each pane has its own deletedEntryIds set
+
+Q: What happens if execution fails?
+A: Continue to next operation, show error, user can retry
+
+Q: Can user cancel execution?
+A: Yes, with Escape key using AbortController
+
+Q: How does undo work?
+A: Snapshots of entries + deletedIds saved to undoHistory
+
+Q: What's the performance of marking?
+A: O(1) - Set.has() and Set.add() operations
+
+================================================================================
+TESTING CHECKLIST
+================================================================================
+
+Basic functionality:
+  [ ] Mark entry with 'dd' → see visual indicators
+  [ ] Unmark with 'dd' again
+  [ ] Status message shows count
+  [ ] Press 'u' → undo marks
+  [ ] Press 'w' → confirmation dialog
+  [ ] Press Enter → operations execute
+  [ ] See progress window
+  [ ] Buffer updates after success
+  [ ] Marks cleared after save
+
+Edge cases:
+  [ ] Mark, undo multiple times
+  [ ] Mark in pane 1, switch to pane 2
+  [ ] Quit with pending marks → shows dialog
+  [ ] Choose 'w' in quit → saves then exits
+  [ ] Operation fails → continues and shows error
+  [ ] User cancels execution → stops cleanly
+
+================================================================================
+PERFORMANCE NOTES
+================================================================================
+
+- Mark/unmark: O(1) with Set operations
+- Get all marked: O(n) - filter loop
+- Save snapshot: O(n) - deep copy
+- Execute operations: O(m) - sequential
+- Visual rendering: O(n) - check each entry
+
+Where n = total entries, m = pending operations
+
+No lazy loading or pagination implemented.
+All marked entries collected at once on save.
+
+================================================================================
+ARCHITECTURE HIGHLIGHTS
+================================================================================
+
+Design principle: Safety and Clarity over Performance
+- Buffer is the interface (oil.nvim philosophy)
+- No immediate operations on S3
+- User confirms before changes are applied
+- All state consistently reloaded after sync
+- Clear visual feedback at each step
+
+Implementation pattern: Multi-layer staging
+1. User marks locally (buffer state)
+2. Marks converted to operations (dialog state)
+3. User reviews in confirmation (UI layer)
+4. Operations executed sequentially (execution layer)
+5. Buffer reloaded from S3 (refresh layer)
+
+State management pattern: Snapshot-based undo
+- Full state snapshots on each change
+- Redo history cleared on new change
+- Per-session only (no persistence)
+- Can restore to any previous state
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Choose your use case from 00_START_HERE.txt
+2. Find the right documentation file above
+3. Use INDEX.md to locate specific code
+4. Read relevant section of COMPREHENSIVE_GUIDE.md
+5. Reference QUICK_REFERENCE.md for code patterns
+6. Check VISUAL_SUMMARY.md for diagrams
+
+Questions answered by these documents:
+  - What (overview): README.md
+  - How (implementation): COMPREHENSIVE_GUIDE.md
+  - Where (locations): INDEX.md
+  - Quick lookup: QUICK_REFERENCE.md
+  - Visual reference: VISUAL_SUMMARY.md
+  - Quick start: 00_START_HERE.txt
+
+================================================================================
+DOCUMENT METADATA
+================================================================================
+
+Total lines:     2,308
+Total files:     6
+Total size:      ~68 KB
+Research depth:  Comprehensive (includes source code analysis)
+Code examples:   50+ actual code snippets
+Diagrams:        15+ ASCII diagrams
+File locations:  All line numbers provided
+Cross references: Complete linking throughout
+
+Created: November 26, 2025
+Updated: November 26, 2025
+Version: 1.0
+
+================================================================================
