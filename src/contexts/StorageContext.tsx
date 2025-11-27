@@ -334,6 +334,13 @@ export interface StorageContextValue {
    * Only needed for connection-oriented protocols
    */
   connect(): Promise<void>;
+
+  /**
+   * Subscribe to state changes
+   * @param listener - Callback function called when state changes
+   * @returns Unsubscribe function
+   */
+  subscribe(listener: () => void): () => void;
 }
 
 // ============================================================================
