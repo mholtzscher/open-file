@@ -353,6 +353,22 @@ export interface StorageContextValue {
    * @returns ProfileManager instance or undefined
    */
   getProfileManager(): ProfileManager | undefined;
+
+  /**
+   * Switch to a different profile
+   * Only available when ProfileManager is configured
+   *
+   * This will:
+   * 1. Disconnect from the current provider
+   * 2. Load the new profile from ProfileManager
+   * 3. Create a new provider instance
+   * 4. Connect to the new provider
+   * 5. Reload the current path (or navigate to root)
+   *
+   * @param profileId - ID of the profile to switch to
+   * @throws Error if ProfileManager not available or profile not found
+   */
+  switchProfile(profileId: string): Promise<void>;
 }
 
 // ============================================================================

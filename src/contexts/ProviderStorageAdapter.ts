@@ -553,10 +553,119 @@ export class ProviderStorageAdapter implements StorageContextValue {
 
   /**
    * Switch to a different storage provider
-   * Not supported - requires multi-provider context
+   * Not supported - use switchProfile instead
    */
   async switchProvider(_providerId: string): Promise<void> {
-    throw new Error('Provider switching requires multi-provider context');
+    throw new Error(
+      'Provider switching requires multi-provider context. Use switchProfile() instead.'
+    );
+  }
+
+  /**
+   * Switch to a different profile
+   *
+   * This will:
+   * 1. Disconnect from the current provider
+   * 2. Load the new profile from ProfileManager
+   * 3. Create a new provider instance
+   * 4. Connect to the new provider
+   * 5. Reload the current path (or navigate to root)
+   */
+  async switchProfile(profileId: string): Promise<void> {
+    if (!this.profileManager) {
+      throw new Error('ProfileManager not configured. Profile switching is not available.');
+    }
+
+    this.setState({ isLoading: true, error: undefined });
+
+    try {
+      // 1. Disconnect from current provider
+      console.error(
+        `[ProviderStorageAdapter] Disconnecting from current provider: ${this.provider.name}`
+      );
+      await this.disconnect();
+
+      // 2. Load the new profile and create provider
+      console.error(`[ProviderStorageAdapter] Creating provider from profile: ${profileId}`);
+      const newProvider = await this.profileManager.createProviderFromProfile(profileId);
+
+      // 3. Store reference to old provider for rollback
+      const oldProvider = this.provider;
+      const oldState = { ...this.internalState };
+
+      try {
+        // 4. Update provider reference
+        this.provider = newProvider;
+
+        // 5. Connect to new provider (if connection-oriented)
+        console.error(`[ProviderStorageAdapter] Connecting to new provider: ${newProvider.name}`);
+        if (newProvider.connect) {
+          const connectResult = await newProvider.connect();
+          if (!isSuccess(connectResult)) {
+            throw new Error(`Failed to connect to new provider: ${connectResult.error?.message}`);
+          }
+        }
+
+        // 6. Update state with new provider info
+        this.setState({
+          providerId: newProvider.name,
+          providerDisplayName: newProvider.displayName,
+          isConnected: newProvider.isConnected?.() ?? true,
+          currentPath: '/', // Reset to root on provider switch
+          currentContainer: undefined, // Clear container context
+          entries: [],
+          isLoading: true,
+        });
+
+        // 7. List containers if supported, otherwise navigate to root
+        if (this.hasCapability(Capability.Containers) && newProvider.listContainers) {
+          console.error(`[ProviderStorageAdapter] Listing containers for new provider`);
+          const containersResult = await newProvider.listContainers();
+          if (isSuccess(containersResult)) {
+            this.setState({
+              entries: containersResult.data!,
+              currentPath: '',
+              isLoading: false,
+            });
+          } else {
+            throw new Error(`Failed to list containers: ${containersResult.error?.message}`);
+          }
+        } else {
+          // Navigate to root path
+          console.error(`[ProviderStorageAdapter] Navigating to root path`);
+          await this.navigate('/');
+        }
+
+        console.error(`[ProviderStorageAdapter] Profile switch complete: ${profileId}`);
+      } catch (switchError) {
+        // Rollback on error
+        console.error(`[ProviderStorageAdapter] Profile switch failed, rolling back:`, switchError);
+
+        // Restore old provider
+        this.provider = oldProvider;
+
+        // Reconnect to old provider
+        if (oldProvider.connect) {
+          await oldProvider.connect();
+        }
+
+        // Restore old state
+        this.internalState = oldState;
+        this.notifyListeners();
+
+        throw switchError;
+      }
+    } catch (error) {
+      const storageError: StorageError = {
+        code: 'PROFILE_SWITCH_FAILED',
+        message: error instanceof Error ? error.message : String(error),
+        retryable: false,
+        cause: error,
+      };
+
+      this.setState({ isLoading: false, error: storageError });
+      throw new Error(`Failed to switch profile: ${storageError.message}`);
+    }
   }
 
   /**

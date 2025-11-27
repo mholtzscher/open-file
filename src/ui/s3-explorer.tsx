@@ -1243,15 +1243,52 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
       currentProfileId: storage.state.providerId,
       onProfileSelect: async profile => {
         try {
+          console.error(`[S3Explorer] Starting profile switch to: ${profile.displayName}`);
           setStatusMessage(`Switching to profile: ${profile.displayName}...`);
           setStatusMessageColor(CatppuccinMocha.blue);
           closeDialog();
 
-          // TODO: Implement profile switching
-          // This will require creating a new provider instance from the profile
-          // and reinitializing the storage context
-          setStatusMessage(`Profile switching not yet fully implemented`);
-          setStatusMessageColor(CatppuccinMocha.yellow);
+          // Switch to the new profile
+          await storage.switchProfile(profile.id);
+          console.error(`[S3Explorer] Profile switched successfully`);
+
+          // Get the new state from storage
+          const newState = storage.state;
+          console.error(`[S3Explorer] New state:`, {
+            providerId: newState.providerId,
+            currentPath: newState.currentPath,
+            currentContainer: newState.currentContainer,
+            entriesCount: newState.entries.length,
+          });
+
+          // Get current buffer state
+          const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+
+          // Update bucket state based on new storage state
+          if (newState.currentContainer) {
+            console.error(`[S3Explorer] Setting bucket to: ${newState.currentContainer}`);
+            setBucket(newState.currentContainer);
+          } else {
+            console.error(`[S3Explorer] Clearing bucket`);
+            setBucket(undefined);
+          }
+
+          // Update buffer with new entries and path
+          console.error(
+            `[S3Explorer] Updating buffer state with ${newState.entries.length} entries`
+          );
+          currentBufferState.setEntries([...newState.entries]);
+          currentBufferState.setCurrentPath(newState.currentPath);
+
+          // Update original entries to reflect new data
+          setOriginalEntries([...newState.entries]);
+
+          // Ensure component is marked as initialized
+          setIsInitialized(true);
+
+          console.error(`[S3Explorer] Profile switch UI update complete`);
+          setStatusMessage(`Switched to profile: ${profile.displayName}`);
+          setStatusMessageColor(CatppuccinMocha.green);
         } catch (err) {
           console.error('Failed to switch profile:', err);
           setStatusMessage(
