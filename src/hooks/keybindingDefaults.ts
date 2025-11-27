@@ -81,6 +81,10 @@ function createDefaultKeybindings(): KeybindingMap {
     ['r', 'buffer:refresh'],
     ['u', 'buffer:undo'],
 
+    // Connection operations (for connection-oriented providers)
+    ['shift+r', 'connection:reconnect'],
+    ['R', 'connection:reconnect'],
+
     // Application
     ['q', 'app:quit'],
     ['shift+h', 'app:toggleHidden'],
@@ -200,4 +204,7 @@ export const keybindingDescriptions: Partial<Record<KeyAction, string>> = {
   // Multi-pane
   'pane:toggle': 'Toggle multi-pane',
   'pane:switch': 'Switch panes',
+
+  // Connection
+  'connection:reconnect': 'Reconnect to provider',
 };

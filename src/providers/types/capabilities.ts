@@ -65,4 +65,8 @@ export enum Capability {
   FileLocking = 'fileLocking',
   /** NFS delegations / SMB oplocks */
   Delegations = 'delegations',
+
+  // Connection-oriented protocols (SFTP, FTP, SMB, NFS)
+  /** Provider maintains persistent connection state */
+  Connection = 'connection',
 }

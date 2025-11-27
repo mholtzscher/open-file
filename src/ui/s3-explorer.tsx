@@ -553,6 +553,40 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
         setStatusMessageColor(CatppuccinMocha.green);
       },
 
+      // Connection operations
+      'connection:reconnect': async () => {
+        // Only for connection-oriented providers
+        if (!storage.hasCapability(Capability.Connection)) {
+          setStatusMessage('Reconnect not supported for this storage provider');
+          setStatusMessageColor(CatppuccinMocha.yellow);
+          return;
+        }
+
+        setStatusMessage('Reconnecting...');
+        setStatusMessageColor(CatppuccinMocha.blue);
+
+        try {
+          await storage.connect();
+          setStatusMessage('Reconnected successfully');
+          setStatusMessageColor(CatppuccinMocha.green);
+
+          // Refresh the current view after reconnecting
+          const currentBufferState = getActiveBuffer();
+          if (bucket) {
+            const entries = await storage.list(currentBufferState.currentPath);
+            currentBufferState.setEntries([...entries]);
+            setOriginalEntries([...entries]);
+          } else if (storage.hasCapability(Capability.Containers)) {
+            const entries = await storage.listContainers();
+            currentBufferState.setEntries([...entries]);
+          }
+        } catch (err) {
+          const parsedError = parseAwsError(err, 'Reconnect failed');
+          setStatusMessage(formatErrorForDisplay(parsedError, 70));
+          setStatusMessageColor(CatppuccinMocha.red);
+        }
+      },
+
       // Text input handlers
       'input:char': (key?: KeyboardKey) => {
         const buf = getActiveBuffer();

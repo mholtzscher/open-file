@@ -10,6 +10,8 @@
 import { CatppuccinMocha } from './theme.js';
 import { useHasStorage } from '../contexts/StorageContext.js';
 import { useStorageState, useStorageCapabilities } from '../hooks/useStorage.js';
+import { ConnectionStatus } from '../components/ConnectionStatus.js';
+import { Capability } from '../providers/types/capabilities.js';
 
 export interface HeaderProps {
   /**
@@ -43,6 +45,7 @@ export function Header({ bucket: legacyBucket }: HeaderProps) {
 
   // Determine what to display
   const hasContainers = capabilities?.hasContainers ?? false;
+  const hasConnection = capabilities?.hasCapability(Capability.Connection) ?? false;
   const container = state?.currentContainer;
   const providerName = state?.providerDisplayName;
   const profileName = state?.profileName;
@@ -82,10 +85,16 @@ export function Header({ bucket: legacyBucket }: HeaderProps) {
         </box>
       )}
 
-      {/* Right side: profile name with provider type */}
-      <box flexDirection="row" alignItems="center">
-        <text fg={CatppuccinMocha.mauve}>profile: </text>
-        <text fg={CatppuccinMocha.text}>{profileDisplay}</text>
+      {/* Right side: connection status + profile */}
+      <box flexDirection="row" alignItems="center" gap={2}>
+        {/* Connection status (only for connection-oriented providers) */}
+        {hasConnection && <ConnectionStatus variant="badge" showReconnect={true} />}
+
+        {/* Profile name with provider type */}
+        <box flexDirection="row" alignItems="center">
+          <text fg={CatppuccinMocha.mauve}>profile: </text>
+          <text fg={CatppuccinMocha.text}>{profileDisplay}</text>
+        </box>
       </box>
     </box>
   );

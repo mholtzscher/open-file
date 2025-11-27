@@ -75,6 +75,8 @@ export type KeyAction =
   // Multi-pane
   | 'pane:toggle'
   | 'pane:switch'
+  // Connection
+  | 'connection:reconnect'
   // Special - for text input in modes like search/command/insert
   | 'input:char'
   | 'input:backspace'
