@@ -2,38 +2,10 @@
  * Tests for AWS profile detection and configuration
  */
 
-import { describe, it, expect, beforeEach } from 'bun:test';
-import {
-  getActiveAwsProfile,
-  parseAwsConfigFile,
-  parseAwsCredentialsFile,
-  loadAwsProfile,
-  loadActiveAwsProfile,
-  getActiveAwsRegion,
-} from './aws-profile.js';
+import { describe, it, expect } from 'bun:test';
+import { parseAwsConfigFile, parseAwsCredentialsFile, loadAwsProfile } from './aws-profile.js';
 
 describe('AWS Profile Detection', () => {
-  beforeEach(() => {
-    // Clear AWS_PROFILE env var before each test
-    delete process.env.AWS_PROFILE;
-  });
-
-  describe('getActiveAwsProfile', () => {
-    it('should use AWS_PROFILE environment variable if set', () => {
-      process.env.AWS_PROFILE = 'production';
-      expect(getActiveAwsProfile()).toBe('production');
-    });
-
-    it('should default to "default" profile if AWS_PROFILE not set', () => {
-      expect(getActiveAwsProfile()).toBe('default');
-    });
-
-    it('should handle whitespace in AWS_PROFILE env var', () => {
-      process.env.AWS_PROFILE = '  staging  ';
-      expect(getActiveAwsProfile()).toBe('  staging  ');
-    });
-  });
-
   describe('parseAwsConfigFile', () => {
     it('should parse AWS config file format', () => {
       const content = `
@@ -189,35 +161,6 @@ aws_secret_access_key = wJalr/XUt+nFE/MI/K7MDN+G/bPx=Rf/iCY
       // For now, we're just ensuring the function handles missing files
       const profile = loadAwsProfile('test-profile');
       expect(profile?.profile).toBe('test-profile');
-    });
-  });
-
-  describe('loadActiveAwsProfile', () => {
-    it('should load default profile when AWS_PROFILE not set', () => {
-      const profile = loadActiveAwsProfile();
-      expect(profile.profile).toBe('default');
-    });
-
-    it('should load specified profile when AWS_PROFILE is set', () => {
-      process.env.AWS_PROFILE = 'staging';
-      const profile = loadActiveAwsProfile();
-      expect(profile.profile).toBe('staging');
-    });
-  });
-
-  describe('getActiveAwsRegion', () => {
-    it('should return undefined for non-existent profiles', () => {
-      delete process.env.AWS_PROFILE;
-      const region = getActiveAwsRegion();
-      // Region would be undefined unless ~/.aws/config has default profile with region
-      expect(region === undefined || typeof region === 'string').toBe(true);
-    });
-
-    it('should use AWS_PROFILE environment variable', () => {
-      process.env.AWS_PROFILE = 'nonexistent';
-      const region = getActiveAwsRegion();
-      // Should attempt to load nonexistent profile, returning undefined
-      expect(region === undefined || typeof region === 'string').toBe(true);
     });
   });
 });

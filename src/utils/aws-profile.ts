@@ -27,27 +27,6 @@ export interface AwsProfileConfig {
 }
 
 /**
- * Get the active AWS profile from environment
- *
- * Priority order:
- * 1. AWS_PROFILE environment variable
- * 2. AWS CLI profile set in ~/.aws/config
- * 3. Default 'default' profile
- *
- * @returns Active AWS profile name
- */
-export function getActiveAwsProfile(): string {
-  // First, check AWS_PROFILE environment variable
-  const envProfile = process.env.AWS_PROFILE;
-  if (envProfile) {
-    return envProfile;
-  }
-
-  // Default to 'default' profile
-  return 'default';
-}
-
-/**
  * Parse AWS config file format
  *
  * Format:
@@ -214,26 +193,4 @@ export function loadAwsProfile(profileName: string): AwsProfileConfig | undefine
   }
 
   return config;
-}
-
-/**
- * Load active AWS profile with its full configuration
- *
- * @returns Active AWS profile configuration
- */
-export function loadActiveAwsProfile(): AwsProfileConfig {
-  const profileName = getActiveAwsProfile();
-  const config = loadAwsProfile(profileName);
-  return config || { profile: profileName };
-}
-
-/**
- * Get region from active profile
- *
- * @returns AWS region for active profile, or undefined if not configured
- */
-export function getActiveAwsRegion(): string | undefined {
-  const profileName = getActiveAwsProfile();
-  const config = loadAwsProfile(profileName);
-  return config?.region;
 }

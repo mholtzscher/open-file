@@ -5,11 +5,7 @@
  */
 
 import { S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
-import {
-  loadAwsProfile,
-  getActiveAwsProfile,
-  getActiveAwsRegion,
-} from '../../../utils/aws-profile.js';
+import { loadAwsProfile } from '../../../utils/aws-profile.js';
 import { getLogger } from '../../../utils/logger.js';
 
 /**
@@ -66,14 +62,11 @@ export function createS3Client(options: S3ClientOptions): S3ClientResult {
     hasSecretKey: !!options.secretAccessKey,
   });
 
-  // Determine which profile to use
-  const profileName = options.profile || getActiveAwsProfile();
-  logger.debug('Active AWS profile', { profileName, env: process.env.AWS_PROFILE });
-
-  // Load profile configuration if specified or AWS_PROFILE is set
+  // Load AWS profile configuration only if explicitly specified in options
+  // Otherwise, let the AWS SDK handle credential resolution via its default chain
   let profileConfig = undefined;
-  if (options.profile || process.env.AWS_PROFILE) {
-    profileConfig = loadAwsProfile(profileName);
+  if (options.profile) {
+    profileConfig = loadAwsProfile(options.profile);
     logger.debug('Loaded AWS profile config', {
       profile: profileConfig?.profile,
       region: profileConfig?.region,
@@ -96,14 +89,10 @@ export function createS3Client(options: S3ClientOptions): S3ClientResult {
     resolvedRegion = process.env.AWS_REGION;
     logger.debug('Using region from AWS_REGION env', { region: process.env.AWS_REGION });
   } else {
-    // Try to get region from active profile if AWS_PROFILE is set
-    const activeRegion = getActiveAwsRegion();
-    resolvedRegion = activeRegion || 'us-east-1';
+    // Default to us-east-1 if no region specified
+    resolvedRegion = 'us-east-1';
     clientConfig.region = resolvedRegion;
-    logger.debug('Using region from active profile or default', {
-      region: resolvedRegion,
-      fromProfile: !!activeRegion,
-    });
+    logger.debug('Using default region', { region: resolvedRegion });
   }
 
   // Custom endpoint (for LocalStack, MinIO, etc.)
@@ -133,7 +122,7 @@ export function createS3Client(options: S3ClientOptions): S3ClientResult {
       secretAccessKey: profileConfig.secretAccessKey,
       ...(profileConfig.sessionToken && { sessionToken: profileConfig.sessionToken }),
     };
-    logger.debug('Using credentials from AWS profile', { profile: profileName });
+    logger.debug('Using credentials from AWS profile', { profile: options.profile });
   } else {
     logger.debug('Using AWS SDK default credential chain');
   }
@@ -147,7 +136,7 @@ export function createS3Client(options: S3ClientOptions): S3ClientResult {
   const client = new S3Client(clientConfig);
   logger.info('S3 client created', {
     region: resolvedRegion,
-    profile: profileName,
+    profile: options.profile,
   });
 
   return { client, region: resolvedRegion };
