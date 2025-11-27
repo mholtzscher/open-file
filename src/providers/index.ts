@@ -67,6 +67,10 @@ export {
 // Credential management
 export * from './credentials/index.js';
 
+// GCS Provider
+export { GCSProvider } from './gcs/index.js';
+export type { GCSProviderLogger, GCSProviderDependencies } from './gcs/index.js';
+
 // Test utilities (for consumers that need to test provider integrations)
 export * from './__tests__/fixtures.js';
 export * from './__tests__/test-utils.js';
