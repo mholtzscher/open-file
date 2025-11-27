@@ -10,7 +10,7 @@
 
 import { useCallback, useRef } from 'react';
 import { useAdapter } from '../contexts/AdapterContext.js';
-import { useStorage } from '../hooks/useStorage.js';
+import { useStorage, useHasStorage } from '../contexts/StorageContextProvider.js';
 import { PendingOperation } from '../types/dialog.js';
 import { ProgressEvent } from '../adapters/adapter.js';
 import { EntryType } from '../types/entry.js';
@@ -75,7 +75,8 @@ export interface ExecuteOperationsOptions {
  */
 export function useAsyncOperations() {
   const adapter = useAdapter();
-  const storage = useStorage();
+  const hasStorage = useHasStorage();
+  const storage = hasStorage ? useStorage() : null;
   const useNewProviderSystem = isFeatureEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM);
 
   const abortControllerRef = useRef<AbortController | null>(null);

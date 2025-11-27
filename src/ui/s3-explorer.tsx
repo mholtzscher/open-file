@@ -15,6 +15,7 @@ import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.j
 import { useMultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
 import { useProgressState } from '../hooks/useProgressState.js';
 import { useDialogState } from '../hooks/useDialogState.js';
+import { useAsyncOperations } from '../hooks/useAsyncOperations.js';
 
 import { S3ExplorerLayout, StatusBarState, PreviewState } from './s3-explorer-layout.js';
 import { DialogsState } from './s3-explorer-dialogs.js';
@@ -22,6 +23,8 @@ import { CatppuccinMocha } from './theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
 import { useAdapter, useHasAdapter } from '../contexts/AdapterContext.js';
+import { useStorage, useHasStorage } from '../contexts/StorageContextProvider.js';
+import { isFeatureEnabled, FeatureFlag } from '../utils/feature-flags.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
 import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
@@ -79,16 +82,30 @@ function isPreviewableFile(entry: Entry | undefined): boolean {
  */
 export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3ExplorerProps) {
   // ============================================
+  // Feature Flag & Provider System
+  // ============================================
+  const useNewProviderSystem = isFeatureEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM);
+  const hasStorageContext = useHasStorage();
+  const storage = hasStorageContext ? useStorage() : null;
+
+  // ============================================
   // Adapter Resolution (prop or context)
   // ============================================
   const hasAdapterContext = useHasAdapter();
   const contextAdapter = hasAdapterContext ? useAdapter() : null;
   const adapter = adapterProp ?? contextAdapter;
 
-  if (!adapter) {
+  // Require either adapter (for legacy mode) or storage (for new provider mode)
+  if (!adapter && !storage) {
     throw new Error(
-      'S3Explorer requires an adapter. Either pass it as a prop or wrap with AdapterProvider.'
+      'S3Explorer requires an adapter or storage context. Either pass adapter as prop, wrap with AdapterProvider, or enable StorageContextProvider.'
     );
+  }
+
+  // For now, adapter is required (storage is optional for gradual migration)
+  // This will change when we fully migrate to provider system
+  if (!adapter) {
+    throw new Error('S3Explorer requires an adapter. Storage-only mode not yet fully implemented.');
   }
 
   // ============================================
@@ -146,6 +163,11 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
     cancelOperation: cancelProgressOperation,
     dispatch: dispatchProgress,
   } = useProgressState();
+
+  // ============================================
+  // Async Operations Hook (for new provider system)
+  // ============================================
+  const { executeOperations, cancelOperations } = useAsyncOperations();
 
   // ============================================
   // Refs
@@ -733,117 +755,54 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
       const abortController = new AbortController();
       operationAbortControllerRef.current = abortController;
 
-      let successCount = 0;
       showProgress({
         title: `Executing ${pendingOperations[0]?.type || 'operation'}...`,
         totalNum: pendingOperations.length,
         cancellable: true,
       });
 
-      for (let opIndex = 0; opIndex < pendingOperations.length; opIndex++) {
-        const op = pendingOperations[opIndex];
-
-        if (abortController.signal.aborted) {
-          setStatusMessage('Operation cancelled by user');
-          setStatusMessageColor(CatppuccinMocha.yellow);
-          break;
-        }
-
-        try {
-          const onProgress = (event: ProgressEvent) => {
-            const baseProgress = (opIndex / pendingOperations.length) * 100;
-            const opProgress = event.percentage / pendingOperations.length;
-            const totalProgress = Math.round(baseProgress + opProgress);
-
-            updateProgress(totalProgress);
-            if (event.currentFile) {
-              dispatchProgress({ type: 'UPDATE', payload: { currentFile: event.currentFile } });
-            }
-            updateProgressDescription(event.operation);
-          };
-
-          const progress = Math.round((opIndex / pendingOperations.length) * 100);
+      // Use the unified async operations hook
+      const result = await executeOperations(pendingOperations, {
+        onProgress: progress => {
+          updateProgress(progress.overallProgress);
+          if (progress.currentFile) {
+            dispatchProgress({ type: 'UPDATE', payload: { currentFile: progress.currentFile } });
+          }
+          updateProgressDescription(progress.description);
           dispatchProgress({
             type: 'UPDATE',
             payload: {
-              value: progress,
-              description: `${op.type}: ${op.path || op.source || 'processing'}`,
-              currentFile: op.path || op.source || '',
-              currentNum: opIndex + 1,
+              value: progress.overallProgress,
+              description: progress.description,
+              currentFile: progress.currentFile || '',
+              currentNum: progress.currentIndex + 1,
             },
           });
-
-          switch (op.type) {
-            case 'create':
-              if (op.path) {
-                const createType =
-                  op.entryType === 'directory' ? EntryType.Directory : EntryType.File;
-                await adapter.create(op.path, createType, undefined, { onProgress });
-                successCount++;
-              }
-              break;
-            case 'delete':
-              if (op.path) {
-                // Only use recursive delete for directories
-                const isDirectory = op.entry?.type === 'directory';
-                await adapter.delete(op.path, isDirectory, { onProgress });
-                successCount++;
-              }
-              break;
-            case 'move':
-              if (op.source && op.destination) {
-                await adapter.move(op.source, op.destination, { onProgress });
-                successCount++;
-              }
-              break;
-            case 'copy':
-              if (op.source && op.destination) {
-                await adapter.copy(op.source, op.destination, { onProgress });
-                successCount++;
-              }
-              break;
-            case 'download':
-              if (adapter.downloadToLocal && op.source && op.destination) {
-                await adapter.downloadToLocal(op.source, op.destination, op.recursive || false, {
-                  onProgress,
-                });
-                successCount++;
-              }
-              break;
-            case 'upload':
-              if (adapter.uploadFromLocal && op.source && op.destination) {
-                await adapter.uploadFromLocal(op.source, op.destination, op.recursive || false, {
-                  onProgress,
-                });
-                successCount++;
-              }
-              break;
-          }
-        } catch (opError) {
-          if (opError instanceof Error && opError.name === 'AbortError') {
-            setStatusMessage('Operation cancelled by user');
-            setStatusMessageColor(CatppuccinMocha.yellow);
-            break;
-          }
-          console.error(`Failed to execute ${op.type} operation:`, opError);
-          const parsedError = parseAwsError(opError, `Failed to ${op.type}`);
+        },
+        onOperationError: (op, error) => {
+          console.error(`Failed to execute ${op.type} operation:`, error);
+          const parsedError = parseAwsError(error, `Failed to ${op.type}`);
           setStatusMessage(`Operation failed: ${formatErrorForDisplay(parsedError, 70)}`);
           setStatusMessageColor(CatppuccinMocha.red);
-        }
-      }
+        },
+        signal: abortController.signal,
+      });
 
       hideProgress();
 
-      if (successCount > 0) {
+      if (result.cancelled) {
+        setStatusMessage('Operation cancelled by user');
+        setStatusMessageColor(CatppuccinMocha.yellow);
+      } else if (result.successCount > 0) {
         try {
           const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-          const result = await adapter.list(currentBufferState.currentPath);
-          currentBufferState.setEntries([...result.entries]);
+          const listResult = await adapter.list(currentBufferState.currentPath);
+          currentBufferState.setEntries([...listResult.entries]);
           // Clear deletion marks after successful save
           currentBufferState.clearDeletionMarks();
           // Update original entries reference
-          setOriginalEntries([...result.entries]);
-          setStatusMessage(`${successCount} operation(s) completed successfully`);
+          setOriginalEntries([...listResult.entries]);
+          setStatusMessage(`${result.successCount} operation(s) completed successfully`);
           setStatusMessageColor(CatppuccinMocha.green);
 
           // If quit was requested after save, exit now
@@ -856,13 +815,32 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
           setStatusMessage('Operations completed but failed to reload buffer');
           setStatusMessageColor(CatppuccinMocha.yellow);
         }
+      } else if (result.failureCount > 0) {
+        setStatusMessage(`${result.failureCount} operation(s) failed`);
+        setStatusMessageColor(CatppuccinMocha.red);
       }
 
       closeAndClearOperations();
-    } catch {
-      // Error handling is done within the loop
+    } catch (error) {
+      console.error('Unexpected error in operation execution:', error);
+      hideProgress();
+      setStatusMessage('Unexpected error during operation execution');
+      setStatusMessageColor(CatppuccinMocha.red);
+      closeAndClearOperations();
     }
-  }, [pendingOperations, adapter, multiPaneLayout, bufferState, closeAndClearOperations]);
+  }, [
+    pendingOperations,
+    adapter,
+    multiPaneLayout,
+    bufferState,
+    closeAndClearOperations,
+    executeOperations,
+    showProgress,
+    updateProgress,
+    dispatchProgress,
+    updateProgressDescription,
+    hideProgress,
+  ]);
 
   useEffect(() => {
     confirmHandlerRef.current = createConfirmHandler;
@@ -873,7 +851,9 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
       operationAbortControllerRef.current.abort();
       dispatchProgress({ type: 'UPDATE', payload: { cancellable: false } });
     }
-  }, [dispatchProgress]);
+    // Also cancel through the async operations hook
+    cancelOperations();
+  }, [dispatchProgress, cancelOperations]);
 
   // ============================================
   // Ref Sync Effects
