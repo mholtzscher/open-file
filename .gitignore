@@ -10,3 +10,9 @@ bun.lockb
 
 # LocalStack
 localstack-data/
+
+# Fake GCS
+fake-gcs-data/
+
+# SFTP test data (runtime generated)
+sftp-data/

@@ -402,6 +402,69 @@ The application follows a clean, modular architecture with a React-based UI. As 
 
 ## Development
 
+### Local Testing Infrastructure
+
+The project includes a Docker Compose setup for local integration testing with multiple storage backends:
+
+```bash
+# Start all services (S3, GCS, SFTP)
+docker-compose up -d
+
+# Or start specific services
+docker-compose up -d localstack    # LocalStack S3
+docker-compose up -d fake-gcs      # Fake GCS Server
+docker-compose up -d sftp          # SFTP Server
+```
+
+#### LocalStack (S3)
+
+- **Endpoint**: `http://localhost:4566`
+- **Region**: `us-east-1`
+- **Access Key**: `test` (or any value)
+- **Secret Key**: `test` (or any value)
+
+```bash
+# Test with AWS CLI
+aws --endpoint-url=http://localhost:4566 s3 ls
+
+# Run open-s3 with LocalStack
+bun run src/index.ts --endpoint http://localhost:4566
+```
+
+#### Fake GCS Server
+
+- **Endpoint**: `http://localhost:4443`
+- **No authentication required**
+
+#### SFTP Server
+
+- **Host**: `localhost`
+- **Port**: `2222`
+- **Username**: `testuser`
+- **Password**: `testpass`
+- **Base Path**: `/home/testuser/data`
+
+Authentication methods supported:
+
+1. **Password authentication**:
+
+   ```bash
+   sftp -P 2222 testuser@localhost
+   # Password: testpass
+   ```
+
+2. **SSH Key authentication**:
+   ```bash
+   sftp -P 2222 -i scripts/sftp-ssh-keys/test_key testuser@localhost
+   ```
+
+The SFTP server includes sample test data:
+
+- `documents/` - Reports and contracts
+- `images/` - Image file placeholders
+- `backups/` - Database and system backups
+- `logs/` - Application and access logs
+
 ### Run in Watch Mode
 
 ```bash

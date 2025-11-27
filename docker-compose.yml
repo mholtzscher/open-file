@@ -44,3 +44,21 @@ services:
     entrypoint: ['/bin/sh', '/init.sh']
     environment:
       - GCS_URL=http://fake-gcs:4443
+
+  sftp:
+    image: atmoz/sftp:latest
+    container_name: open-s3-sftp
+    ports:
+      - '2222:22'
+    volumes:
+      - './sftp-data:/home/testuser/data'
+      - './scripts/sftp-init.sh:/etc/sftp.d/init.sh:ro'
+      - './scripts/sftp-ssh-keys:/home/testuser/.ssh/keys:ro'
+    # Format: user:password:uid:gid:directories
+    # Creates testuser with password "testpass", uid 1000, gid 1000, with data directory
+    command: testuser:testpass:1000:1000:data
+    healthcheck:
+      test: ['CMD', 'bash', '-c', 'echo "test" | nc -w 1 localhost 22']
+      interval: 10s
+      timeout: 5s
+      retries: 3
