@@ -141,6 +141,8 @@ export class GCSProvider extends BaseStorageProvider {
       Capability.Copy,
       Capability.Move,
       Capability.ServerSideCopy,
+      Capability.Download,
+      Capability.Upload,
       Capability.Versioning,
       Capability.Metadata,
       Capability.PresignedUrls,
