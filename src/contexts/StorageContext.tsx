@@ -426,6 +426,19 @@ export function useHasStorage(): boolean {
 }
 
 // ============================================================================
+// Provider Implementation
+// ============================================================================
+
+/**
+ * StorageProvider component implementation
+ *
+ * This will be implemented in a separate file (StorageContextProvider.tsx)
+ * to avoid circular dependencies and keep the context definition clean.
+ *
+ * See: StorageContextProvider.tsx for the actual implementation
+ */
+
+// ============================================================================
 // Export Context (for provider implementation)
 // ============================================================================
 
