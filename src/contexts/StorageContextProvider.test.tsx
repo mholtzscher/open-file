@@ -1,12 +1,10 @@
 /**
- * Unit tests for StorageContextProvider
+ * Unit tests for StorageContextProvider with provider system
  */
 
 import { describe, it, expect, beforeEach } from 'bun:test';
 import { StorageContextProvider } from './StorageContextProvider.js';
-import { LegacyStorageAdapter } from './LegacyStorageAdapter.js';
 import { ProviderStorageAdapter } from './ProviderStorageAdapter.js';
-import { MockAdapter } from '../adapters/mock-adapter.js';
 import { BaseStorageProvider } from '../providers/base-provider.js';
 import { Capability } from '../providers/types/capabilities.js';
 import { OperationResult, Result } from '../providers/types/result.js';
@@ -72,15 +70,7 @@ class TestProvider extends BaseStorageProvider {
 
 describe('StorageContextProvider', () => {
   describe('Validation', () => {
-    it('should throw error if adapter not provided in legacy mode', () => {
-      expect(() => {
-        // Testing with invalid props
-        const props: any = { useProviderSystem: false, children: null };
-        StorageContextProvider(props);
-      }).toThrow();
-    });
-
-    it('should throw error if provider not provided in provider mode', () => {
+    it('should throw error if provider not provided', () => {
       expect(() => {
         // Testing with invalid props
         const props: any = { useProviderSystem: true, children: null };
@@ -93,35 +83,6 @@ describe('StorageContextProvider', () => {
     it('should export StorageContextProvider', () => {
       expect(StorageContextProvider).toBeDefined();
       expect(typeof StorageContextProvider).toBe('function');
-    });
-  });
-
-  describe('Legacy adapter integration', () => {
-    let mockAdapter: MockAdapter;
-
-    beforeEach(() => {
-      mockAdapter = new MockAdapter();
-    });
-
-    it('should create storage adapter with correct properties', () => {
-      const adapter = new LegacyStorageAdapter(mockAdapter, '/');
-
-      expect(adapter.state.providerId).toBe('mock');
-      expect(adapter.state.providerDisplayName).toBe('mock');
-      expect(adapter.state.currentPath).toBe('/');
-      expect(adapter.state.isConnected).toBe(true);
-    });
-
-    it('should handle custom initial path', () => {
-      const adapter = new LegacyStorageAdapter(mockAdapter, '/custom/');
-
-      expect(adapter.state.currentPath).toBe('/custom/');
-    });
-
-    it('should handle custom initial container', () => {
-      const adapter = new LegacyStorageAdapter(mockAdapter, '/', 'my-bucket');
-
-      expect(adapter.state.currentContainer).toBe('my-bucket');
     });
   });
 
@@ -154,35 +115,7 @@ describe('StorageContextProvider', () => {
     });
   });
 
-  describe('Feature flag behavior', () => {
-    it('should respect useProviderSystem flag when true', () => {
-      const testProvider = new TestProvider();
-      const adapter = new ProviderStorageAdapter(testProvider, '/');
-
-      // Verify it's using the provider system
-      expect(adapter.state.providerId).toBe('test-provider');
-    });
-
-    it('should respect useProviderSystem flag when false', () => {
-      const mockAdapter = new MockAdapter();
-      const adapter = new LegacyStorageAdapter(mockAdapter, '/');
-
-      // Verify it's using the legacy adapter
-      expect(adapter.state.providerId).toBe('mock');
-    });
-  });
-
   describe('Adapter operations', () => {
-    it('should support navigation with legacy adapter', async () => {
-      const mockAdapter = new MockAdapter();
-      const adapter = new LegacyStorageAdapter(mockAdapter, '/');
-
-      await adapter.navigate('test-bucket/');
-
-      expect(adapter.state.currentPath).toBe('test-bucket/');
-      expect(adapter.state.entries.length).toBeGreaterThan(0);
-    });
-
     it('should support navigation with provider', async () => {
       const testProvider = new TestProvider();
       const adapter = new ProviderStorageAdapter(testProvider, '/');
@@ -216,15 +149,6 @@ describe('StorageContextProvider', () => {
   });
 
   describe('Capability checking', () => {
-    it('should check capabilities with legacy adapter', () => {
-      const mockAdapter = new MockAdapter();
-      const adapter = new LegacyStorageAdapter(mockAdapter, '/');
-
-      expect(adapter.hasCapability(Capability.List)).toBe(true);
-      expect(adapter.hasCapability(Capability.Read)).toBe(true);
-      expect(adapter.hasCapability(Capability.Write)).toBe(true);
-    });
-
     it('should check capabilities with provider', () => {
       const testProvider = new TestProvider();
       const adapter = new ProviderStorageAdapter(testProvider, '/');
@@ -232,20 +156,6 @@ describe('StorageContextProvider', () => {
       expect(adapter.hasCapability(Capability.List)).toBe(true);
       expect(adapter.hasCapability(Capability.Read)).toBe(true);
       expect(adapter.hasCapability(Capability.Write)).toBe(false);
-    });
-  });
-
-  describe('Error handling', () => {
-    it('should handle navigation errors gracefully', async () => {
-      const mockAdapter = new MockAdapter();
-      const adapter = new LegacyStorageAdapter(mockAdapter, '/');
-
-      try {
-        await adapter.navigate('nonexistent-path/');
-      } catch (error) {
-        // Error expected for nonexistent path
-        expect(adapter.state.error).toBeDefined();
-      }
     });
   });
 });

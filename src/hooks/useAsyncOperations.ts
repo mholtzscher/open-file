@@ -1,7 +1,7 @@
 /**
  * useAsyncOperations hook
  *
- * Provides operation execution logic that works with both legacy adapters and new providers.
+ * Provides operation execution logic using the storage provider system.
  * Handles batch operations with progress tracking, cancellation, and error handling.
  *
  * This hook centralizes the operation execution logic that was previously embedded in S3Explorer,
@@ -9,12 +9,17 @@
  */
 
 import { useCallback, useRef } from 'react';
-import { useAdapter } from '../contexts/AdapterContext.js';
-import { useStorage, useHasStorage } from '../contexts/StorageContextProvider.js';
+import { useStorage } from '../contexts/StorageContextProvider.js';
 import { PendingOperation } from '../types/dialog.js';
-import { ProgressEvent } from '../adapters/adapter.js';
-import { EntryType } from '../types/entry.js';
-import { isFeatureEnabled, FeatureFlag } from '../utils/feature-flags.js';
+
+// ProgressEvent interface for compatibility with storage context
+interface ProgressEvent {
+  operation: string;
+  bytesTransferred: number;
+  totalBytes?: number;
+  percentage: number;
+  currentFile?: string;
+}
 
 /**
  * Progress callback for operation execution
@@ -74,11 +79,7 @@ export interface ExecuteOperationsOptions {
  * Hook for executing async operations with progress tracking
  */
 export function useAsyncOperations() {
-  const adapter = useAdapter();
-  const hasStorage = useHasStorage();
-  const storage = hasStorage ? useStorage() : null;
-  const useNewProviderSystem = isFeatureEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM);
-
+  const storage = useStorage();
   const abortControllerRef = useRef<AbortController | null>(null);
 
   /**
@@ -141,14 +142,8 @@ export function useAsyncOperations() {
             description: `${op.type}: ${op.path || op.source || 'processing'}`,
           });
 
-          // Execute operation based on type
-          if (useNewProviderSystem && storage) {
-            // Use new provider system
-            await executeOperationWithStorage(op, storage, operationProgressCallback);
-          } else {
-            // Use legacy adapter
-            await executeOperationWithAdapter(op, adapter, operationProgressCallback);
-          }
+          // Execute operation
+          await executeOperationWithStorage(op, storage, operationProgressCallback);
 
           successCount++;
         } catch (error) {
@@ -178,7 +173,7 @@ export function useAsyncOperations() {
         error: failureCount > 0 ? `${failureCount} operation(s) failed` : undefined,
       };
     },
-    [adapter, storage, useNewProviderSystem]
+    [storage]
   );
 
   /**
@@ -244,67 +239,6 @@ async function executeOperationWithStorage(
     case 'download':
       if (op.source && op.destination) {
         await storage.download(op.source, op.destination, { onProgress });
-      }
-      break;
-
-    default:
-      throw new Error(`Unknown operation type: ${(op as any).type}`);
-  }
-}
-
-/**
- * Execute a single operation using the legacy adapter system
- */
-async function executeOperationWithAdapter(
-  op: PendingOperation,
-  adapter: ReturnType<typeof useAdapter>,
-  onProgress: (event: ProgressEvent) => void
-): Promise<void> {
-  switch (op.type) {
-    case 'create':
-      if (op.path) {
-        const createType = op.entryType === 'directory' ? EntryType.Directory : EntryType.File;
-        await adapter.create(op.path, createType, undefined, { onProgress });
-      }
-      break;
-
-    case 'delete':
-      if (op.path) {
-        await adapter.delete(op.path, op.recursive, { onProgress });
-      }
-      break;
-
-    case 'move':
-      if (op.source && op.destination) {
-        await adapter.move(op.source, op.destination, { onProgress });
-      }
-      break;
-
-    case 'copy':
-      if (op.source && op.destination) {
-        await adapter.copy(op.source, op.destination, { onProgress });
-      }
-      break;
-
-    case 'upload':
-      if (op.source && op.destination) {
-        // Legacy adapter uses uploadFromLocal
-        if (adapter.uploadFromLocal) {
-          await adapter.uploadFromLocal(op.source, op.destination, op.recursive, { onProgress });
-        } else {
-          throw new Error('Upload operation not supported by adapter');
-        }
-      }
-      break;
-
-    case 'download':
-      if (op.source && op.destination) {
-        // Legacy adapter uses downloadToLocal
-        if (adapter.downloadToLocal) {
-          await adapter.downloadToLocal(op.source, op.destination, op.recursive, { onProgress });
-        } else {
-          throw new Error('Download operation not supported by adapter');
-        }
       }
       break;
 

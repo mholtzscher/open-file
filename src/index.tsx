@@ -4,16 +4,17 @@ import { createCliRenderer } from '@opentui/core';
 import { createRoot } from '@opentui/react';
 import { useEffect } from 'react';
 import { S3Explorer } from './ui/s3-explorer.jsx';
-import { Adapter } from './adapters/adapter.js';
+import { StorageProvider } from './providers/provider.js';
+import { S3Provider } from './providers/s3/s3-provider.js';
 import { MockAdapter } from './adapters/mock-adapter.js';
-import { S3Adapter } from './adapters/s3-adapter.js';
 import { ConfigManager } from './utils/config.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger.js';
 import { getActiveAwsRegion } from './utils/aws-profile.js';
 import { KeyboardProvider, useKeyboardDispatch } from './contexts/KeyboardContext.js';
-import { AdapterProvider } from './contexts/AdapterContext.js';
+import { StorageContextProvider } from './contexts/StorageContextProvider.js';
 import type { KeyboardKey, KeyboardDispatcher } from './types/keyboard.js';
+import type { S3Profile } from './providers/types/profile.js';
 
 // Global keyboard event dispatcher - bridges external renderer to React context
 // This is set once when App mounts and provides the dispatch function from context
@@ -38,14 +39,14 @@ export function getGlobalKeyboardDispatcher() {
  */
 interface AppProps {
   bucket?: string;
-  adapter: Adapter;
+  provider: StorageProvider;
   configManager: ConfigManager;
 }
 
 /**
  * App component that connects keyboard events to the React context
  */
-function App({ bucket, adapter, configManager }: AppProps) {
+function App({ bucket, provider, configManager }: AppProps) {
   const dispatch = useKeyboardDispatch();
 
   // Connect the context dispatch to the global dispatcher
@@ -57,7 +58,7 @@ function App({ bucket, adapter, configManager }: AppProps) {
     };
   }, [dispatch]);
 
-  return <S3Explorer bucket={bucket} adapter={adapter} configManager={configManager} />;
+  return <S3Explorer bucket={bucket} configManager={configManager} />;
 }
 
 /**
@@ -91,7 +92,7 @@ async function main() {
     const configManager = new ConfigManager(cliArgs.config);
 
     // Determine adapter
-    let adapter: Adapter;
+    let provider: StorageProvider;
     const adapterType = cliArgs.adapter || configManager.getAdapter();
 
     if (adapterType === 's3') {
@@ -115,14 +116,28 @@ async function main() {
         secretAccessKey: cliArgs.secretKey || s3Config.secretAccessKey,
       };
 
-      adapter = new S3Adapter(finalS3Config);
-      logger.info('S3 adapter initialized successfully', {
+      const s3Profile: S3Profile = {
+        id: 'cli-s3-profile',
+        displayName: 'CLI S3 Profile',
+        provider: 's3',
+        config: {
+          region: finalS3Config.region,
+          profile: finalS3Config.profile,
+          endpoint: finalS3Config.endpoint,
+          accessKeyId: finalS3Config.accessKeyId,
+          secretAccessKey: finalS3Config.secretAccessKey,
+        },
+      };
+      provider = new S3Provider(s3Profile);
+      logger.info('S3 provider initialized successfully', {
         region: finalS3Config.region,
         bucket: finalS3Config.bucket,
         profile: finalS3Config.profile || 'default',
       });
     } else {
-      adapter = new MockAdapter();
+      // TODO: Create MockProvider when available
+      // For now, throw an error for mock mode
+      throw new Error('Mock mode not yet supported with provider system. Use S3 adapter type.');
     }
 
     // Get bucket name - can be undefined for root view mode
@@ -186,9 +201,9 @@ async function main() {
       const root = createRoot(renderer);
       root.render(
         <KeyboardProvider>
-          <AdapterProvider adapter={adapter}>
-            <App bucket={bucket} adapter={adapter} configManager={configManager} />
-          </AdapterProvider>
+          <StorageContextProvider provider={provider}>
+            <App bucket={bucket} provider={provider} configManager={configManager} />
+          </StorageContextProvider>
         </KeyboardProvider>
       );
     } catch (renderError) {

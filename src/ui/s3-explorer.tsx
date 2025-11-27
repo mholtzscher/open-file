@@ -6,7 +6,6 @@
  */
 
 import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
-import { Adapter, ProgressEvent } from '../adapters/adapter.js';
 import { ConfigManager } from '../utils/config.js';
 import { useBufferState } from '../hooks/useBufferState.js';
 import { useKeyboardDispatcher } from '../hooks/useKeyboardDispatcher.js';
@@ -22,9 +21,7 @@ import { DialogsState } from './s3-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
-import { useAdapter, useHasAdapter } from '../contexts/AdapterContext.js';
-import { useStorage, useHasStorage } from '../contexts/StorageContextProvider.js';
-import { isFeatureEnabled, FeatureFlag } from '../utils/feature-flags.js';
+import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
 import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
@@ -32,11 +29,10 @@ import { formatBytes } from '../utils/file-browser.js';
 import { getDialogHandler } from '../hooks/useDialogKeyboard.js';
 import type { PendingOperation } from '../types/dialog.js';
 import type { KeyboardKey, KeyAction } from '../types/keyboard.js';
+import { Capability } from '../providers/types/capabilities.js';
 
 interface S3ExplorerProps {
   bucket?: string;
-  /** Adapter can be passed as prop or accessed via AdapterContext */
-  adapter?: Adapter;
   configManager: ConfigManager;
 }
 
@@ -80,33 +76,11 @@ function isPreviewableFile(entry: Entry | undefined): boolean {
 /**
  * Main S3Explorer component - declarative React implementation
  */
-export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3ExplorerProps) {
+export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   // ============================================
-  // Feature Flag & Provider System
+  // Storage Context
   // ============================================
-  const useNewProviderSystem = isFeatureEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM);
-  const hasStorageContext = useHasStorage();
-  const storage = hasStorageContext ? useStorage() : null;
-
-  // ============================================
-  // Adapter Resolution (prop or context)
-  // ============================================
-  const hasAdapterContext = useHasAdapter();
-  const contextAdapter = hasAdapterContext ? useAdapter() : null;
-  const adapter = adapterProp ?? contextAdapter;
-
-  // Require either adapter (for legacy mode) or storage (for new provider mode)
-  if (!adapter && !storage) {
-    throw new Error(
-      'S3Explorer requires an adapter or storage context. Either pass adapter as prop, wrap with AdapterProvider, or enable StorageContextProvider.'
-    );
-  }
-
-  // For now, adapter is required (storage is optional for gradual migration)
-  // This will change when we fully migrate to provider system
-  if (!adapter) {
-    throw new Error('S3Explorer requires an adapter. Storage-only mode not yet fully implemented.');
-  }
+  const storage = useStorage();
 
   // ============================================
   // Core State
@@ -213,10 +187,10 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
       onLoadBuffer: async (path: string) => {
         const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         try {
-          const result = await adapter.list(path);
-          activeBufferState.setEntries([...result.entries]);
+          const entries = await storage.list(path);
+          activeBufferState.setEntries([...entries]);
           activeBufferState.setCurrentPath(path);
-          setOriginalEntries([...result.entries]);
+          setOriginalEntries([...entries]);
           activeBufferState.cursorToTop();
           setStatusMessage(`Navigated to ${path}`);
           setStatusMessageColor(CatppuccinMocha.green);
@@ -231,7 +205,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
         setStatusMessageColor(CatppuccinMocha.red);
       },
     }),
-    [adapter, bufferState, multiPaneLayout]
+    [storage, bufferState, multiPaneLayout]
   );
 
   const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
@@ -282,12 +256,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
           const bucketName = currentEntry.name;
           const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
 
-          if (adapter.setBucket) {
-            adapter.setBucket(bucketName);
-          }
-          if (adapter.setRegion) {
-            adapter.setRegion(bucketRegion);
-          }
+          await storage.setContainer(bucketName, bucketRegion);
           setBucket(bucketName);
           return;
         }
@@ -390,8 +359,8 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
           return;
         }
 
-        if (!adapter.downloadToLocal) {
-          setStatusMessage('Download not supported by this adapter');
+        if (!storage.hasCapability(Capability.Download)) {
+          setStatusMessage('Download not supported by this storage provider');
           setStatusMessageColor(CatppuccinMocha.red);
           return;
         }
@@ -489,9 +458,9 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
         const currentBufferState = getActiveBuffer();
 
         if (!bucket) {
-          if (adapter.getBucketEntries) {
-            adapter
-              .getBucketEntries()
+          if (storage.hasCapability(Capability.Containers)) {
+            storage
+              .listContainers()
               .then((entries: Entry[]) => {
                 currentBufferState.setEntries([...entries]);
                 setStatusMessage(`Refreshed: ${entries.length} bucket(s)`);
@@ -505,11 +474,11 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
           }
         } else {
           const currentPath = currentBufferState.currentPath;
-          adapter
+          storage
             .list(currentPath)
-            .then(result => {
-              currentBufferState.setEntries([...result.entries]);
-              setOriginalEntries([...result.entries]);
+            .then(entries => {
+              currentBufferState.setEntries([...entries]);
+              setOriginalEntries([...entries]);
               setStatusMessage('Refreshed');
               setStatusMessageColor(CatppuccinMocha.green);
             })
@@ -621,9 +590,9 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
           } else if (command.startsWith(':bucket ')) {
             const bucketName = command.substring(':bucket '.length).trim();
             if (bucketName) {
-              if (adapter.setBucket) {
-                adapter.setBucket(bucketName);
-              }
+              storage.setContainer(bucketName).catch(err => {
+                console.error('Failed to set bucket:', err);
+              });
               setBucket(bucketName);
               setStatusMessage(`Switched to bucket: ${bucketName}`);
               setStatusMessageColor(CatppuccinMocha.blue);
@@ -731,7 +700,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
     bufferState,
     multiPaneLayout,
     bucket,
-    adapter,
+    storage,
     previewEnabled,
     navigationHandlers,
     showConfirm,
@@ -796,12 +765,12 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
       } else if (result.successCount > 0) {
         try {
           const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-          const listResult = await adapter.list(currentBufferState.currentPath);
-          currentBufferState.setEntries([...listResult.entries]);
+          const entries = await storage.list(currentBufferState.currentPath);
+          currentBufferState.setEntries([...entries]);
           // Clear deletion marks after successful save
           currentBufferState.clearDeletionMarks();
           // Update original entries reference
-          setOriginalEntries([...listResult.entries]);
+          setOriginalEntries([...entries]);
           setStatusMessage(`${result.successCount} operation(s) completed successfully`);
           setStatusMessageColor(CatppuccinMocha.green);
 
@@ -830,7 +799,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
     }
   }, [
     pendingOperations,
-    adapter,
+    storage,
     multiPaneLayout,
     bufferState,
     closeAndClearOperations,
@@ -1027,26 +996,26 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
         const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
         if (!bucket) {
           console.error(`[S3Explorer] Root view mode detected, loading buckets...`);
-          if (adapter.getBucketEntries) {
-            const entries = await adapter.getBucketEntries();
+          if (storage.hasCapability(Capability.Containers)) {
+            const entries = await storage.listContainers();
             console.error(`[S3Explorer] Received ${entries.length} buckets`);
             currentBufferState.setEntries([...entries]);
             currentBufferState.setCurrentPath('');
             setStatusMessage(`Found ${entries.length} bucket(s)`);
             setStatusMessageColor(CatppuccinMocha.green);
           } else {
-            throw new Error('Adapter does not support bucket listing');
+            throw new Error('Storage provider does not support container listing');
           }
         } else {
           const path = currentBufferState.currentPath;
           console.error(`[S3Explorer] Loading bucket: ${bucket}, path: "${path}"`);
-          const result = await adapter.list(path);
-          console.error(`[S3Explorer] Received ${result.entries.length} entries`);
+          const entries = await storage.list(path);
+          console.error(`[S3Explorer] Received ${entries.length} entries`);
 
-          currentBufferState.setEntries([...result.entries]);
+          currentBufferState.setEntries([...entries]);
           console.error(`[S3Explorer] Entries loaded into buffer state`);
 
-          setStatusMessage(`Loaded ${result.entries.length} items`);
+          setStatusMessage(`Loaded ${entries.length} items`);
           setStatusMessageColor(CatppuccinMocha.green);
         }
 
@@ -1071,7 +1040,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
     console.error(`[S3Explorer] useEffect triggered`);
     initializeData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bucket, adapter]);
+  }, [bucket, storage]);
 
   // ============================================
   // Preview Effect
@@ -1115,7 +1084,7 @@ export function S3Explorer({ bucket: initialBucket, adapter: adapterProp }: S3Ex
           ? `${currentBufferState.currentPath}${selectedEntry.name}`
           : selectedEntry.name;
 
-        const buffer = await adapter.read(fullPath);
+        const buffer = await storage.read(fullPath);
         const content = buffer.toString('utf-8');
         setPreviewContent(content);
         setPreviewFilename(selectedEntry.name);
