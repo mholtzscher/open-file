@@ -25,6 +25,50 @@ function calculatePercentage(transferred: number, total: number): number {
 }
 
 /**
+ * Report progress for simple operations
+ *
+ * Helper for simple progress reporting that avoids duplicated inline patterns.
+ *
+ * @param onProgress - External progress callback (optional)
+ * @param operation - Operation name for the progress event (e.g., 'Downloading file')
+ * @param bytesTransferred - Number of bytes transferred so far
+ * @param totalBytes - Total number of bytes to transfer
+ * @param currentFile - Current file being operated on
+ *
+ * @example
+ * ```typescript
+ * // Before (inline pattern):
+ * if (options?.onProgress) {
+ *   options.onProgress({
+ *     operation: 'Uploading file',
+ *     bytesTransferred: 0,
+ *     totalBytes,
+ *     percentage: 0,
+ *     currentFile: s3Key,
+ *   });
+ * }
+ *
+ * // After:
+ * reportProgress(options?.onProgress, 'Uploading file', 0, totalBytes, s3Key);
+ * ```
+ */
+export function reportProgress(
+  onProgress: ProgressCallback | undefined,
+  operation: string,
+  bytesTransferred: number,
+  totalBytes: number,
+  currentFile: string
+): void {
+  onProgress?.({
+    operation,
+    bytesTransferred,
+    totalBytes,
+    percentage: calculatePercentage(bytesTransferred, totalBytes),
+    currentFile,
+  });
+}
+
+/**
  * Create a progress adapter that converts internal operation progress to ProgressEvent
  *
  * @param operation - Operation name for the progress event (e.g., 'Moving objects')
@@ -57,12 +101,6 @@ export function createProgressAdapter(
   if (!onProgress) return undefined;
 
   return (count: number, total: number, currentItem: string) => {
-    onProgress({
-      operation,
-      bytesTransferred: count,
-      totalBytes: total,
-      percentage: calculatePercentage(count, total),
-      currentFile: currentItem,
-    });
+    reportProgress(onProgress, operation, count, total, currentItem);
   };
 }

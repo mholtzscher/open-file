@@ -51,7 +51,7 @@ import {
   uploadFileToS3,
   uploadDirectoryToS3,
 } from './utils/transfer-operations.js';
-import { createProgressAdapter } from './utils/progress-adapter.js';
+import { createProgressAdapter, reportProgress } from './utils/progress-adapter.js';
 import { readObject } from './utils/read-operations.js';
 import { listObjects, listBuckets as listBucketsOp } from './utils/list-operations.js';
 import { retryWithBackoff, getS3RetryConfig } from '../../utils/retry.js';
@@ -476,15 +476,7 @@ export class S3Provider extends BaseStorageProvider {
     const totalBytes = body.length;
 
     try {
-      if (options?.onProgress) {
-        options.onProgress({
-          operation: 'write',
-          bytesTransferred: 0,
-          totalBytes,
-          percentage: 0,
-          currentFile: path,
-        });
-      }
+      reportProgress(options?.onProgress, 'write', 0, totalBytes, path);
 
       // Use multipart upload for large files
       if (shouldUseMultipartUpload(totalBytes)) {
@@ -504,15 +496,7 @@ export class S3Provider extends BaseStorageProvider {
         }, getS3RetryConfig());
       }
 
-      if (options?.onProgress) {
-        options.onProgress({
-          operation: 'write',
-          bytesTransferred: totalBytes,
-          totalBytes,
-          percentage: 100,
-          currentFile: path,
-        });
-      }
+      reportProgress(options?.onProgress, 'write', totalBytes, totalBytes, path);
 
       return Result.success();
     } catch (error) {

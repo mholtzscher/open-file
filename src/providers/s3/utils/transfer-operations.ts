@@ -10,6 +10,7 @@ import { join, dirname } from 'path';
 import { retryWithBackoff, getS3RetryConfig } from '../../../utils/retry.js';
 import { listAllObjects } from './batch-operations.js';
 import { uploadLargeFile, shouldUseMultipartUpload, OperationOptions } from './multipart-upload.js';
+import { reportProgress } from './progress-adapter.js';
 
 /**
  * Progress callback for transfer operations
@@ -143,15 +144,7 @@ export async function uploadFileToS3(opts: UploadFileOptions): Promise<void> {
   const fileBuffer = await fs.readFile(localPath);
   const totalBytes = fileBuffer.length;
 
-  if (options?.onProgress) {
-    options.onProgress({
-      operation: 'Uploading file',
-      bytesTransferred: 0,
-      totalBytes,
-      percentage: 0,
-      currentFile: s3Key,
-    });
-  }
+  reportProgress(options?.onProgress, 'Uploading file', 0, totalBytes, s3Key);
 
   // Use multipart upload for large files
   if (shouldUseMultipartUpload(totalBytes)) {
@@ -168,15 +161,7 @@ export async function uploadFileToS3(opts: UploadFileOptions): Promise<void> {
     }, getS3RetryConfig());
   }
 
-  if (options?.onProgress) {
-    options.onProgress({
-      operation: 'Uploaded file',
-      bytesTransferred: totalBytes,
-      totalBytes,
-      percentage: 100,
-      currentFile: s3Key,
-    });
-  }
+  reportProgress(options?.onProgress, 'Uploaded file', totalBytes, totalBytes, s3Key);
 }
 
 /**

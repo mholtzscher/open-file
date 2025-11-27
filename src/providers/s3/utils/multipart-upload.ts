@@ -15,6 +15,7 @@ import {
 import { retryWithBackoff, getS3RetryConfig } from '../../../utils/retry.js';
 import { ProgressCallback } from '../../../types/progress.js';
 import { getLogger } from '../../../utils/logger.js';
+import { reportProgress } from './progress-adapter.js';
 
 /** Threshold above which to use multipart upload (5MB) */
 export const MULTIPART_THRESHOLD = 5 * 1024 * 1024;
@@ -119,15 +120,7 @@ export async function uploadLargeFile(
       }
 
       // Report progress
-      if (options?.onProgress) {
-        options.onProgress({
-          operation: 'Uploading file',
-          bytesTransferred: end,
-          totalBytes,
-          percentage: Math.round((end / totalBytes) * 100),
-          currentFile: key,
-        });
-      }
+      reportProgress(options?.onProgress, 'Uploading file', end, totalBytes, key);
     }
 
     // Complete multipart upload

@@ -8,6 +8,7 @@
 import { S3Client, HeadObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { ProgressCallback } from '../../../types/progress.js';
 import { retryWithBackoff, getS3RetryConfig } from '../../../utils/retry.js';
+import { reportProgress } from './progress-adapter.js';
 
 /**
  * Logger interface for read operations
@@ -30,34 +31,6 @@ export interface ReadObjectOptions {
   onProgress?: ProgressCallback;
   /** Optional logger */
   logger?: ReadOperationsLogger;
-}
-
-/**
- * Calculate progress percentage safely
- */
-function calculatePercentage(transferred: number, total: number): number {
-  return total > 0 ? Math.round((transferred / total) * 100) : 0;
-}
-
-/**
- * Report progress if callback is provided
- */
-function reportProgress(
-  onProgress: ProgressCallback | undefined,
-  operation: string,
-  bytesTransferred: number,
-  totalBytes: number,
-  currentFile: string
-): void {
-  if (onProgress) {
-    onProgress({
-      operation,
-      bytesTransferred,
-      totalBytes,
-      percentage: calculatePercentage(bytesTransferred, totalBytes),
-      currentFile,
-    });
-  }
 }
 
 /**
