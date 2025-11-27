@@ -86,14 +86,18 @@ export interface FileProfileManagerOptions {
 export class FileProfileManager implements ProfileManager {
   private profiles: Map<string, Profile> = new Map();
   private loaded = false;
+  private skipDiskLoad = false;
 
   constructor(options: FileProfileManagerOptions = {}) {
     // Note: options.profilesPath is reserved for future custom path support
     // Currently loadProfilesFromDisk always uses the default platform path
     void options.profilesPath;
 
-    // Load profiles eagerly unless explicitly disabled
-    if (options.loadOnInit !== false) {
+    // If loadOnInit is false, skip disk loading entirely (for testing)
+    if (options.loadOnInit === false) {
+      this.skipDiskLoad = true;
+      this.loaded = true; // Mark as loaded to prevent ensureLoaded from loading
+    } else {
       this.loadSync();
     }
   }
