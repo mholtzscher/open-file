@@ -34,6 +34,7 @@ This research documents how **sst/opentui** tests their terminal UI (TUI) React 
 **Snapshot Testing**: Supports character frame snapshots
 
 **Key Packages**:
+
 - `@opentui/core/testing` - Core testing utilities
 - `@opentui/react/test-utils` - React-specific testing helpers
 - `bun:test` - Test runner (similar to Jest/Vitest syntax)
@@ -43,25 +44,27 @@ This research documents how **sst/opentui** tests their terminal UI (TUI) React 
 ## Quick Example
 
 ```typescript
-import { describe, test, expect } from "bun:test"
-import { createTestRenderer } from "@opentui/core/testing"
+import { describe, test, expect } from 'bun:test';
+import { createTestRenderer } from '@opentui/core/testing';
 
-describe("MyComponent", () => {
-  test("renders correctly", async () => {
-    const { renderer, renderOnce, captureCharFrame, mockInput } = 
-      await createTestRenderer({ width: 80, height: 24 })
+describe('MyComponent', () => {
+  test('renders correctly', async () => {
+    const { renderer, renderOnce, captureCharFrame, mockInput } = await createTestRenderer({
+      width: 80,
+      height: 24,
+    });
 
     // Setup your component
-    renderer.root.add(myComponent)
+    renderer.root.add(myComponent);
 
     // Render
-    await renderOnce()
+    await renderOnce();
 
     // Assert
-    const frame = captureCharFrame()
-    expect(frame).toContain("expected text")
-  })
-})
+    const frame = captureCharFrame();
+    expect(frame).toContain('expected text');
+  });
+});
 ```
 
 ---
@@ -102,7 +105,6 @@ packages/solid/
 ## Next Steps
 
 1. Review [Testing Utilities Overview](./testing-utilities.md)
-2. Study [Example Tests](./example-tests.md) 
+2. Study [Example Tests](./example-tests.md)
 3. Learn mock input patterns in [Mock Input Setup](./mock-input-patterns.md)
 4. For React: [React Testing Guide](./react-testing-guide.md)
-

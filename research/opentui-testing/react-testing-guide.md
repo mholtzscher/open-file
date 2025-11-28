@@ -3,11 +3,13 @@
 ## React-Specific Testing Setup
 
 ### Source File
+
 `packages/react/src/test-utils.ts`
 
 ### Import Path
+
 ```typescript
-import { testRender } from "@opentui/react/test-utils"
+import { testRender } from '@opentui/react/test-utils';
 ```
 
 ---
@@ -18,7 +20,7 @@ import { testRender } from "@opentui/react/test-utils"
 async function testRender(
   node: ReactNode,
   testRendererOptions: TestRendererOptions
-): Promise<ReturnType<typeof createTestRenderer>>
+): Promise<ReturnType<typeof createTestRenderer>>;
 ```
 
 ### What testRender() Does
@@ -110,7 +112,7 @@ function Counter() {
 }
 
 test("counter updates on click", async () => {
-  const { renderOnce, captureCharFrame, mockMouse } = 
+  const { renderOnce, captureCharFrame, mockMouse } =
     await testRender(<Counter />, { width: 40, height: 10 })
 
   // Initial render
@@ -139,7 +141,7 @@ function AsyncData() {
 }
 
 test("renders loaded data after effect", async () => {
-  const { renderOnce, captureCharFrame } = 
+  const { renderOnce, captureCharFrame } =
     await testRender(<AsyncData />, { width: 40, height: 10 })
 
   // Initial render
@@ -165,7 +167,7 @@ function ThemedBox() {
 }
 
 test("respects context provider", async () => {
-  const { renderOnce, captureCharFrame } = 
+  const { renderOnce, captureCharFrame } =
     await testRender(
       <ThemeContext.Provider value="dark">
         <ThemedBox />
@@ -186,7 +188,7 @@ function TextInput() {
 
   return (
     <Box>
-      <Input 
+      <Input
         value={text}
         onChange={setText}
         placeholder="Type here..."
@@ -197,7 +199,7 @@ function TextInput() {
 }
 
 test("handles keyboard input", async () => {
-  const { renderOnce, captureCharFrame, mockInput } = 
+  const { renderOnce, captureCharFrame, mockInput } =
     await testRender(<TextInput />, { width: 40, height: 10 })
 
   await renderOnce()
@@ -227,7 +229,7 @@ function Button() {
 }
 
 test("handles mouse click", async () => {
-  const { renderOnce, captureCharFrame, mockMouse } = 
+  const { renderOnce, captureCharFrame, mockMouse } =
     await testRender(<Button />, { width: 40, height: 10 })
 
   await renderOnce()
@@ -246,14 +248,14 @@ test("handles mouse click", async () => {
 ```typescript
 function Searchbox({ onSearch }: { onSearch: (query: string) => void }) {
   const [query, setQuery] = React.useState("")
-  
+
   const handleSearch = React.useCallback(() => {
     onSearch(query)
   }, [query, onSearch])
 
   return (
     <Box>
-      <Input 
+      <Input
         value={query}
         onChange={setQuery}
       />
@@ -268,7 +270,7 @@ test("calls callback on search", async () => {
     searchedQuery = q
   }
 
-  const { renderOnce, mockInput, mockMouse } = 
+  const { renderOnce, mockInput, mockMouse } =
     await testRender(
       <Searchbox onSearch={handleSearch} />,
       { width: 40, height: 10 }
@@ -295,10 +297,10 @@ The `testRender()` function automatically wraps updates in `React.act()`, but yo
 import { act } from "react"
 
 test("manual act wrapping", async () => {
-  const { renderOnce, captureCharFrame, mockInput } = 
+  const { renderOnce, captureCharFrame, mockInput } =
     await testRender(<MyComponent />, { width: 40, height: 10 })
 
-  // act() is automatically used in renderOnce(), but for other 
+  // act() is automatically used in renderOnce(), but for other
   // React state updates, you might need:
   await act(async () => {
     mockInput.typeText("test")
@@ -318,7 +320,7 @@ test("manual act wrapping", async () => {
 
 ```typescript
 test("component lifecycle", async () => {
-  const { renderOnce, captureCharFrame, renderer } = 
+  const { renderOnce, captureCharFrame, renderer } =
     await testRender(<MyComponent />, { width: 80, height: 24 })
 
   // Mount/render
@@ -339,7 +341,7 @@ test("component lifecycle", async () => {
 
 ```typescript
 test("event handling chain", async () => {
-  const { renderOnce, captureCharFrame, mockInput, mockMouse } = 
+  const { renderOnce, captureCharFrame, mockInput, mockMouse } =
     await testRender(<Form />, { width: 80, height: 24 })
 
   await renderOnce()
@@ -399,7 +401,7 @@ function ItemList({ items }: { items: string[] }) {
 }
 
 test("renders list items", async () => {
-  const { renderOnce, captureCharFrame } = 
+  const { renderOnce, captureCharFrame } =
     await testRender(
       <ItemList items={["Apple", "Banana", "Cherry"]} />,
       { width: 40, height: 10 }
@@ -456,7 +458,7 @@ describe("MyComponent", () => {
 
 ```typescript
 test("debug component tree", async () => {
-  const { renderOnce, renderer } = 
+  const { renderOnce, renderer } =
     await testRender(<MyComponent />, { width: 80, height: 24 })
 
   await renderOnce()
@@ -471,7 +473,7 @@ test("debug component tree", async () => {
 
 ```typescript
 test("trace rendering", async () => {
-  const { renderOnce, captureCharFrame, renderer } = 
+  const { renderOnce, captureCharFrame, renderer } =
     await testRender(<Counter />, { width: 40, height: 10 })
 
   let frameCount = 0
@@ -492,7 +494,7 @@ test("trace rendering", async () => {
 
 ```typescript
 test("inspect render buffer", async () => {
-  const { renderOnce, renderer } = 
+  const { renderOnce, renderer } =
     await testRender(<MyComponent />, { width: 80, height: 24 })
 
   await renderOnce()
@@ -519,7 +521,7 @@ All test utilities have full TypeScript support:
 
 ```typescript
 import { testRender } from "@opentui/react/test-utils"
-import { createTestRenderer, type TestRenderer, type MockInput } 
+import { createTestRenderer, type TestRenderer, type MockInput }
   from "@opentui/core/testing"
 
 // Type-safe usage
@@ -532,4 +534,3 @@ const testSetup = await testRender(
 const renderer: TestRenderer = testSetup.renderer
 const mockInput: MockInput = testSetup.mockInput
 ```
-

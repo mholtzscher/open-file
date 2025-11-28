@@ -16,14 +16,14 @@ This research provides complete patterns for testing our own TUI components.
 
 ## Key Technologies
 
-| Component | Technology | File Path |
-|-----------|-----------|-----------|
-| **Test Runner** | Bun's native test runner | `bun:test` |
-| **Core Testing** | Custom TestRenderer | `@opentui/core/testing` |
-| **React Integration** | React reconciler wrapper | `@opentui/react/test-utils` |
-| **SolidJS Integration** | SolidJS reconciler wrapper | `@opentui/solid` |
-| **Keyboard Mocking** | ANSI/Kitty/modifyOtherKeys | `testing/mock-keys.ts` |
-| **Mouse Mocking** | SGR mouse protocol | `testing/mock-mouse.ts` |
+| Component               | Technology                 | File Path                   |
+| ----------------------- | -------------------------- | --------------------------- |
+| **Test Runner**         | Bun's native test runner   | `bun:test`                  |
+| **Core Testing**        | Custom TestRenderer        | `@opentui/core/testing`     |
+| **React Integration**   | React reconciler wrapper   | `@opentui/react/test-utils` |
+| **SolidJS Integration** | SolidJS reconciler wrapper | `@opentui/solid`            |
+| **Keyboard Mocking**    | ANSI/Kitty/modifyOtherKeys | `testing/mock-keys.ts`      |
+| **Mouse Mocking**       | SGR mouse protocol         | `testing/mock-mouse.ts`     |
 
 ---
 
@@ -69,20 +69,20 @@ This research provides complete patterns for testing our own TUI components.
 
 ```typescript
 // Create
-const testSetup = await createTestRenderer({ width: 80, height: 24 })
+const testSetup = await createTestRenderer({ width: 80, height: 24 });
 
 // Setup (add components to root)
-testSetup.renderer.root.add(myComponent)
+testSetup.renderer.root.add(myComponent);
 
 // Render (executes one frame)
-await testSetup.renderOnce()
+await testSetup.renderOnce();
 
 // Assert (capture rendered output)
-const frame = testSetup.captureCharFrame()
-expect(frame).toContain("expected")
+const frame = testSetup.captureCharFrame();
+expect(frame).toContain('expected');
 
 // Cleanup
-testSetup.renderer.destroy()
+testSetup.renderer.destroy();
 ```
 
 ### 2. Render Buffer Structure
@@ -105,14 +105,14 @@ buffer.buffers.flags: Uint16Array     // (y*width+x) = flags
 
 ```typescript
 // Keyboard
-mockInput.typeText("hello")
-mockInput.pressKey("a", { ctrl: true })
-mockInput.pressArrow("down")
+mockInput.typeText('hello');
+mockInput.pressKey('a', { ctrl: true });
+mockInput.pressArrow('down');
 
 // Mouse
-await mockMouse.click(10, 5)
-await mockMouse.drag(0, 0, 10, 10)
-await mockMouse.scroll(5, 5, "down")
+await mockMouse.click(10, 5);
+await mockMouse.drag(0, 0, 10, 10);
+await mockMouse.scroll(5, 5, 'down');
 ```
 
 ---
@@ -156,18 +156,18 @@ packages/
 
 ```typescript
 const {
-  renderer,           // Main CliRenderer instance
-  mockInput,          // Keyboard input mock
-  mockMouse,          // Mouse input mock
-  renderOnce,         // Render one frame async
-  captureCharFrame,   // Get frame as string
-  resize,             // Resize terminal
+  renderer, // Main CliRenderer instance
+  mockInput, // Keyboard input mock
+  mockMouse, // Mouse input mock
+  renderOnce, // Render one frame async
+  captureCharFrame, // Get frame as string
+  resize, // Resize terminal
 } = await createTestRenderer({
-  width: 80,                    // Terminal width
-  height: 24,                   // Terminal height
-  kittyKeyboard: false,         // Kitty protocol support
-  otherModifiersMode: false,    // modifyOtherKeys protocol
-})
+  width: 80, // Terminal width
+  height: 24, // Terminal height
+  kittyKeyboard: false, // Kitty protocol support
+  otherModifiersMode: false, // modifyOtherKeys protocol
+});
 ```
 
 ### React testRender()
@@ -184,51 +184,51 @@ const testSetup = await testRender(
 
 ```typescript
 // Character input
-mockInput.typeText("hello", 100)        // 100ms delay per char
-mockInput.pressKeys(["a", "b"], 50)     // Multiple keys with delay
+mockInput.typeText('hello', 100); // 100ms delay per char
+mockInput.pressKeys(['a', 'b'], 50); // Multiple keys with delay
 
 // Named keys
-mockInput.pressKey("RETURN")
-mockInput.pressKey("ARROW_UP")
-mockInput.pressKey("F1")
+mockInput.pressKey('RETURN');
+mockInput.pressKey('ARROW_UP');
+mockInput.pressKey('F1');
 
 // With modifiers
-mockInput.pressKey("a", { shift: true })      // Shift+A
-mockInput.pressKey("c", { ctrl: true })       // Ctrl+C
-mockInput.pressKey("l", { meta: true })       // Meta+L
-mockInput.pressKey("s", { ctrl: true, shift: true })  // Ctrl+Shift+S
+mockInput.pressKey('a', { shift: true }); // Shift+A
+mockInput.pressKey('c', { ctrl: true }); // Ctrl+C
+mockInput.pressKey('l', { meta: true }); // Meta+L
+mockInput.pressKey('s', { ctrl: true, shift: true }); // Ctrl+Shift+S
 
 // Helpers
-mockInput.pressEnter()
-mockInput.pressEscape()
-mockInput.pressTab()
-mockInput.pressBackspace()
-mockInput.pressCtrlC()
-mockInput.pressArrow("up", { shift: true })
-mockInput.pasteBracketedText("multi\nline")
+mockInput.pressEnter();
+mockInput.pressEscape();
+mockInput.pressTab();
+mockInput.pressBackspace();
+mockInput.pressCtrlC();
+mockInput.pressArrow('up', { shift: true });
+mockInput.pasteBracketedText('multi\nline');
 ```
 
 ### mockMouse API
 
 ```typescript
 // Clicking
-await mockMouse.click(x, y)
-await mockMouse.click(x, y, MouseButtons.RIGHT)
-await mockMouse.doubleClick(x, y)
+await mockMouse.click(x, y);
+await mockMouse.click(x, y, MouseButtons.RIGHT);
+await mockMouse.doubleClick(x, y);
 
 // Positioning
-await mockMouse.moveTo(x, y)
-await mockMouse.drag(x1, y1, x2, y2)
+await mockMouse.moveTo(x, y);
+await mockMouse.drag(x1, y1, x2, y2);
 
 // Scrolling
-await mockMouse.scroll(x, y, "up")
-await mockMouse.scroll(x, y, "down")
+await mockMouse.scroll(x, y, 'up');
+await mockMouse.scroll(x, y, 'down');
 
 // Low-level
-await mockMouse.pressDown(x, y)
-await mockMouse.release(x, y)
-mockMouse.getCurrentPosition()
-mockMouse.getPressedButtons()
+await mockMouse.pressDown(x, y);
+await mockMouse.release(x, y);
+mockMouse.getCurrentPosition();
+mockMouse.getPressedButtons();
 ```
 
 ---
@@ -238,119 +238,128 @@ mockMouse.getPressedButtons()
 ### Pattern 1: Basic Component Test
 
 ```typescript
-import { describe, test, expect } from "bun:test"
-import { createTestRenderer } from "@opentui/core/testing"
+import { describe, test, expect } from 'bun:test';
+import { createTestRenderer } from '@opentui/core/testing';
 
-describe("MyComponent", () => {
-  test("renders correctly", async () => {
-    const { renderer, renderOnce, captureCharFrame } = 
-      await createTestRenderer({ width: 80, height: 24 })
-    
-    renderer.root.add(myComponent)
-    await renderOnce()
-    
-    expect(captureCharFrame()).toContain("expected text")
-  })
-})
+describe('MyComponent', () => {
+  test('renders correctly', async () => {
+    const { renderer, renderOnce, captureCharFrame } = await createTestRenderer({
+      width: 80,
+      height: 24,
+    });
+
+    renderer.root.add(myComponent);
+    await renderOnce();
+
+    expect(captureCharFrame()).toContain('expected text');
+  });
+});
 ```
 
 ### Pattern 2: Setup/Teardown
 
 ```typescript
-import { describe, test, expect, beforeEach, afterEach } from "bun:test"
+import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 
-describe("MyComponent", () => {
-  let renderer: TestRenderer
-  let renderOnce: () => Promise<void>
-  let captureCharFrame: () => string
+describe('MyComponent', () => {
+  let renderer: TestRenderer;
+  let renderOnce: () => Promise<void>;
+  let captureCharFrame: () => string;
 
   beforeEach(async () => {
-    ;({ renderer, renderOnce, captureCharFrame } = 
-      await createTestRenderer({ width: 80, height: 24 }))
-  })
+    ({ renderer, renderOnce, captureCharFrame } = await createTestRenderer({
+      width: 80,
+      height: 24,
+    }));
+  });
 
   afterEach(() => {
-    renderer.destroy()
-  })
+    renderer.destroy();
+  });
 
-  test("test case", async () => {
+  test('test case', async () => {
     // Use renderer, renderOnce, captureCharFrame
-  })
-})
+  });
+});
 ```
 
 ### Pattern 3: Keyboard Input
 
 ```typescript
-test("keyboard input", async () => {
-  const { renderOnce, captureCharFrame, mockInput } = 
-    await createTestRenderer({ width: 80, height: 24 })
-  
-  renderer.root.add(textarea)
-  
-  mockInput.typeText("hello")
-  mockInput.pressArrow("left")
-  mockInput.pressArrow("left")
-  mockInput.typeText("!")
-  
-  await renderOnce()
-  
-  expect(captureCharFrame()).toContain("he!lo")
-})
+test('keyboard input', async () => {
+  const { renderOnce, captureCharFrame, mockInput } = await createTestRenderer({
+    width: 80,
+    height: 24,
+  });
+
+  renderer.root.add(textarea);
+
+  mockInput.typeText('hello');
+  mockInput.pressArrow('left');
+  mockInput.pressArrow('left');
+  mockInput.typeText('!');
+
+  await renderOnce();
+
+  expect(captureCharFrame()).toContain('he!lo');
+});
 ```
 
 ### Pattern 4: Mouse Input
 
 ```typescript
-test("mouse input", async () => {
-  const { renderOnce, captureCharFrame, mockMouse } = 
-    await createTestRenderer({ width: 80, height: 24 })
-  
-  renderer.root.add(listComponent)
-  
-  await mockMouse.click(10, 5)
-  await renderOnce()
-  
-  expect(captureCharFrame()).toContain("selected")
-})
+test('mouse input', async () => {
+  const { renderOnce, captureCharFrame, mockMouse } = await createTestRenderer({
+    width: 80,
+    height: 24,
+  });
+
+  renderer.root.add(listComponent);
+
+  await mockMouse.click(10, 5);
+  await renderOnce();
+
+  expect(captureCharFrame()).toContain('selected');
+});
 ```
 
 ### Pattern 5: Color/Style Testing
 
 ```typescript
-test("color rendering", async () => {
-  const { renderer, renderOnce } = 
-    await createTestRenderer({ width: 80, height: 24 })
-  
-  renderer.root.add(component)
-  await renderOnce()
-  
-  const buffer = renderer.currentRenderBuffer
-  const bgBuffer = buffer.buffers.bg
-  
-  const offset = (y * buffer.width + x) * 4
+test('color rendering', async () => {
+  const { renderer, renderOnce } = await createTestRenderer({ width: 80, height: 24 });
+
+  renderer.root.add(component);
+  await renderOnce();
+
+  const buffer = renderer.currentRenderBuffer;
+  const bgBuffer = buffer.buffers.bg;
+
+  const offset = (y * buffer.width + x) * 4;
   const color = {
     r: bgBuffer[offset] / 255,
     g: bgBuffer[offset + 1] / 255,
     b: bgBuffer[offset + 2] / 255,
-  }
-  
-  expect(color.r).toBeCloseTo(1.0, 2)  // Red channel
-})
+  };
+
+  expect(color.r).toBeCloseTo(1.0, 2); // Red channel
+});
 ```
 
 ### Pattern 6: Snapshot Testing
 
 ```typescript
-test("matches snapshot", async () => {
-  const { renderer, renderOnce, captureCharFrame } = 
-    await createTestRenderer({ width: 80, height: 24 })
-  
-  renderer.root.add(complexComponent)
-  await renderOnce()
-  
-  expect(captureCharFrame()).toMatchSnapshot()
-})
+test('matches snapshot', async () => {
+  const { renderer, renderOnce, captureCharFrame } = await createTestRenderer({
+    width: 80,
+    height: 24,
+  });
+
+  renderer.root.add(complexComponent);
+  await renderOnce();
+
+  expect(captureCharFrame()).toMatchSnapshot();
+});
 ```
 
 ### Pattern 7: React Component
@@ -359,16 +368,16 @@ test("matches snapshot", async () => {
 import { testRender } from "@opentui/react/test-utils"
 
 test("React component", async () => {
-  const { renderOnce, captureCharFrame, mockInput } = 
+  const { renderOnce, captureCharFrame, mockInput } =
     await testRender(
       <MyComponent />,
       { width: 80, height: 24 }
     )
-  
+
   await renderOnce()
   mockInput.typeText("test")
   await renderOnce()
-  
+
   expect(captureCharFrame()).toContain("test")
 })
 ```
@@ -378,18 +387,22 @@ test("React component", async () => {
 ## Important Implementation Details
 
 ### 1. Async/Await Pattern
+
 All rendering operations are async:
+
 ```typescript
-await renderOnce()  // Must await
-const frame = captureCharFrame()  // Sync after render
+await renderOnce(); // Must await
+const frame = captureCharFrame(); // Sync after render
 ```
 
 ### 2. Keyboard Protocol Support
+
 - **Standard ANSI** (default): `\x1bOA` for arrow up
 - **Kitty Protocol** (`kittyKeyboard: true`): `\x1b[57352u` for arrow up
 - **modifyOtherKeys** (`otherModifiersMode: true`): `\x1b[27;5;97~` for Ctrl+A
 
 ### 3. Mouse SGR Format
+
 ```
 \x1b<button;x;y[M|m]
 button = 0 (left), 1 (middle), 2 (right), 64+ (scroll/motion)
@@ -398,18 +411,20 @@ M = press, m = release
 ```
 
 ### 4. Buffer Coordinate System
+
 - Characters indexed as: `char[y * width + x]`
 - Colors indexed as: `color[(y * width + x) * 4 + channel]` (RGBA)
 - Coordinates are 0-based
 
 ### 5. Stream Handling
+
 ```typescript
 // Default: Uses Node.js process streams
 // Custom: Provide mock streams
 await createTestRenderer({
   stdin: customReadableStream,
   stdout: customWritableStream,
-})
+});
 ```
 
 ---
@@ -429,18 +444,21 @@ All examples in [example-tests.md](./example-tests.md) are from actual OpenTUI t
 ## Recommendations for Our Implementation
 
 ### Immediate Applicability
+
 1. ✅ Use Bun test runner (already in our project)
 2. ✅ Implement similar TestRenderer pattern
 3. ✅ Create keyboard/mouse mocking utilities
 4. ✅ Support React component testing with `testRender()`
 
 ### Testing Strategy
+
 1. **Unit Tests** - Test individual renderables directly
 2. **Integration Tests** - Test UI flows with keyboard/mouse
 3. **Snapshot Tests** - Verify visual output
 4. **Color Tests** - Use buffer access for color verification
 
 ### Next Steps
+
 1. Examine our existing component structure
 2. Identify which patterns map to our components
 3. Implement TestRenderer similar to OpenTUI's
@@ -452,17 +470,19 @@ All examples in [example-tests.md](./example-tests.md) are from actual OpenTUI t
 ## References
 
 **OpenTUI Repository**: https://github.com/sst/opentui
+
 - Core Testing: `packages/core/src/testing/`
 - React Testing: `packages/react/src/test-utils.ts`
 - Test Examples: `packages/core/src/renderables/__tests__/`
 
 **OpenCode Repository**: https://github.com/sst/opencode
+
 - Uses OpenTUI for terminal UI
 - Custom TUI components built with @opentui/solid
 
 **Documentation**:
+
 - [Testing Utilities Overview](./testing-utilities.md)
 - [Mock Input Setup](./mock-input-patterns.md)
 - [Example Tests](./example-tests.md)
 - [React Testing Guide](./react-testing-guide.md)
-

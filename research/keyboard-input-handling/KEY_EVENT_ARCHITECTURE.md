@@ -7,34 +7,34 @@
 ```typescript
 // From packages/core/src/lib/KeyHandler.ts
 
-export type KeyEventType = "press" | "repeat" | "release"
+export type KeyEventType = 'press' | 'repeat' | 'release';
 
 export interface ParsedKey {
-  name: string                    // 'a', 'return', 'up', 'f1', etc.
-  ctrl: boolean
-  meta: boolean                   // Alt/Option/Meta on different platforms
-  shift: boolean
-  option: boolean                 // Mac-specific Option key
-  sequence: string                // Raw escape sequence that produced this key
-  number: boolean                 // Whether the key is a number
-  raw: string                     // Raw input bytes
-  eventType: KeyEventType
-  source: "raw" | "kitty"         // Parsing protocol used
-  code?: string                   // Terminal-specific key code
-  super?: boolean                 // Super/Windows key
-  hyper?: boolean                 // Hyper key
-  capsLock?: boolean              // CapsLock state
-  numLock?: boolean               // NumLock state
-  baseCode?: number               // Base character code
+  name: string; // 'a', 'return', 'up', 'f1', etc.
+  ctrl: boolean;
+  meta: boolean; // Alt/Option/Meta on different platforms
+  shift: boolean;
+  option: boolean; // Mac-specific Option key
+  sequence: string; // Raw escape sequence that produced this key
+  number: boolean; // Whether the key is a number
+  raw: string; // Raw input bytes
+  eventType: KeyEventType;
+  source: 'raw' | 'kitty'; // Parsing protocol used
+  code?: string; // Terminal-specific key code
+  super?: boolean; // Super/Windows key
+  hyper?: boolean; // Hyper key
+  capsLock?: boolean; // CapsLock state
+  numLock?: boolean; // NumLock state
+  baseCode?: number; // Base character code
 }
 
 export class KeyEvent implements ParsedKey {
   // All ParsedKey properties plus:
-  
-  private _defaultPrevented: boolean = false
-  
-  preventDefault(): void
-  get defaultPrevented(): boolean
+
+  private _defaultPrevented: boolean = false;
+
+  preventDefault(): void;
+  get defaultPrevented(): boolean;
 }
 ```
 
@@ -74,23 +74,23 @@ Common key names found in the codebase:
 // From packages/core/src/lib/KeyHandler.ts
 
 export class KeyHandler extends EventEmitter<KeyHandlerEventMap> {
-  protected useKittyKeyboard: boolean
-  
-  constructor(useKittyKeyboard: boolean = false)
-  
+  protected useKittyKeyboard: boolean;
+
+  constructor(useKittyKeyboard: boolean = false);
+
   // Process raw input data from stdin
-  public processInput(data: string): boolean
-  
+  public processInput(data: string): boolean;
+
   // Process paste events
-  public processPaste(data: string): void
+  public processPaste(data: string): void;
 }
 
 export type KeyHandlerEventMap = {
-  keypress: [KeyEvent]
-  keyrepeat: [KeyEvent]
-  keyrelease: [KeyEvent]
-  paste: [PasteEvent]
-}
+  keypress: [KeyEvent];
+  keyrepeat: [KeyEvent];
+  keyrelease: [KeyEvent];
+  paste: [PasteEvent];
+};
 ```
 
 ### InternalKeyHandler: Priority-Based Event Emission
@@ -99,24 +99,25 @@ The renderer uses `InternalKeyHandler` to handle global vs renderable handlers:
 
 ```typescript
 export class InternalKeyHandler extends KeyHandler {
-  private renderableHandlers: Map<keyof KeyHandlerEventMap, Set<Function>> = new Map()
-  
+  private renderableHandlers: Map<keyof KeyHandlerEventMap, Set<Function>> = new Map();
+
   // Global handlers (preventDefault can block renderable handlers)
   // Renderable handlers (only if event not prevented)
-  
+
   public onInternal<K extends keyof KeyHandlerEventMap>(
     event: K,
-    handler: (...args: KeyHandlerEventMap[K]) => void,
-  ): void
-  
+    handler: (...args: KeyHandlerEventMap[K]) => void
+  ): void;
+
   public offInternal<K extends keyof KeyHandlerEventMap>(
     event: K,
-    handler: (...args: KeyHandlerEventMap[K]) => void,
-  ): void
+    handler: (...args: KeyHandlerEventMap[K]) => void
+  ): void;
 }
 ```
 
 **Event Dispatch Priority:**
+
 1. Global handlers execute first
 2. If event.preventDefault() called → stop
 3. Otherwise, renderable handlers execute
@@ -140,21 +141,21 @@ Raw bytes from stdin:
 public processInput(data: string): boolean {
   // 1. Parse using parseKeypress() - handles ANSI & Kitty protocols
   const parsedKey = parseKeypress(data, { useKittyKeyboard: this.useKittyKeyboard })
-  
+
   if (!parsedKey) {
     return false  // Not a key event (e.g., mouse, terminal response)
   }
-  
+
   // 2. Create KeyEvent wrapper
   const event = new KeyEvent(parsedKey)
-  
+
   // 3. Emit based on event type
   switch (parsedKey.eventType) {
     case "press":   this.emit("keypress", event); break
     case "repeat":  this.emit("keyrepeat", event); break
     case "release": this.emit("keyrelease", event); break
   }
-  
+
   return true
 }
 ```
@@ -165,13 +166,13 @@ public processInput(data: string): boolean {
 // In React:
 useKeyboard((keyEvent: KeyEvent) => {
   // Handle the key event
-  console.log(keyEvent.name, keyEvent.ctrl, keyEvent.shift)
-})
+  console.log(keyEvent.name, keyEvent.ctrl, keyEvent.shift);
+});
 
 // In Solid.js:
 useKeyboard((keyEvent: KeyEvent) => {
   // Same interface
-})
+});
 ```
 
 ## preventDefault() Mechanism
@@ -201,27 +202,29 @@ From `parse.keypress.ts`:
 ```typescript
 // Function key mapping
 const keyName: Record<string, string> = {
-  OP: "f1",       // xterm/gnome ESC O letter
-  "[11~": "f1",   // xterm/rxvt ESC [ number ~
+  OP: 'f1', // xterm/gnome ESC O letter
+  '[11~': 'f1', // xterm/rxvt ESC [ number ~
   // ... many more mappings
-  "[A": "up",
-  "[B": "down",
-  "[C": "right",
-  "[D": "left",
-  "[H": "home",
-  "[F": "end",
+  '[A': 'up',
+  '[B': 'down',
+  '[C': 'right',
+  '[D': 'left',
+  '[H': 'home',
+  '[F': 'end',
   // etc.
-}
+};
 
 // Shift key detection from escape sequence
 const isShiftKey = (code: string) => {
-  return ["[a", "[b", "[c", "[d", "[e", "[2$", "[3$", "[5$", "[6$", "[7$", "[8$", "[Z"].includes(code)
-}
+  return ['[a', '[b', '[c', '[d', '[e', '[2$', '[3$', '[5$', '[6$', '[7$', '[8$', '[Z'].includes(
+    code
+  );
+};
 
 // Ctrl key detection
 const isCtrlKey = (code: string) => {
-  return ["Oa", "Ob", "Oc", "Od", "Oe", "[2^", "[3^", "[5^", "[6^", "[7^", "[8^"].includes(code)
-}
+  return ['Oa', 'Ob', 'Oc', 'Od', 'Oe', '[2^', '[3^', '[5^', '[6^', '[7^', '[8^'].includes(code);
+};
 ```
 
 ## Special Key Handling
@@ -247,6 +250,7 @@ parse(evt: ParsedKey): Keybind.Info {
 ### Meta/Alt Handling
 
 Different platforms represent alt differently:
+
 - `meta: true` in ParsedKey represents Alt/Option/Meta
 - Can be triggered by Alt, Option (Mac), or Meta keys
 - Aliases: "alt", "meta", "option" all map to `meta: true`
@@ -257,18 +261,18 @@ For handling pasted text:
 
 ```typescript
 export class PasteEvent {
-  text: string
-  private _defaultPrevented: boolean = false
-  
-  get defaultPrevented(): boolean
-  preventDefault(): void
+  text: string;
+  private _defaultPrevented: boolean = false;
+
+  get defaultPrevented(): boolean;
+  preventDefault(): void;
 }
 
 // Usage:
-renderer.keyInput.on("paste", (event: PasteEvent) => {
-  const cleanedText = event.text
+renderer.keyInput.on('paste', (event: PasteEvent) => {
+  const cleanedText = event.text;
   // process pasted text
-})
+});
 ```
 
 ---

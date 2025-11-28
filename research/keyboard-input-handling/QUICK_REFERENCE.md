@@ -3,6 +3,7 @@
 ## File Locations
 
 ### OpenTUI (Framework)
+
 ```
 /tmp/opentui/packages/core/src/lib/
   ├── KeyHandler.ts              # KeyEvent emission, preventDefault
@@ -22,6 +23,7 @@
 ```
 
 ### OpenCode (Application)
+
 ```
 /tmp/opencode/packages/opencode/src/
   ├── util/keybind.ts            # Keybind utility (parse, match, toString)
@@ -35,52 +37,52 @@
 
 ```typescript
 // React
-import { useKeyboard } from "@opentui/react"
+import { useKeyboard } from '@opentui/react';
 
-useKeyboard((evt) => {
-  if (evt.name === "escape") handleExit()
-})
+useKeyboard(evt => {
+  if (evt.name === 'escape') handleExit();
+});
 
 // Solid.js
-import { useKeyboard } from "@opentui/solid"
+import { useKeyboard } from '@opentui/solid';
 
-useKeyboard((evt) => {
-  if (evt.name === "escape") handleExit()
-})
+useKeyboard(evt => {
+  if (evt.name === 'escape') handleExit();
+});
 ```
 
 ### Parse Keybinding String
 
 ```typescript
-import { Keybind } from "@/util/keybind"
+import { Keybind } from '@/util/keybind';
 
 // String → Info[]
-const parsed = Keybind.parse("ctrl+c,<leader>q")
+const parsed = Keybind.parse('ctrl+c,<leader>q');
 // → [
 //     {ctrl: true, meta: false, shift: false, leader: false, name: "c"},
 //     {ctrl: false, meta: false, shift: false, leader: true, name: "q"}
 //   ]
 
 // Info → String
-const str = Keybind.toString({ctrl: true, name: "x"})
+const str = Keybind.toString({ ctrl: true, name: 'x' });
 // → "ctrl+x"
 ```
 
 ### Match Keybinding
 
 ```typescript
-import { Keybind } from "@/util/keybind"
+import { Keybind } from '@/util/keybind';
 
 // Direct match
-const binding: Keybind.Info = {ctrl: true, meta: false, shift: false, leader: false, name: "x"}
-const parsed: Keybind.Info = keybind.parse(evt)
+const binding: Keybind.Info = { ctrl: true, meta: false, shift: false, leader: false, name: 'x' };
+const parsed: Keybind.Info = keybind.parse(evt);
 if (Keybind.match(binding, parsed)) {
   // Matched!
 }
 
 // Via context
-const keybind = useKeybind()
-if (keybind.match("app_exit", evt)) {
+const keybind = useKeybind();
+if (keybind.match('app_exit', evt)) {
   // Config keybind matched
 }
 ```
@@ -89,18 +91,18 @@ if (keybind.match("app_exit", evt)) {
 
 ```typescript
 interface KeyEvent {
-  name: string              // "a", "escape", "f1", "up", etc.
-  ctrl: boolean
-  meta: boolean             // Alt/Option/Meta
-  shift: boolean
-  option: boolean           // Mac-specific
-  sequence: string          // Raw escape sequence
-  raw: string              // Raw input
-  eventType: "press" | "repeat" | "release"
-  source: "raw" | "kitty"
-  
-  preventDefault(): void
-  defaultPrevented: boolean
+  name: string; // "a", "escape", "f1", "up", etc.
+  ctrl: boolean;
+  meta: boolean; // Alt/Option/Meta
+  shift: boolean;
+  option: boolean; // Mac-specific
+  sequence: string; // Raw escape sequence
+  raw: string; // Raw input
+  eventType: 'press' | 'repeat' | 'release';
+  source: 'raw' | 'kitty';
+
+  preventDefault(): void;
+  defaultPrevented: boolean;
 }
 ```
 
@@ -169,68 +171,68 @@ await pressKeys(["j", "j", "k"])
 // Config
 const config = {
   keybinds: {
-    app_exit: "ctrl+c",
-    editor_open: "e",
-  }
-}
+    app_exit: 'ctrl+c',
+    editor_open: 'e',
+  },
+};
 
 // Component
-const keybind = useKeybind()
-useKeyboard((evt) => {
-  if (keybind.match("app_exit", evt)) {
-    exit()
+const keybind = useKeybind();
+useKeyboard(evt => {
+  if (keybind.match('app_exit', evt)) {
+    exit();
   }
-})
+});
 ```
 
 ### Pattern 2: Multiple Alternatives
 
 ```typescript
 // Parse returns array
-const bindings = Keybind.parse("ctrl+c,<leader>q,esc")
+const bindings = Keybind.parse('ctrl+c,<leader>q,esc');
 // → 3 alternatives
 
 // All matched by keybind.match()
-keybind.match("app_exit", ctrlCEvent)  // true
-keybind.match("app_exit", leaderQEvent) // true
-keybind.match("app_exit", escapeEvent)  // true
+keybind.match('app_exit', ctrlCEvent); // true
+keybind.match('app_exit', leaderQEvent); // true
+keybind.match('app_exit', escapeEvent); // true
 ```
 
 ### Pattern 3: Leader Key State
 
 ```typescript
-const keybind = useKeybind()
+const keybind = useKeybind();
 
 // Check leader state
-console.log(keybind.leader)  // true/false
+console.log(keybind.leader); // true/false
 
 // In parse, leader state included
-const parsed = keybind.parse(evt)
-console.log(parsed.leader)  // true if in leader mode
+const parsed = keybind.parse(evt);
+console.log(parsed.leader); // true if in leader mode
 ```
 
 ### Pattern 4: Direct Event Check
 
 ```typescript
-useKeyboard((evt) => {
+useKeyboard(evt => {
   // Common keys don't need config
-  if (evt.name === "escape") handleEscape()
-  if (evt.name === "return") handleSelect()
-  
+  if (evt.name === 'escape') handleEscape();
+  if (evt.name === 'return') handleSelect();
+
   // But config-driven for customizable keys
-  if (keybind.match("app_exit", evt)) handleExit()
-})
+  if (keybind.match('app_exit', evt)) handleExit();
+});
 ```
 
 ### Pattern 5: Prevent Default
 
 ```typescript
-useKeyboard((evt) => {
-  if (evt.ctrl && evt.name === "c") {
-    evt.preventDefault()  // Stop further handlers
-    handleSpecialCtrlC()
+useKeyboard(evt => {
+  if (evt.ctrl && evt.name === 'c') {
+    evt.preventDefault(); // Stop further handlers
+    handleSpecialCtrlC();
   }
-})
+});
 ```
 
 ## Data Flow Diagram
@@ -275,18 +277,16 @@ t=2000ms: Timeout expires (or user presses another key)
 ### Test Parsing
 
 ```typescript
-const result = Keybind.parse("ctrl+x")
-expect(result).toEqual([
-  {ctrl: true, meta: false, shift: false, leader: false, name: "x"}
-])
+const result = Keybind.parse('ctrl+x');
+expect(result).toEqual([{ ctrl: true, meta: false, shift: false, leader: false, name: 'x' }]);
 ```
 
 ### Test Matching
 
 ```typescript
-const a = {ctrl: true, meta: false, shift: false, leader: false, name: "x"}
-const b = {ctrl: true, meta: false, shift: false, leader: false, name: "x"}
-expect(Keybind.match(a, b)).toBe(true)
+const a = { ctrl: true, meta: false, shift: false, leader: false, name: 'x' };
+const b = { ctrl: true, meta: false, shift: false, leader: false, name: 'x' };
+expect(Keybind.match(a, b)).toBe(true);
 ```
 
 ### Test Component Keyboard
@@ -301,21 +301,25 @@ expect(captureCharFrame()).toContain("selected")
 ## Troubleshooting
 
 ### Event not detected?
+
 - Check `evt.name` (not always single character)
 - Function keys are "f1", not "F1"
 - "escape", not "esc" (after parsing)
 
 ### Keybind not matching?
+
 - Verify all modifiers match (ctrl, meta, shift, leader)
 - Check leader state: `keybind.leader`
 - Parse both: `keybind.parse(evt)` then compare
 
 ### Modifiers not working?
+
 - alt/meta/option all map to `meta: true`
 - No separate handling per platform
 - Test with mock keys that use expected protocol
 
 ### KeyEvent not reaching handler?
+
 - Check `evt.preventDefault()` called earlier
 - Global handlers execute first and can block
 - Ensure handler registered after mount

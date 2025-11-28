@@ -7,17 +7,17 @@
 ```
 Layer 1: Raw Terminal Input
   └─ ANSI escape sequences, Kitty protocol, control characters
-  
+
 Layer 2: Key Parsing & Events (OpenTUI)
   ├─ parseKeypress() - Parse ANSI/Kitty protocols
   ├─ KeyHandler - Emit keypress/keyrepeat/keyrelease events
   └─ KeyEvent - Structured event with modifiers & meta info
-  
+
 Layer 3: Component Handlers (Framework Integration)
   ├─ useKeyboard() hook (React/Solid.js)
   ├─ Component receives KeyEvent
   └─ Keybinding context (OpenCode-specific)
-  
+
 Layer 4: Keybinding System (OpenCode)
   ├─ KeybindsConfig - Configuration type
   ├─ Keybind.parse() - Convert config strings
@@ -109,32 +109,32 @@ Return Info[]
 
 ```typescript
 // 1. Import
-import { useKeyboard } from "@opentui/solid"
-import { useKeybind } from "@tui/context/keybind"
-import { Keybind } from "@/util/keybind"
+import { useKeyboard } from '@opentui/solid';
+import { useKeybind } from '@tui/context/keybind';
+import { Keybind } from '@/util/keybind';
 
 // 2. Get context
-const keybind = useKeybind()
+const keybind = useKeybind();
 
 // 3. Register handler
 useKeyboard((evt: KeyEvent) => {
   // Option A: Match config keybind
-  if (keybind.match("app_exit", evt)) {
+  if (keybind.match('app_exit', evt)) {
     // Handle
   }
-  
+
   // Option B: Direct event check
-  if (evt.name === "escape") {
+  if (evt.name === 'escape') {
     // Handle
   }
-  
+
   // Option C: Custom keybind
-  const custom = Keybind.parse("ctrl+x")[0]
+  const custom = Keybind.parse('ctrl+x')[0];
   if (Keybind.match(custom, keybind.parse(evt))) {
-    evt.preventDefault()
+    evt.preventDefault();
     // Handle
   }
-})
+});
 ```
 
 ### Leader Key Pattern
@@ -147,7 +147,7 @@ useKeyboard((evt) => {
     timeout = 2000ms       // Auto-exit after 2s
     return
   }
-  
+
   if (store.leader && evt.name) {
     store.leader = false   // Exit leader mode
   }
@@ -156,7 +156,7 @@ useKeyboard((evt) => {
 // In components
 useKeyboard((evt) => {
   const parsed = keybind.parse(evt)  // Includes leader state
-  
+
   if (Keybind.match({
     ctrl: false, meta: false, shift: false,
     leader: true,  // Only matches if in leader mode
@@ -209,27 +209,32 @@ Special:         insert, null (Ctrl+Space)
 ## Notable Design Decisions
 
 ### 1. Keybind String Format
+
 - Uses `<leader>` not `leader` for readability
 - Supports comma-separated alternatives (OR logic)
 - Case-insensitive parsing (normalized to lowercase)
 
 ### 2. Meta/Alt Unification
+
 - Different platforms represent Alt differently (alt, meta, option)
 - All map to single `meta: boolean` field
 - Simplifies cross-platform matching
 
 ### 3. Leader Key Implementation
+
 - State machine approach (enter/exit leader mode)
 - 2-second timeout for auto-exit
 - Blurs focused renderable to indicate mode
 - Restores focus on exit
 
 ### 4. Event Propagation
+
 - `preventDefault()` prevents renderable handlers
 - Global handlers always execute first
 - Renderable handlers only if not prevented
 
 ### 5. Config-Driven
+
 - All keybinds defined in `KeybindsConfig` type
 - Type-safe keybind matching
 - String format in config files
@@ -238,20 +243,24 @@ Special:         insert, null (Ctrl+Space)
 ## Performance Considerations
 
 ### Memoization
+
 ```typescript
 // Keybinds parsed once per config change
 const keybinds = createMemo(() => {
-  return mapValues(config.keybinds, Keybind.parse)
-})
+  return mapValues(config.keybinds, Keybind.parse);
+});
 
 // Avoids repeated parsing
-keybind.match("key", evt)  // Uses memoized parsed value
+keybind.match('key', evt); // Uses memoized parsed value
 ```
 
 ### Event Handler Deregistration
+
 ```typescript
 // Always clean up
-useKeyboard((evt) => { /* ... */ })  // Auto-registers
+useKeyboard(evt => {
+  /* ... */
+}); // Auto-registers
 // On component unmount, automatically unregisters
 ```
 

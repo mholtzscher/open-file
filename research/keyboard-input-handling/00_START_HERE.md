@@ -28,12 +28,14 @@ Action Dispatch
 ### Critical Files Reference
 
 **OpenTUI (Framework):**
+
 - `packages/core/src/lib/KeyHandler.ts` - Key event emission & preventDefault
 - `packages/core/src/lib/parse.keypress.ts` - ANSI escape sequence parsing
 - `packages/react/src/hooks/use-keyboard.ts` - React hook wrapper
 - `packages/solid/src/elements/hooks.ts` - Solid.js hook wrapper
 
 **OpenCode (Application):**
+
 - `packages/opencode/src/util/keybind.ts` - Keybinding data structures & matching
 - `packages/opencode/src/cli/cmd/tui/context/keybind.tsx` - Keybinding context & leader key
 - `packages/opencode/test/keybind.test.ts` - Comprehensive keybinding tests
@@ -51,12 +53,12 @@ Action Dispatch
 
 ```typescript
 // In component:
-const keybind = useKeybind()
-useKeyboard((evt) => {
-  if (keybind.match("app_exit", evt)) {
+const keybind = useKeybind();
+useKeyboard(evt => {
+  if (keybind.match('app_exit', evt)) {
     // Handle exit
   }
-})
+});
 
 // How it works:
 // 1. KeybindsConfig has: app_exit?: "ctrl+c,<leader>q"
@@ -69,25 +71,25 @@ useKeyboard((evt) => {
 
 ```typescript
 interface KeyEvent {
-  name: string           // 'a', 'up', 'escape', 'f1', etc.
-  ctrl: boolean          // Ctrl modifier
-  meta: boolean          // Alt/Option/Meta modifier
-  shift: boolean         // Shift modifier
-  option: boolean        // Option key (Mac)
-  sequence: string       // Raw escape sequence
-  raw: string            // Raw input
-  eventType: "press" | "repeat" | "release"
-  source: "raw" | "kitty"
-  super?: boolean
-  hyper?: boolean
-  capsLock?: boolean
-  numLock?: boolean
-  code?: string
-  baseCode?: number
-  
+  name: string; // 'a', 'up', 'escape', 'f1', etc.
+  ctrl: boolean; // Ctrl modifier
+  meta: boolean; // Alt/Option/Meta modifier
+  shift: boolean; // Shift modifier
+  option: boolean; // Option key (Mac)
+  sequence: string; // Raw escape sequence
+  raw: string; // Raw input
+  eventType: 'press' | 'repeat' | 'release';
+  source: 'raw' | 'kitty';
+  super?: boolean;
+  hyper?: boolean;
+  capsLock?: boolean;
+  numLock?: boolean;
+  code?: string;
+  baseCode?: number;
+
   // Methods:
-  preventDefault()       // Stop default handling
-  defaultPrevented: boolean
+  preventDefault(); // Stop default handling
+  defaultPrevented: boolean;
 }
 ```
 
@@ -97,16 +99,16 @@ OpenCode extends keyboard handling with a **leader key** pattern (vim-like):
 
 ```typescript
 // In keybinds config:
-leader: "<leader>"      // The leader key sequence (e.g., "space")
+leader: '<leader>'; // The leader key sequence (e.g., "space")
 // Then other bindings can use: "<leader>f", "<leader>x", etc.
 
 // In code:
-useKeyboard((evt) => {
-  if (!store.leader && result.match("leader", evt)) {
-    leader(true)        // Enter leader mode (2s timeout)
+useKeyboard(evt => {
+  if (!store.leader && result.match('leader', evt)) {
+    leader(true); // Enter leader mode (2s timeout)
   }
   // After leader pressed, next key is matched with leader=true
-})
+});
 ```
 
 ---

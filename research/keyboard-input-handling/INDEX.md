@@ -6,24 +6,26 @@ This research covers how **sst/opencode** and **sst/opentui** handle keyboard in
 
 ### Core Documents (2,230 lines total)
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| [00_START_HERE.md](00_START_HERE.md) | 114 | **Entry point** - Quick overview and navigation guide |
-| [SUMMARY.md](SUMMARY.md) | 285 | **Big picture** - Architecture overview and key decisions |
-| [KEY_EVENT_ARCHITECTURE.md](KEY_EVENT_ARCHITECTURE.md) | 276 | **Low-level** - KeyEvent types, parsing, and data flow |
-| [KEYBINDING_SYSTEM.md](KEYBINDING_SYSTEM.md) | 422 | **Mid-level** - Keybind config, parsing, matching, leader key |
-| [KEYBOARD_HOOKS.md](KEYBOARD_HOOKS.md) | 342 | **Integration** - React and Solid.js hooks, lifecycle |
-| [PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md) | 466 | **Real code** - Complete working examples from both projects |
-| [QUICK_REFERENCE.md](QUICK_REFERENCE.md) | 325 | **Cheat sheet** - File locations, code snippets, patterns |
+| File                                                   | Lines | Purpose                                                       |
+| ------------------------------------------------------ | ----- | ------------------------------------------------------------- |
+| [00_START_HERE.md](00_START_HERE.md)                   | 114   | **Entry point** - Quick overview and navigation guide         |
+| [SUMMARY.md](SUMMARY.md)                               | 285   | **Big picture** - Architecture overview and key decisions     |
+| [KEY_EVENT_ARCHITECTURE.md](KEY_EVENT_ARCHITECTURE.md) | 276   | **Low-level** - KeyEvent types, parsing, and data flow        |
+| [KEYBINDING_SYSTEM.md](KEYBINDING_SYSTEM.md)           | 422   | **Mid-level** - Keybind config, parsing, matching, leader key |
+| [KEYBOARD_HOOKS.md](KEYBOARD_HOOKS.md)                 | 342   | **Integration** - React and Solid.js hooks, lifecycle         |
+| [PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md)         | 466   | **Real code** - Complete working examples from both projects  |
+| [QUICK_REFERENCE.md](QUICK_REFERENCE.md)               | 325   | **Cheat sheet** - File locations, code snippets, patterns     |
 
 ## Reading Paths
 
 ### Path 1: First-Time Overview (20 minutes)
+
 1. [00_START_HERE.md](00_START_HERE.md) - Quick context
 2. [SUMMARY.md](SUMMARY.md) - Architecture overview
 3. [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Skim for familiar patterns
 
 ### Path 2: Deep Dive (45 minutes)
+
 1. [00_START_HERE.md](00_START_HERE.md) - Context
 2. [KEY_EVENT_ARCHITECTURE.md](KEY_EVENT_ARCHITECTURE.md) - How events work
 3. [KEYBINDING_SYSTEM.md](KEYBINDING_SYSTEM.md) - Config and matching
@@ -31,6 +33,7 @@ This research covers how **sst/opencode** and **sst/opentui** handle keyboard in
 5. [PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md) - See it in action
 
 ### Path 3: Implementation (1 hour)
+
 1. [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Get oriented
 2. [PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md) - Copy patterns
 3. [KEYBINDING_SYSTEM.md](KEYBINDING_SYSTEM.md) - Understand details
@@ -38,6 +41,7 @@ This research covers how **sst/opencode** and **sst/opentui** handle keyboard in
 5. Reference others as needed
 
 ### Path 4: Testing (30 minutes)
+
 1. [PRACTICAL_EXAMPLES.md](PRACTICAL_EXAMPLES.md) - Example tests
 2. [QUICK_REFERENCE.md](QUICK_REFERENCE.md) - Mock key utilities
 3. [KEYBINDING_SYSTEM.md](KEYBINDING_SYSTEM.md) - Test patterns
@@ -88,20 +92,21 @@ Keybind.Info {
 ### Common Pattern
 
 ```typescript
-import { useKeyboard } from "@opentui/solid"
-import { useKeybind } from "@tui/context/keybind"
+import { useKeyboard } from '@opentui/solid';
+import { useKeybind } from '@tui/context/keybind';
 
-const keybind = useKeybind()
-useKeyboard((evt) => {
-  if (keybind.match("app_exit", evt)) {
-    handleExit()
+const keybind = useKeybind();
+useKeyboard(evt => {
+  if (keybind.match('app_exit', evt)) {
+    handleExit();
   }
-})
+});
 ```
 
 ## Repository Structure
 
 ### sst/opentui
+
 ```
 packages/core/src/
   ├── lib/
@@ -122,6 +127,7 @@ packages/solid/src/elements/
 ```
 
 ### sst/opencode
+
 ```
 packages/opencode/src/
   ├── util/
@@ -139,9 +145,9 @@ packages/opencode/src/
 ## Key Resources
 
 ### Files to Reference
+
 - `packages/opencode/src/util/keybind.ts` (80 lines)
   - Keybind.parse(), match(), toString()
-  
 - `packages/opencode/src/cli/cmd/tui/context/keybind.tsx` (112 lines)
   - Context implementation, leader key logic
 
@@ -161,6 +167,7 @@ packages/opencode/src/
   - Solid.js integration
 
 ### Test Examples
+
 - Keybind parsing tests: 100+ test cases
 - Component keyboard tests: Real-world patterns
 - Mock key utilities: Comprehensive mock setup
@@ -168,6 +175,7 @@ packages/opencode/src/
 ## Quick Links
 
 ### By Topic
+
 - **Events**: [KEY_EVENT_ARCHITECTURE.md](KEY_EVENT_ARCHITECTURE.md)
 - **Keybindings**: [KEYBINDING_SYSTEM.md](KEYBINDING_SYSTEM.md)
 - **Hooks**: [KEYBOARD_HOOKS.md](KEYBOARD_HOOKS.md)
@@ -175,6 +183,7 @@ packages/opencode/src/
 - **Reference**: [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
 
 ### By Audience
+
 - **First-timer**: Start with [00_START_HERE.md](00_START_HERE.md)
 - **Architect**: Read [SUMMARY.md](SUMMARY.md)
 - **Implementer**: Use [QUICK_REFERENCE.md](QUICK_REFERENCE.md)
@@ -185,17 +194,19 @@ packages/opencode/src/
 ### Recommendations
 
 1. **Adopt the Keybinding Pattern**
+
    ```typescript
    // Define config
    type S3KeybindsConfig = KeybindsConfig & {
-     object_copy?: string
-     object_move?: string
-     object_delete?: string
-     object_download?: string
-   }
+     object_copy?: string;
+     object_move?: string;
+     object_delete?: string;
+     object_download?: string;
+   };
    ```
 
 2. **Use Leader Key for Complex Operations**
+
    ```
    <leader>c - Copy object
    <leader>m - Move object

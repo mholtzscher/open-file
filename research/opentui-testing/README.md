@@ -14,41 +14,47 @@ Complete documentation on how sst/opentui handles testing their React/SolidJS te
 ## 🚀 Quick Start
 
 **TL;DR:** OpenTUI tests use:
+
 - **Bun test runner** (`bun:test`)
 - **Custom TestRenderer** for in-process terminal rendering
 - **Mock input system** for keyboard/mouse simulation
 - **Low-level buffer access** for pixel-perfect testing
 
 ```typescript
-import { describe, test, expect } from "bun:test"
-import { createTestRenderer } from "@opentui/core/testing"
+import { describe, test, expect } from 'bun:test';
+import { createTestRenderer } from '@opentui/core/testing';
 
-describe("MyComponent", () => {
-  test("renders correctly", async () => {
-    const { renderer, renderOnce, captureCharFrame } = 
-      await createTestRenderer({ width: 80, height: 24 })
+describe('MyComponent', () => {
+  test('renders correctly', async () => {
+    const { renderer, renderOnce, captureCharFrame } = await createTestRenderer({
+      width: 80,
+      height: 24,
+    });
 
-    renderer.root.add(myComponent)
-    await renderOnce()
+    renderer.root.add(myComponent);
+    await renderOnce();
 
-    expect(captureCharFrame()).toContain("expected text")
-  })
-})
+    expect(captureCharFrame()).toContain('expected text');
+  });
+});
 ```
 
 ## 📚 Documentation Structure
 
 ### For Quick Understanding
+
 - Start with: **00_START_HERE.md**
 - Then read: **SUMMARY.md** (architecture overview)
 - Reference: **mock-input-patterns.md** (APIs)
 
 ### For Implementation
+
 - Deep dive: **testing-utilities.md** (all APIs)
 - Learn by example: **example-tests.md** (6+ real examples)
 - Framework-specific: **react-testing-guide.md** (if using React)
 
 ### For Development
+
 - Copy patterns from **example-tests.md**
 - Reference **mock-input-patterns.md** for complex interactions
 - Check **testing-utilities.md** for buffer/renderer internals
@@ -56,6 +62,7 @@ describe("MyComponent", () => {
 ## 🎯 Key Concepts
 
 ### 1. Test Renderer
+
 An in-process renderer that simulates a terminal. No actual output - everything happens in memory.
 
 ```typescript
@@ -64,48 +71,49 @@ const testSetup = await createTestRenderer({
   height: 24,
   kittyKeyboard: false,
   otherModifiersMode: false,
-})
+});
 ```
 
 ### 2. Render Buffer
+
 Direct access to rendered characters and colors as typed arrays.
 
 ```typescript
-const buffer = renderer.currentRenderBuffer
-const charAt = (x, y) => String.fromCodePoint(
-  buffer.buffers.char[y * buffer.width + x]
-)
+const buffer = renderer.currentRenderBuffer;
+const charAt = (x, y) => String.fromCodePoint(buffer.buffers.char[y * buffer.width + x]);
 const colorAt = (x, y) => {
-  const offset = (y * buffer.width + x) * 4
+  const offset = (y * buffer.width + x) * 4;
   return [
-    buffer.buffers.fg[offset],     // Red
+    buffer.buffers.fg[offset], // Red
     buffer.buffers.fg[offset + 1], // Green
     buffer.buffers.fg[offset + 2], // Blue
     buffer.buffers.fg[offset + 3], // Alpha
-  ]
-}
+  ];
+};
 ```
 
 ### 3. Input Mocking
+
 Simulate user keyboard and mouse input.
 
 ```typescript
 // Keyboard
-mockInput.typeText("hello")
-mockInput.pressKey("a", { ctrl: true })
-mockInput.pressArrow("down")
+mockInput.typeText('hello');
+mockInput.pressKey('a', { ctrl: true });
+mockInput.pressArrow('down');
 
 // Mouse
-await mockMouse.click(10, 5)
-await mockMouse.drag(0, 0, 10, 10)
-await mockMouse.scroll(5, 5, "down")
+await mockMouse.click(10, 5);
+await mockMouse.drag(0, 0, 10, 10);
+await mockMouse.scroll(5, 5, 'down');
 ```
 
 ### 4. Character Frame
+
 Capture the entire rendered output as a string for assertions.
 
 ```typescript
-const frame = captureCharFrame()
+const frame = captureCharFrame();
 // Returns:
 // "┌─ Title ────────────────┐\n│ Content here            │\n└─────────────────────────┘"
 ```
@@ -113,60 +121,68 @@ const frame = captureCharFrame()
 ## 🔧 Common Patterns
 
 ### Pattern 1: Basic Test
+
 ```typescript
-test("renders correctly", async () => {
-  const { renderer, renderOnce, captureCharFrame } = 
-    await createTestRenderer({ width: 80, height: 24 })
-  renderer.root.add(myComponent)
-  await renderOnce()
-  expect(captureCharFrame()).toContain("expected")
-})
+test('renders correctly', async () => {
+  const { renderer, renderOnce, captureCharFrame } = await createTestRenderer({
+    width: 80,
+    height: 24,
+  });
+  renderer.root.add(myComponent);
+  await renderOnce();
+  expect(captureCharFrame()).toContain('expected');
+});
 ```
 
 ### Pattern 2: Setup/Teardown
+
 ```typescript
-describe("MyComponent", () => {
-  let renderer: TestRenderer
+describe('MyComponent', () => {
+  let renderer: TestRenderer;
 
   beforeEach(async () => {
-    ;({ renderer } = await createTestRenderer({ width: 80, height: 24 }))
-  })
+    ({ renderer } = await createTestRenderer({ width: 80, height: 24 }));
+  });
 
   afterEach(() => {
-    renderer.destroy()
-  })
+    renderer.destroy();
+  });
 
-  test("...", async () => {
+  test('...', async () => {
     // Use renderer
-  })
-})
+  });
+});
 ```
 
 ### Pattern 3: User Interaction
+
 ```typescript
-test("user interaction", async () => {
-  const { renderOnce, captureCharFrame, mockInput } = 
-    await createTestRenderer({ width: 80, height: 24 })
-  renderer.root.add(form)
-  
-  mockInput.typeText("John")
-  mockInput.pressTab()
-  mockInput.typeText("john@example.com")
-  await renderOnce()
-  
-  expect(captureCharFrame()).toContain("John")
-  expect(captureCharFrame()).toContain("john@example.com")
-})
+test('user interaction', async () => {
+  const { renderOnce, captureCharFrame, mockInput } = await createTestRenderer({
+    width: 80,
+    height: 24,
+  });
+  renderer.root.add(form);
+
+  mockInput.typeText('John');
+  mockInput.pressTab();
+  mockInput.typeText('john@example.com');
+  await renderOnce();
+
+  expect(captureCharFrame()).toContain('John');
+  expect(captureCharFrame()).toContain('john@example.com');
+});
 ```
 
 ### Pattern 4: React Component
+
 ```typescript
 import { testRender } from "@opentui/react/test-utils"
 
 test("React component", async () => {
-  const { renderOnce, captureCharFrame, mockInput } = 
+  const { renderOnce, captureCharFrame, mockInput } =
     await testRender(<MyComponent />, { width: 80, height: 24 })
-  
+
   mockInput.typeText("test")
   await renderOnce()
   expect(captureCharFrame()).toContain("test")
@@ -176,6 +192,7 @@ test("React component", async () => {
 ## 📖 API Quick Reference
 
 ### createTestRenderer()
+
 ```typescript
 {
   renderer,           // CliRenderer instance
@@ -193,6 +210,7 @@ test("React component", async () => {
 ```
 
 ### mockInput
+
 ```typescript
 mockInput.typeText(text, delayMs?)
 mockInput.pressKeys(keys, delayMs?)
@@ -207,6 +225,7 @@ await mockInput.pasteBracketedText(text)
 ```
 
 ### mockMouse
+
 ```typescript
 await mockMouse.click(x, y, button?, options?)
 await mockMouse.doubleClick(x, y, button?, options?)
@@ -250,29 +269,35 @@ mockMouse.getPressedButtons()
 ## 💡 Key Insights
 
 ### Testing Approach
+
 - **In-process**: Render happens in memory, no terminal output
 - **Imperative**: Direct control over rendering, input, and frame capture
 - **Low-level**: Access to character and color buffers for pixel-perfect testing
 - **Modular**: Core utilities work with any reconciler (React, SolidJS, etc.)
 
 ### Protocol Support
+
 OpenTUI supports multiple keyboard protocols:
+
 - **Standard ANSI** (default) - Widest compatibility
 - **Kitty Protocol** - Modern terminals (Kitty, WezTerm)
 - **modifyOtherKeys** - xterm, iTerm2, Ghostty
 
 ### Mouse Events
+
 Uses SGR (Select Graphic Rendition) protocol for mouse events.
 
 ## 🔗 Source References
 
 **OpenTUI Repo**: https://github.com/sst/opentui
+
 - Core Testing: `packages/core/src/testing/`
 - React Testing: `packages/react/src/test-utils.ts`
 - SolidJS Testing: `packages/solid/index.ts`
 - Test Examples: `packages/core/src/renderables/__tests__/`
 
 **OpenCode Repo**: https://github.com/sst/opencode
+
 - Uses OpenTUI + SolidJS for TUI
 
 ## ✅ Checklist for Our Implementation
