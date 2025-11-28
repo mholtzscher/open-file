@@ -2,11 +2,57 @@
  * UploadDialog component tests
  */
 
-import { describe, it, expect, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach, vi } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
+import { KeyboardProvider, useKeyboardDispatch } from '../../contexts/KeyboardContext.js';
 import { UploadDialog } from './upload.js';
-import { getDialogHandler } from '../../hooks/useDialogKeyboard.js';
 import type { LocalFileEntry } from '../../utils/file-browser.js';
+import type { KeyboardKey } from '../../types/keyboard.js';
+import { useEffect } from 'react';
+
+const WrappedUploadDialog = (props: any) => (
+  <KeyboardProvider>
+    <UploadDialog {...props} />
+  </KeyboardProvider>
+);
+
+// Helper to create a KeyboardKey for testing
+function createKey(name: string, modifiers: Partial<KeyboardKey> = {}): KeyboardKey {
+  return {
+    name,
+    ctrl: false,
+    shift: false,
+    meta: false,
+    ...modifiers,
+  };
+}
+
+// Test wrapper that exposes dispatch for keyboard testing
+interface TestWrapperProps {
+  children: React.ReactNode;
+  onDispatchReady: (dispatch: (key: KeyboardKey) => void) => void;
+}
+
+function TestWrapper({ children, onDispatchReady }: TestWrapperProps) {
+  return (
+    <KeyboardProvider>
+      <DispatchExposer onDispatchReady={onDispatchReady} />
+      {children}
+    </KeyboardProvider>
+  );
+}
+
+function DispatchExposer({
+  onDispatchReady,
+}: {
+  onDispatchReady: (dispatch: (key: KeyboardKey) => void) => void;
+}) {
+  const dispatch = useKeyboardDispatch();
+  useEffect(() => {
+    onDispatchReady(dispatch);
+  }, [dispatch, onDispatchReady]);
+  return null;
+}
 
 // Create mock entries for testing
 function createMockEntries(count: number = 5): LocalFileEntry[] {
@@ -46,10 +92,13 @@ describe('UploadDialog', () => {
 
   describe('visibility', () => {
     it('renders when visible is true', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog visible={true} />, {
-        width: 80,
-        height: 24,
-      });
+      const { renderOnce, captureCharFrame } = await testRender(
+        <WrappedUploadDialog visible={true} />,
+        {
+          width: 80,
+          height: 24,
+        }
+      );
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -57,7 +106,7 @@ describe('UploadDialog', () => {
     });
 
     it('renders by default (visible defaults to true)', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog />, {
+      const { renderOnce, captureCharFrame } = await testRender(<WrappedUploadDialog />, {
         width: 80,
         height: 24,
       });
@@ -68,10 +117,13 @@ describe('UploadDialog', () => {
     });
 
     it('renders nothing when visible is false', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog visible={false} />, {
-        width: 80,
-        height: 24,
-      });
+      const { renderOnce, captureCharFrame } = await testRender(
+        <WrappedUploadDialog visible={false} />,
+        {
+          width: 80,
+          height: 24,
+        }
+      );
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -81,10 +133,13 @@ describe('UploadDialog', () => {
 
   describe('current path display', () => {
     it('displays the current working directory path', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog visible={true} />, {
-        width: 80,
-        height: 24,
-      });
+      const { renderOnce, captureCharFrame } = await testRender(
+        <WrappedUploadDialog visible={true} />,
+        {
+          width: 80,
+          height: 24,
+        }
+      );
 
       await new Promise(resolve => setTimeout(resolve, 50));
       await renderOnce();
@@ -97,10 +152,13 @@ describe('UploadDialog', () => {
 
   describe('help text', () => {
     it('displays keyboard navigation help', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog visible={true} />, {
-        width: 120,
-        height: 800,
-      });
+      const { renderOnce, captureCharFrame } = await testRender(
+        <WrappedUploadDialog visible={true} />,
+        {
+          width: 120,
+          height: 800,
+        }
+      );
 
       await new Promise(resolve => setTimeout(resolve, 50));
       await renderOnce();
@@ -114,28 +172,40 @@ describe('UploadDialog', () => {
   });
 
   describe('keyboard handling', () => {
-    it('handles escape key without error', async () => {
-      const { renderOnce } = await testRender(<UploadDialog visible={true} />, {
-        width: 80,
-        height: 24,
-      });
+    it('calls onCancel when escape is pressed', async () => {
+      const onCancel = vi.fn();
+      let dispatchKey: ((key: KeyboardKey) => void) | null = null;
 
+      const { renderOnce } = await testRender(
+        <TestWrapper onDispatchReady={d => (dispatchKey = d)}>
+          <UploadDialog visible={true} onCancel={onCancel} />
+        </TestWrapper>,
+        {
+          width: 80,
+          height: 24,
+        }
+      );
+
+      // Wait for component mount and dispatch to be ready
       await new Promise(resolve => setTimeout(resolve, 50));
       await renderOnce();
 
-      // Get the dialog handler and simulate escape key
-      const handler = getDialogHandler('upload-dialog');
-      expect(handler).toBeDefined();
+      // Dispatch escape key through KeyboardContext
+      expect(dispatchKey).not.toBeNull();
+      dispatchKey!(createKey('escape'));
+      await renderOnce();
 
-      // Should not throw when escape is pressed
-      expect(() => handler?.('escape')).not.toThrow();
+      expect(onCancel).toHaveBeenCalledTimes(1);
     });
 
     it('dialog not rendered when visible is false', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog visible={false} />, {
-        width: 80,
-        height: 24,
-      });
+      const { renderOnce, captureCharFrame } = await testRender(
+        <WrappedUploadDialog visible={false} />,
+        {
+          width: 80,
+          height: 24,
+        }
+      );
       await renderOnce();
 
       // Dialog should not be rendered when not visible
@@ -483,130 +553,6 @@ describe('UploadDialog', () => {
       const selectedCount = 0;
       const shouldShowSummary = selectedCount > 0;
       expect(shouldShowSummary).toBe(false);
-    });
-  });
-
-  describe('dialog handler registration', () => {
-    it('registers handler when visible', async () => {
-      const { renderOnce } = await testRender(<UploadDialog visible={true} />, {
-        width: 80,
-        height: 24,
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await renderOnce();
-
-      const handler = getDialogHandler('upload-dialog');
-      expect(handler).toBeDefined();
-    });
-
-    it('dialog is not rendered when not visible', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog visible={false} />, {
-        width: 80,
-        height: 24,
-      });
-      await renderOnce();
-
-      // When not visible, the dialog should not be rendered
-      const frame = captureCharFrame();
-      expect(frame).not.toContain('Upload Files');
-      expect(frame).not.toContain('j/k:nav');
-    });
-  });
-
-  describe('keyboard handler behavior', () => {
-    it('handles j key for moving down', async () => {
-      const { renderOnce } = await testRender(<UploadDialog visible={true} />, {
-        width: 80,
-        height: 24,
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await renderOnce();
-
-      const handler = getDialogHandler('upload-dialog');
-      expect(handler).toBeDefined();
-
-      // Should not throw when calling handler
-      expect(() => handler?.('j')).not.toThrow();
-    });
-
-    it('handles k key for moving up', async () => {
-      const { renderOnce } = await testRender(<UploadDialog visible={true} />, {
-        width: 80,
-        height: 24,
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await renderOnce();
-
-      const handler = getDialogHandler('upload-dialog');
-      expect(() => handler?.('k')).not.toThrow();
-    });
-
-    it('handles space key for toggling selection', async () => {
-      const { renderOnce } = await testRender(<UploadDialog visible={true} />, {
-        width: 80,
-        height: 24,
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await renderOnce();
-
-      const handler = getDialogHandler('upload-dialog');
-      expect(() => handler?.('space')).not.toThrow();
-    });
-
-    it('handles h key for going back', async () => {
-      const { renderOnce } = await testRender(<UploadDialog visible={true} />, {
-        width: 80,
-        height: 24,
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await renderOnce();
-
-      const handler = getDialogHandler('upload-dialog');
-      expect(() => handler?.('h')).not.toThrow();
-    });
-
-    it('handles backspace key for going back', async () => {
-      const { renderOnce } = await testRender(<UploadDialog visible={true} />, {
-        width: 80,
-        height: 24,
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await renderOnce();
-
-      const handler = getDialogHandler('upload-dialog');
-      expect(() => handler?.('backspace')).not.toThrow();
-    });
-
-    it('handles l key for entering directory', async () => {
-      const { renderOnce } = await testRender(<UploadDialog visible={true} />, {
-        width: 80,
-        height: 24,
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await renderOnce();
-
-      const handler = getDialogHandler('upload-dialog');
-      expect(() => handler?.('l')).not.toThrow();
-    });
-
-    it('handles return key for confirm/enter', async () => {
-      const { renderOnce } = await testRender(<UploadDialog visible={true} />, {
-        width: 80,
-        height: 24,
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await renderOnce();
-
-      const handler = getDialogHandler('upload-dialog');
-      expect(() => handler?.('return')).not.toThrow();
     });
   });
 

@@ -4,6 +4,8 @@
  * Displays comprehensive help dialog with keybindings using absolute positioning
  */
 
+import { useCallback } from 'react';
+import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import { CatppuccinMocha } from '../theme.js';
 import { BaseDialog } from './base.js';
 
@@ -20,6 +22,7 @@ type HelpItem = KeybindingItem | SectionItem;
 
 interface HelpDialogProps {
   visible: boolean;
+  onClose?: () => void;
 }
 
 const keybindings: HelpItem[] = [
@@ -58,7 +61,23 @@ const keybindings: HelpItem[] = [
 /**
  * HelpDialog component - displays all keybindings with absolute positioning
  */
-export function HelpDialog({ visible }: HelpDialogProps) {
+export function HelpDialog({ visible, onClose }: HelpDialogProps) {
+  const handleKey = useCallback<Parameters<typeof useKeyboardHandler>[0]>(
+    key => {
+      if (!visible) return false;
+
+      if (key.name === '?' || key.name === 'escape' || key.name === 'q') {
+        onClose?.();
+        return true;
+      }
+
+      return true; // Block all other keys when help dialog is open
+    },
+    [visible, onClose]
+  );
+
+  useKeyboardHandler(handleKey, [handleKey], KeyboardPriority.High);
+
   return (
     <BaseDialog visible={visible} title="Help" borderColor={CatppuccinMocha.yellow}>
       <box flexDirection="column">

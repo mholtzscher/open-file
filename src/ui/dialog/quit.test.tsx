@@ -4,13 +4,20 @@
 
 import { describe, it, expect } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
+import { KeyboardProvider } from '../../contexts/KeyboardContext.js';
 import { QuitDialog } from './quit.js';
+
+const WrappedQuitDialog = (props: any) => (
+  <KeyboardProvider>
+    <QuitDialog {...props} />
+  </KeyboardProvider>
+);
 
 describe('QuitDialog', () => {
   describe('visibility', () => {
     it('renders when visible is true', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <QuitDialog visible={true} pendingChangesCount={3} />,
+        <WrappedQuitDialog visible={true} pendingChangesCount={3} />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -21,7 +28,7 @@ describe('QuitDialog', () => {
 
     it('renders by default (visible defaults to true)', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <QuitDialog pendingChangesCount={3} />,
+        <WrappedQuitDialog pendingChangesCount={3} />,
         {
           width: 80,
           height: 24,
@@ -35,7 +42,7 @@ describe('QuitDialog', () => {
 
     it('renders nothing when visible is false', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <QuitDialog visible={false} pendingChangesCount={3} />,
+        <WrappedQuitDialog visible={false} pendingChangesCount={3} />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -49,7 +56,7 @@ describe('QuitDialog', () => {
   describe('pending changes display', () => {
     it('displays singular "change" for 1 pending change', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <QuitDialog visible={true} pendingChangesCount={1} />,
+        <WrappedQuitDialog visible={true} pendingChangesCount={1} />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -60,7 +67,7 @@ describe('QuitDialog', () => {
 
     it('displays plural "changes" for multiple pending changes', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <QuitDialog visible={true} pendingChangesCount={5} />,
+        <WrappedQuitDialog visible={true} pendingChangesCount={5} />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -71,7 +78,7 @@ describe('QuitDialog', () => {
 
     it('displays plural "changes" for 0 pending changes', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <QuitDialog visible={true} pendingChangesCount={0} />,
+        <WrappedQuitDialog visible={true} pendingChangesCount={0} />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -84,7 +91,7 @@ describe('QuitDialog', () => {
   describe('action options', () => {
     it('displays quit option', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <QuitDialog visible={true} pendingChangesCount={3} />,
+        <WrappedQuitDialog visible={true} pendingChangesCount={3} />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -95,7 +102,7 @@ describe('QuitDialog', () => {
 
     it('displays save option', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <QuitDialog visible={true} pendingChangesCount={3} />,
+        <WrappedQuitDialog visible={true} pendingChangesCount={3} />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -106,7 +113,7 @@ describe('QuitDialog', () => {
 
     it('displays cancel option', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <QuitDialog visible={true} pendingChangesCount={3} />,
+        <WrappedQuitDialog visible={true} pendingChangesCount={3} />,
         { width: 80, height: 30 }
       );
       await renderOnce();

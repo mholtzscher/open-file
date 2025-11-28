@@ -4,6 +4,8 @@
  * Displays a modal dialog for confirming operations using flexbox layout
  */
 
+import { useCallback } from 'react';
+import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import { CatppuccinMocha } from '../theme.js';
 import { BaseDialog } from './base.js';
 
@@ -19,6 +21,8 @@ export interface ConfirmationDialogProps {
   title?: string;
   operations?: Operation[];
   visible?: boolean;
+  onConfirm?: () => void;
+  onCancel?: () => void;
 }
 
 /**
@@ -71,7 +75,30 @@ export function ConfirmationDialog({
   title = 'Confirm Operation',
   operations = [],
   visible = true,
+  onConfirm,
+  onCancel,
 }: ConfirmationDialogProps) {
+  const handleKey = useCallback<Parameters<typeof useKeyboardHandler>[0]>(
+    key => {
+      if (!visible) return false;
+
+      if (key.name === 'y') {
+        onConfirm?.();
+        return true;
+      }
+
+      if (key.name === 'n' || key.name === 'escape') {
+        onCancel?.();
+        return true;
+      }
+
+      return true; // Block all other keys when dialog is open
+    },
+    [visible, onConfirm, onCancel]
+  );
+
+  useKeyboardHandler(handleKey, [handleKey], KeyboardPriority.High);
+
   return (
     <BaseDialog visible={visible} title={title} borderColor={CatppuccinMocha.yellow}>
       <box flexDirection="column">
@@ -89,7 +116,7 @@ export function ConfirmationDialog({
           </text>
         )}
 
-        <text fg={CatppuccinMocha.overlay0}>Press y to confirm, n to cancel</text>
+        <text fg={CatppuccinMocha.overlay0}>Press y to confirm, n or Esc to cancel</text>
       </box>
     </BaseDialog>
   );

@@ -4,16 +4,23 @@
 
 import { describe, it, expect } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
+import { KeyboardProvider } from '../../contexts/KeyboardContext.js';
 import { ConfirmationDialog, type Operation } from './confirmation.js';
 
 const TERMINAL_WIDTH = 100;
 const TERMINAL_HEIGHT = 100;
 
+const WrappedConfirmationDialog = (props: any) => (
+  <KeyboardProvider>
+    <ConfirmationDialog {...props} />
+  </KeyboardProvider>
+);
+
 describe('ConfirmationDialog', () => {
   describe('visibility', () => {
     it('renders when visible is true', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} />,
+        <WrappedConfirmationDialog visible={true} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -23,7 +30,7 @@ describe('ConfirmationDialog', () => {
     });
 
     it('renders by default (visible defaults to true)', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(<ConfirmationDialog />, {
+      const { renderOnce, captureCharFrame } = await testRender(<WrappedConfirmationDialog />, {
         width: TERMINAL_WIDTH,
         height: TERMINAL_HEIGHT,
       });
@@ -35,7 +42,7 @@ describe('ConfirmationDialog', () => {
 
     it('renders nothing when visible is false', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={false} />,
+        <WrappedConfirmationDialog visible={false} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -48,7 +55,7 @@ describe('ConfirmationDialog', () => {
   describe('title', () => {
     it('displays default title when not provided', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} />,
+        <WrappedConfirmationDialog visible={true} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -59,7 +66,7 @@ describe('ConfirmationDialog', () => {
 
     it('displays custom title when provided', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} title="Delete Files" />,
+        <WrappedConfirmationDialog visible={true} title="Delete Files" />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -72,7 +79,7 @@ describe('ConfirmationDialog', () => {
   describe('operations display', () => {
     it('displays message about operations to be performed', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} />,
+        <WrappedConfirmationDialog visible={true} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -85,7 +92,7 @@ describe('ConfirmationDialog', () => {
       const operations: Operation[] = [{ id: '1', type: 'create', path: '/bucket/new-file.txt' }];
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -99,7 +106,7 @@ describe('ConfirmationDialog', () => {
       const operations: Operation[] = [{ id: '1', type: 'delete', path: '/bucket/old-file.txt' }];
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -120,7 +127,7 @@ describe('ConfirmationDialog', () => {
       ];
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -141,7 +148,7 @@ describe('ConfirmationDialog', () => {
       ];
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -162,7 +169,7 @@ describe('ConfirmationDialog', () => {
       ];
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -183,7 +190,7 @@ describe('ConfirmationDialog', () => {
       ];
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -206,7 +213,7 @@ describe('ConfirmationDialog', () => {
       ];
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -224,7 +231,7 @@ describe('ConfirmationDialog', () => {
       const operations: Operation[] = [{ id: '1', type: 'delete', path: '/bucket/file.txt' }];
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -243,7 +250,7 @@ describe('ConfirmationDialog', () => {
       }));
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -261,7 +268,7 @@ describe('ConfirmationDialog', () => {
       }));
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -274,7 +281,7 @@ describe('ConfirmationDialog', () => {
   describe('help text', () => {
     it('displays confirmation help text', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} />,
+        <WrappedConfirmationDialog visible={true} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -288,7 +295,7 @@ describe('ConfirmationDialog', () => {
   describe('empty operations', () => {
     it('handles empty operations array', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={[]} />,
+        <WrappedConfirmationDialog visible={true} operations={[]} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -306,7 +313,7 @@ describe('ConfirmationDialog', () => {
       ];
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();
@@ -323,7 +330,7 @@ describe('ConfirmationDialog', () => {
       ];
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <ConfirmationDialog visible={true} operations={operations} />,
+        <WrappedConfirmationDialog visible={true} operations={operations} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
       );
       await renderOnce();

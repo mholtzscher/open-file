@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
-import { useDialogKeyboard } from '../../hooks/useDialogKeyboard.js';
+import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import {
   LocalFileEntry,
   FileTypeFilter,
@@ -15,6 +15,7 @@ import {
 } from '../../utils/file-browser.js';
 import { CatppuccinMocha } from '../theme.js';
 import { BaseDialog, getContentWidth } from './base.js';
+import type { KeyboardKey } from '../../types/keyboard.js';
 
 export interface UploadDialogProps {
   visible?: boolean;
@@ -84,14 +85,15 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
     loadDirectory();
   }, [state.currentPath, state.filter, state.searchPattern]);
 
-  // Handle keyboard input
-  const handleKeyDown = useCallback(
-    (key: string) => {
+  const handleKey = useCallback<Parameters<typeof useKeyboardHandler>[0]>(
+    (key: KeyboardKey) => {
+      if (!visible) return false;
+
       // Estimate visible list height (rough, will work for dynamic sizing)
       const estimatedListHeight = Math.max(3, windowHeight - 7);
 
-      switch (key) {
-        case 'j':
+      switch (key.name) {
+        case 'j': {
           // Move down with scrolling
           setState(prev => {
             const newIndex = Math.min(prev.selectedIndex + 1, prev.entries.length - 1);
@@ -104,9 +106,10 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
             }
             return { ...prev, selectedIndex: newIndex, scrollOffset: Math.max(0, newOffset) };
           });
-          break;
+          return true;
+        }
 
-        case 'k':
+        case 'k': {
           // Move up with scrolling
           setState(prev => {
             const newIndex = Math.max(prev.selectedIndex - 1, 0);
@@ -116,9 +119,10 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
             }
             return { ...prev, selectedIndex: newIndex, scrollOffset: newOffset };
           });
-          break;
+          return true;
+        }
 
-        case 'space':
+        case 'space': {
           // Toggle selection
           if (state.selectedIndex < state.entries.length) {
             const entry = state.entries[state.selectedIndex];
@@ -132,10 +136,12 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
               return { ...prev, selectedFiles: newSelected };
             });
           }
-          break;
+          return true;
+        }
 
         case 'l':
         case 'return':
+        case 'enter': {
           // On directory: navigate into it
           // On file: select it and confirm upload
           if (state.selectedIndex < state.entries.length) {
@@ -152,10 +158,11 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
               onConfirm?.(Array.from(filesToUpload));
             }
           }
-          break;
+          return true;
+        }
 
         case 'h':
-        case 'backspace':
+        case 'backspace': {
           // Go to parent directory
           const parentPath = state.currentPath.substring(0, state.currentPath.lastIndexOf('/'));
           if (parentPath) {
@@ -164,24 +171,30 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
               currentPath: parentPath || '/',
             }));
           }
-          break;
+          return true;
+        }
 
-        case 'escape':
+        case 'escape': {
           onCancel?.();
-          break;
+          return true;
+        }
+
+        default:
+          return true; // Block all other keys when upload dialog is open
       }
     },
-    [state, onConfirm, onCancel, windowHeight]
+    [visible, windowHeight, state, onConfirm, onCancel]
   );
 
-  // Register keyboard handler with dialog system
-  useDialogKeyboard('upload-dialog', handleKeyDown, visible);
+  useKeyboardHandler(handleKey, [handleKey], KeyboardPriority.High);
 
   const selectedCount = state.selectedFiles.size;
   const totalSize = Array.from(state.selectedFiles).reduce((sum, path) => {
     const entry = state.entries.find(e => e.path === path);
     return sum + (entry?.size || 0);
   }, 0);
+
+  const contentWidth = getContentWidth(windowWidth);
 
   return (
     <BaseDialog
@@ -224,6 +237,7 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
                         : CatppuccinMocha.text
                   }
                   bg={isSelected ? CatppuccinMocha.surface0 : undefined}
+                  width={contentWidth}
                 >
                   {displayName}
                 </text>
@@ -234,13 +248,13 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
 
       {/* Selection summary */}
       {selectedCount > 0 && (
-        <text fg={CatppuccinMocha.green}>
+        <text fg={CatppuccinMocha.green} width={contentWidth}>
           {`Selected: ${selectedCount} files - ${formatBytes(totalSize)}`}
         </text>
       )}
 
       {/* Help text - matches app-wide keybinding format */}
-      <text fg={CatppuccinMocha.overlay0}>
+      <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
         {`j/k:nav  space:select  enter:confirm  h:back  ESC:cancel`}
       </text>
     </BaseDialog>

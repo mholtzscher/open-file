@@ -8,7 +8,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { CatppuccinMocha, Theme } from '../theme.js';
 import { BaseDialog } from './base.js';
-import { useDialogKeyboard } from '../../hooks/useDialogKeyboard.js';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import type { Profile } from '../../providers/types/profile.js';
 import type { ProfileManager } from '../../providers/services/profile-manager.js';
@@ -112,57 +111,6 @@ export function ProfileSelectorDialog({
     loadProfiles();
   }, [visible, profileManager, currentProfileId]);
 
-  // Keyboard handler for navigation and selection (string-based for useDialogKeyboard)
-  const handleKeyDownString = useCallback(
-    (key: string) => {
-      if (isLoading || error || profiles.length === 0) {
-        // Only allow escape in error/loading/empty states
-        if (key === 'escape') {
-          onCancel();
-        }
-        return;
-      }
-
-      switch (key) {
-        case 'j':
-        case 'down':
-          setSelectedIndex(prev => Math.min(prev + 1, profiles.length - 1));
-          break;
-
-        case 'k':
-        case 'up':
-          setSelectedIndex(prev => Math.max(prev - 1, 0));
-          break;
-
-        case 'g':
-          // Go to top (gg motion handled at dispatcher level)
-          setSelectedIndex(0);
-          break;
-
-        case 'G':
-          // Go to bottom
-          setSelectedIndex(profiles.length - 1);
-          break;
-
-        case 'return':
-        case 'enter':
-          if (selectedIndex >= 0 && selectedIndex < profiles.length) {
-            onProfileSelect(profiles[selectedIndex]);
-          }
-          break;
-
-        case 'escape':
-        case 'q':
-          onCancel();
-          break;
-
-        default:
-          break;
-      }
-    },
-    [isLoading, error, profiles, selectedIndex, onProfileSelect, onCancel]
-  );
-
   // Keyboard handler for KeyboardContext (KeyboardKey-based)
   const handleKeyboard = useCallback(
     (key: KeyboardKey): boolean => {
@@ -176,7 +124,7 @@ export function ProfileSelectorDialog({
           onCancel();
           return true;
         }
-        return false;
+        return true; // Block other keys while dialog visible
       }
 
       switch (keyName) {
@@ -211,7 +159,7 @@ export function ProfileSelectorDialog({
           return true;
 
         default:
-          return false;
+          return true; // Block all other keys when profile selector is open
       }
     },
     [visible, isLoading, error, profiles, selectedIndex, onProfileSelect, onCancel]
@@ -219,9 +167,6 @@ export function ProfileSelectorDialog({
 
   // Register keyboard handler with KeyboardContext (high priority for dialogs)
   useKeyboardHandler(handleKeyboard, [handleKeyboard], KeyboardPriority.High);
-
-  // Also register with useDialogKeyboard for backward compatibility when used inside S3Explorer
-  useDialogKeyboard('profile-selector-dialog', handleKeyDownString, visible);
 
   // Don't render if not visible
   if (!visible) {

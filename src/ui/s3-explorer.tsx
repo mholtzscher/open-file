@@ -24,9 +24,8 @@ import { CatppuccinMocha } from './theme.js';
 import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Entry, EntryType } from '../types/entry.js';
-import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
+import { SortField, SortOrder } from '../utils/sorting.js';
 
-import { getDialogHandler } from '../hooks/useDialogKeyboard.js';
 import type { PendingOperation } from '../types/dialog.js';
 import type { KeyboardKey } from '../types/keyboard.js';
 
@@ -315,158 +314,14 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   // ============================================
   // Keyboard Handler (via Context)
   // ============================================
-  // Create stable callback for keyboard handling
-  // This handler deals with dialog-specific keys and delegates to the dispatcher
+  // Main keyboard handler delegates to the dispatcher.
+  // Dialogs register their own high-priority handlers.
   const keyboardHandlerCallback = useCallback(
     (key: KeyboardKey): boolean => {
-      // Upload dialog - delegate to dialog handler
-      if (showUploadDialogRef.current) {
-        const handler = getDialogHandler('upload-dialog');
-        if (handler) {
-          handler(key.name);
-        }
-        return true; // Consumed by dialog
-      }
-
-      // Confirmation dialog - handle y/n keys
-      if (showConfirmDialogRef.current) {
-        if (key.name === 'y') {
-          confirmHandlerRef.current();
-          return true;
-        }
-        if (key.name === 'n' || key.name === 'escape') {
-          closeAndClearOperations();
-          return true;
-        }
-        return true; // Block all other keys when dialog is open
-      }
-
-      // Error dialog - block all input except escape
-      if (showErrorDialog) {
-        if (key.name === 'escape') {
-          setStatusMessage('');
-          setStatusMessageColor(CatppuccinMocha.text);
-        }
-        return true; // Block all keys when error dialog is open
-      }
-
-      // Sort menu shortcuts
-      if (showSortMenu) {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        const currentSortConfig = currentBufferState.sortConfig;
-
-        if (key.name === 'escape' || key.name === 'q') {
-          closeDialog();
-          return true;
-        }
-
-        const fieldMap: { [key: string]: SortField } = {
-          '1': SortField.Name,
-          '2': SortField.Size,
-          '3': SortField.Modified,
-          '4': SortField.Type,
-        };
-
-        if (fieldMap[key.name]) {
-          const newConfig = {
-            ...currentSortConfig,
-            field: fieldMap[key.name],
-          };
-          currentBufferState.setSortConfig(newConfig);
-          setStatusMessage(`Sorted by ${formatSortField(fieldMap[key.name])}`);
-          setStatusMessageColor(CatppuccinMocha.green);
-          return true;
-        }
-
-        if (key.name === 'space' || key.name === 'return') {
-          const newOrder =
-            currentSortConfig.order === SortOrder.Ascending
-              ? SortOrder.Descending
-              : SortOrder.Ascending;
-          const newConfig = {
-            ...currentSortConfig,
-            order: newOrder,
-          };
-          currentBufferState.setSortConfig(newConfig);
-          const orderStr = newOrder === SortOrder.Ascending ? 'ascending' : 'descending';
-          setStatusMessage(`Sort order: ${orderStr}`);
-          setStatusMessageColor(CatppuccinMocha.green);
-          return true;
-        }
-
-        return true; // Block all other keys when sort menu is open
-      }
-
-      // Help dialog shortcuts
-      if (showHelpDialog) {
-        if (key.name === '?' || key.name === 'escape' || key.name === 'q') {
-          closeDialog();
-          return true;
-        }
-        return true; // Block all other keys when help dialog is open
-      }
-
-      // Profile selector dialog - delegate to dialog handler
-      if (showProfileSelectorDialog) {
-        const handler = getDialogHandler('profile-selector-dialog');
-        if (handler) {
-          handler(key.name);
-        }
-        return true; // Consumed by dialog
-      }
-
-      // Quit confirmation dialog
-      if (showQuitDialog) {
-        if (key.name === 'q') {
-          // User confirmed quit without saving
-          process.exit(0);
-        } else if (key.name === 'escape' || key.name === 'n') {
-          // User cancelled quit
-          closeDialog();
-          setStatusMessage('Quit cancelled');
-          setStatusMessageColor(CatppuccinMocha.text);
-          return true;
-        } else if (key.name === 'w') {
-          // User wants to save first, then quit
-          const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-          const markedForDeletion = currentBufferState.getMarkedForDeletion();
-
-          if (markedForDeletion.length > 0) {
-            const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
-              id: entry.id,
-              type: 'delete' as const,
-              path: entry.path,
-              entry,
-            }));
-
-            quitAfterSaveRef.current = true;
-            closeDialog();
-            showConfirm(deleteOperations);
-          } else {
-            // No changes to save, just quit
-            process.exit(0);
-          }
-          return true;
-        }
-        return true; // Block all other keys when quit dialog is open
-      }
-
-      // Dispatch to the action-based keyboard handler
-      // This handles all normal mode, visual mode, search mode, etc. keybindings
-      return dispatchKey(key);
+      dispatchKey(key);
+      return true;
     },
-    [
-      dispatchKey,
-      showHelpDialog,
-      showErrorDialog,
-      showSortMenu,
-      showQuitDialog,
-      showProfileSelectorDialog,
-      closeDialog,
-      closeAndClearOperations,
-      bufferState,
-      multiPaneLayout,
-    ]
+    [dispatchKey]
   );
 
   // Register keyboard handler with context at normal priority
@@ -498,9 +353,16 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
     error: {
       visible: showErrorDialog,
       message: statusMessage,
+      onDismiss: () => {
+        setStatusMessage('');
+        setStatusMessageColor(CatppuccinMocha.text);
+      },
     },
     help: {
       visible: showHelpDialog,
+      onClose: () => {
+        closeDialog();
+      },
     },
     upload: {
       visible: showUploadDialog,
@@ -579,6 +441,33 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
     quit: {
       visible: showQuitDialog,
       pendingChanges: dialogState.quitPendingChanges,
+      onQuitWithoutSave: () => {
+        process.exit(0);
+      },
+      onSaveAndQuit: () => {
+        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        const markedForDeletion = currentBufferState.getMarkedForDeletion();
+
+        if (markedForDeletion.length > 0) {
+          const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
+            id: entry.id,
+            type: 'delete' as const,
+            path: entry.path,
+            entry,
+          }));
+
+          quitAfterSaveRef.current = true;
+          closeDialog();
+          showConfirm(deleteOperations);
+        } else {
+          process.exit(0);
+        }
+      },
+      onCancel: () => {
+        closeDialog();
+        setStatusMessage('Quit cancelled');
+        setStatusMessageColor(CatppuccinMocha.text);
+      },
     },
     profileSelector: {
       visible: showProfileSelectorDialog,
