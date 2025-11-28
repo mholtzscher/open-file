@@ -7,7 +7,6 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useBufferState } from '../hooks/useBufferState.js';
-import { useKeyboardDispatcher } from '../hooks/useKeyboardDispatcher.js';
 import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
 import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
 import { useMultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
@@ -25,9 +24,12 @@ import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContex
 import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { SortField, SortOrder } from '../utils/sorting.js';
+import { EditMode } from '../types/edit-mode.js';
+import { keyToString, type KeyboardKey, type KeyAction } from '../types/keyboard.js';
+import { defaultKeybindings, type KeybindingMap } from '../hooks/keybindingDefaults.js';
+import { useKeySequence } from '../hooks/useKeySequence.js';
 
 import type { PendingOperation } from '../types/dialog.js';
-import type { KeyboardKey } from '../types/keyboard.js';
 
 interface S3ExplorerProps {
   bucket?: string;
@@ -192,7 +194,7 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   const previewFilename = preview.filename;
 
   // ============================================
-  // Keyboard Dispatcher
+  // Keyboard State
   // ============================================
   // Check if any dialog is open (blocks normal keybindings)
   const isAnyDialogOpen =
@@ -203,10 +205,20 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
     showQuitDialog ||
     showProfileSelectorDialog;
 
-  // Initialize the keyboard dispatcher
-  const { dispatch: dispatchKey, registerActions } = useKeyboardDispatcher({
-    mode: activeBufferState.mode,
-    isDialogOpen: isAnyDialogOpen,
+  // Use the shared default keybindings map
+  const keybindings: KeybindingMap = defaultKeybindings;
+
+  // Multi-key sequence handling (gg, dd, yy, g?)
+  const { handleSequence } = useKeySequence({
+    timeout: 500,
+    sequenceStarters: ['g', 'd', 'y'],
+    sequences: {
+      gg: 'cursor:top',
+      dd: 'entry:delete',
+      yy: 'entry:copy',
+      'g?': 'dialog:help',
+    },
+    bottomAction: 'cursor:bottom',
   });
 
   // ============================================
@@ -232,11 +244,6 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
     closeDialog,
   });
 
-  // Register action handlers with the dispatcher
-  useEffect(() => {
-    return registerActions(actionHandlers);
-  }, [registerActions, actionHandlers]);
-
   // ============================================
   // Computed State
   // ============================================
@@ -244,6 +251,7 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
 
   // ============================================
   // Confirm Handler
+
   // ============================================
   const confirmHandlerRef = useRef<() => Promise<void>>(async () => {});
 
@@ -314,14 +322,91 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   // ============================================
   // Keyboard Handler (via Context)
   // ============================================
-  // Main keyboard handler delegates to the dispatcher.
-  // Dialogs register their own high-priority handlers.
+  // Main keyboard handler implements mode-aware keybindings directly.
   const keyboardHandlerCallback = useCallback(
     (key: KeyboardKey): boolean => {
-      dispatchKey(key);
-      return true;
+      // If a dialog is open, let dialog handlers process the key
+      if (isAnyDialogOpen) {
+        return false;
+      }
+
+      const mode = activeBufferState.mode;
+
+      // Helper to execute an action via useS3Actions map
+      const executeAction = (action: KeyAction, event?: KeyboardKey): boolean => {
+        const handler = actionHandlers[action];
+        if (handler) {
+          handler(event);
+          return true;
+        }
+        return false;
+      };
+
+      // Text input modes: Search, Command, Insert, Edit
+      const isTextInputMode =
+        mode === EditMode.Search ||
+        mode === EditMode.Command ||
+        mode === EditMode.Insert ||
+        mode === EditMode.Edit;
+
+      if (isTextInputMode) {
+        if (key.name === 'escape') {
+          return executeAction('input:cancel', key);
+        }
+        if (key.name === 'return' || key.name === 'enter') {
+          return executeAction('input:confirm', key);
+        }
+        if (key.name === 'backspace') {
+          return executeAction('input:backspace', key);
+        }
+        if (key.name === 'tab') {
+          return executeAction('input:tab', key);
+        }
+        if (key.char && key.char.length === 1) {
+          return executeAction('input:char', key);
+        }
+        if (mode === EditMode.Search) {
+          if (key.name === 'n') {
+            return executeAction('cursor:down', key);
+          }
+          if (key.name === 'N' || (key.shift && key.name === 'n')) {
+            return executeAction('cursor:up', key);
+          }
+        }
+        return false;
+      }
+
+      // Normal mode: handle multi-key sequences (gg, dd, yy, g?)
+      if (mode === EditMode.Normal) {
+        const seqResult = handleSequence(key);
+        if (seqResult.handled && seqResult.action) {
+          return executeAction(seqResult.action, key);
+        }
+        if (seqResult.waitingForMore) {
+          return true; // waiting for more keys in sequence
+        }
+      }
+
+      // Keybinding lookup: mode-specific first
+      const keyStr = keyToString(key);
+      const modeBindings = keybindings.get(mode);
+      const action = modeBindings?.get(keyStr);
+
+      if (action) {
+        return executeAction(action, key);
+      }
+
+      // Global bindings
+      const globalBindings = keybindings.get('global' as EditMode);
+      const globalAction = globalBindings?.get(keyStr);
+
+      if (globalAction) {
+        return executeAction(globalAction, key);
+      }
+
+      return false;
     },
-    [dispatchKey]
+    [isAnyDialogOpen, activeBufferState.mode, actionHandlers, keybindings, handleSequence]
   );
 
   // Register keyboard handler with context at normal priority

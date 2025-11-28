@@ -24,19 +24,15 @@ import type { ProfileManager } from '../providers/services/profile-manager.js';
 export interface ConfirmDialogState {
   visible: boolean;
   operations: PendingOperation[];
-  onConfirm: () => void;
-  onCancel: () => void;
 }
 
 export interface ErrorDialogState {
   visible: boolean;
   message: string;
-  onDismiss: () => void;
 }
 
 export interface HelpDialogState {
   visible: boolean;
-  onClose: () => void;
 }
 
 export interface UploadDialogState {
@@ -50,9 +46,6 @@ export interface SortMenuState {
   visible: boolean;
   currentField: SortField;
   currentOrder: SortOrder;
-  onFieldSelect: (field: SortField) => void;
-  onOrderToggle: () => void;
-  onClose: () => void;
 }
 
 export interface ProgressWindowState {
@@ -70,9 +63,6 @@ export interface ProgressWindowState {
 export interface QuitDialogState {
   visible: boolean;
   pendingChanges: number;
-  onQuitWithoutSave: () => void;
-  onSaveAndQuit: () => void;
-  onCancel: () => void;
 }
 
 export interface ProfileSelectorDialogState {
@@ -113,9 +103,7 @@ export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
   return (
     <>
       {/* Error Dialog - shows when there's an error */}
-      {error.visible && (
-        <ErrorDialog visible={true} message={error.message} onDismiss={error.onDismiss} />
-      )}
+      {error.visible && <ErrorDialog visible={true} message={error.message} />}
 
       {/* Confirmation Dialog */}
       {confirm.visible && (
@@ -123,8 +111,6 @@ export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
           title="Confirm Operations"
           operations={confirm.operations}
           visible={confirm.visible}
-          onConfirm={confirm.onConfirm}
-          onCancel={confirm.onCancel}
         />
       )}
 
@@ -134,14 +120,11 @@ export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
           visible={sortMenu.visible}
           currentField={sortMenu.currentField}
           currentOrder={sortMenu.currentOrder}
-          onFieldSelect={sortMenu.onFieldSelect}
-          onOrderToggle={sortMenu.onOrderToggle}
-          onClose={sortMenu.onClose}
         />
       )}
 
       {/* Help Dialog */}
-      <HelpDialog visible={help.visible} onClose={help.onClose} />
+      <HelpDialog visible={help.visible} />
 
       {/* Upload Dialog */}
       <UploadDialog
@@ -166,13 +149,7 @@ export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
 
       {/* Quit Confirmation Dialog */}
       {quit.visible && (
-        <QuitDialog
-          visible={quit.visible}
-          pendingChangesCount={quit.pendingChanges}
-          onQuitWithoutSave={quit.onQuitWithoutSave}
-          onSaveAndQuit={quit.onSaveAndQuit}
-          onCancel={quit.onCancel}
-        />
+        <QuitDialog visible={quit.visible} pendingChangesCount={quit.pendingChanges} />
       )}
 
       {/* Profile Selector Dialog */}
