@@ -148,6 +148,74 @@ describe('BaseDialog', () => {
       expect(frame).toContain('Bordered');
     });
   });
+
+  describe('overlay behavior', () => {
+    it('hides background content underneath the dialog', async () => {
+      // Position background text where it would be covered by centered dialog
+      // Dialog is 60 wide, terminal is 80, so dialog starts at left=10
+      // Dialog height=10, terminal height=24, so dialog starts at top=7 (centered)
+      const { renderOnce, captureCharFrame } = await testRender(
+        <box width={80} height={24}>
+          <text position="absolute" left={15} top={10}>
+            HIDDEN_TEXT
+          </text>
+          <BaseDialog visible={true} width={60} height={10} showOverlay={true}>
+            <text>Dialog Content</text>
+          </BaseDialog>
+        </box>,
+        { width: 80, height: 24 }
+      );
+      await renderOnce();
+
+      const frame = captureCharFrame();
+      // Dialog content should be visible
+      expect(frame).toContain('Dialog Content');
+      // Background text positioned under the dialog should be hidden
+      expect(frame).not.toContain('HIDDEN_TEXT');
+    });
+
+    it('shows background content outside the dialog area', async () => {
+      // Position background text outside the dialog area (top of screen)
+      const { renderOnce, captureCharFrame } = await testRender(
+        <box width={80} height={24}>
+          <text position="absolute" left={0} top={0}>
+            VISIBLE_TEXT
+          </text>
+          <BaseDialog visible={true} width={60} height={10} showOverlay={true}>
+            <text>Dialog Content</text>
+          </BaseDialog>
+        </box>,
+        { width: 80, height: 24 }
+      );
+      await renderOnce();
+
+      const frame = captureCharFrame();
+      // Both should be visible - background text is outside dialog area
+      expect(frame).toContain('VISIBLE_TEXT');
+      expect(frame).toContain('Dialog Content');
+    });
+
+    it('shows background content when dialog is not visible', async () => {
+      const { renderOnce, captureCharFrame } = await testRender(
+        <box width={80} height={24}>
+          <text position="absolute" left={15} top={10}>
+            Background Text Visible
+          </text>
+          <BaseDialog visible={false} width={60} height={10}>
+            <text>Dialog Content</text>
+          </BaseDialog>
+        </box>,
+        { width: 80, height: 24 }
+      );
+      await renderOnce();
+
+      const frame = captureCharFrame();
+      // Background text should be visible when dialog is hidden
+      expect(frame).toContain('Background Text Visible');
+      // Dialog content should not be visible
+      expect(frame).not.toContain('Dialog Content');
+    });
+  });
 });
 
 // ============================================================================
