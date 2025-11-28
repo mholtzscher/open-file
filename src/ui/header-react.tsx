@@ -88,7 +88,7 @@ export function Header({ bucket: legacyBucket }: HeaderProps) {
       {/* Right side: connection status + profile */}
       <box flexDirection="row" alignItems="center" gap={2}>
         {/* Connection status (only for connection-oriented providers) */}
-        {hasConnection && <ConnectionStatus variant="badge" showReconnect={true} />}
+        {hasConnection && <ConnectionStatus showReconnect={true} />}
 
         {/* Profile name with provider type */}
         <box flexDirection="row" alignItems="center">
