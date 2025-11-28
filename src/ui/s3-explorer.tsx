@@ -11,9 +11,11 @@ import { useKeyboardDispatcher } from '../hooks/useKeyboardDispatcher.js';
 import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
 import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
 import { useMultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
-import { useProgressState } from '../hooks/useProgressState.js';
 import { useDialogState } from '../hooks/useDialogState.js';
-import { useAsyncOperations } from '../hooks/useAsyncOperations.js';
+import { useStatusMessage } from '../hooks/useStatusMessage.js';
+import { usePreview } from '../hooks/usePreview.js';
+import { useDataLoader } from '../hooks/useDataLoader.js';
+import { useOperationExecutor } from '../hooks/useOperationExecutor.js';
 
 import { S3ExplorerLayout, StatusBarState, PreviewState } from './s3-explorer-layout.js';
 import { DialogsState } from './s3-explorer-dialogs.js';
@@ -25,7 +27,7 @@ import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
 import { SortField, SortOrder, formatSortField } from '../utils/sorting.js';
-import { formatBytes } from '../utils/file-browser.js';
+
 import { getDialogHandler } from '../hooks/useDialogKeyboard.js';
 import type { PendingOperation } from '../types/dialog.js';
 import type { KeyboardKey, KeyAction } from '../types/keyboard.js';
@@ -33,43 +35,6 @@ import { Capability } from '../providers/types/capabilities.js';
 
 interface S3ExplorerProps {
   bucket?: string;
-}
-
-/**
- * Helper to determine if a file should be previewed
- */
-function isPreviewableFile(entry: Entry | undefined): boolean {
-  if (!entry || entry.type !== 'file') return false;
-
-  const name = entry.name.toLowerCase();
-  const textExtensions = [
-    '.txt',
-    '.md',
-    '.json',
-    '.yaml',
-    '.yml',
-    '.toml',
-    '.xml',
-    '.csv',
-    '.log',
-    '.js',
-    '.ts',
-    '.tsx',
-    '.jsx',
-    '.py',
-    '.rb',
-    '.go',
-    '.rs',
-    '.c',
-    '.cpp',
-    '.h',
-    '.java',
-    '.sh',
-    '.bash',
-    '.zsh',
-  ];
-
-  return textExtensions.some(ext => name.endsWith(ext));
 }
 
 /**
@@ -85,14 +50,18 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   // Core State
   // ============================================
   const [bucket, setBucket] = useState<string | undefined>(initialBucket);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [originalEntries, setOriginalEntries] = useState<Entry[]>([]);
 
   // ============================================
   // Status Bar State
   // ============================================
-  const [statusMessage, setStatusMessage] = useState<string>('');
-  const [statusMessageColor, setStatusMessageColor] = useState<string>(CatppuccinMocha.text);
+  const {
+    message: statusMessage,
+    messageColor: statusMessageColor,
+    setMessage: setStatusMessage,
+    setMessageColor: setStatusMessageColor,
+    isError: statusIsError,
+  } = useStatusMessage();
 
   // ============================================
   // Dialog Visibility State (consolidated hook)
@@ -121,33 +90,21 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   // ============================================
   // Preview State
   // ============================================
-  const [previewContent, setPreviewContent] = useState<string | null>(null);
-  const [previewFilename, setPreviewFilename] = useState<string>('');
   const [previewEnabled, setPreviewEnabled] = useState(false);
 
   // ============================================
-  // Progress Window State (consolidated hook)
+  // Operation Executor Hook (combines progress + async operations)
   // ============================================
   const {
+    isRunning: isOperationRunning,
+    execute: executeOperationsWithProgress,
+    cancel: cancelOperation,
     progress: progressState,
-    showProgress,
-    updateFile: updateProgressFile,
-    updateProgress,
-    updateDescription: updateProgressDescription,
-    hideProgress,
-    cancelOperation: cancelProgressOperation,
-    dispatch: dispatchProgress,
-  } = useProgressState();
-
-  // ============================================
-  // Async Operations Hook (for new provider system)
-  // ============================================
-  const { executeOperations, cancelOperations } = useAsyncOperations();
+  } = useOperationExecutor();
 
   // ============================================
   // Refs
   // ============================================
-  const operationAbortControllerRef = useRef<AbortController | null>(null);
   const showUploadDialogRef = useRef(showUploadDialog);
   const showConfirmDialogRef = useRef(showConfirmDialog);
   const quitAfterSaveRef = useRef(false);
@@ -211,6 +168,40 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
 
   const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
   const navigationHandlers = useNavigationHandlers(activeBufferState, navigationConfig);
+
+  // ============================================
+  // Data Loader Hook
+  // ============================================
+  const { isInitialized } = useDataLoader({
+    bucket,
+    currentPath: activeBufferState.currentPath,
+    setEntries: entries => {
+      activeBufferState.setEntries([...entries]);
+      setOriginalEntries([...entries]);
+    },
+    setCurrentPath: activeBufferState.setCurrentPath,
+    onSuccess: msg => {
+      setStatusMessage(msg);
+      setStatusMessageColor(CatppuccinMocha.green);
+    },
+    onError: msg => {
+      setStatusMessage(msg);
+      setStatusMessageColor(CatppuccinMocha.red);
+    },
+  });
+
+  // ============================================
+  // Preview Hook
+  // ============================================
+  const selectedEntry = activeBufferState.entries[activeBufferState.selection.cursorIndex];
+  const previewHookEnabled =
+    previewEnabled && !!bucket && isInitialized && !multiPaneLayout.isMultiPaneMode;
+  const preview = usePreview(activeBufferState.currentPath, selectedEntry, {
+    enabled: previewHookEnabled,
+    maxSize: 100 * 1024, // 100KB
+  });
+  const previewContent = preview.content;
+  const previewFilename = preview.filename;
 
   // ============================================
   // Keyboard Dispatcher
@@ -285,7 +276,7 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
       'entry:back': async () => {
         if (previewEnabled) {
           setPreviewEnabled(false);
-          setPreviewContent(null);
+          // Preview content will be cleared automatically by the hook when previewEnabled is false
           setStatusMessage('Preview closed');
           setStatusMessageColor(CatppuccinMocha.text);
           return;
@@ -806,7 +797,7 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   // ============================================
   // Computed State
   // ============================================
-  const showErrorDialog = statusMessage !== '' && statusMessageColor === CatppuccinMocha.red;
+  const showErrorDialog = statusIsError;
 
   // ============================================
   // Confirm Handler
@@ -814,49 +805,9 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   const confirmHandlerRef = useRef<() => Promise<void>>(async () => {});
 
   const createConfirmHandler = useCallback(async () => {
-    try {
-      const abortController = new AbortController();
-      operationAbortControllerRef.current = abortController;
-
-      showProgress({
-        title: `Executing ${pendingOperations[0]?.type || 'operation'}...`,
-        totalNum: pendingOperations.length,
-        cancellable: true,
-      });
-
-      // Use the unified async operations hook
-      const result = await executeOperations(pendingOperations, {
-        onProgress: progress => {
-          updateProgress(progress.overallProgress);
-          if (progress.currentFile) {
-            dispatchProgress({ type: 'UPDATE', payload: { currentFile: progress.currentFile } });
-          }
-          updateProgressDescription(progress.description);
-          dispatchProgress({
-            type: 'UPDATE',
-            payload: {
-              value: progress.overallProgress,
-              description: progress.description,
-              currentFile: progress.currentFile || '',
-              currentNum: progress.currentIndex + 1,
-            },
-          });
-        },
-        onOperationError: (op, error) => {
-          console.error(`Failed to execute ${op.type} operation:`, error);
-          const parsedError = parseAwsError(error, `Failed to ${op.type}`);
-          setStatusMessage(`Operation failed: ${formatErrorForDisplay(parsedError, 70)}`);
-          setStatusMessageColor(CatppuccinMocha.red);
-        },
-        signal: abortController.signal,
-      });
-
-      hideProgress();
-
-      if (result.cancelled) {
-        setStatusMessage('Operation cancelled by user');
-        setStatusMessageColor(CatppuccinMocha.yellow);
-      } else if (result.successCount > 0) {
+    // Use the unified operation executor hook
+    await executeOperationsWithProgress(pendingOperations, {
+      onSuccess: async (result, message) => {
         try {
           const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
           const entries = await storage.list(currentBufferState.currentPath);
@@ -865,7 +816,7 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
           currentBufferState.clearDeletionMarks();
           // Update original entries reference
           setOriginalEntries([...entries]);
-          setStatusMessage(`${result.successCount} operation(s) completed successfully`);
+          setStatusMessage(message);
           setStatusMessageColor(CatppuccinMocha.green);
 
           // If quit was requested after save, exit now
@@ -878,31 +829,26 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
           setStatusMessage('Operations completed but failed to reload buffer');
           setStatusMessageColor(CatppuccinMocha.yellow);
         }
-      } else if (result.failureCount > 0) {
-        setStatusMessage(`${result.failureCount} operation(s) failed`);
+      },
+      onError: message => {
+        setStatusMessage(message);
         setStatusMessageColor(CatppuccinMocha.red);
-      }
-
-      closeAndClearOperations();
-    } catch (error) {
-      console.error('Unexpected error in operation execution:', error);
-      hideProgress();
-      setStatusMessage('Unexpected error during operation execution');
-      setStatusMessageColor(CatppuccinMocha.red);
-      closeAndClearOperations();
-    }
+      },
+      onCancelled: message => {
+        setStatusMessage(message);
+        setStatusMessageColor(CatppuccinMocha.yellow);
+      },
+      onComplete: () => {
+        closeAndClearOperations();
+      },
+    });
   }, [
     pendingOperations,
     storage,
     multiPaneLayout,
     bufferState,
     closeAndClearOperations,
-    executeOperations,
-    showProgress,
-    updateProgress,
-    dispatchProgress,
-    updateProgressDescription,
-    hideProgress,
+    executeOperationsWithProgress,
   ]);
 
   useEffect(() => {
@@ -910,13 +856,8 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   }, [createConfirmHandler]);
 
   const handleCancelOperation = useCallback(() => {
-    if (operationAbortControllerRef.current) {
-      operationAbortControllerRef.current.abort();
-      dispatchProgress({ type: 'UPDATE', payload: { cancellable: false } });
-    }
-    // Also cancel through the async operations hook
-    cancelOperations();
-  }, [dispatchProgress, cancelOperations]);
+    cancelOperation();
+  }, [cancelOperation]);
 
   // ============================================
   // Ref Sync Effects
@@ -1089,125 +1030,14 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   // Register keyboard handler with context at normal priority
   useKeyboardHandler(keyboardHandlerCallback, [keyboardHandlerCallback], KeyboardPriority.Normal);
 
-  // ============================================
-  // Initialize Data
-  // ============================================
-  useEffect(() => {
-    const initializeData = async () => {
-      try {
-        console.error(`[S3Explorer] Initializing data...`);
+  // NOTE: Data initialization is now handled by useDataLoader hook
 
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-        if (!bucket) {
-          console.error(`[S3Explorer] Root view mode detected, loading buckets...`);
-          if (storage.hasCapability(Capability.Containers)) {
-            const entries = await storage.listContainers();
-            console.error(`[S3Explorer] Received ${entries.length} buckets`);
-            currentBufferState.setEntries([...entries]);
-            currentBufferState.setCurrentPath('');
-            setStatusMessage(`Found ${entries.length} bucket(s)`);
-            setStatusMessageColor(CatppuccinMocha.green);
-          } else {
-            throw new Error('Storage provider does not support container listing');
-          }
-        } else {
-          const path = currentBufferState.currentPath;
-          console.error(`[S3Explorer] Loading bucket: ${bucket}, path: "${path}"`);
-          const entries = await storage.list(path);
-          console.error(`[S3Explorer] Received ${entries.length} entries`);
-
-          currentBufferState.setEntries([...entries]);
-          console.error(`[S3Explorer] Entries loaded into buffer state`);
-
-          setStatusMessage(`Loaded ${entries.length} items`);
-          setStatusMessageColor(CatppuccinMocha.green);
-        }
-
-        console.error(`[S3Explorer] Status message set, about to set initialized`);
-        setIsInitialized(true);
-        console.error(`[S3Explorer] Initialized set to true`);
-      } catch (err) {
-        console.error('[S3Explorer] Error loading data:', err);
-        const parsedError = parseAwsError(
-          err,
-          bucket ? 'Failed to load bucket' : 'Failed to list buckets'
-        );
-        const errorDisplay = formatErrorForDisplay(parsedError, 70);
-        console.error('[S3Explorer] Setting error message:', errorDisplay);
-        setStatusMessage(errorDisplay);
-        setStatusMessageColor(CatppuccinMocha.red);
-        setIsInitialized(true);
-        console.error('[S3Explorer] Initialized set to true after error');
-      }
-    };
-
-    console.error(`[S3Explorer] useEffect triggered`);
-    initializeData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bucket, storage]);
-
-  // ============================================
-  // Preview Effect
-  // ============================================
-  useEffect(() => {
-    const fetchPreview = async () => {
-      const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
-
-      if (!previewEnabled) {
-        setPreviewContent(null);
-        return;
-      }
-
-      if (!bucket || !isInitialized) {
-        setPreviewContent(null);
-        return;
-      }
-
-      if (multiPaneLayout.isMultiPaneMode) {
-        setPreviewContent(null);
-        return;
-      }
-
-      const selectedEntry = currentBufferState.entries[currentBufferState.selection.cursorIndex];
-
-      if (!selectedEntry || !isPreviewableFile(selectedEntry)) {
-        setPreviewContent(null);
-        setPreviewFilename('');
-        return;
-      }
-
-      try {
-        const maxPreviewSize = 100 * 1024;
-        if (selectedEntry.size && selectedEntry.size > maxPreviewSize) {
-          setPreviewContent(`File too large to preview (${formatBytes(selectedEntry.size)})`);
-          setPreviewFilename('');
-          return;
-        }
-
-        const fullPath = currentBufferState.currentPath
-          ? `${currentBufferState.currentPath}${selectedEntry.name}`
-          : selectedEntry.name;
-
-        const buffer = await storage.read(fullPath);
-        const content = buffer.toString('utf-8');
-        setPreviewContent(content);
-        setPreviewFilename(selectedEntry.name);
-      } catch (err) {
-        console.error('Failed to load preview:', err);
-        setPreviewContent('Failed to load preview');
-      }
-    };
-
-    fetchPreview();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    previewEnabled,
-    activeBufferState.selection.cursorIndex,
-    activeBufferState.currentPath,
-    bucket,
-    isInitialized,
-    multiPaneLayout.isMultiPaneMode,
-  ]);
+  // NOTE: Preview loading is now handled by the usePreview hook
+  // The hook automatically loads preview content when:
+  // - previewEnabled is true
+  // - bucket is set and isInitialized
+  // - not in multi-pane mode
+  // - the selected entry is previewable
 
   // ============================================
   // Build Props for Layout Component
@@ -1363,8 +1193,8 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
           // Update original entries to reflect new data
           setOriginalEntries([...newState.entries]);
 
-          // Ensure component is marked as initialized
-          setIsInitialized(true);
+          // Note: isInitialized is managed by useDataLoader hook
+          // and will be set automatically when data loads
 
           console.error(`[S3Explorer] Profile switch UI update complete`);
           setStatusMessage(`Switched to profile: ${profile.displayName}`);
