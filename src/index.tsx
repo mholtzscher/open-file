@@ -4,7 +4,7 @@ import { createCliRenderer } from '@opentui/core';
 import { createRoot } from '@opentui/react';
 import { useState, useEffect, useCallback } from 'react';
 import { S3Explorer } from './ui/s3-explorer.jsx';
-import { ProfileSelectorDialog } from './ui/profile-selector-dialog.js';
+import { ProfileSelectorDialog } from './ui/dialog/profile-selector.js';
 import { StorageProvider } from './providers/provider.js';
 import { S3Provider } from './providers/s3/s3-provider.js';
 import { FileProfileManager } from './providers/services/file-profile-manager.js';
