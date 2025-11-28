@@ -260,8 +260,10 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
         if (!bucket && currentEntry.type === 'bucket') {
           const bucketName = currentEntry.name;
           const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
+          // Use path for providers that need full path (SFTP), name for others (S3)
+          const containerIdentifier = currentEntry.path || bucketName;
 
-          await storage.setContainer(bucketName, bucketRegion);
+          await storage.setContainer(containerIdentifier, bucketRegion);
           setBucket(bucketName);
           return;
         }
@@ -298,13 +300,23 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
         const currentPath = currentBufferState.currentPath;
         const parts = currentPath.split('/').filter(p => p);
 
-        if (parts.length > 0) {
+        if (parts.length > 1) {
+          // More than one part - go up one level
           parts.pop();
-          const parentPath = parts.length > 0 ? parts.join('/') + '/' : '';
+          // Preserve leading slash if original path had one
+          const parentPath = currentPath.startsWith('/')
+            ? '/' + parts.join('/') + '/'
+            : parts.join('/') + '/';
           await navigationHandlers.navigateToPath(parentPath);
           setStatusMessage(`Navigated to ${parentPath || 'bucket root'}`);
           setStatusMessageColor(CatppuccinMocha.green);
+        } else if (parts.length === 1) {
+          // At container root level - go back to container listing
+          setBucket(undefined);
+          setStatusMessage('Back to bucket listing');
+          setStatusMessageColor(CatppuccinMocha.blue);
         } else {
+          // Already at root
           setBucket(undefined);
           setStatusMessage('Back to bucket listing');
           setStatusMessageColor(CatppuccinMocha.blue);

@@ -306,7 +306,7 @@ export class SFTPProvider extends BaseStorageProvider {
     const entry: Entry = {
       id: generateEntryId(),
       name: containerName,
-      type: EntryType.Directory,
+      type: EntryType.Bucket, // Use Bucket type so UI recognizes it as a container
       path: this.basePath,
       modified: new Date(),
       metadata: {
@@ -341,13 +341,24 @@ export class SFTPProvider extends BaseStorageProvider {
   // ==========================================================================
 
   /**
-   * Resolve a path relative to the base path
+   * Resolve a path relative to the base path (container)
+   *
+   * - "/" or "" -> basePath (container root)
+   * - Path starting with basePath -> return as-is (already absolute)
+   * - Other paths -> prepend basePath
    */
   private resolvePath(path: string): string {
-    if (path.startsWith('/')) {
+    // Normalize: treat "/" and "" as container root
+    if (path === '/' || path === '') {
+      return this.basePath;
+    }
+    // If path already starts with basePath, it's already resolved
+    if (path.startsWith(this.basePath)) {
       return path;
     }
-    return join(this.basePath, path);
+    // Otherwise, make it relative to basePath
+    const relativePath = path.startsWith('/') ? path.slice(1) : path;
+    return join(this.basePath, relativePath);
   }
 
   /**
