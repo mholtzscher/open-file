@@ -238,13 +238,22 @@ async function main() {
             keyName = 'return';
           }
 
+          // Derive char from key name for printable characters
+          // opentui's KeyEvent uses 'name' for the character (e.g., "a", "b", "1")
+          // but doesn't provide a separate 'char' field
+          let char = key.char;
+          if (!char && keyName.length === 1) {
+            // Single character key names are printable characters
+            char = keyName;
+          }
+
           // Normalize key object to match expected interface
           const normalizedKey: KeyboardKey = {
             name: keyName,
             ctrl: key.ctrl || key.ctrlKey || false,
             shift: key.shift || key.shiftKey || false,
             meta: key.meta || key.metaKey || false,
-            char: key.char,
+            char: char,
           };
           globalKeyboardDispatcher(normalizedKey);
         }

@@ -139,18 +139,18 @@ export function BufferView({
     bufferState.scrollOffset + viewportHeight
   );
 
-  // If no entries, show empty indicator
-  if (entries.length === 0) {
+  // Check if in insert mode
+  const isInsertMode = bufferState.mode === EditMode.Insert;
+  const editBuffer = bufferState.editBuffer || '';
+
+  // If no entries, show empty indicator (but still allow insert mode)
+  if (entries.length === 0 && !isInsertMode) {
     return (
       <box flexDirection="column" width="100%" height="100%">
         <text fg={Theme.getEmptyStateColor()}>&lt;empty&gt;</text>
       </box>
     );
   }
-
-  // Check if in insert mode
-  const isInsertMode = bufferState.mode === EditMode.Insert;
-  const editBuffer = bufferState.editBuffer || '';
 
   return (
     <box flexDirection="column" width="100%" height="100%">
