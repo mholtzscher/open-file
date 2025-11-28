@@ -10,7 +10,7 @@
 import { CatppuccinMocha } from './theme.js';
 import { useHasStorage } from '../contexts/StorageContext.js';
 import { useStorageState, useStorageCapabilities } from '../hooks/useStorage.js';
-import { ConnectionStatus } from '../components/ConnectionStatus.js';
+import { ConnectionStatus } from './ConnectionStatus.js';
 import { Capability } from '../providers/types/capabilities.js';
 
 export interface HeaderProps {

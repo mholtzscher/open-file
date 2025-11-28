@@ -13,7 +13,7 @@
  */
 
 import { useStorageState } from '../hooks/useStorage.js';
-import { CatppuccinMocha } from '../ui/theme.js';
+import { CatppuccinMocha } from './theme.js';
 
 // ============================================================================
 // Types
