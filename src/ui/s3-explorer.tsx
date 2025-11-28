@@ -300,23 +300,23 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
         const currentPath = currentBufferState.currentPath;
         const parts = currentPath.split('/').filter(p => p);
 
-        if (parts.length > 1) {
-          // More than one part - go up one level
+        if (parts.length > 0) {
           parts.pop();
-          // Preserve leading slash if original path had one
-          const parentPath = currentPath.startsWith('/')
-            ? '/' + parts.join('/') + '/'
-            : parts.join('/') + '/';
+          let parentPath: string;
+          if (parts.length > 0) {
+            // Still have path parts - preserve leading slash if original had one
+            parentPath = currentPath.startsWith('/')
+              ? '/' + parts.join('/') + '/'
+              : parts.join('/') + '/';
+          } else {
+            // At container root - use empty string or root based on original path style
+            parentPath = currentPath.startsWith('/') ? '/' : '';
+          }
           await navigationHandlers.navigateToPath(parentPath);
           setStatusMessage(`Navigated to ${parentPath || 'bucket root'}`);
           setStatusMessageColor(CatppuccinMocha.green);
-        } else if (parts.length === 1) {
-          // At container root level - go back to container listing
-          setBucket(undefined);
-          setStatusMessage('Back to bucket listing');
-          setStatusMessageColor(CatppuccinMocha.blue);
         } else {
-          // Already at root
+          // Already at container root - go back to container listing
           setBucket(undefined);
           setStatusMessage('Back to bucket listing');
           setStatusMessageColor(CatppuccinMocha.blue);
