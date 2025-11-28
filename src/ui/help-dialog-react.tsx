@@ -72,7 +72,6 @@ export function HelpDialog({ visible }: HelpDialogProps) {
       height={dialogHeight}
       borderColor={CatppuccinMocha.yellow}
       showOverlay={true}
-      top={1}
       paddingRight={0}
     >
       {keybindings.map((item, idx) => {
