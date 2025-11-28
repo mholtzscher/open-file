@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { QuitDialog } from './quit-dialog.js';
+import { QuitDialog } from './quit.js';
 
 describe('QuitDialog', () => {
   describe('visibility', () => {
@@ -118,7 +118,7 @@ describe('QuitDialog', () => {
 
   describe('exports', () => {
     it('exports QuitDialog component', async () => {
-      const module = await import('./quit-dialog.js');
+      const module = await import('./quit.js');
       expect(module.QuitDialog).toBeDefined();
       expect(typeof module.QuitDialog).toBe('function');
     });

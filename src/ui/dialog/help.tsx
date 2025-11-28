@@ -4,8 +4,8 @@
  * Displays comprehensive help dialog with keybindings using absolute positioning
  */
 
-import { CatppuccinMocha } from './theme.js';
-import { BaseDialog } from './base-dialog.js';
+import { CatppuccinMocha } from '../theme.js';
+import { BaseDialog } from './base.js';
 
 interface KeybindingItem {
   keys: string;

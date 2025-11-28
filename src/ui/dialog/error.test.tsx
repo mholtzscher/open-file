@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { ErrorDialog } from './error-dialog.js';
+import { ErrorDialog } from './error.js';
 
 describe('ErrorDialog', () => {
   describe('visibility', () => {
@@ -127,7 +127,7 @@ describe('ErrorDialog', () => {
 
   describe('exports', () => {
     it('exports ErrorDialog component', async () => {
-      const module = await import('./error-dialog.js');
+      const module = await import('./error.js');
       expect(module.ErrorDialog).toBeDefined();
       expect(typeof module.ErrorDialog).toBe('function');
     });

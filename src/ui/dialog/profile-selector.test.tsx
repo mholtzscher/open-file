@@ -4,10 +4,10 @@
 
 import { describe, it, expect, mock } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { ProfileSelectorDialog } from './profile-selector-dialog.js';
-import { KeyboardProvider } from '../contexts/KeyboardContext.js';
-import type { Profile } from '../providers/types/profile.js';
-import type { ProfileManager } from '../providers/services/profile-manager.js';
+import { ProfileSelectorDialog } from './profile-selector.js';
+import { KeyboardProvider } from '../../contexts/KeyboardContext.js';
+import type { Profile } from '../../providers/types/profile.js';
+import type { ProfileManager } from '../../providers/services/profile-manager.js';
 
 // Wrapper component that provides KeyboardContext
 function TestWrapper({ children }: { children: React.ReactNode }) {
@@ -295,7 +295,7 @@ describe('ProfileSelectorDialog', () => {
 
   describe('exports', () => {
     it('exports ProfileSelectorDialog component', async () => {
-      const module = await import('./profile-selector-dialog.js');
+      const module = await import('./profile-selector.js');
       expect(module.ProfileSelectorDialog).toBeDefined();
       expect(typeof module.ProfileSelectorDialog).toBe('function');
     });

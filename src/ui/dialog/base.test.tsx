@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { BaseDialog, getContentWidth } from './base-dialog.js';
+import { BaseDialog, getContentWidth } from './base.js';
 
 // ============================================================================
 // Component Rendering Tests

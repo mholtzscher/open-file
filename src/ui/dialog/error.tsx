@@ -4,8 +4,8 @@
  * Dismissible via Enter (handled by parent keyboard flow).
  */
 
-import { CatppuccinMocha } from './theme.js';
-import { BaseDialog, getContentWidth } from './base-dialog.js';
+import { CatppuccinMocha } from '../theme.js';
+import { BaseDialog, getContentWidth } from './base.js';
 
 interface ErrorDialogProps {
   visible: boolean;

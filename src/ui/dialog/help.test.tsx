@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { HelpDialog } from './help-dialog.js';
+import { HelpDialog } from './help.js';
 
 // HelpDialog has many keybindings, so we need a tall terminal
 const TERMINAL_WIDTH = 80;
@@ -157,7 +157,7 @@ describe('HelpDialog', () => {
 
   describe('exports', () => {
     it('exports HelpDialog component', async () => {
-      const module = await import('./help-dialog.js');
+      const module = await import('./help.js');
       expect(module.HelpDialog).toBeDefined();
       expect(typeof module.HelpDialog).toBe('function');
     });

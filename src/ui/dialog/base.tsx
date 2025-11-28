@@ -8,8 +8,8 @@
  */
 
 import { ReactNode } from 'react';
-import { CatppuccinMocha } from './theme.js';
-import { useTerminalSize } from '../hooks/useTerminalSize.js';
+import { CatppuccinMocha } from '../theme.js';
+import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 
 export interface BaseDialogProps {
   /** Controls dialog visibility - returns null when false */

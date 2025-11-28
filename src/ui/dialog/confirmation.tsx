@@ -4,8 +4,8 @@
  * Displays a modal dialog for confirming operations using flexbox layout
  */
 
-import { CatppuccinMocha } from './theme.js';
-import { BaseDialog, getContentWidth } from './base-dialog.js';
+import { CatppuccinMocha } from '../theme.js';
+import { BaseDialog, getContentWidth } from './base.js';
 
 export interface Operation {
   id: string;

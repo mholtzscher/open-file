@@ -6,13 +6,13 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { CatppuccinMocha, Theme } from './theme.js';
-import { BaseDialog } from './base-dialog.js';
-import { useDialogKeyboard } from '../hooks/useDialogKeyboard.js';
-import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
-import type { Profile } from '../providers/types/profile.js';
-import type { ProfileManager } from '../providers/services/profile-manager.js';
-import type { KeyboardKey } from '../types/keyboard.js';
+import { CatppuccinMocha, Theme } from '../theme.js';
+import { BaseDialog } from './base.js';
+import { useDialogKeyboard } from '../../hooks/useDialogKeyboard.js';
+import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
+import type { Profile } from '../../providers/types/profile.js';
+import type { ProfileManager } from '../../providers/services/profile-manager.js';
+import type { KeyboardKey } from '../../types/keyboard.js';
 
 // ============================================================================
 // Types

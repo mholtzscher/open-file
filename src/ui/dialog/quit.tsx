@@ -4,8 +4,8 @@
  * Displays a modal dialog warning about unsaved changes when quitting
  */
 
-import { CatppuccinMocha } from './theme.js';
-import { BaseDialog } from './base-dialog.js';
+import { CatppuccinMocha } from '../theme.js';
+import { BaseDialog } from './base.js';
 
 export interface QuitDialogProps {
   pendingChangesCount: number;
