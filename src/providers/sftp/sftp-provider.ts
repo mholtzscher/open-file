@@ -151,7 +151,6 @@ export class SFTPProvider extends BaseStorageProvider {
 
   private client: Client;
   private connected = false;
-  private connecting: Promise<OperationResult> | null = null;
   private readonly profile: SFTPProfile;
   private readonly logger: SFTPProviderLogger;
   private basePath: string;
@@ -206,29 +205,10 @@ export class SFTPProvider extends BaseStorageProvider {
    * Establish connection to the SFTP server
    */
   async connect(): Promise<OperationResult> {
-    // Already connected
     if (this.connected) {
       return Result.success();
     }
 
-    // Connection in progress - wait for it
-    if (this.connecting) {
-      return this.connecting;
-    }
-
-    // Start connection
-    this.connecting = this.doConnect();
-    try {
-      return await this.connecting;
-    } finally {
-      this.connecting = null;
-    }
-  }
-
-  /**
-   * Internal connection implementation
-   */
-  private async doConnect(): Promise<OperationResult> {
     try {
       // Create a fresh client if not using an injected one
       // This handles the case where a previous connection failed or was closed

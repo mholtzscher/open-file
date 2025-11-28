@@ -92,10 +92,19 @@ export function StorageContextProvider({
       return;
     }
 
-    // Perform initial navigation to load entries
-    storageAdapter.navigate(initialPath).catch(error => {
-      console.error('StorageContextProvider: Failed to initialize:', error);
-    });
+    // Initialize: connect (if needed) then navigate
+    const initialize = async () => {
+      try {
+        // Connect first for connection-oriented providers
+        await storageAdapter.connect();
+        // Then navigate to initial path
+        await storageAdapter.navigate(initialPath);
+      } catch (error) {
+        console.error('StorageContextProvider: Failed to initialize:', error);
+      }
+    };
+
+    initialize();
 
     // Cleanup on unmount
     return () => {
