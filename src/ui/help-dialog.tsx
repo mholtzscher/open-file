@@ -5,7 +5,7 @@
  */
 
 import { CatppuccinMocha } from './theme.js';
-import { BaseDialog, getContentWidth } from './base-dialog.js';
+import { BaseDialog } from './base-dialog.js';
 
 interface KeybindingItem {
   keys: string;
@@ -21,8 +21,6 @@ type HelpItem = KeybindingItem | SectionItem;
 interface HelpDialogProps {
   visible: boolean;
 }
-
-const DIALOG_WIDTH = 70;
 
 const keybindings: HelpItem[] = [
   { section: 'NAVIGATION' },
@@ -61,22 +59,13 @@ const keybindings: HelpItem[] = [
  * HelpDialog component - displays all keybindings with absolute positioning
  */
 export function HelpDialog({ visible }: HelpDialogProps) {
-  const dialogHeight = keybindings.length + 4; // Add padding for border and title
-  const contentWidth = getContentWidth(DIALOG_WIDTH);
-
   return (
-    <BaseDialog
-      visible={visible}
-      title="Help"
-      width={DIALOG_WIDTH}
-      height={dialogHeight}
-      borderColor={CatppuccinMocha.yellow}
-    >
+    <BaseDialog visible={visible} title="Help" borderColor={CatppuccinMocha.yellow}>
       <box flexDirection="column">
         {keybindings.map((item, idx) => {
           if ('section' in item) {
             return (
-              <text key={idx} fg={CatppuccinMocha.text} width={contentWidth}>
+              <text key={idx} fg={CatppuccinMocha.text}>
                 {item.section}
               </text>
             );
@@ -84,7 +73,7 @@ export function HelpDialog({ visible }: HelpDialogProps) {
           const keyText = `  ${item.keys}`.padEnd(12);
           const fullText = `${keyText}${item.description}`;
           return (
-            <text key={idx} fg={CatppuccinMocha.subtext0} width={contentWidth}>
+            <text key={idx} fg={CatppuccinMocha.subtext0}>
               {fullText}
             </text>
           );
