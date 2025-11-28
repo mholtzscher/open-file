@@ -6,8 +6,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { CatppuccinMocha } from './theme.js';
-import { BaseDialog, getContentWidth } from './base-dialog.js';
+import { CatppuccinMocha, Theme } from './theme.js';
+import { BaseDialog } from './base-dialog.js';
 import { useDialogKeyboard } from '../hooks/useDialogKeyboard.js';
 import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
 import type { Profile } from '../providers/types/profile.js';
@@ -56,30 +56,6 @@ function getProviderTypeIndicator(providerType: string): string {
 
   return indicators[providerType] || providerType.toUpperCase();
 }
-
-/**
- * Get color for provider type
- */
-function getProviderTypeColor(providerType: string): string {
-  const colors: Record<string, string> = {
-    s3: CatppuccinMocha.yellow,
-    gcs: CatppuccinMocha.blue,
-    sftp: CatppuccinMocha.green,
-    ftp: CatppuccinMocha.peach,
-    nfs: CatppuccinMocha.teal,
-    smb: CatppuccinMocha.mauve,
-    gdrive: CatppuccinMocha.red,
-    local: CatppuccinMocha.text,
-  };
-
-  return colors[providerType] || CatppuccinMocha.text;
-}
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const DIALOG_WIDTH = 60;
 
 // ============================================================================
 // Component
@@ -252,26 +228,11 @@ export function ProfileSelectorDialog({
     return null;
   }
 
-  const contentWidth = getContentWidth(DIALOG_WIDTH);
-
-  // Calculate dialog height based on content
-  const baseHeight = 6; // Header + footer + padding
-  const contentHeight = Math.max(3, profiles.length);
-  const dialogHeight = baseHeight + contentHeight;
-
   // Loading state
   if (isLoading) {
     return (
-      <BaseDialog
-        visible={true}
-        title="Select Profile"
-        width={DIALOG_WIDTH}
-        height={10}
-        borderColor={CatppuccinMocha.blue}
-      >
-        <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-          Loading profiles...
-        </text>
+      <BaseDialog visible={true} title="Select Profile" borderColor={CatppuccinMocha.blue}>
+        <text fg={CatppuccinMocha.overlay0}>Loading profiles...</text>
       </BaseDialog>
     );
   }
@@ -279,22 +240,10 @@ export function ProfileSelectorDialog({
   // Error state
   if (error) {
     return (
-      <BaseDialog
-        visible={true}
-        title="Select Profile"
-        width={DIALOG_WIDTH}
-        height={12}
-        borderColor={CatppuccinMocha.red}
-      >
-        <text fg={CatppuccinMocha.red} width={contentWidth}>
-          Error: {error}
-        </text>
-        <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-          {' '}
-        </text>
-        <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-          Press Escape to close
-        </text>
+      <BaseDialog visible={true} title="Select Profile" borderColor={CatppuccinMocha.red}>
+        <text fg={CatppuccinMocha.red}>Error: {error}</text>
+        <text fg={CatppuccinMocha.overlay0}> </text>
+        <text fg={CatppuccinMocha.overlay0}>Press Escape to close</text>
       </BaseDialog>
     );
   }
@@ -302,68 +251,43 @@ export function ProfileSelectorDialog({
   // Empty state
   if (profiles.length === 0) {
     return (
-      <BaseDialog
-        visible={true}
-        title="Select Profile"
-        width={DIALOG_WIDTH}
-        height={12}
-        borderColor={CatppuccinMocha.overlay0}
-      >
-        <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-          No profiles configured
-        </text>
-        <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-          {' '}
-        </text>
-        <text fg={CatppuccinMocha.subtext0} width={contentWidth}>
-          Press Escape to close
-        </text>
+      <BaseDialog visible={true} title="Select Profile" borderColor={CatppuccinMocha.overlay0}>
+        <text fg={CatppuccinMocha.overlay0}>No profiles configured</text>
+        <text fg={CatppuccinMocha.overlay0}> </text>
+        <text fg={CatppuccinMocha.subtext0}>Press Escape to close</text>
       </BaseDialog>
     );
   }
 
   // Profile list
   return (
-    <BaseDialog
-      visible={true}
-      title="Select Profile"
-      width={DIALOG_WIDTH}
-      height={dialogHeight}
-      borderColor={CatppuccinMocha.blue}
-    >
+    <BaseDialog visible={true} title="Select Profile" borderColor={CatppuccinMocha.blue}>
       {profiles.map((profile, index) => {
         const isSelected = index === selectedIndex;
         const isCurrent = profile.id === currentProfileId;
         const indicator = getProviderTypeIndicator(profile.provider);
-        const indicatorColor = getProviderTypeColor(profile.provider);
+        const providerColor = Theme.getProviderColor(profile.provider);
 
         // Build the line text
         const selectionChar = isSelected ? '>' : ' ';
         const currentChar = isCurrent ? '●' : '○';
+        const prefix = `${selectionChar} ${currentChar} ${profile.displayName} `;
         const badge = `[${indicator}]`;
-        const name = profile.displayName;
 
-        // Format: "> ● ProfileName [S3]"
-        const line = `${selectionChar} ${currentChar} ${name} ${badge}`;
+        // Use provider-specific color for the badge
+        const textColor = isCurrent ? CatppuccinMocha.text : CatppuccinMocha.subtext0;
 
         return (
-          <text
-            key={profile.id}
-            fg={isCurrent ? CatppuccinMocha.text : CatppuccinMocha.subtext0}
-            width={contentWidth}
-          >
-            {line}
-          </text>
+          <box key={profile.id} flexDirection="row">
+            <text fg={textColor}>{prefix}</text>
+            <text fg={providerColor}>{badge}</text>
+          </box>
         );
       })}
 
       {/* Footer help text */}
-      <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-        {' '}
-      </text>
-      <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-        ↑↓/jk: Select Enter: Switch Esc: Cancel
-      </text>
+      <text fg={CatppuccinMocha.overlay0}> </text>
+      <text fg={CatppuccinMocha.overlay0}>↑↓/jk: Select Enter: Switch Esc: Cancel</text>
     </BaseDialog>
   );
 }

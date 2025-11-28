@@ -214,6 +214,24 @@ export class Theme {
   }
 
   /**
+   * Get color for provider type
+   */
+  static getProviderColor(providerType: string): string {
+    const colors: Record<string, string> = {
+      s3: CatppuccinMocha.yellow,
+      gcs: CatppuccinMocha.blue,
+      sftp: CatppuccinMocha.green,
+      ftp: CatppuccinMocha.peach,
+      nfs: CatppuccinMocha.teal,
+      smb: CatppuccinMocha.mauve,
+      gdrive: CatppuccinMocha.red,
+      local: CatppuccinMocha.text,
+    };
+
+    return colors[providerType] || CatppuccinMocha.text;
+  }
+
+  /**
    * Get style for entry based on type and selection state
    */
   static getEntryStyle(
