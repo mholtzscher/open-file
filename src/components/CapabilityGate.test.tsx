@@ -1,47 +1,259 @@
 /**
  * Tests for CapabilityGate component
  *
- * Note: These tests verify the component exports and type signatures.
- * Full integration tests with React context require proper React testing setup.
+ * Uses OpenTUI testing patterns to properly test rendered output.
  */
 
 import { describe, it, expect } from 'bun:test';
-import {
-  CapabilityGate,
-  RequiresCapability,
-  DisabledIfMissing,
-  useHasCapability,
-  useHasAllCapabilities,
-  useHasAnyCapability,
-  type CapabilityGateProps,
-  type GateBehavior,
-} from './CapabilityGate.js';
+import { testRender } from '@opentui/react/test-utils';
+import { CapabilityGate, type CapabilityGateProps, type GateBehavior } from './CapabilityGate.js';
+import { StorageContext, StorageContextValue, StorageState } from '../contexts/StorageContext.js';
 import { Capability } from '../providers/types/capabilities.js';
+import { EntryType } from '../types/entry.js';
 
 // ============================================================================
-// Component Exports
+// Test Utilities
+// ============================================================================
+
+/**
+ * Create a mock StorageContextValue with configurable capabilities
+ */
+function createMockStorageContext(
+  capabilities: Set<Capability | string> = new Set()
+): StorageContextValue {
+  const defaultState: StorageState = {
+    providerId: 'test',
+    providerDisplayName: 'Test Provider',
+    currentPath: '/',
+    entries: [],
+    isLoading: false,
+    isConnected: true,
+  };
+
+  return {
+    state: defaultState,
+    navigate: async () => {},
+    navigateUp: async () => {},
+    refresh: async () => {},
+    list: async () => [],
+    read: async () => Buffer.from(''),
+    exists: async () => true,
+    getMetadata: async () => ({
+      id: 'test',
+      name: 'test',
+      type: EntryType.File,
+      path: '/test',
+      modified: new Date(),
+    }),
+    write: async () => {},
+    mkdir: async () => {},
+    delete: async () => {},
+    move: async () => {},
+    copy: async () => {},
+    download: async () => {},
+    upload: async () => {},
+    listContainers: async () => [],
+    setContainer: async () => {},
+    getContainer: () => undefined,
+    hasCapability: (cap: Capability | string) => capabilities.has(cap),
+    getCapabilities: () => capabilities as Set<Capability>,
+    switchProvider: async () => {},
+    disconnect: async () => {},
+    connect: async () => {},
+    subscribe: () => () => {},
+    getProfileManager: () => undefined,
+    switchProfile: async () => {},
+  };
+}
+
+/**
+ * Wrapper component that provides StorageContext for testing
+ */
+function TestWrapper({
+  children,
+  capabilities,
+}: {
+  children: React.ReactNode;
+  capabilities?: Set<Capability | string>;
+}) {
+  const mockContext = createMockStorageContext(capabilities);
+  return <StorageContext.Provider value={mockContext}>{children}</StorageContext.Provider>;
+}
+
+/**
+ * Helper to render CapabilityGate with mocked storage context
+ */
+async function renderCapabilityGate(
+  props: CapabilityGateProps,
+  capabilities: Set<Capability | string> = new Set()
+) {
+  const result = await testRender(
+    <TestWrapper capabilities={capabilities}>
+      <CapabilityGate {...props} />
+    </TestWrapper>,
+    { width: 80, height: 24 }
+  );
+  await result.renderOnce();
+  return result;
+}
+
+// ============================================================================
+// Component Rendering Tests
+// ============================================================================
+
+describe('CapabilityGate', () => {
+  describe('when capability is present', () => {
+    it('renders children when single capability is available', async () => {
+      const { captureCharFrame } = await renderCapabilityGate(
+        {
+          requires: Capability.Copy,
+          children: <text>Copy Button</text>,
+        },
+        new Set([Capability.Copy])
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('Copy Button');
+    });
+
+    it('renders children when all required capabilities are available', async () => {
+      const { captureCharFrame } = await renderCapabilityGate(
+        {
+          requires: [Capability.Copy, Capability.Move],
+          children: <text>File Operations</text>,
+        },
+        new Set([Capability.Copy, Capability.Move, Capability.Delete])
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('File Operations');
+    });
+
+    it('renders children when string capability is available', async () => {
+      const { captureCharFrame } = await renderCapabilityGate(
+        {
+          requires: 'custom-feature',
+          children: <text>Custom Feature</text>,
+        },
+        new Set(['custom-feature'])
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('Custom Feature');
+    });
+  });
+
+  describe('when capability is missing with hide behavior (default)', () => {
+    it('hides children when capability is missing', async () => {
+      const { captureCharFrame } = await renderCapabilityGate(
+        {
+          requires: Capability.Copy,
+          children: <text>Copy Button</text>,
+        },
+        new Set() // No capabilities
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).not.toContain('Copy Button');
+    });
+
+    it('hides children when one of multiple required capabilities is missing', async () => {
+      const { captureCharFrame } = await renderCapabilityGate(
+        {
+          requires: [Capability.Copy, Capability.ServerSideCopy],
+          children: <text>Server Copy</text>,
+        },
+        new Set([Capability.Copy]) // Missing ServerSideCopy
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).not.toContain('Server Copy');
+    });
+
+    it('renders fallback when capability is missing', async () => {
+      const { captureCharFrame } = await renderCapabilityGate(
+        {
+          requires: Capability.Versioning,
+          children: <text>Version History</text>,
+          fallback: <text>Versioning unavailable</text>,
+        },
+        new Set()
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).not.toContain('Version History');
+      expect(frame).toContain('Versioning unavailable');
+    });
+
+    it('renders null fallback by default', async () => {
+      const { captureCharFrame } = await renderCapabilityGate(
+        {
+          requires: Capability.Copy,
+          children: <text>Should not appear</text>,
+        },
+        new Set()
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).not.toContain('Should not appear');
+    });
+  });
+
+  describe('when capability is missing with disable behavior', () => {
+    it('still renders children when behavior is disable', async () => {
+      const { captureCharFrame } = await renderCapabilityGate(
+        {
+          requires: Capability.Versioning,
+          children: <text>View Versions</text>,
+          behavior: 'disable',
+        },
+        new Set() // No capabilities
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('View Versions');
+    });
+  });
+
+  describe('behavior prop', () => {
+    it('defaults to hide behavior', async () => {
+      const { captureCharFrame } = await renderCapabilityGate(
+        {
+          requires: Capability.Upload,
+          children: <text>Upload</text>,
+          // behavior not specified - should default to 'hide'
+        },
+        new Set()
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).not.toContain('Upload');
+    });
+
+    it('respects explicit hide behavior', async () => {
+      const { captureCharFrame } = await renderCapabilityGate(
+        {
+          requires: Capability.Download,
+          children: <text>Download</text>,
+          behavior: 'hide',
+        },
+        new Set()
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).not.toContain('Download');
+    });
+  });
+});
+
+// ============================================================================
+// Component Exports Tests
 // ============================================================================
 
 describe('CapabilityGate exports', () => {
   it('exports CapabilityGate component', () => {
     expect(CapabilityGate).toBeDefined();
     expect(typeof CapabilityGate).toBe('function');
-  });
-
-  it('exports RequiresCapability component', () => {
-    expect(RequiresCapability).toBeDefined();
-    expect(typeof RequiresCapability).toBe('function');
-  });
-
-  it('exports DisabledIfMissing component', () => {
-    expect(DisabledIfMissing).toBeDefined();
-    expect(typeof DisabledIfMissing).toBe('function');
-  });
-
-  it('exports capability hooks', () => {
-    expect(useHasCapability).toBeDefined();
-    expect(useHasAllCapabilities).toBeDefined();
-    expect(useHasAnyCapability).toBeDefined();
   });
 });
 
@@ -51,8 +263,8 @@ describe('CapabilityGate exports', () => {
 
 describe('CapabilityGate types', () => {
   it('GateBehavior type has correct values', () => {
-    const behaviors: GateBehavior[] = ['hide', 'disable', 'show-disabled'];
-    expect(behaviors).toHaveLength(3);
+    const behaviors: GateBehavior[] = ['hide', 'disable'];
+    expect(behaviors).toHaveLength(2);
   });
 
   it('CapabilityGateProps accepts single capability', () => {
@@ -96,166 +308,5 @@ describe('CapabilityGate types', () => {
       fallback,
     };
     expect(props.fallback).toBe(fallback);
-  });
-
-  it('CapabilityGateProps accepts disabled message', () => {
-    const props: CapabilityGateProps = {
-      requires: Capability.Copy,
-      children: null,
-      disabledMessage: 'Feature disabled',
-    };
-    expect(props.disabledMessage).toBe('Feature disabled');
-  });
-});
-
-// ============================================================================
-// Capability Enum Tests
-// ============================================================================
-
-describe('Capability enum usage', () => {
-  it('supports core operation capabilities', () => {
-    expect(Capability.List).toBe(Capability.List);
-    expect(Capability.Read).toBe(Capability.Read);
-    expect(Capability.Write).toBe(Capability.Write);
-    expect(Capability.Delete).toBe(Capability.Delete);
-  });
-
-  it('supports navigation capabilities', () => {
-    expect(Capability.Mkdir).toBe(Capability.Mkdir);
-    expect(Capability.Rmdir).toBe(Capability.Rmdir);
-  });
-
-  it('supports file management capabilities', () => {
-    expect(Capability.Copy).toBe(Capability.Copy);
-    expect(Capability.Move).toBe(Capability.Move);
-    expect(Capability.ServerSideCopy).toBe(Capability.ServerSideCopy);
-  });
-
-  it('supports transfer capabilities', () => {
-    expect(Capability.Download).toBe(Capability.Download);
-    expect(Capability.Upload).toBe(Capability.Upload);
-    expect(Capability.Resume).toBe(Capability.Resume);
-  });
-
-  it('supports advanced capabilities', () => {
-    expect(Capability.Versioning).toBe(Capability.Versioning);
-    expect(Capability.Metadata).toBe(Capability.Metadata);
-    expect(Capability.Permissions).toBe(Capability.Permissions);
-    expect(Capability.Symlinks).toBe(Capability.Symlinks);
-    expect(Capability.PresignedUrls).toBe(Capability.PresignedUrls);
-  });
-
-  it('supports container capability', () => {
-    expect(Capability.Containers).toBe(Capability.Containers);
-  });
-
-  it('supports locking capabilities', () => {
-    expect(Capability.FileLocking).toBe(Capability.FileLocking);
-    expect(Capability.Delegations).toBe(Capability.Delegations);
-  });
-});
-
-// ============================================================================
-// Usage Pattern Tests
-// ============================================================================
-
-describe('Common usage patterns', () => {
-  it('single capability requirement pattern', () => {
-    const requirement = Capability.Copy;
-    expect(requirement).toBe(Capability.Copy);
-  });
-
-  it('multiple capabilities requirement pattern', () => {
-    const requirements = [Capability.Copy, Capability.ServerSideCopy];
-    expect(requirements).toHaveLength(2);
-    expect(requirements).toContain(Capability.Copy);
-    expect(requirements).toContain(Capability.ServerSideCopy);
-  });
-
-  it('custom capability string pattern', () => {
-    const customCapability = 'custom-feature';
-    expect(typeof customCapability).toBe('string');
-  });
-
-  it('behavior options pattern', () => {
-    const behaviors: GateBehavior[] = ['hide', 'disable', 'show-disabled'];
-    behaviors.forEach(behavior => {
-      expect(['hide', 'disable', 'show-disabled']).toContain(behavior);
-    });
-  });
-});
-
-// ============================================================================
-// Component Patterns
-// ============================================================================
-
-describe('Component patterns', () => {
-  it('RequiresCapability props pattern', () => {
-    const props = {
-      capability: Capability.Upload,
-      children: null,
-    };
-    expect(props.capability).toBe(Capability.Upload);
-  });
-
-  it('DisabledIfMissing props pattern', () => {
-    const props = {
-      capability: Capability.Versioning,
-      message: 'Not available',
-      children: null,
-    };
-    expect(props.capability).toBe(Capability.Versioning);
-    expect(props.message).toBe('Not available');
-  });
-});
-
-// ============================================================================
-// Integration Scenarios
-// ============================================================================
-
-describe('Integration scenarios', () => {
-  it('copy button scenario', () => {
-    // Scenario: Hide copy button when Copy capability is missing
-    const requirement = Capability.Copy;
-    const behavior: GateBehavior = 'hide';
-
-    expect(requirement).toBe(Capability.Copy);
-    expect(behavior).toBe('hide');
-  });
-
-  it('versioning UI scenario', () => {
-    // Scenario: Show disabled versioning UI when not supported
-    const requirement = Capability.Versioning;
-    const behavior: GateBehavior = 'show-disabled';
-    const message = 'Versioning not supported';
-
-    expect(requirement).toBe(Capability.Versioning);
-    expect(behavior).toBe('show-disabled');
-    expect(message).toContain('not supported');
-  });
-
-  it('permissions column scenario', () => {
-    // Scenario: Hide permissions column when Permissions capability missing
-    const requirement = Capability.Permissions;
-    const behavior: GateBehavior = 'hide';
-
-    expect(requirement).toBe(Capability.Permissions);
-    expect(behavior).toBe('hide');
-  });
-
-  it('server-side copy scenario', () => {
-    // Scenario: Require both Copy and ServerSideCopy capabilities
-    const requirements = [Capability.Copy, Capability.ServerSideCopy];
-
-    expect(requirements).toContain(Capability.Copy);
-    expect(requirements).toContain(Capability.ServerSideCopy);
-  });
-
-  it('transfer operations scenario', () => {
-    // Scenario: Check if any transfer capability is available
-    const transferCapabilities = [Capability.Upload, Capability.Download];
-
-    expect(transferCapabilities).toContain(Capability.Upload);
-    expect(transferCapabilities).toContain(Capability.Download);
   });
 });
