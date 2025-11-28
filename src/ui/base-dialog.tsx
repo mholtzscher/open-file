@@ -4,7 +4,6 @@
  * Provides common dialog functionality including:
  * - Automatic centering with terminal size awareness
  * - Consistent border/box styling
- * - Optional overlay for blocking content behind
  * - Flexible width/height with sensible defaults
  */
 
@@ -23,20 +22,6 @@ export interface BaseDialogProps {
   height?: number;
   /** Border color (default: CatppuccinMocha.blue) */
   borderColor?: string;
-  /** Show background overlay to block content behind (default: false) */
-  showOverlay?: boolean;
-  /** Custom top position - if not provided, dialog is vertically centered */
-  top?: number;
-  /** z-index for the dialog (default: 1000) */
-  zIndex?: number;
-  /** Padding on left side (default: 2) */
-  paddingLeft?: number;
-  /** Padding on right side (default: 2) */
-  paddingRight?: number;
-  /** Padding on top (default: 1) */
-  paddingTop?: number;
-  /** Padding on bottom (default: 1) */
-  paddingBottom?: number;
   /** Dialog content */
   children: ReactNode;
 }
@@ -57,13 +42,6 @@ export function BaseDialog({
   width = 70,
   height,
   borderColor = CatppuccinMocha.blue,
-  showOverlay = false,
-  top,
-  zIndex = 1000,
-  paddingLeft = 2,
-  paddingRight = 2,
-  paddingTop = 1,
-  paddingBottom = 1,
   children,
 }: BaseDialogProps) {
   const terminalSize = useTerminalSize();
@@ -74,61 +52,36 @@ export function BaseDialog({
   const dialogWidth = Math.min(width, terminalSize.width - 4);
   const centerLeft = Math.floor((terminalSize.width - dialogWidth) / 2);
 
-  // Calculate top position - either centered or fixed at provided value
-  let dialogTop: number;
-  if (top !== undefined) {
-    dialogTop = top;
-  } else if (height !== undefined) {
-    dialogTop = Math.max(1, Math.floor((terminalSize.height - height) / 2));
-  } else {
-    // Default to top=1 if height is dynamic
-    dialogTop = 1;
-  }
-
-  const overlayZIndex = zIndex - 1;
+  // Calculate top position - vertically centered if height provided, otherwise top
+  const dialogTop =
+    height !== undefined ? Math.max(1, Math.floor((terminalSize.height - height) / 2)) : 1;
 
   return (
-    <>
-      {/* Optional solid background layer behind the bordered dialog */}
-      {showOverlay && (
-        <box
-          position="absolute"
-          left={centerLeft}
-          top={dialogTop}
-          width={dialogWidth}
-          height={height}
-          backgroundColor={CatppuccinMocha.base}
-          zIndex={overlayZIndex}
-        />
-      )}
-
-      {/* Dialog box with border */}
-      <box
-        position="absolute"
-        left={centerLeft}
-        top={dialogTop}
-        width={dialogWidth}
-        height={height}
-        borderStyle="rounded"
-        borderColor={borderColor}
-        backgroundColor={CatppuccinMocha.base}
-        title={title}
-        flexDirection="column"
-        paddingLeft={paddingLeft}
-        paddingRight={paddingRight}
-        paddingTop={paddingTop}
-        paddingBottom={paddingBottom}
-        zIndex={zIndex}
-      >
-        {children}
-      </box>
-    </>
+    <box
+      position="absolute"
+      left={centerLeft}
+      top={dialogTop}
+      width={dialogWidth}
+      height={height}
+      borderStyle="rounded"
+      borderColor={borderColor}
+      backgroundColor={CatppuccinMocha.base}
+      title={title}
+      flexDirection="column"
+      paddingLeft={2}
+      paddingRight={2}
+      paddingTop={1}
+      paddingBottom={1}
+    >
+      {children}
+    </box>
   );
 }
 
 /**
- * Helper to calculate content width based on dialog width and padding
+ * Helper to calculate content width based on dialog width
+ * Uses fixed padding of 2 on each side plus 2 for border
  */
-export function getContentWidth(dialogWidth: number, paddingLeft = 2, paddingRight = 2): number {
-  return dialogWidth - paddingLeft - paddingRight - 2; // -2 for border
+export function getContentWidth(dialogWidth: number): number {
+  return dialogWidth - 6; // -2 padding left, -2 padding right, -2 for border
 }

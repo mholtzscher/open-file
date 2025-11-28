@@ -17,8 +17,8 @@ export interface SortMenuProps {
   onClose: () => void;
 }
 
-const DIALOG_WIDTH = 35;
-const DIALOG_HEIGHT = 13;
+const DIALOG_WIDTH = 40;
+const DIALOG_HEIGHT = 12;
 const sortFields = [SortField.Name, SortField.Size, SortField.Modified, SortField.Type];
 
 /**
@@ -32,9 +32,6 @@ export function SortMenu({ visible, currentField, currentOrder }: SortMenuProps)
       width={DIALOG_WIDTH}
       height={DIALOG_HEIGHT}
       borderColor={CatppuccinMocha.blue}
-      paddingLeft={1}
-      paddingRight={0}
-      zIndex={999}
     >
       {/* Title */}
       <text fg={CatppuccinMocha.blue}>SORT BY</text>
@@ -45,18 +42,19 @@ export function SortMenu({ visible, currentField, currentOrder }: SortMenuProps)
           key={field}
           fg={currentField === field ? CatppuccinMocha.green : CatppuccinMocha.text}
         >
-          {currentField === field ? '▶ ' : '  '} {formatSortField(field)}
+          {currentField === field ? '▶ ' : '  '}
+          {formatSortField(field)}
         </text>
       ))}
 
       {/* Separator */}
-      <text fg={CatppuccinMocha.surface1}>{Array(30).fill('─').join('')}</text>
+      <text fg={CatppuccinMocha.surface1}>{'─'.repeat(32)}</text>
 
       {/* Sort order option */}
       <text fg={CatppuccinMocha.text}>{formatSortOrder(currentOrder)}</text>
 
       {/* Help text */}
-      <text fg={CatppuccinMocha.overlay2}>Keys: 1-4=field, Space/Enter=toggle, Esc/q=close</text>
+      <text fg={CatppuccinMocha.overlay2}>1-4=field Space=toggle q=close</text>
     </BaseDialog>
   );
 }

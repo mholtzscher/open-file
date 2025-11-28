@@ -85,31 +85,32 @@ export function ConfirmationDialog({
       width={DIALOG_WIDTH}
       height={dialogHeight}
       borderColor={CatppuccinMocha.yellow}
-      paddingRight={0}
     >
-      <text fg={CatppuccinMocha.text} width={contentWidth}>
-        The following operations will be performed:
-      </text>
-
-      {operations.slice(0, MAX_OPERATIONS_DISPLAY).map(op => (
-        <text
-          key={op.id}
-          fg={op.type === 'delete' ? CatppuccinMocha.red : CatppuccinMocha.green}
-          width={contentWidth - 2}
-        >
-          • {formatOperation(op, 60)}
+      <box flexDirection="column">
+        <text fg={CatppuccinMocha.text} width={contentWidth}>
+          The following operations will be performed:
         </text>
-      ))}
 
-      {operations.length > MAX_OPERATIONS_DISPLAY && (
+        {operations.slice(0, MAX_OPERATIONS_DISPLAY).map(op => (
+          <text
+            key={op.id}
+            fg={op.type === 'delete' ? CatppuccinMocha.red : CatppuccinMocha.green}
+            width={contentWidth - 2}
+          >
+            • {formatOperation(op, 60)}
+          </text>
+        ))}
+
+        {operations.length > MAX_OPERATIONS_DISPLAY && (
+          <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
+            ... and {operations.length - MAX_OPERATIONS_DISPLAY} more
+          </text>
+        )}
+
         <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-          ... and {operations.length - MAX_OPERATIONS_DISPLAY} more
+          Press y to confirm, n to cancel
         </text>
-      )}
-
-      <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-        Press y to confirm, n to cancel
-      </text>
+      </box>
     </BaseDialog>
   );
 }

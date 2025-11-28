@@ -187,7 +187,6 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
       width={windowWidth}
       height={windowHeight}
       borderColor={CatppuccinMocha.blue}
-      showOverlay={true}
     >
       {/* Path display */}
       <text fg={CatppuccinMocha.text} width={contentWidth}>

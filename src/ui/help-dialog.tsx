@@ -71,25 +71,25 @@ export function HelpDialog({ visible }: HelpDialogProps) {
       width={DIALOG_WIDTH}
       height={dialogHeight}
       borderColor={CatppuccinMocha.yellow}
-      showOverlay={true}
-      paddingRight={0}
     >
-      {keybindings.map((item, idx) => {
-        if ('section' in item) {
+      <box flexDirection="column">
+        {keybindings.map((item, idx) => {
+          if ('section' in item) {
+            return (
+              <text key={idx} fg={CatppuccinMocha.text} width={contentWidth}>
+                {item.section}
+              </text>
+            );
+          }
+          const keyText = `  ${item.keys}`.padEnd(12);
+          const fullText = `${keyText}${item.description}`;
           return (
-            <text key={idx} fg={CatppuccinMocha.text} width={contentWidth}>
-              {item.section}
+            <text key={idx} fg={CatppuccinMocha.subtext0} width={contentWidth}>
+              {fullText}
             </text>
           );
-        }
-        const keyText = `  ${item.keys}`.padEnd(12);
-        const fullText = `${keyText}${item.description}`;
-        return (
-          <text key={idx} fg={CatppuccinMocha.subtext0} width={contentWidth}>
-            {fullText}
-          </text>
-        );
-      })}
+        })}
+      </box>
     </BaseDialog>
   );
 }

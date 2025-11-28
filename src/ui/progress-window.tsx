@@ -61,7 +61,6 @@ export function ProgressWindow({
       width={windowWidth}
       height={WINDOW_HEIGHT}
       borderColor={CatppuccinMocha.blue}
-      showOverlay={true}
     >
       {/* Description */}
       <text fg={CatppuccinMocha.text} width={contentWidth}>

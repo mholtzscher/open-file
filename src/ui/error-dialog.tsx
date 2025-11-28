@@ -23,8 +23,6 @@ export function ErrorDialog({ visible, message }: ErrorDialogProps) {
       title="Error"
       width={DIALOG_WIDTH}
       borderColor={CatppuccinMocha.red}
-      top={1}
-      paddingRight={0}
     >
       <text fg={CatppuccinMocha.red} width={contentWidth}>
         {message}

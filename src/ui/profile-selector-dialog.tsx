@@ -268,7 +268,6 @@ export function ProfileSelectorDialog({
         width={DIALOG_WIDTH}
         height={10}
         borderColor={CatppuccinMocha.blue}
-        showOverlay={true}
       >
         <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
           Loading profiles...
@@ -286,7 +285,6 @@ export function ProfileSelectorDialog({
         width={DIALOG_WIDTH}
         height={12}
         borderColor={CatppuccinMocha.red}
-        showOverlay={true}
       >
         <text fg={CatppuccinMocha.red} width={contentWidth}>
           Error: {error}
@@ -310,7 +308,6 @@ export function ProfileSelectorDialog({
         width={DIALOG_WIDTH}
         height={12}
         borderColor={CatppuccinMocha.overlay0}
-        showOverlay={true}
       >
         <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
           No profiles configured
@@ -333,7 +330,6 @@ export function ProfileSelectorDialog({
       width={DIALOG_WIDTH}
       height={dialogHeight}
       borderColor={CatppuccinMocha.blue}
-      showOverlay={true}
     >
       {profiles.map((profile, index) => {
         const isSelected = index === selectedIndex;
