@@ -158,7 +158,9 @@ export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
       />
 
       {/* Quit Confirmation Dialog */}
-      {quit.visible && <QuitDialog visible={quit.visible} pendingChanges={quit.pendingChanges} />}
+      {quit.visible && (
+        <QuitDialog visible={quit.visible} pendingChangesCount={quit.pendingChanges} />
+      )}
 
       {/* Profile Selector Dialog */}
       {profileSelector.visible && profileSelector.profileManager && (
