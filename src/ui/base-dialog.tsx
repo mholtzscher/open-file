@@ -48,32 +48,34 @@ export function BaseDialog({
 
   if (!visible) return null;
 
-  // Calculate centered position
+  // Calculate dialog width
   const dialogWidth = Math.min(width, terminalSize.width - 4);
-  const centerLeft = Math.floor((terminalSize.width - dialogWidth) / 2);
-
-  // Calculate top position - vertically centered if height provided, otherwise top
-  const dialogTop =
-    height !== undefined ? Math.max(1, Math.floor((terminalSize.height - height) / 2)) : 1;
 
   return (
     <box
       position="absolute"
-      left={centerLeft}
-      top={dialogTop}
-      width={dialogWidth}
-      height={height}
-      borderStyle="rounded"
-      borderColor={borderColor}
-      backgroundColor={CatppuccinMocha.base}
-      title={title}
-      flexDirection="column"
-      paddingLeft={2}
-      paddingRight={2}
-      paddingTop={1}
-      paddingBottom={1}
+      left={0}
+      top={0}
+      width={terminalSize.width}
+      height={terminalSize.height}
+      justifyContent="center"
+      alignItems="center"
     >
-      {children}
+      <box
+        width={dialogWidth}
+        height={height}
+        borderStyle="rounded"
+        borderColor={borderColor}
+        backgroundColor={CatppuccinMocha.base}
+        title={title}
+        flexDirection="column"
+        paddingLeft={2}
+        paddingRight={2}
+        paddingTop={1}
+        paddingBottom={1}
+      >
+        {children}
+      </box>
     </box>
   );
 }

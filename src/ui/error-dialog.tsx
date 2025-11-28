@@ -18,12 +18,7 @@ export function ErrorDialog({ visible, message }: ErrorDialogProps) {
   const contentWidth = getContentWidth(DIALOG_WIDTH);
 
   return (
-    <BaseDialog
-      visible={visible}
-      title="Error"
-      width={DIALOG_WIDTH}
-      borderColor={CatppuccinMocha.red}
-    >
+    <BaseDialog visible={visible} title="Error" borderColor={CatppuccinMocha.red}>
       <text fg={CatppuccinMocha.red} width={contentWidth}>
         {message}
       </text>
