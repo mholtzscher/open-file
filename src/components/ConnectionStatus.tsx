@@ -85,14 +85,7 @@ export function ConnectionStatus({
 
   if (variant === 'badge') {
     return (
-      <box
-        borderStyle="rounded"
-        borderColor={statusColor}
-        paddingLeft={1}
-        paddingRight={1}
-        flexDirection="row"
-        alignItems="center"
-      >
+      <box flexDirection="row" alignItems="center">
         <text fg={statusColor}>
           {statusIcon} {statusLabel}
         </text>
