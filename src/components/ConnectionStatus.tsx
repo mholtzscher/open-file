@@ -5,7 +5,7 @@
  * (SFTP, FTP, SMB, etc.) and provides reconnect functionality.
  *
  * Features:
- * - Shows connected/disconnected/connecting states
+ * - Shows connected/disconnected states
  * - Reconnect button when disconnected
  * - Visual indicators (colors, icons)
  * - Only shown for connection-oriented providers
