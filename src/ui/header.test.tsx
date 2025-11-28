@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { Header, type HeaderProps } from './header-react.js';
+import { Header, type HeaderProps } from './header.js';
 import { Capability } from '../providers/types/capabilities.js';
 
 describe('Header', () => {

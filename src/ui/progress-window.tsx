@@ -6,7 +6,7 @@
 
 import { CatppuccinMocha } from './theme.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
-import { BaseDialog, getContentWidth } from './base-dialog-react.js';
+import { BaseDialog, getContentWidth } from './base-dialog.js';
 
 export interface ProgressWindowProps {
   visible?: boolean;

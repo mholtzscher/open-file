@@ -6,7 +6,7 @@
 
 import { CatppuccinMocha } from './theme.js';
 import { SortField, SortOrder, formatSortField, formatSortOrder } from '../utils/sorting.js';
-import { BaseDialog } from './base-dialog-react.js';
+import { BaseDialog } from './base-dialog.js';
 
 export interface SortMenuProps {
   visible: boolean;

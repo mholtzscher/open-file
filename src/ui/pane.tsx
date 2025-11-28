@@ -6,7 +6,7 @@
  */
 
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
-import { BufferView } from './buffer-view-react.js';
+import { BufferView } from './buffer-view.js';
 import { CatppuccinMocha } from './theme.js';
 
 export interface PaneProps {

@@ -9,10 +9,10 @@ import { MultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { UseTerminalSizeReturn, LayoutDimensions } from '../hooks/useTerminalSize.js';
 
-import { Pane } from './pane-react.js';
-import { StatusBar } from './status-bar-react.js';
-import { Header } from './header-react.js';
-import { PreviewPane } from './preview-pane-react.js';
+import { Pane } from './pane.js';
+import { StatusBar } from './status-bar.js';
+import { Header } from './header.js';
+import { PreviewPane } from './preview-pane.js';
 import { S3ExplorerDialogs, DialogsState } from './s3-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
 

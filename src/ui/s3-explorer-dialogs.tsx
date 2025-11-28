@@ -5,14 +5,14 @@
  * This is a presentational component that receives state and callbacks from parent.
  */
 
-import { ConfirmationDialog } from './confirmation-dialog-react.js';
-import { HelpDialog } from './help-dialog-react.js';
-import { ErrorDialog } from './error-dialog-react.js';
-import { UploadDialog } from './upload-dialog-react.js';
-import { SortMenu } from './sort-menu-react.js';
-import { ProgressWindow } from './progress-window-react.js';
-import { QuitDialog } from './quit-dialog-react.js';
-import { ProfileSelectorDialog } from './profile-selector-dialog-react.js';
+import { ConfirmationDialog } from './confirmation-dialog.js';
+import { HelpDialog } from './help-dialog.js';
+import { ErrorDialog } from './error-dialog.js';
+import { UploadDialog } from './upload-dialog.js';
+import { SortMenu } from './sort-menu.js';
+import { ProgressWindow } from './progress-window.js';
+import { QuitDialog } from './quit-dialog.js';
+import { ProfileSelectorDialog } from './profile-selector-dialog.js';
 import { SortField, SortOrder } from '../utils/sorting.js';
 import type { PendingOperation } from '../types/dialog.js';
 import type { Profile } from '../providers/types/profile.js';

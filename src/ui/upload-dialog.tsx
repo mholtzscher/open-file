@@ -9,7 +9,7 @@ import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { useDialogKeyboard } from '../hooks/useDialogKeyboard.js';
 import { LocalFileEntry, FileTypeFilter, listFiles, formatBytes } from '../utils/file-browser.js';
 import { CatppuccinMocha } from './theme.js';
-import { BaseDialog, getContentWidth } from './base-dialog-react.js';
+import { BaseDialog, getContentWidth } from './base-dialog.js';
 
 export interface UploadDialogProps {
   visible?: boolean;

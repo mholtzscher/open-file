@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { CapabilityGate, type CapabilityGateProps, type GateBehavior } from './CapabilityGate.js';
+import { CapabilityGate, type CapabilityGateProps, type GateBehavior } from './capability-gate.js';
 import { StorageContext, StorageContextValue, StorageState } from '../contexts/StorageContext.js';
 import { Capability } from '../providers/types/capabilities.js';
 import { EntryType } from '../types/entry.js';

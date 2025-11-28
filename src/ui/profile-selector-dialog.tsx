@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { CatppuccinMocha } from './theme.js';
-import { BaseDialog, getContentWidth } from './base-dialog-react.js';
+import { BaseDialog, getContentWidth } from './base-dialog.js';
 import { useDialogKeyboard } from '../hooks/useDialogKeyboard.js';
 import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
 import type { Profile } from '../providers/types/profile.js';

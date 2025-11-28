@@ -14,14 +14,14 @@ import { describe, it, expect } from 'bun:test';
 describe('ErrorDialog component', () => {
   it('module can be imported without errors', async () => {
     // Verify the module exports correctly
-    const module = await import('./error-dialog-react.js');
+    const module = await import('./error-dialog.js');
     expect(module.ErrorDialog).toBeDefined();
     expect(typeof module.ErrorDialog).toBe('function');
   });
 
   it('exports the component as a named export', async () => {
     // Verify proper export structure
-    const module = await import('./error-dialog-react.js');
+    const module = await import('./error-dialog.js');
     expect('ErrorDialog' in module).toBe(true);
   });
 });

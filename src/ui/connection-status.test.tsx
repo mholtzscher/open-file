@@ -6,7 +6,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { ConnectionStatus, type ConnectionStatusProps } from './ConnectionStatus.js';
+import { ConnectionStatus, type ConnectionStatusProps } from './connection-status.js';
 import { StorageContext, StorageContextValue, StorageState } from '../contexts/StorageContext.js';
 import { Capability } from '../providers/types/capabilities.js';
 import { EntryType } from '../types/entry.js';

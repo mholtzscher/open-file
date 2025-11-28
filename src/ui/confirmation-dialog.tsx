@@ -5,7 +5,7 @@
  */
 
 import { CatppuccinMocha } from './theme.js';
-import { BaseDialog, getContentWidth } from './base-dialog-react.js';
+import { BaseDialog, getContentWidth } from './base-dialog.js';
 
 export interface Operation {
   id: string;
