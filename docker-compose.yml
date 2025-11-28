@@ -11,7 +11,7 @@ services:
       - AWS_DEFAULT_REGION=us-east-1
     volumes:
       - './test-data/localstack-data:/var/lib/localstack'
-      - './scripts/localstack-init.sh:/etc/localstack/init/ready.d/init-s3.sh'
+      - './test-data/scripts/localstack-init.sh:/etc/localstack/init/ready.d/init-s3.sh'
       - '/var/run/docker.sock:/var/run/docker.sock'
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:4566/_localstack/health']
@@ -40,7 +40,7 @@ services:
       fake-gcs:
         condition: service_healthy
     volumes:
-      - './scripts/fake-gcs-init.sh:/init.sh:ro'
+      - './test-data/scripts/fake-gcs-init.sh:/init.sh:ro'
     entrypoint: ['/bin/sh', '/init.sh']
     environment:
       - GCS_URL=http://fake-gcs:4443
@@ -52,8 +52,8 @@ services:
       - '2222:22'
     volumes:
       - './test-data/sftp-data:/home/testuser/data'
-      - './scripts/sftp-init.sh:/etc/sftp.d/init.sh:ro'
-      - './scripts/sftp-ssh-keys:/home/testuser/.ssh/keys:ro'
+      - './test-data/scripts/sftp-init.sh:/etc/sftp.d/init.sh:ro'
+      - './test-data/scripts/sftp-ssh-keys:/home/testuser/.ssh/keys:ro'
     # Format: user:password:uid:gid:directories
     # Creates testuser with password "testpass", uid 1000, gid 1000, with data directory
     command: testuser:testpass:1000:1000:data
