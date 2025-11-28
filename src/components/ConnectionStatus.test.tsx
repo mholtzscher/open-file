@@ -172,6 +172,17 @@ describe('ConnectionStatus', () => {
       expect(frame).toContain('Offline');
       expect(frame).not.toContain('Disconnected');
     });
+
+    it('uses custom reconnect label', async () => {
+      const { captureCharFrame } = await renderConnectionStatus(
+        { reconnectLabel: 'Try Again' },
+        { isConnected: false }
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('Try Again');
+      expect(frame).not.toContain('[R]econnect');
+    });
   });
 
   describe('default props', () => {
@@ -194,6 +205,13 @@ describe('ConnectionStatus', () => {
 
       const frame = captureCharFrame();
       expect(frame).toContain('Disconnected');
+    });
+
+    it('reconnectLabel defaults to "[R]econnect"', async () => {
+      const { captureCharFrame } = await renderConnectionStatus({}, { isConnected: false });
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('[R]econnect');
     });
   });
 
@@ -218,6 +236,7 @@ describe('ConnectionStatus', () => {
         {
           connectedLabel: 'System Online',
           disconnectedLabel: 'System Offline',
+          reconnectLabel: 'Retry Connection',
           showReconnect: true,
         },
         { isConnected: false }
@@ -226,7 +245,7 @@ describe('ConnectionStatus', () => {
       const frame = captureCharFrame();
       expect(frame).toContain('System Offline');
       expect(frame).not.toContain('System Online');
-      expect(frame).toContain('[R]econnect');
+      expect(frame).toContain('Retry Connection');
     });
   });
 });
@@ -268,10 +287,19 @@ describe('ConnectionStatus types', () => {
       showReconnect: true,
       connectedLabel: 'Active',
       disconnectedLabel: 'Inactive',
+      reconnectLabel: 'Retry',
     };
 
     expect(props.showReconnect).toBe(true);
     expect(props.connectedLabel).toBe('Active');
     expect(props.disconnectedLabel).toBe('Inactive');
+    expect(props.reconnectLabel).toBe('Retry');
+  });
+
+  it('ConnectionStatusProps accepts reconnectLabel option', () => {
+    const props: ConnectionStatusProps = {
+      reconnectLabel: 'Try Again',
+    };
+    expect(props.reconnectLabel).toBe('Try Again');
   });
 });

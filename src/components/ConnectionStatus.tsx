@@ -28,6 +28,9 @@ export interface ConnectionStatusProps {
 
   /** Custom label for disconnected state */
   disconnectedLabel?: string;
+
+  /** Custom label for reconnect button */
+  reconnectLabel?: string;
 }
 
 // ============================================================================
@@ -46,6 +49,7 @@ export function ConnectionStatus({
   showReconnect = true,
   connectedLabel = 'Connected',
   disconnectedLabel = 'Disconnected',
+  reconnectLabel = '[R]econnect',
 }: ConnectionStatusProps) {
   const state = useStorageState();
 
@@ -63,7 +67,7 @@ export function ConnectionStatus({
       </text>
       {!isConnected && showReconnect && (
         <text fg={CatppuccinMocha.blue} marginLeft={1}>
-          [R]econnect
+          {reconnectLabel}
         </text>
       )}
     </box>
