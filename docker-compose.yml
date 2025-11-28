@@ -10,7 +10,7 @@ services:
       - PERSISTENCE=1
       - AWS_DEFAULT_REGION=us-east-1
     volumes:
-      - './localstack-data:/var/lib/localstack'
+      - './test-data/localstack-data:/var/lib/localstack'
       - './scripts/localstack-init.sh:/etc/localstack/init/ready.d/init-s3.sh'
       - '/var/run/docker.sock:/var/run/docker.sock'
     healthcheck:
@@ -26,7 +26,7 @@ services:
       - '4443:4443'
     command: ['-scheme', 'http', '-port', '4443', '-external-url', 'http://localhost:4443']
     volumes:
-      - './fake-gcs-data:/data'
+      - './test-data/fake-gcs-data:/data'
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:4443/storage/v1/b']
       interval: 10s
@@ -51,7 +51,7 @@ services:
     ports:
       - '2222:22'
     volumes:
-      - './sftp-data:/home/testuser/data'
+      - './test-data/sftp-data:/home/testuser/data'
       - './scripts/sftp-init.sh:/etc/sftp.d/init.sh:ro'
       - './scripts/sftp-ssh-keys:/home/testuser/.ssh/keys:ro'
     # Format: user:password:uid:gid:directories
