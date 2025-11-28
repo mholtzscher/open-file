@@ -196,6 +196,22 @@ export class ProviderStorageAdapter implements StorageContextValue {
     this.setState({ isLoading: true, error: undefined });
 
     try {
+      // Auto-connect for connection-oriented providers
+      if (
+        this.hasCapability(Capability.Connection) &&
+        this.provider.connect &&
+        !this.provider.isConnected?.()
+      ) {
+        const connectResult = await this.provider.connect();
+        if (isSuccess(connectResult)) {
+          this.setState({ isConnected: true });
+        } else {
+          const error = this.resultToStorageError(connectResult);
+          this.setState({ isLoading: false, isConnected: false, error });
+          throw new Error(connectResult.error!.message);
+        }
+      }
+
       const result = await this.provider.list(path);
 
       if (isSuccess(result)) {
@@ -487,6 +503,22 @@ export class ProviderStorageAdapter implements StorageContextValue {
 
     if (!this.provider.listContainers) {
       throw new Error('listContainers method not available');
+    }
+
+    // Auto-connect for connection-oriented providers
+    if (
+      this.hasCapability(Capability.Connection) &&
+      this.provider.connect &&
+      !this.provider.isConnected?.()
+    ) {
+      const connectResult = await this.provider.connect();
+      if (isSuccess(connectResult)) {
+        this.setState({ isConnected: true });
+      } else {
+        const error = this.resultToStorageError(connectResult);
+        this.setState({ isConnected: false, error });
+        throw new Error(connectResult.error!.message);
+      }
     }
 
     return await this.executeOperation(async () => {

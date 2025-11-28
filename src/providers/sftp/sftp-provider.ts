@@ -151,9 +151,11 @@ export class SFTPProvider extends BaseStorageProvider {
 
   private client: Client;
   private connected = false;
+  private connecting: Promise<OperationResult> | null = null;
   private readonly profile: SFTPProfile;
   private readonly logger: SFTPProviderLogger;
   private basePath: string;
+  private readonly injectedClient?: Client;
 
   constructor(profile: SFTPProfile, dependencies?: SFTPProviderDependencies) {
     super();
@@ -163,8 +165,11 @@ export class SFTPProvider extends BaseStorageProvider {
     this.profile = profile;
     this.basePath = profile.config.basePath || '/';
 
+    // Track injected client for testing (so we don't replace it)
+    this.injectedClient = dependencies?.sftpClient;
+
     // Use injected client or create new one
-    this.client = dependencies?.sftpClient ?? new Client();
+    this.client = this.injectedClient ?? new Client();
 
     // Set up capabilities
     this.addCapability(
@@ -180,7 +185,8 @@ export class SFTPProvider extends BaseStorageProvider {
       Capability.Resume,
       Capability.Permissions,
       Capability.Symlinks,
-      Capability.Connection
+      Capability.Connection,
+      Capability.Containers
     );
 
     this.logger.debug('SFTPProvider constructor called', {
@@ -200,11 +206,36 @@ export class SFTPProvider extends BaseStorageProvider {
    * Establish connection to the SFTP server
    */
   async connect(): Promise<OperationResult> {
+    // Already connected
     if (this.connected) {
       return Result.success();
     }
 
+    // Connection in progress - wait for it
+    if (this.connecting) {
+      return this.connecting;
+    }
+
+    // Start connection
+    this.connecting = this.doConnect();
     try {
+      return await this.connecting;
+    } finally {
+      this.connecting = null;
+    }
+  }
+
+  /**
+   * Internal connection implementation
+   */
+  private async doConnect(): Promise<OperationResult> {
+    try {
+      // Create a fresh client if not using an injected one
+      // This handles the case where a previous connection failed or was closed
+      if (!this.injectedClient) {
+        this.client = new Client();
+      }
+
       const config = this.profile.config;
 
       const connectOptions: ConnectOptions = {
@@ -276,6 +307,53 @@ export class SFTPProvider extends BaseStorageProvider {
    */
   isConnected(): boolean {
     return this.connected;
+  }
+
+  // ==========================================================================
+  // Container Operations (Virtual - SFTP has no real container concept)
+  // ==========================================================================
+
+  /**
+   * List "containers" for SFTP.
+   * Since SFTP doesn't have buckets, we return a single virtual container
+   * representing the base path configured in the profile.
+   */
+  async listContainers(): Promise<OperationResult<Entry[]>> {
+    // Return a single virtual "container" representing the SFTP root/base path
+    const containerName =
+      this.basePath === '/' ? 'root' : this.basePath.split('/').filter(Boolean).pop() || 'sftp';
+
+    const entry: Entry = {
+      id: generateEntryId(),
+      name: containerName,
+      type: EntryType.Directory,
+      path: this.basePath,
+      modified: new Date(),
+      metadata: {
+        providerData: {
+          isVirtualContainer: true,
+          basePath: this.basePath,
+        },
+      },
+    };
+
+    return Result.success([entry]);
+  }
+
+  /**
+   * Set the current container (base path) for SFTP.
+   * This updates the base path that all operations are relative to.
+   */
+  setContainer(path: string): void {
+    this.basePath = path;
+    this.logger.debug('SFTPProvider base path changed', { basePath: path });
+  }
+
+  /**
+   * Get the current container (base path)
+   */
+  getContainer(): string | undefined {
+    return this.basePath;
   }
 
   // ==========================================================================
