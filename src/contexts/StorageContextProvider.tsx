@@ -97,8 +97,8 @@ export function StorageContextProvider({
       try {
         // Connect first for connection-oriented providers
         await storageAdapter.connect();
-        // Then navigate to initial path
-        await storageAdapter.navigate(initialPath);
+        // Navigation is handled by useDataLoader in the UI components
+        // Don't navigate here to avoid conflicts with data loading
       } catch (error) {
         console.error('StorageContextProvider: Failed to initialize:', error);
       }
