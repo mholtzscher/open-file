@@ -183,8 +183,6 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
     return sum + (entry?.size || 0);
   }, 0);
 
-  const contentWidth = getContentWidth(windowWidth);
-
   return (
     <BaseDialog
       visible={visible}
@@ -194,9 +192,7 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
       borderColor={CatppuccinMocha.blue}
     >
       {/* Path display */}
-      <text fg={CatppuccinMocha.text} width={contentWidth}>
-        📁 {state.currentPath.substring(0, contentWidth - 2)}
-      </text>
+      <text fg={CatppuccinMocha.text}>📁 {state.currentPath}</text>
 
       {/* File list - grows to fill available space */}
       <box flexDirection="column" overflow="hidden" marginTop={1} marginBottom={1}>
@@ -228,9 +224,8 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
                         : CatppuccinMocha.text
                   }
                   bg={isSelected ? CatppuccinMocha.surface0 : undefined}
-                  width={contentWidth}
                 >
-                  {displayName.substring(0, contentWidth)}
+                  {displayName}
                 </text>
               );
             })
@@ -239,17 +234,14 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
 
       {/* Selection summary */}
       {selectedCount > 0 && (
-        <text fg={CatppuccinMocha.green} width={contentWidth}>
-          {`Selected: ${selectedCount} files - ${formatBytes(totalSize)}`.substring(
-            0,
-            contentWidth
-          )}
+        <text fg={CatppuccinMocha.green}>
+          {`Selected: ${selectedCount} files - ${formatBytes(totalSize)}`}
         </text>
       )}
 
       {/* Help text - matches app-wide keybinding format */}
-      <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-        {`j/k:nav  space:select  enter:confirm  h:back  ESC:cancel`.substring(0, contentWidth)}
+      <text fg={CatppuccinMocha.overlay0}>
+        {`j/k:nav  space:select  enter:confirm  h:back  ESC:cancel`}
       </text>
     </BaseDialog>
   );
