@@ -183,3 +183,178 @@ bd dep add $TASK2 $TASK3 --json
 - ❌ **NEVER create git commits** - Always let the human review and commit
 
 For more details, see README.md and QUICKSTART.md.
+
+---
+
+## OpenTUI Testing Cheat Sheet
+
+This project uses **OpenTUI** for terminal UI components. Tests use **Bun's native test runner** with OpenTUI's custom testing utilities.
+
+### Setup
+
+```typescript
+import { describe, it, expect } from 'bun:test';
+import { testRender } from '@opentui/react/test-utils';
+```
+
+### Basic Rendering
+
+```typescript
+it("renders correctly", async () => {
+  const { renderOnce, captureCharFrame } = await testRender(
+    <MyComponent />,
+    { width: 80, height: 24 }
+  )
+  await renderOnce()  // IMPORTANT: Must call to populate buffer
+  const frame = captureCharFrame()
+
+  expect(frame).toContain("Expected Text")
+})
+```
+
+### Keyboard Input
+
+```typescript
+// Single keys
+mockInput.pressKey('j'); // vim navigation
+mockInput.pressEnter(); // Enter key
+mockInput.pressEscape(); // Escape key
+mockInput.pressTab(); // Tab key
+mockInput.pressBackspace(); // Backspace
+
+// Modifiers
+mockInput.pressKey('c', { ctrl: true });
+mockInput.pressKey('x', { alt: true });
+mockInput.pressKey('Tab', { shift: true });
+
+// Arrow keys
+mockInput.pressArrow('up');
+mockInput.pressArrow('down');
+mockInput.pressArrow('left');
+mockInput.pressArrow('right');
+
+// Ctrl+C shortcut
+mockInput.pressCtrlC();
+
+// Type text (async)
+await mockInput.typeText('hello world');
+```
+
+### Mouse Input
+
+```typescript
+// Click at column 10, row 5
+mockMouse.click(10, 5);
+
+// Right click
+mockMouse.click(10, 5, { button: 'right' });
+
+// Scroll
+mockMouse.scroll('up', 10, 5);
+mockMouse.scroll('down', 10, 5);
+```
+
+### Testing State Changes
+
+```typescript
+it("updates on keypress", async () => {
+  const { renderOnce, captureCharFrame, mockInput } = await testRender(
+    <ListComponent items={items} />,
+    { width: 80, height: 24 }
+  )
+  await renderOnce()
+
+  // Initial state
+  expect(captureCharFrame()).toContain("Item 1 [selected]")
+
+  // Navigate down
+  mockInput.pressKey("j")
+  await renderOnce()
+  expect(captureCharFrame()).toContain("Item 2 [selected]")
+})
+```
+
+### Resize Terminal
+
+```typescript
+it("handles resize", async () => {
+  const { renderOnce, captureCharFrame, resize } = await testRender(
+    <ResponsiveComponent />,
+    { width: 80, height: 24 }
+  )
+  await renderOnce()
+
+  resize(40, 12)  // width, height
+  await renderOnce()
+  expect(captureCharFrame()).toContain("Compact View")
+})
+```
+
+### Full Test Example
+
+```typescript
+import { describe, it, expect } from "bun:test"
+import { testRender } from "@opentui/react/test-utils"
+import { FileList } from "./FileList"
+
+describe("FileList", () => {
+  it("navigates with j/k keys", async () => {
+    const files = ["file1.txt", "file2.txt", "file3.txt"]
+    const { renderOnce, captureCharFrame, mockInput } = await testRender(
+      <FileList files={files} />,
+      { width: 80, height: 24 }
+    )
+    await renderOnce()
+
+    // First item selected by default
+    expect(captureCharFrame()).toContain("> file1.txt")
+
+    // Move down
+    mockInput.pressKey("j")
+    await renderOnce()
+    expect(captureCharFrame()).toContain("> file2.txt")
+
+    // Move up
+    mockInput.pressKey("k")
+    await renderOnce()
+    expect(captureCharFrame()).toContain("> file1.txt")
+  })
+
+  it("opens file on Enter", async () => {
+    const onOpen = vi.fn()  // or use bun:test mock
+    const { renderOnce, mockInput } = await testRender(
+      <FileList files={["test.txt"]} onOpen={onOpen} />,
+      { width: 80, height: 24 }
+    )
+    await renderOnce()
+
+    mockInput.pressEnter()
+    expect(onOpen).toHaveBeenCalledWith("test.txt")
+  })
+})
+```
+
+### Key Utilities Reference
+
+| Function                          | Purpose                     |
+| --------------------------------- | --------------------------- |
+| `testRender(node, options)`       | Render React component      |
+| `renderOnce()`                    | Render frame to buffer      |
+| `captureCharFrame()`              | Get current frame as string |
+| `mockInput.pressKey(key, mods?)`  | Simulate keypress           |
+| `mockInput.pressEnter()`          | Simulate Enter key          |
+| `mockInput.pressEscape()`         | Simulate Escape key         |
+| `mockInput.pressArrow(direction)` | Simulate arrow keys         |
+| `mockInput.pressCtrlC()`          | Simulate Ctrl+C             |
+| `mockInput.typeText(text)`        | Type text (async)           |
+| `mockMouse.click(x, y, opts?)`    | Simulate mouse click        |
+| `mockMouse.scroll(dir, x, y)`     | Simulate scroll             |
+| `resize(width, height)`           | Resize terminal             |
+
+### Tips
+
+- `testRender` returns a Promise - always `await` it
+- Call `renderOnce()` after initial render and after each input to update buffer
+- Frame output is a string - use `toContain()` for partial matches
+- Options use `width` and `height`, not `cols` and `rows`
+- For detailed research, see `research/opentui-testing/`

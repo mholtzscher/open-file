@@ -1,15 +1,238 @@
 /**
  * Tests for ConnectionStatus component
  *
- * Note: These tests verify the component exports and type signatures.
- * Full integration tests with React context require proper React testing setup.
+ * Uses OpenTUI testing patterns to properly test rendered output.
  */
 
 import { describe, it, expect } from 'bun:test';
+import { testRender } from '@opentui/react/test-utils';
 import { ConnectionStatus, type ConnectionStatusProps } from './ConnectionStatus.js';
+import { StorageContext, StorageContextValue, StorageState } from '../contexts/StorageContext.js';
+import { Capability } from '../providers/types/capabilities.js';
+import { EntryType } from '../types/entry.js';
 
 // ============================================================================
-// Component Exports
+// Test Utilities
+// ============================================================================
+
+/**
+ * Create a mock StorageContextValue with configurable state
+ */
+function createMockStorageContext(overrides: Partial<StorageState> = {}): StorageContextValue {
+  const defaultState: StorageState = {
+    providerId: 'test',
+    providerDisplayName: 'Test Provider',
+    currentPath: '/',
+    entries: [],
+    isLoading: false,
+    isConnected: true,
+    ...overrides,
+  };
+
+  return {
+    state: defaultState,
+    navigate: async () => {},
+    navigateUp: async () => {},
+    refresh: async () => {},
+    list: async () => [],
+    read: async () => Buffer.from(''),
+    exists: async () => true,
+    getMetadata: async () => ({
+      id: 'test',
+      name: 'test',
+      type: EntryType.File,
+      path: '/test',
+      modified: new Date(),
+    }),
+    write: async () => {},
+    mkdir: async () => {},
+    delete: async () => {},
+    move: async () => {},
+    copy: async () => {},
+    download: async () => {},
+    upload: async () => {},
+    listContainers: async () => [],
+    setContainer: async () => {},
+    getContainer: () => undefined,
+    hasCapability: () => false,
+    getCapabilities: () => new Set<Capability>(),
+    switchProvider: async () => {},
+    disconnect: async () => {},
+    connect: async () => {},
+    subscribe: () => () => {},
+    getProfileManager: () => undefined,
+    switchProfile: async () => {},
+  };
+}
+
+/**
+ * Wrapper component that provides StorageContext for testing
+ */
+function TestWrapper({
+  children,
+  storageState,
+}: {
+  children: React.ReactNode;
+  storageState?: Partial<StorageState>;
+}) {
+  const mockContext = createMockStorageContext(storageState);
+  return <StorageContext.Provider value={mockContext}>{children}</StorageContext.Provider>;
+}
+
+/**
+ * Helper to render ConnectionStatus with mocked storage context
+ */
+async function renderConnectionStatus(
+  props: ConnectionStatusProps = {},
+  storageState: Partial<StorageState> = {}
+) {
+  const result = await testRender(
+    <TestWrapper storageState={storageState}>
+      <ConnectionStatus {...props} />
+    </TestWrapper>,
+    { width: 80, height: 24 }
+  );
+  // Must call renderOnce to populate the buffer before capturing frame
+  await result.renderOnce();
+  return result;
+}
+
+// ============================================================================
+// Component Rendering Tests
+// ============================================================================
+
+describe('ConnectionStatus', () => {
+  describe('connected state', () => {
+    it('renders connected indicator with green dot', async () => {
+      const { captureCharFrame } = await renderConnectionStatus({}, { isConnected: true });
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('●');
+      expect(frame).toContain('Connected');
+    });
+
+    it('does not show reconnect button when connected', async () => {
+      const { captureCharFrame } = await renderConnectionStatus(
+        { showReconnect: true },
+        { isConnected: true }
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).not.toContain('[R]econnect');
+    });
+
+    it('uses custom connected label', async () => {
+      const { captureCharFrame } = await renderConnectionStatus(
+        { connectedLabel: 'Online' },
+        { isConnected: true }
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('Online');
+      expect(frame).not.toContain('Connected');
+    });
+  });
+
+  describe('disconnected state', () => {
+    it('renders disconnected indicator with empty dot', async () => {
+      const { captureCharFrame } = await renderConnectionStatus({}, { isConnected: false });
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('○');
+      expect(frame).toContain('Disconnected');
+    });
+
+    it('shows reconnect button when disconnected and showReconnect is true', async () => {
+      const { captureCharFrame } = await renderConnectionStatus(
+        { showReconnect: true },
+        { isConnected: false }
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('[R]econnect');
+    });
+
+    it('hides reconnect button when showReconnect is false', async () => {
+      const { captureCharFrame } = await renderConnectionStatus(
+        { showReconnect: false },
+        { isConnected: false }
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).not.toContain('[R]econnect');
+    });
+
+    it('uses custom disconnected label', async () => {
+      const { captureCharFrame } = await renderConnectionStatus(
+        { disconnectedLabel: 'Offline' },
+        { isConnected: false }
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('Offline');
+      expect(frame).not.toContain('Disconnected');
+    });
+  });
+
+  describe('default props', () => {
+    it('showReconnect defaults to true', async () => {
+      const { captureCharFrame } = await renderConnectionStatus({}, { isConnected: false });
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('[R]econnect');
+    });
+
+    it('connectedLabel defaults to "Connected"', async () => {
+      const { captureCharFrame } = await renderConnectionStatus({}, { isConnected: true });
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('Connected');
+    });
+
+    it('disconnectedLabel defaults to "Disconnected"', async () => {
+      const { captureCharFrame } = await renderConnectionStatus({}, { isConnected: false });
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('Disconnected');
+    });
+  });
+
+  describe('custom labels combination', () => {
+    it('renders with all custom labels when connected', async () => {
+      const { captureCharFrame } = await renderConnectionStatus(
+        {
+          connectedLabel: 'System Online',
+          disconnectedLabel: 'System Offline',
+          showReconnect: true,
+        },
+        { isConnected: true }
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('System Online');
+      expect(frame).not.toContain('System Offline');
+    });
+
+    it('renders with all custom labels when disconnected', async () => {
+      const { captureCharFrame } = await renderConnectionStatus(
+        {
+          connectedLabel: 'System Online',
+          disconnectedLabel: 'System Offline',
+          showReconnect: true,
+        },
+        { isConnected: false }
+      );
+
+      const frame = captureCharFrame();
+      expect(frame).toContain('System Offline');
+      expect(frame).not.toContain('System Online');
+      expect(frame).toContain('[R]econnect');
+    });
+  });
+});
+
+// ============================================================================
+// Component Exports Tests
 // ============================================================================
 
 describe('ConnectionStatus exports', () => {
@@ -50,123 +273,5 @@ describe('ConnectionStatus types', () => {
     expect(props.showReconnect).toBe(true);
     expect(props.connectedLabel).toBe('Active');
     expect(props.disconnectedLabel).toBe('Inactive');
-  });
-});
-
-// ============================================================================
-// Usage Pattern Tests
-// ============================================================================
-
-describe('Common usage patterns', () => {
-  it('custom labels pattern', () => {
-    const labels = {
-      connected: 'System Online',
-      disconnected: 'System Offline',
-    };
-    expect(labels.connected).toBe('System Online');
-    expect(labels.disconnected).toBe('System Offline');
-  });
-});
-
-// ============================================================================
-// Component Patterns
-// ============================================================================
-
-describe('Component patterns', () => {
-  it('ConnectionStatus basic usage', () => {
-    const props: ConnectionStatusProps = {
-      showReconnect: false,
-    };
-    expect(props.showReconnect).toBe(false);
-  });
-
-  it('ConnectionStatus with reconnect', () => {
-    const props: ConnectionStatusProps = {
-      showReconnect: true,
-    };
-    expect(props.showReconnect).toBe(true);
-  });
-});
-
-// ============================================================================
-// Integration Scenarios
-// ============================================================================
-
-describe('Integration scenarios', () => {
-  it('status bar integration scenario', () => {
-    // Scenario: Show connection status in status bar
-    const props: ConnectionStatusProps = {
-      showReconnect: true,
-    };
-
-    expect(props.showReconnect).toBe(true);
-  });
-
-  it('header integration scenario', () => {
-    // Scenario: Show connection status in header
-    const props: ConnectionStatusProps = {
-      showReconnect: false,
-    };
-
-    expect(props.showReconnect).toBe(false);
-  });
-
-  it('connection-oriented provider scenario', () => {
-    // Scenario: SFTP/FTP/SMB providers that need connection management
-    const providers = ['SFTP', 'FTP', 'SMB', 'NFS'];
-    providers.forEach(provider => {
-      expect(provider).toBeTruthy();
-    });
-  });
-
-  it('connectionless provider scenario', () => {
-    // Scenario: S3/GCS providers that don't need connection management
-    // Component should still work but state will always be "connected"
-    const providers = ['S3', 'GCS'];
-    providers.forEach(provider => {
-      expect(provider).toBeTruthy();
-    });
-  });
-});
-
-// ============================================================================
-// Visual Indicator Tests
-// ============================================================================
-
-describe('Visual indicators', () => {
-  it('connected indicator pattern', () => {
-    const indicator = {
-      icon: '●',
-      color: 'green',
-      label: 'Connected',
-    };
-
-    expect(indicator.icon).toBe('●');
-    expect(indicator.color).toBe('green');
-    expect(indicator.label).toBe('Connected');
-  });
-
-  it('disconnected indicator pattern', () => {
-    const indicator = {
-      icon: '○',
-      color: 'red',
-      label: 'Disconnected',
-    };
-
-    expect(indicator.icon).toBe('○');
-    expect(indicator.color).toBe('red');
-    expect(indicator.label).toBe('Disconnected');
-  });
-
-  it('reconnect button pattern', () => {
-    const button = {
-      label: '[R]econnect',
-      color: 'blue',
-      visible: true,
-    };
-
-    expect(button.label).toContain('econnect');
-    expect(button.color).toBe('blue');
-    expect(button.visible).toBe(true);
   });
 });
