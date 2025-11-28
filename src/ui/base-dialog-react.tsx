@@ -66,9 +66,9 @@ export function BaseDialog({
   paddingBottom = 1,
   children,
 }: BaseDialogProps) {
-  if (!visible) return null;
-
   const terminalSize = useTerminalSize();
+
+  if (!visible) return null;
 
   // Calculate centered position
   const dialogWidth = Math.min(width, terminalSize.width - 4);
@@ -89,7 +89,7 @@ export function BaseDialog({
 
   return (
     <>
-      {/* Optional background overlay to block content behind */}
+      {/* Optional solid background layer behind the bordered dialog */}
       {showOverlay && (
         <box
           position="absolute"
