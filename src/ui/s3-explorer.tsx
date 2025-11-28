@@ -19,6 +19,7 @@ import { S3ExplorerLayout, StatusBarState, PreviewState } from './s3-explorer-la
 import { DialogsState } from './s3-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
+import { calculateParentPath } from '../utils/path-utils.js';
 import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Entry, EntryType } from '../types/entry.js';
@@ -298,28 +299,17 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
         }
 
         const currentPath = currentBufferState.currentPath;
-        const parts = currentPath.split('/').filter(p => p);
+        const { parentPath, atContainerRoot } = calculateParentPath(currentPath);
 
-        if (parts.length > 0) {
-          parts.pop();
-          let parentPath: string;
-          if (parts.length > 0) {
-            // Still have path parts - preserve leading slash if original had one
-            parentPath = currentPath.startsWith('/')
-              ? '/' + parts.join('/') + '/'
-              : parts.join('/') + '/';
-          } else {
-            // At container root - use empty string or root based on original path style
-            parentPath = currentPath.startsWith('/') ? '/' : '';
-          }
-          await navigationHandlers.navigateToPath(parentPath);
-          setStatusMessage(`Navigated to ${parentPath || 'bucket root'}`);
-          setStatusMessageColor(CatppuccinMocha.green);
-        } else {
+        if (atContainerRoot) {
           // Already at container root - go back to container listing
           setBucket(undefined);
           setStatusMessage('Back to bucket listing');
           setStatusMessageColor(CatppuccinMocha.blue);
+        } else {
+          await navigationHandlers.navigateToPath(parentPath);
+          setStatusMessage(`Navigated to ${parentPath || 'bucket root'}`);
+          setStatusMessageColor(CatppuccinMocha.green);
         }
       },
 
