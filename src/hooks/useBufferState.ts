@@ -5,17 +5,11 @@
  * This hook manages entries, cursor, selection, and edit modes.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useReducer, useCallback } from 'react';
 import { Entry } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
-import { SortConfig, DEFAULT_SORT_CONFIG, sortEntries } from '../utils/sorting.js';
-
-export interface SelectionState {
-  cursorIndex: number;
-  selectionStart?: number;
-  selectionEnd?: number;
-  isActive: boolean;
-}
+import { SortConfig } from '../utils/sorting.js';
+import { bufferReducer, INITIAL_BUFFER_STATE, SelectionState } from './buffer-reducer.js';
 
 export interface UseBufferStateReturn {
   entries: Entry[];
@@ -105,362 +99,232 @@ export function useBufferState(
   initialEntries: Entry[] = [],
   initialPath: string = ''
 ): UseBufferStateReturn {
-  const [entries, setEntries] = useState<Entry[]>(initialEntries);
-  const [originalEntries] = useState<Entry[]>(JSON.parse(JSON.stringify(initialEntries)));
-  const [currentPath, setCurrentPath] = useState<string>(initialPath);
-  const [mode, setMode] = useState<EditMode>(EditMode.Normal);
-  const [selection, setSelection] = useState<SelectionState>({ cursorIndex: 0, isActive: false });
-  const [sortConfig, setSortConfigState] = useState<SortConfig>(DEFAULT_SORT_CONFIG);
-  const [showHiddenFiles, setShowHiddenFiles] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [scrollOffset, setScrollOffset] = useState(0);
-  const [copyRegister, setCopyRegister] = useState<Entry[]>([]);
-  const [viewportHeight, setViewportHeight] = useState(20);
-  const [editBuffer, setEditBuffer] = useState<string>('');
-  // Snapshot type for undo/redo that includes deletion marks
-  type BufferSnapshot = {
-    entries: Entry[];
-    deletedIds: Set<string>;
-  };
-  const [undoHistory, setUndoHistory] = useState<BufferSnapshot[]>([]);
-  const [redoHistory, setRedoHistory] = useState<BufferSnapshot[]>([]);
-  const [deletedEntryIds, setDeletedEntryIds] = useState<Set<string>>(new Set());
+  // Use structuredClone for deep copy of initial entries
+  const [state, dispatch] = useReducer(bufferReducer, {
+    ...INITIAL_BUFFER_STATE,
+    entries: initialEntries,
+    originalEntries: structuredClone(initialEntries),
+    currentPath: initialPath,
+  });
 
-  // Helper function to ensure cursor is within bounds
-  const constrainCursor = useCallback(
-    (index: number): number => {
-      return Math.max(0, Math.min(index, entries.length - 1));
-    },
-    [entries.length]
-  );
+  // Helper to dispatch actions
+  const setEntries = useCallback((entries: Entry[]) => {
+    dispatch({ type: 'SET_ENTRIES', entries });
+  }, []);
 
-  // Update scroll offset to keep cursor visible
-  const updateScrollOffset = useCallback(
-    (cursorIndex: number) => {
-      setScrollOffset(prevOffset => {
-        // If cursor is above viewport, scroll up
-        if (cursorIndex < prevOffset) {
-          return cursorIndex;
-        }
-        // If cursor is below viewport, scroll down
-        if (cursorIndex >= prevOffset + viewportHeight) {
-          return cursorIndex - viewportHeight + 1;
-        }
-        // Cursor is visible, no scroll needed
-        return prevOffset;
-      });
-    },
-    [viewportHeight]
-  );
+  const setCurrentPath = useCallback((path: string) => {
+    dispatch({ type: 'SET_CURRENT_PATH', path });
+  }, []);
 
-  // Cursor movement
-  const moveCursorDown = useCallback(
-    (amount: number = 1) => {
-      setSelection(prev => {
-        const newIndex = constrainCursor(prev.cursorIndex + amount);
-        updateScrollOffset(newIndex);
-        return {
-          ...prev,
-          cursorIndex: newIndex,
-        };
-      });
-    },
-    [constrainCursor, updateScrollOffset]
-  );
+  const setViewportHeight = useCallback((height: number) => {
+    dispatch({ type: 'SET_VIEWPORT_HEIGHT', height });
+  }, []);
 
-  const moveCursorUp = useCallback(
-    (amount: number = 1) => {
-      setSelection(prev => {
-        const newIndex = constrainCursor(prev.cursorIndex - amount);
-        updateScrollOffset(newIndex);
-        return {
-          ...prev,
-          cursorIndex: newIndex,
-        };
-      });
-    },
-    [constrainCursor, updateScrollOffset]
-  );
+  // Edit buffer operations
+  const getEditBuffer = useCallback(() => state.editBuffer, [state.editBuffer]);
+
+  const setEditBuffer = useCallback((text: string) => {
+    dispatch({ type: 'SET_EDIT_BUFFER', text });
+  }, []);
+
+  const appendToEditBuffer = useCallback((char: string) => {
+    dispatch({ type: 'APPEND_TO_EDIT_BUFFER', char });
+  }, []);
+
+  const backspaceEditBuffer = useCallback(() => {
+    dispatch({ type: 'BACKSPACE_EDIT_BUFFER' });
+  }, []);
+
+  const clearEditBuffer = useCallback(() => {
+    dispatch({ type: 'CLEAR_EDIT_BUFFER' });
+  }, []);
+
+  // Cursor/Selection operations
+  const moveCursorDown = useCallback((amount: number = 1) => {
+    dispatch({ type: 'MOVE_CURSOR', amount });
+  }, []);
+
+  const moveCursorUp = useCallback((amount: number = 1) => {
+    dispatch({ type: 'MOVE_CURSOR', amount: -amount });
+  }, []);
 
   const cursorToTop = useCallback(() => {
-    setSelection(prev => ({ ...prev, cursorIndex: 0 }));
-    setScrollOffset(0);
+    dispatch({ type: 'CURSOR_TO_TOP' });
   }, []);
 
   const cursorToBottom = useCallback(() => {
-    const newIndex = Math.max(0, entries.length - 1);
-    setSelection(prev => ({
-      ...prev,
-      cursorIndex: newIndex,
-    }));
-    updateScrollOffset(newIndex);
-  }, [entries.length, updateScrollOffset]);
-
-  // Visual selection
-  const startVisualSelection = useCallback(() => {
-    setSelection(prev => ({
-      ...prev,
-      selectionStart: prev.cursorIndex,
-      selectionEnd: prev.cursorIndex,
-      isActive: true,
-    }));
-    setMode(EditMode.Visual);
+    dispatch({ type: 'CURSOR_TO_BOTTOM' });
   }, []);
 
-  const extendVisualSelection = useCallback(
-    (direction: 'up' | 'down') => {
-      setSelection(prev => {
-        if (!prev.isActive || prev.selectionStart === undefined) return prev;
+  const startVisualSelection = useCallback(() => {
+    dispatch({ type: 'START_VISUAL_SELECTION' });
+  }, []);
 
-        const newEnd = direction === 'up' ? prev.cursorIndex - 1 : prev.cursorIndex + 1;
-        const newIndex = constrainCursor(newEnd);
-        updateScrollOffset(newIndex);
-        return {
-          ...prev,
-          selectionEnd: newIndex,
-          cursorIndex: newIndex,
-        };
-      });
-    },
-    [constrainCursor, updateScrollOffset]
-  );
+  const extendVisualSelection = useCallback((direction: 'up' | 'down') => {
+    dispatch({ type: 'EXTEND_VISUAL_SELECTION', direction });
+  }, []);
 
   const exitVisualSelection = useCallback(() => {
-    setSelection(prev => ({
-      ...prev,
-      isActive: false,
-      selectionStart: undefined,
-      selectionEnd: undefined,
-    }));
+    dispatch({ type: 'EXIT_VISUAL_SELECTION' });
   }, []);
 
-  // Mode management
-  const setModeState = useCallback((newMode: EditMode) => {
-    setMode(newMode);
+  // Mode operations
+  const setMode = useCallback((mode: EditMode) => {
+    dispatch({ type: 'SET_MODE', mode });
   }, []);
 
   const enterInsertMode = useCallback(() => {
-    setMode(EditMode.Insert);
+    dispatch({ type: 'SET_MODE', mode: EditMode.Insert });
   }, []);
 
   const exitInsertMode = useCallback(() => {
-    setMode(EditMode.Normal);
+    dispatch({ type: 'SET_MODE', mode: EditMode.Normal });
   }, []);
 
   const enterEditMode = useCallback(() => {
-    setMode(EditMode.Edit);
+    dispatch({ type: 'SET_MODE', mode: EditMode.Edit });
   }, []);
 
   const exitEditMode = useCallback(() => {
-    setMode(EditMode.Normal);
+    dispatch({ type: 'SET_MODE', mode: EditMode.Normal });
   }, []);
 
   const enterSearchMode = useCallback(() => {
-    setMode(EditMode.Search);
+    dispatch({ type: 'SET_MODE', mode: EditMode.Search });
   }, []);
 
   const exitSearchMode = useCallback(() => {
-    setMode(EditMode.Normal);
-    setSearchQuery('');
+    dispatch({ type: 'SET_MODE', mode: EditMode.Normal });
   }, []);
 
   const enterCommandMode = useCallback(() => {
-    setMode(EditMode.Command);
-    setEditBuffer(':');
+    dispatch({ type: 'SET_MODE', mode: EditMode.Command });
   }, []);
 
   const exitCommandMode = useCallback(() => {
-    setMode(EditMode.Normal);
-    setEditBuffer('');
+    dispatch({ type: 'SET_MODE', mode: EditMode.Normal });
   }, []);
 
   // Sorting
   const setSortConfig = useCallback((config: SortConfig) => {
-    setSortConfigState(config);
-    setEntries(prev => sortEntries([...prev], config));
+    dispatch({ type: 'SET_SORT_CONFIG', config });
   }, []);
 
   // Search
   const updateSearchQuery = useCallback((query: string) => {
-    setSearchQuery(query);
+    dispatch({ type: 'UPDATE_SEARCH_QUERY', query });
   }, []);
 
   // Display options
   const toggleHiddenFiles = useCallback(() => {
-    setShowHiddenFiles(prev => !prev);
+    dispatch({ type: 'TOGGLE_HIDDEN_FILES' });
   }, []);
+
+  // Copy/paste
+  const copySelection = useCallback(() => {
+    dispatch({ type: 'COPY_SELECTION' });
+  }, []);
+
+  const hasClipboardContent = useCallback(() => {
+    return state.copyRegister.length > 0;
+  }, [state.copyRegister.length]);
+
+  const pasteAfterCursor = useCallback(() => {
+    if (state.copyRegister.length === 0) return [];
+    dispatch({ type: 'PASTE_AFTER_CURSOR' });
+    return state.copyRegister;
+  }, [state.copyRegister]);
 
   // Getting data
   const getSelectedEntry = useCallback((): Entry | undefined => {
-    return entries[selection.cursorIndex];
-  }, [entries, selection.cursorIndex]);
+    return state.entries[state.selection.cursorIndex];
+  }, [state.entries, state.selection.cursorIndex]);
 
   const getSelectedEntries = useCallback((): Entry[] => {
-    if (!selection.isActive || selection.selectionStart === undefined) {
-      const entry = entries[selection.cursorIndex];
+    if (!state.selection.isActive || state.selection.selectionStart === undefined) {
+      const entry = state.entries[state.selection.cursorIndex];
       return entry ? [entry] : [];
     }
 
     const start = Math.min(
-      selection.selectionStart,
-      selection.selectionEnd ?? selection.selectionStart
+      state.selection.selectionStart,
+      state.selection.selectionEnd ?? state.selection.selectionStart
     );
     const end = Math.max(
-      selection.selectionStart,
-      selection.selectionEnd ?? selection.selectionStart
+      state.selection.selectionStart,
+      state.selection.selectionEnd ?? state.selection.selectionStart
     );
-    return entries.slice(start, end + 1);
-  }, [selection, entries]);
+    return state.entries.slice(start, end + 1);
+  }, [state.selection, state.entries]);
 
-  // Filter entries based on search query
   const getFilteredEntries = useCallback((): Entry[] => {
-    if (!searchQuery) {
-      return entries;
+    if (!state.searchQuery) {
+      return state.entries;
     }
 
-    // Simple substring matching (case-insensitive by default)
-    const query = searchQuery.toLowerCase();
-    return entries.filter(entry => entry.name.toLowerCase().includes(query));
-  }, [entries, searchQuery]);
+    const query = state.searchQuery.toLowerCase();
+    return state.entries.filter(entry => entry.name.toLowerCase().includes(query));
+  }, [state.entries, state.searchQuery]);
 
-  // Copy/paste
-  const copySelection = useCallback(() => {
-    const selected = selection.isActive ? getSelectedEntries() : getSelectedEntry();
-    const toCopy = Array.isArray(selected) ? selected : selected ? [selected] : [];
-    setCopyRegister([...toCopy]);
-  }, [selection, getSelectedEntries, getSelectedEntry]);
-
-  const hasClipboardContent = useCallback(() => {
-    return copyRegister.length > 0;
-  }, [copyRegister.length]);
-
-  const pasteAfterCursor = useCallback(() => {
-    if (copyRegister.length === 0) return [];
-
-    const insertIndex = selection.cursorIndex + 1;
-    const newEntries = [...entries];
-    newEntries.splice(insertIndex, 0, ...copyRegister);
-    setEntries(newEntries);
-
-    return copyRegister;
-  }, [copyRegister, selection.cursorIndex, entries]);
-
-  // Edit buffer operations
-  const getEditBuffer = useCallback(() => editBuffer, [editBuffer]);
-
-  const appendToEditBuffer = useCallback((char: string) => {
-    setEditBuffer(prev => prev + char);
-  }, []);
-
-  const backspaceEditBuffer = useCallback(() => {
-    setEditBuffer(prev => prev.slice(0, -1));
-  }, []);
-
-  const clearEditBuffer = useCallback(() => {
-    setEditBuffer('');
-  }, []);
-
-  // Undo/redo operations (includes deletion marks)
-  const undo = useCallback((): boolean => {
-    if (undoHistory.length === 0) return false;
-
-    // Save current state to redo history
-    setRedoHistory(prev => [...prev, { entries, deletedIds: new Set(deletedEntryIds) }]);
-
-    // Restore previous state
-    const previousSnapshot = undoHistory[undoHistory.length - 1];
-    setEntries([...previousSnapshot.entries]);
-    setDeletedEntryIds(new Set(previousSnapshot.deletedIds));
-    setUndoHistory(prev => prev.slice(0, -1));
-
-    return true;
-  }, [undoHistory, entries, deletedEntryIds]);
-
-  const redo = useCallback((): boolean => {
-    if (redoHistory.length === 0) return false;
-
-    // Save current state to undo history
-    setUndoHistory(prev => [...prev, { entries, deletedIds: new Set(deletedEntryIds) }]);
-
-    // Restore next state
-    const nextSnapshot = redoHistory[redoHistory.length - 1];
-    setEntries([...nextSnapshot.entries]);
-    setDeletedEntryIds(new Set(nextSnapshot.deletedIds));
-    setRedoHistory(prev => prev.slice(0, -1));
-
-    return true;
-  }, [redoHistory, entries, deletedEntryIds]);
-
-  const canUndo = useCallback((): boolean => {
-    return undoHistory.length > 0;
-  }, [undoHistory.length]);
-
-  const canRedo = useCallback((): boolean => {
-    return redoHistory.length > 0;
-  }, [redoHistory.length]);
-
-  const saveSnapshot = useCallback((): void => {
-    setUndoHistory(prev => [...prev, { entries, deletedIds: new Set(deletedEntryIds) }]);
-    setRedoHistory([]);
-  }, [entries, deletedEntryIds]);
-
-  // Deletion marking functions (oil.nvim style)
+  // Deletion marking (oil.nvim style)
   const markForDeletion = useCallback((entryId: string): void => {
-    setDeletedEntryIds(prev => {
-      const next = new Set(prev);
-      next.add(entryId);
-      return next;
-    });
+    dispatch({ type: 'MARK_FOR_DELETION', entryId });
   }, []);
 
   const unmarkForDeletion = useCallback((entryId: string): void => {
-    setDeletedEntryIds(prev => {
-      const next = new Set(prev);
-      next.delete(entryId);
-      return next;
-    });
+    dispatch({ type: 'UNMARK_FOR_DELETION', entryId });
   }, []);
 
   const isMarkedForDeletion = useCallback(
     (entryId: string): boolean => {
-      return deletedEntryIds.has(entryId);
+      return state.deletedEntryIds.has(entryId);
     },
-    [deletedEntryIds]
+    [state.deletedEntryIds]
   );
 
   const getMarkedForDeletion = useCallback((): Entry[] => {
-    return entries.filter(e => deletedEntryIds.has(e.id));
-  }, [entries, deletedEntryIds]);
+    return state.entries.filter(e => state.deletedEntryIds.has(e.id));
+  }, [state.entries, state.deletedEntryIds]);
 
   const clearDeletionMarks = useCallback((): void => {
-    setDeletedEntryIds(new Set());
+    dispatch({ type: 'CLEAR_DELETION_MARKS' });
+  }, []);
+
+  // Undo/redo
+  const canUndo = useCallback((): boolean => {
+    return state.undoHistory.length > 0;
+  }, [state.undoHistory.length]);
+
+  const canRedo = useCallback((): boolean => {
+    return state.redoHistory.length > 0;
+  }, [state.redoHistory.length]);
+
+  const undo = useCallback((): boolean => {
+    if (!canUndo()) return false;
+    dispatch({ type: 'UNDO' });
+    return true;
+  }, [canUndo]);
+
+  const redo = useCallback((): boolean => {
+    if (!canRedo()) return false;
+    dispatch({ type: 'REDO' });
+    return true;
+  }, [canRedo]);
+
+  const saveSnapshot = useCallback((): void => {
+    dispatch({ type: 'SAVE_SNAPSHOT' });
   }, []);
 
   return {
-    entries,
-    originalEntries,
-    mode,
-    selection,
-    currentPath,
-    sortConfig,
-    showHiddenFiles,
-    searchQuery,
-    scrollOffset,
-    copyRegister,
-    viewportHeight,
-    editBuffer,
-    deletedEntryIds,
-
+    ...state,
     setEntries,
     setCurrentPath,
     setViewportHeight,
-
     getEditBuffer,
     setEditBuffer,
     appendToEditBuffer,
     backspaceEditBuffer,
     clearEditBuffer,
-
     moveCursorDown,
     moveCursorUp,
     cursorToTop,
@@ -468,8 +332,7 @@ export function useBufferState(
     startVisualSelection,
     extendVisualSelection,
     exitVisualSelection,
-
-    setMode: setModeState,
+    setMode,
     enterInsertMode,
     exitInsertMode,
     enterEditMode,
@@ -478,25 +341,20 @@ export function useBufferState(
     exitSearchMode,
     enterCommandMode,
     exitCommandMode,
-
     setSortConfig,
     updateSearchQuery,
     toggleHiddenFiles,
-
     copySelection,
     hasClipboardContent,
     pasteAfterCursor,
-
     getSelectedEntry,
     getSelectedEntries,
     getFilteredEntries,
-
     markForDeletion,
     unmarkForDeletion,
     isMarkedForDeletion,
     getMarkedForDeletion,
     clearDeletionMarks,
-
     undo,
     redo,
     canUndo,
