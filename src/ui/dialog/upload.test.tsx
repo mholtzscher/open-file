@@ -2,7 +2,7 @@
  * UploadDialog component tests
  */
 
-import { describe, it, expect, mock, beforeEach } from 'bun:test';
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
 import { UploadDialog } from './upload.js';
 import { getDialogHandler } from '../../hooks/useDialogKeyboard.js';
@@ -113,11 +113,9 @@ describe('UploadDialog', () => {
     });
   });
 
-  describe('callback handling', () => {
-    it('calls onCancel when escape is pressed', async () => {
-      const onCancel = mock(() => {});
-
-      const { renderOnce } = await testRender(<UploadDialog visible={true} onCancel={onCancel} />, {
+  describe('keyboard handling', () => {
+    it('handles escape key without error', async () => {
+      const { renderOnce } = await testRender(<UploadDialog visible={true} />, {
         width: 80,
         height: 24,
       });
@@ -129,25 +127,20 @@ describe('UploadDialog', () => {
       const handler = getDialogHandler('upload-dialog');
       expect(handler).toBeDefined();
 
-      handler?.('escape');
-      expect(onCancel).toHaveBeenCalled();
+      // Should not throw when escape is pressed
+      expect(() => handler?.('escape')).not.toThrow();
     });
 
-    it('does not trigger onCancel when visible is false', async () => {
-      const onCancel = mock(() => {});
-
-      const { renderOnce, captureCharFrame } = await testRender(
-        <UploadDialog visible={false} onCancel={onCancel} />,
-        { width: 80, height: 24 }
-      );
+    it('dialog not rendered when visible is false', async () => {
+      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog visible={false} />, {
+        width: 80,
+        height: 24,
+      });
       await renderOnce();
 
       // Dialog should not be rendered when not visible
       const frame = captureCharFrame();
       expect(frame).not.toContain('Upload Files');
-
-      // onCancel should not have been called
-      expect(onCancel).not.toHaveBeenCalled();
     });
   });
 
@@ -156,14 +149,10 @@ describe('UploadDialog', () => {
       const props = {
         visible: true,
         destinationPath: '/bucket/uploads',
-        onConfirm: (_files: string[]) => {},
-        onCancel: () => {},
       };
 
       expect(props.visible).toBe(true);
       expect(props.destinationPath).toBe('/bucket/uploads');
-      expect(typeof props.onConfirm).toBe('function');
-      expect(typeof props.onCancel).toBe('function');
     });
   });
 
@@ -657,8 +646,6 @@ describe('UploadDialog', () => {
       const props: import('./upload.js').UploadDialogProps = {
         visible: true,
         destinationPath: '/test',
-        onConfirm: () => {},
-        onCancel: () => {},
       };
       expect(props.visible).toBe(true);
     });

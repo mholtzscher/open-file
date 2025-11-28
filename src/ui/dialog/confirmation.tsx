@@ -5,7 +5,7 @@
  */
 
 import { CatppuccinMocha } from '../theme.js';
-import { BaseDialog, getContentWidth } from './base.js';
+import { BaseDialog } from './base.js';
 
 export interface Operation {
   id: string;
@@ -19,8 +19,6 @@ export interface ConfirmationDialogProps {
   title?: string;
   operations?: Operation[];
   visible?: boolean;
-  onConfirm?: () => void;
-  onCancel?: () => void;
 }
 
 /**
@@ -64,8 +62,7 @@ function formatOperation(op: Operation, maxWidth: number = 50): string {
   return text;
 }
 
-const DIALOG_WIDTH = 70;
-const MAX_OPERATIONS_DISPLAY = 11;
+const MAX_OPERATIONS_DISPLAY = 15;
 
 /**
  * ConfirmationDialog React component
@@ -75,41 +72,24 @@ export function ConfirmationDialog({
   operations = [],
   visible = true,
 }: ConfirmationDialogProps) {
-  const dialogHeight = Math.min(20, operations.length + 8);
-  const contentWidth = getContentWidth(DIALOG_WIDTH);
-
   return (
-    <BaseDialog
-      visible={visible}
-      title={title}
-      width={DIALOG_WIDTH}
-      height={dialogHeight}
-      borderColor={CatppuccinMocha.yellow}
-    >
+    <BaseDialog visible={visible} title={title} borderColor={CatppuccinMocha.yellow}>
       <box flexDirection="column">
-        <text fg={CatppuccinMocha.text} width={contentWidth}>
-          The following operations will be performed:
-        </text>
+        <text fg={CatppuccinMocha.text}>The following operations will be performed:</text>
 
         {operations.slice(0, MAX_OPERATIONS_DISPLAY).map(op => (
-          <text
-            key={op.id}
-            fg={op.type === 'delete' ? CatppuccinMocha.red : CatppuccinMocha.green}
-            width={contentWidth - 2}
-          >
+          <text key={op.id} fg={op.type === 'delete' ? CatppuccinMocha.red : CatppuccinMocha.green}>
             • {formatOperation(op, 60)}
           </text>
         ))}
 
         {operations.length > MAX_OPERATIONS_DISPLAY && (
-          <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
+          <text fg={CatppuccinMocha.overlay0}>
             ... and {operations.length - MAX_OPERATIONS_DISPLAY} more
           </text>
         )}
 
-        <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-          Press y to confirm, n to cancel
-        </text>
+        <text fg={CatppuccinMocha.overlay0}>Press y to confirm, n to cancel</text>
       </box>
     </BaseDialog>
   );

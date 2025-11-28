@@ -24,8 +24,6 @@ import type { ProfileManager } from '../providers/services/profile-manager.js';
 export interface ConfirmDialogState {
   visible: boolean;
   operations: PendingOperation[];
-  onConfirm: () => Promise<void>;
-  onCancel: () => void;
 }
 
 export interface ErrorDialogState {
@@ -48,9 +46,6 @@ export interface SortMenuState {
   visible: boolean;
   currentField: SortField;
   currentOrder: SortOrder;
-  onFieldSelect: (field: SortField) => void;
-  onOrderToggle: () => void;
-  onClose: () => void;
 }
 
 export interface ProgressWindowState {
@@ -116,8 +111,6 @@ export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
           title="Confirm Operations"
           operations={confirm.operations}
           visible={confirm.visible}
-          onConfirm={confirm.onConfirm}
-          onCancel={confirm.onCancel}
         />
       )}
 
@@ -127,9 +120,6 @@ export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
           visible={sortMenu.visible}
           currentField={sortMenu.currentField}
           currentOrder={sortMenu.currentOrder}
-          onFieldSelect={sortMenu.onFieldSelect}
-          onOrderToggle={sortMenu.onOrderToggle}
-          onClose={sortMenu.onClose}
         />
       )}
 

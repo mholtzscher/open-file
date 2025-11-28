@@ -12,9 +12,6 @@ export interface SortMenuProps {
   visible: boolean;
   currentField: SortField;
   currentOrder: SortOrder;
-  onFieldSelect: (field: SortField) => void;
-  onOrderToggle: () => void;
-  onClose: () => void;
 }
 
 const DIALOG_WIDTH = 40;
