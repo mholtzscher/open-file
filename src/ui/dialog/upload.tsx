@@ -186,7 +186,7 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
     [visible, windowHeight, state, onConfirm, onCancel]
   );
 
-  useKeyboardHandler(handleKey, [handleKey], KeyboardPriority.High);
+  useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   const selectedCount = state.selectedFiles.size;
   const totalSize = Array.from(state.selectedFiles).reduce((sum, path) => {

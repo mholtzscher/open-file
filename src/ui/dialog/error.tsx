@@ -34,7 +34,7 @@ export function ErrorDialog({ visible, message, onDismiss }: ErrorDialogProps) {
     [visible, onDismiss]
   );
 
-  useKeyboardHandler(handleKey, [handleKey], KeyboardPriority.High);
+  useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   return (
     <BaseDialog visible={visible} title="Error" borderColor={CatppuccinMocha.red}>

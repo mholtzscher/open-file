@@ -97,7 +97,7 @@ export function ConfirmationDialog({
     [visible, onConfirm, onCancel]
   );
 
-  useKeyboardHandler(handleKey, [handleKey], KeyboardPriority.High);
+  useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   return (
     <BaseDialog visible={visible} title={title} borderColor={CatppuccinMocha.yellow}>

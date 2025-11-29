@@ -2,13 +2,12 @@
  * KeyboardContext
  *
  * React Context for centralized keyboard event handling.
- * Replaces the global mutable dispatcher with a proper React pattern.
  *
  * Features:
  * - Priority-based handler registration (dialogs > main UI)
  * - Type-safe keyboard events
  * - Testable in isolation (mock context in tests)
- * - No global mutable state
+ * - Optional external key source integration (CLI renderer)
  */
 
 import { createContext, useContext, useCallback, useRef, useEffect, ReactNode } from 'react';
@@ -151,42 +150,41 @@ export function useKeyboard(): KeyboardContextValue {
 /**
  * Hook to register a keyboard handler
  *
- * @param handler - Function that handles keyboard events, returns true if consumed
- * @param deps - Dependency array for the handler (like useCallback deps)
+ * @param handler - Memoized handler function (use useCallback)
  * @param priority - Handler priority (higher = handled first)
  *
  * @example
  * ```tsx
  * // Main UI handler
- * useKeyboardHandler((key) => {
+ * const handleKey = useCallback((key: KeyboardKey) => {
  *   if (key.name === 'j') {
  *     moveCursorDown();
  *     return true;
  *   }
  *   return false;
  * }, [moveCursorDown]);
+ * useKeyboardHandler(handleKey);
  *
  * // Dialog handler with high priority
- * useKeyboardHandler((key) => {
+ * const handleDialogKey = useCallback((key: KeyboardKey) => {
  *   if (key.name === 'escape') {
  *     closeDialog();
  *     return true;
  *   }
  *   return false;
- * }, [closeDialog], KeyboardPriority.High);
+ * }, [closeDialog]);
+ * useKeyboardHandler(handleDialogKey, KeyboardPriority.High);
  * ```
  */
 export function useKeyboardHandler(
   handler: (key: KeyboardKey) => boolean,
-  deps: React.DependencyList,
   priority: KeyboardPriorityLevel = KeyboardPriority.Normal
 ): void {
   const { registerHandler } = useKeyboard();
 
   useEffect(() => {
     return registerHandler(handler, priority);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [registerHandler, priority, ...deps]);
+  }, [registerHandler, handler, priority]);
 }
 
 /**

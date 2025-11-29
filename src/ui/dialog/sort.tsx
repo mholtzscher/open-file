@@ -110,7 +110,7 @@ export function SortMenu({
     [visible, selectedIndex, onFieldSelect, onOrderToggle, onClose]
   );
 
-  useKeyboardHandler(handleKey, [handleKey], KeyboardPriority.High);
+  useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   return (
     <BaseDialog visible={visible} title="Sort Options" borderColor={CatppuccinMocha.blue}>

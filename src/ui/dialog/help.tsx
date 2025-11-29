@@ -76,7 +76,7 @@ export function HelpDialog({ visible, onClose }: HelpDialogProps) {
     [visible, onClose]
   );
 
-  useKeyboardHandler(handleKey, [handleKey], KeyboardPriority.High);
+  useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   return (
     <BaseDialog visible={visible} title="Help" borderColor={CatppuccinMocha.yellow}>

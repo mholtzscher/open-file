@@ -50,7 +50,7 @@ export function QuitDialog({
     [visible, onQuitWithoutSave, onSaveAndQuit, onCancel]
   );
 
-  useKeyboardHandler(handleKey, [handleKey], KeyboardPriority.High);
+  useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   const changeText = pendingChanges === 1 ? 'change' : 'changes';
 

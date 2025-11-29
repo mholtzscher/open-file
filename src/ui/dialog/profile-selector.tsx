@@ -166,7 +166,7 @@ export function ProfileSelectorDialog({
   );
 
   // Register keyboard handler with KeyboardContext (high priority for dialogs)
-  useKeyboardHandler(handleKeyboard, [handleKeyboard], KeyboardPriority.High);
+  useKeyboardHandler(handleKeyboard, KeyboardPriority.High);
 
   // Don't render if not visible
   if (!visible) {

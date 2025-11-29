@@ -408,7 +408,7 @@ export function FileExplorer({}: FileExplorerProps) {
   );
 
   // Register keyboard handler with context at normal priority
-  useKeyboardHandler(keyboardHandlerCallback, [keyboardHandlerCallback], KeyboardPriority.Normal);
+  useKeyboardHandler(keyboardHandlerCallback);
 
   // ============================================
   // Build Props for Layout Component
