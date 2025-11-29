@@ -19,9 +19,15 @@ export interface BufferViewProps {
 }
 
 /**
+ * Column widths for buffer display
+ */
+const NAME_COLUMN_WIDTH = 30;
+const META_COLUMN_WIDTH = 12;
+
+/**
  * Format date for display
  */
-function formatDate(date: Date | undefined): string {
+function formatDate(date: Date | string | number | undefined): string {
   if (!date) return '-';
   const d = date instanceof Date ? date : new Date(date);
   return d.toLocaleDateString('en-US', {
@@ -36,7 +42,6 @@ function formatDate(date: Date | undefined): string {
  */
 function formatEntry(
   entry: Entry,
-  _isSelected: boolean,
   showIcons: boolean,
   showSizes: boolean,
   showDates: boolean
@@ -62,25 +67,27 @@ function formatEntry(
   const nameWithSuffix = entry.name + suffix;
   // Truncate if too long, then pad to fixed width
   const truncatedName =
-    nameWithSuffix.length > 30 ? nameWithSuffix.slice(0, 27) + '...' : nameWithSuffix;
-  parts.push(truncatedName.padEnd(30));
+    nameWithSuffix.length > NAME_COLUMN_WIDTH
+      ? nameWithSuffix.slice(0, NAME_COLUMN_WIDTH - 3) + '...'
+      : nameWithSuffix;
+  parts.push(truncatedName.padEnd(NAME_COLUMN_WIDTH));
 
   // For bucket entries, show region instead of size
   if (entry.type === EntryType.Bucket) {
     const region = entry.metadata?.region || '-';
-    parts.push(region.padEnd(12));
+    parts.push(region.padEnd(META_COLUMN_WIDTH));
   } else if (showSizes) {
     // Size for regular entries
-    parts.push(formatBytes(entry.size).padEnd(12));
+    parts.push(formatBytes(entry.size).padEnd(META_COLUMN_WIDTH));
   }
 
   // Date
   if (showDates) {
     if (entry.type === EntryType.Bucket) {
       // For buckets, show creation date
-      parts.push(formatDate(entry.metadata?.createdAt || entry.modified).padEnd(12));
+      parts.push(formatDate(entry.metadata?.createdAt || entry.modified).padEnd(META_COLUMN_WIDTH));
     } else {
-      parts.push(formatDate(entry.modified).padEnd(12));
+      parts.push(formatDate(entry.modified).padEnd(META_COLUMN_WIDTH));
     }
   }
 
@@ -95,12 +102,11 @@ function getEntryColor(entry: Entry, isSelected: boolean, isMarkedForDeletion: b
   if (isMarkedForDeletion) {
     return CatppuccinMocha.red;
   }
-  if (entry.type === EntryType.Directory) {
-    return Theme.getDirectoryColor(isSelected);
-  } else if (entry.type === EntryType.Bucket) {
-    // Buckets get directory color (highlight color)
+
+  if (entry.type === EntryType.Directory || entry.type === EntryType.Bucket) {
     return Theme.getDirectoryColor(isSelected);
   }
+
   return Theme.getFileColor(isSelected);
 }
 
@@ -177,8 +183,7 @@ export function BufferView({
         const cursor = isSelected ? '> ' : '  ';
         // Add deletion marker prefix if marked for deletion
         const deleteMarker = isMarkedForDeletion ? '✗ ' : '';
-        let content =
-          cursor + deleteMarker + formatEntry(entry, isSelected, showIcons, showSizes, showDates);
+        let content = cursor + deleteMarker + formatEntry(entry, showIcons, showSizes, showDates);
 
         // Apply strikethrough to deleted entries
         if (isMarkedForDeletion) {
