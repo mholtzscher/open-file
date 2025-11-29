@@ -159,15 +159,13 @@ export function FileExplorerDialogs({ dialogs }: FileExplorerDialogsProps) {
       />
 
       {/* Quit Confirmation Dialog */}
-      {quit.visible && (
-        <QuitDialog
-          visible={quit.visible}
-          pendingChangesCount={quit.pendingChanges}
-          onQuitWithoutSave={quit.onQuitWithoutSave}
-          onSaveAndQuit={quit.onSaveAndQuit}
-          onCancel={quit.onCancel}
-        />
-      )}
+      <QuitDialog
+        visible={quit.visible}
+        pendingChangesCount={quit.pendingChanges}
+        onQuitWithoutSave={quit.onQuitWithoutSave}
+        onSaveAndQuit={quit.onSaveAndQuit}
+        onCancel={quit.onCancel}
+      />
 
       {/* Profile Selector Dialog */}
       <ProfileSelectorDialog
