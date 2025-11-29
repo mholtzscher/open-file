@@ -1,18 +1,75 @@
 # Pending Operations Store - Implementation Design
 
+## Implementation Status
+
+> **Status: PARTIALLY IMPLEMENTED**
+>
+> This document describes the target architecture for a global Pending Operations Store.
+> The current implementation uses buffer-scoped deletion tracking which has known limitations.
+
+### What's Implemented
+
+| Component                       | Status   | Location                                     |
+| ------------------------------- | -------- | -------------------------------------------- |
+| `PendingOperation` type (basic) | **Done** | `src/types/dialog.ts:29-39`                  |
+| Buffer-scoped deletion tracking | **Done** | `src/hooks/useBufferState.ts:80-85, 269-291` |
+| Deletion mark actions           | **Done** | `src/hooks/buffer-reducer.ts`                |
+| Integration with dialogs        | **Done** | `src/hooks/useDialogHandlers.ts`             |
+
+### What's Planned (Not Yet Implemented)
+
+| Component                                | Status  | Proposed Location                       |
+| ---------------------------------------- | ------- | --------------------------------------- |
+| `src/types/pending-operations.ts`        | Planned | Enhanced types with URI scheme          |
+| `src/utils/storage-uri.ts`               | Planned | URI building/parsing utilities          |
+| `src/stores/pending-operations-store.ts` | Planned | Global store (directory does not exist) |
+| `src/hooks/usePendingOperations.ts`      | Planned | React hook for store                    |
+| Cross-directory persistence              | Planned | Requires global store                   |
+
+---
+
 ## Overview
 
 This document describes the architecture for a **Pending Operations Store** that tracks file operations (deletes, moves, copies, renames, creates) across directory navigation. This replaces the current buffer-scoped `deletedEntryIds` approach with a global, URI-based store that works identically across all storage backends (S3, SFTP, GCS, local filesystem).
 
 ## Problem Statement
 
-### Current Behavior
+### Current Behavior (Known Bug)
 
 When a user marks a file for deletion in directory `/foo/`, navigates to `/bar/`, and returns to `/foo/`, the deletion mark is lost because:
 
 1. `onLoadBuffer()` fetches fresh entries from the adapter
 2. `setEntries()` replaces the buffer's entry array
 3. `deletedEntryIds` becomes orphaned (references stale entry IDs)
+
+### Current Implementation
+
+The existing buffer-scoped deletion tracking in `useBufferState.ts`:
+
+```typescript
+// src/hooks/useBufferState.ts (lines 80-85)
+// Deletion marking (oil.nvim style)
+markForDeletion: (entryId: string) => void;
+unmarkForDeletion: (entryId: string) => void;
+isMarkedForDeletion: (entryId: string) => boolean;
+getMarkedForDeletion: () => Entry[];
+clearDeletionMarks: () => void;
+```
+
+And the basic `PendingOperation` type in `src/types/dialog.ts`:
+
+```typescript
+export interface PendingOperation {
+  id: string;
+  type: 'create' | 'delete' | 'move' | 'copy' | 'download' | 'upload';
+  path?: string;
+  source?: string;
+  destination?: string;
+  entry?: Entry;
+  entryType?: 'file' | 'directory';
+  recursive?: boolean;
+}
+```
 
 ### Root Cause
 
@@ -96,7 +153,7 @@ This allows the store to work identically across all backends.
 
 ## Type Definitions
 
-### File: `src/types/pending-operations.ts`
+### File: `src/types/pending-operations.ts` (PLANNED - does not exist yet)
 
 ```typescript
 import { Entry, EntryType } from './entry.js';
@@ -206,7 +263,7 @@ export interface EntryVisualState {
 
 ## Store Interface
 
-### File: `src/stores/pending-operations-store.ts`
+### File: `src/stores/pending-operations-store.ts` (PLANNED - directory does not exist)
 
 ```typescript
 import { Entry, EntryType } from '../types/entry.js';
@@ -337,7 +394,7 @@ export interface PendingOperationsStore {
 
 ## URI Utilities
 
-### File: `src/utils/storage-uri.ts`
+### File: `src/utils/storage-uri.ts` (PLANNED - does not exist yet)
 
 ```typescript
 import { Entry } from '../types/entry.js';
@@ -440,7 +497,7 @@ export function isUriInPath(
 
 ## React Hook
 
-### File: `src/hooks/usePendingOperations.ts`
+### File: `src/hooks/usePendingOperations.ts` (PLANNED - does not exist yet)
 
 ```typescript
 import { useSyncExternalStore, useCallback } from 'react';
@@ -611,7 +668,7 @@ export function usePendingOperations(
 
 ## Store Implementation
 
-### File: `src/stores/pending-operations-store.ts` (implementation)
+### File: `src/stores/pending-operations-store.ts` (PLANNED - implementation)
 
 ```typescript
 import { Entry, EntryType } from '../types/entry.js';
@@ -1047,26 +1104,39 @@ export function createPendingOperationsStore(): PendingOperationsStore {
 
 ## Integration Changes
 
-### Changes to `useBufferState.ts`
+### Changes to `useBufferState.ts` (PENDING)
+
+> **Current State**: These functions exist and are in use. They will be removed when the global store is implemented.
 
 Remove the following (they move to the pending operations store):
 
-- `deletedEntryIds: Set<string>`
-- `markForDeletion()`
-- `unmarkForDeletion()`
-- `isMarkedForDeletion()`
-- `getMarkedForDeletion()`
-- `clearDeletionMarks()`
+- `deletedEntryIds: Set<string>` (line 27)
+- `markForDeletion()` (line 81, 270-272)
+- `unmarkForDeletion()` (line 82, 274-276)
+- `isMarkedForDeletion()` (line 83, 278-283)
+- `getMarkedForDeletion()` (line 84, 285-287)
+- `clearDeletionMarks()` (line 85, 289-291)
+
+Also remove from `buffer-reducer.ts`:
+
+- `MARK_FOR_DELETION` action
+- `UNMARK_FOR_DELETION` action
+- `CLEAR_DELETION_MARKS` action
+- `deletedEntryIds` from `BufferState` and `BufferSnapshot`
 
 Keep undo/redo for buffer-level operations (cursor, entries), but pending operations now have their own undo stack.
 
-### Changes to `S3Explorer.tsx`
+### Changes to `file-explorer.tsx` (PENDING)
+
+> **Note**: The document previously referenced `S3Explorer.tsx` but the main component is `file-explorer.tsx`.
+
+### Changes to `file-explorer.tsx`
 
 ```typescript
-// Add the hook
+// Add the hook (PLANNED)
 const pendingOps = usePendingOperations('s3', bucket, adapter);
 
-// Update action handlers
+// Update action handlers to use new hook instead of bufferState.markForDeletion
 'entry:delete': () => {
   const selected = getActiveBuffer().getSelectedEntries();
   for (const entry of selected) {
@@ -1100,7 +1170,7 @@ const pendingOps = usePendingOperations('s3', bucket, adapter);
 },
 ```
 
-### Changes to `BufferView`
+### Changes to `BufferView` (PENDING)
 
 ```typescript
 function EntryRow({ entry, pendingOps }: Props) {
@@ -1129,28 +1199,33 @@ function EntryRow({ entry, pendingOps }: Props) {
 
 ## Implementation Order
 
-1. **Phase 1: Types & Utilities**
-   - Create `src/types/pending-operations.ts`
-   - Create `src/utils/storage-uri.ts`
-   - Add tests for URI utilities
+> **Current Progress**: None of the phases below have been started.
 
-2. **Phase 2: Store Implementation**
-   - Create `src/stores/pending-operations-store.ts`
-   - Add comprehensive tests for all store operations
+1. **Phase 1: Types & Utilities** - NOT STARTED
+   - [ ] Create `src/types/pending-operations.ts`
+   - [ ] Create `src/utils/storage-uri.ts`
+   - [ ] Add tests for URI utilities
 
-3. **Phase 3: React Hook**
-   - Create `src/hooks/usePendingOperations.ts`
-   - Add tests for hook behavior
+2. **Phase 2: Store Implementation** - NOT STARTED
+   - [ ] Create `src/stores/` directory
+   - [ ] Create `src/stores/pending-operations-store.ts`
+   - [ ] Add comprehensive tests for all store operations
 
-4. **Phase 4: Integration**
-   - Update `S3Explorer.tsx` to use the new hook
-   - Update `BufferView` rendering
-   - Remove old deletion tracking from `useBufferState`
+3. **Phase 3: React Hook** - NOT STARTED
+   - [ ] Create `src/hooks/usePendingOperations.ts`
+   - [ ] Add tests for hook behavior
 
-5. **Phase 5: Polish**
-   - Add visual indicators for all pending operation types
-   - Implement confirmation dialog updates
-   - Add keyboard shortcuts for cut/copy/paste
+4. **Phase 4: Integration** - NOT STARTED
+   - [ ] Update `file-explorer.tsx` to use the new hook
+   - [ ] Update `BufferView` rendering
+   - [ ] Remove old deletion tracking from `useBufferState.ts`
+   - [ ] Remove deletion actions from `buffer-reducer.ts`
+   - [ ] Update `useDialogHandlers.ts` to use new store
+
+5. **Phase 5: Polish** - NOT STARTED
+   - [ ] Add visual indicators for all pending operation types
+   - [ ] Implement confirmation dialog updates
+   - [ ] Add keyboard shortcuts for cut/copy/paste
 
 ## Testing Strategy
 
@@ -1181,3 +1256,25 @@ function EntryRow({ entry, pendingOps }: Props) {
 3. **Conflict detection** - Warn when source file changed since marking
 4. **Progress per operation** - Fine-grained progress for large operations
 5. **Operation preview** - Show diff view before executing
+
+---
+
+## Appendix: Current Implementation Reference
+
+### Files Currently Using Deletion Tracking
+
+| File                             | Usage                                                 |
+| -------------------------------- | ----------------------------------------------------- |
+| `src/hooks/useBufferState.ts`    | Defines deletion marking interface and implementation |
+| `src/hooks/buffer-reducer.ts`    | Reducer actions for deletion state                    |
+| `src/hooks/useDialogHandlers.ts` | Converts marks to `PendingOperation[]` on save        |
+| `src/hooks/useS3Actions.ts`      | `dd` keybinding toggles deletion mark                 |
+| `src/ui/file-explorer.tsx`       | Passes bufferState to components                      |
+
+### Migration Notes
+
+When implementing the global store, ensure:
+
+1. **Backward compatibility**: The current `dd` keybinding workflow should work identically
+2. **Test coverage**: Add tests that verify marks persist across navigation
+3. **Gradual migration**: Can implement store alongside existing code, then switch over
