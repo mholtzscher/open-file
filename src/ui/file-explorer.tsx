@@ -15,20 +15,16 @@ import { usePreview } from '../hooks/usePreview.js';
 import { useDataLoader } from '../hooks/useDataLoader.js';
 import { useOperationExecutor } from '../hooks/useOperationExecutor.js';
 import { useS3Actions } from '../hooks/useS3Actions.js';
+import { useDialogHandlers } from '../hooks/useDialogHandlers.js';
 
 import { FileExplorerLayout, StatusBarState, PreviewState } from './file-explorer-layout.js';
-import { DialogsState } from './file-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
 import { useKeyboardHandler } from '../contexts/KeyboardContext.js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
-import { Entry, EntryType } from '../types/entry.js';
-import { SortField, SortOrder } from '../utils/sorting.js';
 import { EditMode } from '../types/edit-mode.js';
 import { keyToString, type KeyboardKey, type KeyAction } from '../types/keyboard.js';
-import { defaultKeybindings, type KeybindingMap } from '../hooks/keybindingDefaults.js';
+import { defaultKeybindings } from '../hooks/keybindingDefaults.js';
 import { useKeySequence } from '../hooks/useKeySequence.js';
-
-import type { PendingOperation } from '../types/dialog.js';
 
 /**
  * Main FileExplorer component - declarative React implementation
@@ -92,11 +88,6 @@ export function FileExplorer() {
   } = useOperationExecutor();
 
   // ============================================
-  // Refs
-  // ============================================
-  const quitAfterSaveRef = useRef(false);
-
-  // ============================================
   // Hooks
   // ============================================
   const terminalSize = useTerminalSize();
@@ -116,7 +107,6 @@ export function FileExplorer() {
   // ============================================
   // Navigation Config and Handlers
   // ============================================
-  // Currently passed to useNavigationHandlers, which is passed to useS3Actions
   const navigationConfig = {
     onLoadBuffer: async (path: string) => {
       try {
@@ -127,7 +117,6 @@ export function FileExplorer() {
         setStatusMessage(`Navigated to ${path}`);
         setStatusMessageColor(CatppuccinMocha.green);
       } catch (err) {
-        // Simple error handling, detailed parsing in useS3Actions
         setStatusMessage(`Navigation failed: ${err instanceof Error ? err.message : String(err)}`);
         setStatusMessageColor(CatppuccinMocha.red);
       }
@@ -175,7 +164,6 @@ export function FileExplorer() {
   // ============================================
   // Keyboard State
   // ============================================
-  // Check if any dialog is open (blocks normal keybindings)
   const isAnyDialogOpen =
     showConfirmDialog ||
     showHelpDialog ||
@@ -183,9 +171,6 @@ export function FileExplorer() {
     showUploadDialog ||
     showQuitDialog ||
     showProfileSelectorDialog;
-
-  // Use the shared default keybindings map
-  const keybindings: KeybindingMap = defaultKeybindings;
 
   // Multi-key sequence handling (gg, dd, yy, g?)
   const { handleSequence } = useKeySequence({
@@ -228,65 +213,51 @@ export function FileExplorer() {
   const showErrorDialog = statusIsError;
 
   // ============================================
-  // Confirm Handler
+  // Cancel Operation Handler
   // ============================================
-  const createConfirmHandler = useCallback(async () => {
-    // Use the unified operation executor hook
-    await executeOperationsWithProgress(pendingOperations, {
-      onSuccess: async (_result, message) => {
-        try {
-          const currentBufferState = bufferStateRef.current;
-
-          const entries = await storage.list(currentBufferState.currentPath);
-          currentBufferState.setEntries([...entries]);
-          // Clear deletion marks after successful save
-          currentBufferState.clearDeletionMarks();
-          setStatusMessage(message);
-          setStatusMessageColor(CatppuccinMocha.green);
-
-          // If quit was requested after save, exit now
-          if (quitAfterSaveRef.current) {
-            quitAfterSaveRef.current = false;
-            process.exit(0);
-          }
-        } catch (reloadError) {
-          console.error('Failed to reload buffer:', reloadError);
-          setStatusMessage('Operations completed but failed to reload buffer');
-          setStatusMessageColor(CatppuccinMocha.yellow);
-        }
-      },
-      onError: message => {
-        setStatusMessage(message);
-        setStatusMessageColor(CatppuccinMocha.red);
-      },
-      onCancelled: message => {
-        setStatusMessage(message);
-        setStatusMessageColor(CatppuccinMocha.yellow);
-      },
-      onComplete: () => {
-        closeAndClearOperations();
-      },
-    });
-  }, [pendingOperations, storage, closeAndClearOperations, executeOperationsWithProgress]);
-
   const handleCancelOperation = useCallback(() => {
     cancelOperation();
   }, [cancelOperation]);
 
   // ============================================
+  // Dialog Handlers (extracted to separate hook)
+  // ============================================
+  const dialogsState = useDialogHandlers({
+    bufferState,
+    bufferStateRef,
+    storage,
+    dialogState,
+    pendingOperations,
+    progressState,
+    showConfirmDialog,
+    showHelpDialog,
+    showSortMenu,
+    showUploadDialog,
+    showQuitDialog,
+    showProfileSelectorDialog,
+    showErrorDialog,
+    statusMessage,
+    showConfirm,
+    closeDialog,
+    closeAndClearOperations,
+    setStatusMessage,
+    setStatusMessageColor,
+    setBucket,
+    executeOperationsWithProgress,
+    handleCancelOperation,
+  });
+
+  // ============================================
   // Keyboard Handler (via Context)
   // ============================================
-  // Main keyboard handler implements mode-aware keybindings directly.
   const keyboardHandlerCallback = useCallback(
     (key: KeyboardKey): boolean => {
-      // If a dialog is open, let dialog handlers process the key
       if (isAnyDialogOpen) {
         return false;
       }
 
       const mode = bufferState.mode;
 
-      // Helper to execute an action via useS3Actions map
       const executeAction = (action: KeyAction, event?: KeyboardKey): boolean => {
         const handler = actionHandlers[action];
         if (handler) {
@@ -337,13 +308,13 @@ export function FileExplorer() {
           return executeAction(seqResult.action, key);
         }
         if (seqResult.waitingForMore) {
-          return true; // waiting for more keys in sequence
+          return true;
         }
       }
 
       // Keybinding lookup: mode-specific first
       const keyStr = keyToString(key);
-      const modeBindings = keybindings.get(mode);
+      const modeBindings = defaultKeybindings.get(mode);
       const action = modeBindings?.get(keyStr);
 
       if (action) {
@@ -351,7 +322,7 @@ export function FileExplorer() {
       }
 
       // Global bindings
-      const globalBindings = keybindings.get('global');
+      const globalBindings = defaultKeybindings.get('global');
       const globalAction = globalBindings?.get(keyStr);
 
       if (globalAction) {
@@ -360,7 +331,7 @@ export function FileExplorer() {
 
       return false;
     },
-    [isAnyDialogOpen, bufferState.mode, actionHandlers, keybindings, handleSequence]
+    [isAnyDialogOpen, bufferState.mode, actionHandlers, handleSequence]
   );
 
   // Register keyboard handler with context at normal priority
@@ -377,174 +348,6 @@ export function FileExplorer() {
   const previewState: PreviewState = {
     content: previewContent,
     filename: previewFilename,
-  };
-
-  const dialogsState: DialogsState = {
-    confirm: {
-      visible: showConfirmDialog,
-      operations: pendingOperations,
-      onConfirm: createConfirmHandler,
-      onCancel: () => {
-        closeAndClearOperations();
-      },
-    },
-    error: {
-      visible: showErrorDialog,
-      message: statusMessage,
-      onDismiss: () => {
-        setStatusMessage('');
-        setStatusMessageColor(CatppuccinMocha.text);
-      },
-    },
-    help: {
-      visible: showHelpDialog,
-      onClose: () => {
-        closeDialog();
-      },
-    },
-    upload: {
-      visible: showUploadDialog,
-      destinationPath: bufferState.currentPath,
-      onConfirm: selectedFiles => {
-        closeDialog();
-        const currentPath = bufferState.currentPath;
-        const newOperations = selectedFiles.map((filePath, index) => {
-          const filename = filePath.split('/').pop() || filePath;
-          const s3Destination = currentPath ? `${currentPath}${filename}` : filename;
-
-          const entry: Entry = {
-            id: `local-${index}`,
-            name: filename,
-            path: filePath,
-            type: EntryType.File,
-            size: undefined,
-            modified: undefined,
-            metadata: undefined,
-          };
-
-          return {
-            id: `upload-${index}`,
-            type: 'upload' as const,
-            source: filePath,
-            destination: s3Destination,
-            entry,
-            recursive: false,
-          };
-        });
-        showConfirm(newOperations);
-      },
-      onCancel: () => closeDialog(),
-    },
-    sortMenu: {
-      visible: showSortMenu,
-      currentField: bufferState.sortConfig.field,
-      currentOrder: bufferState.sortConfig.order,
-      onFieldSelect: (field: SortField) => {
-        const newConfig = {
-          ...bufferState.sortConfig,
-          field,
-        };
-        bufferState.setSortConfig(newConfig);
-        const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
-        setStatusMessage(`Sorted by ${fieldName}`);
-        setStatusMessageColor(CatppuccinMocha.green);
-      },
-      onOrderToggle: () => {
-        const newOrder =
-          bufferState.sortConfig.order === SortOrder.Ascending
-            ? SortOrder.Descending
-            : SortOrder.Ascending;
-        const newConfig = {
-          ...bufferState.sortConfig,
-          order: newOrder,
-        };
-        bufferState.setSortConfig(newConfig);
-        const orderStr = newOrder === SortOrder.Ascending ? 'ascending' : 'descending';
-        setStatusMessage(`Sort order: ${orderStr}`);
-        setStatusMessageColor(CatppuccinMocha.green);
-      },
-      onClose: () => closeDialog(),
-    },
-    progress: {
-      visible: progressState.visible,
-      title: progressState.title,
-      description: progressState.description,
-      progress: progressState.value,
-      currentFile: progressState.currentFile,
-      currentFileNumber: progressState.currentNum,
-      totalFiles: progressState.totalNum,
-      canCancel: progressState.cancellable,
-      onCancel: handleCancelOperation,
-    },
-    quit: {
-      visible: showQuitDialog,
-      pendingChanges: dialogState.quitPendingChanges,
-      onQuitWithoutSave: () => {
-        process.exit(0);
-      },
-      onSaveAndQuit: () => {
-        const currentBufferState = bufferState;
-        const markedForDeletion = currentBufferState.getMarkedForDeletion();
-
-        if (markedForDeletion.length > 0) {
-          const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
-            id: entry.id,
-            type: 'delete' as const,
-            path: entry.path,
-            entry,
-          }));
-
-          quitAfterSaveRef.current = true;
-          closeDialog();
-          showConfirm(deleteOperations);
-        } else {
-          process.exit(0);
-        }
-      },
-      onCancel: () => {
-        closeDialog();
-        setStatusMessage('Quit cancelled');
-        setStatusMessageColor(CatppuccinMocha.text);
-      },
-    },
-    profileSelector: {
-      visible: showProfileSelectorDialog,
-      profileManager: storage.getProfileManager(),
-      currentProfileId: storage.state.profileId,
-      onProfileSelect: async profile => {
-        try {
-          setStatusMessage(`Switching to profile: ${profile.displayName}...`);
-          setStatusMessageColor(CatppuccinMocha.blue);
-          closeDialog();
-
-          // Switch to the new profile
-          await storage.switchProfile(profile.id);
-
-          // Get the new state from storage
-          const newState = storage.state;
-
-          // Update bucket state based on new storage state
-          if (newState.currentContainer) {
-            setBucket(newState.currentContainer);
-          } else {
-            setBucket(undefined);
-          }
-
-          // Update buffer with new entries and path
-          bufferState.setEntries([...newState.entries]);
-          bufferState.setCurrentPath(newState.currentPath);
-
-          setStatusMessage(`Switched to profile: ${profile.displayName}`);
-          setStatusMessageColor(CatppuccinMocha.green);
-        } catch (err) {
-          setStatusMessage(
-            `Failed to switch profile: ${err instanceof Error ? err.message : 'Unknown error'}`
-          );
-          setStatusMessageColor(CatppuccinMocha.red);
-        }
-      },
-      onCancel: () => closeDialog(),
-    },
   };
 
   // ============================================
