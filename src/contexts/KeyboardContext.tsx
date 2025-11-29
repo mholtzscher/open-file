@@ -72,6 +72,11 @@ const KeyboardContext = createContext<KeyboardContextValue | null>(null);
  */
 interface KeyboardProviderProps {
   children: ReactNode;
+  /**
+   * Callback when dispatch function is ready
+   * Used to bridge external key sources (e.g., CLI renderer) to the context
+   */
+  onDispatchReady?: (dispatch: KeyboardDispatcher | null) => void;
 }
 
 /**
@@ -90,7 +95,7 @@ function generateHandlerId(): string {
  * When a handler returns true, the key is considered consumed and
  * no further handlers are called.
  */
-export function KeyboardProvider({ children }: KeyboardProviderProps) {
+export function KeyboardProvider({ children, onDispatchReady }: KeyboardProviderProps) {
   const handlersRef = useRef<HandlerRegistration[]>([]);
 
   const registerHandler = useCallback(
@@ -127,6 +132,14 @@ export function KeyboardProvider({ children }: KeyboardProviderProps) {
       }
     }
   }, []);
+
+  // Notify parent when dispatch is ready (for bridging external key sources)
+  useEffect(() => {
+    onDispatchReady?.(dispatch);
+    return () => {
+      onDispatchReady?.(null);
+    };
+  }, [dispatch, onDispatchReady]);
 
   return (
     <KeyboardContext.Provider value={{ registerHandler, dispatch }}>
@@ -185,13 +198,4 @@ export function useKeyboardHandler(
   useEffect(() => {
     return registerHandler(handler, priority);
   }, [registerHandler, handler, priority]);
-}
-
-/**
- * Hook to get the dispatch function for external key sources
- * (e.g., the CLI renderer's keypress events)
- */
-export function useKeyboardDispatch(): KeyboardDispatcher {
-  const { dispatch } = useKeyboard();
-  return dispatch;
 }
