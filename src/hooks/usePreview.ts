@@ -50,12 +50,83 @@ export interface PreviewState {
 // ============================================================================
 
 /**
- * Determine if a file should be previewed based on its extension
+ * Determine if a file should be previewed based on its extension or name
  */
 function isPreviewableFile(entry: Entry | undefined): boolean {
   if (!entry || entry.type !== EntryType.File) return false;
 
   const name = entry.name.toLowerCase();
+
+  // Common extensionless text files (exact matches)
+  const extensionlessTextFiles = [
+    'dockerfile',
+    'makefile',
+    'gnumakefile',
+    'rakefile',
+    'gemfile',
+    'procfile',
+    'brewfile',
+    'vagrantfile',
+    'jenkinsfile',
+    'justfile',
+    'license',
+    'licence',
+    'readme',
+    'authors',
+    'contributors',
+    'changelog',
+    'changes',
+    'history',
+    'news',
+    'todo',
+    'copying',
+    'install',
+    'cmakelists.txt', // Special case: has extension but commonly searched without
+  ];
+
+  // Dotfiles that are text (exact matches)
+  const textDotfiles = [
+    '.gitignore',
+    '.gitattributes',
+    '.gitmodules',
+    '.gitconfig',
+    '.npmignore',
+    '.npmrc',
+    '.nvmrc',
+    '.yarnrc',
+    '.editorconfig',
+    '.prettierrc',
+    '.prettierignore',
+    '.eslintrc',
+    '.eslintignore',
+    '.babelrc',
+    '.env',
+    '.env.local',
+    '.env.development',
+    '.env.production',
+    '.env.test',
+    '.env.example',
+    '.dockerignore',
+    '.hgignore',
+    '.mailmap',
+    '.htaccess',
+    '.htpasswd',
+    '.profile',
+    '.bashrc',
+    '.bash_profile',
+    '.zshrc',
+    '.zprofile',
+    '.vimrc',
+    '.inputrc',
+  ];
+
+  // Check exact matches for extensionless files
+  if (extensionlessTextFiles.includes(name)) return true;
+
+  // Check exact matches for dotfiles
+  if (textDotfiles.includes(name)) return true;
+
+  // Check file extensions
   const textExtensions = [
     '.txt',
     '.md',
@@ -91,6 +162,10 @@ function isPreviewableFile(entry: Entry | undefined): boolean {
     '.swift',
     '.kt',
     '.kts',
+    '.ini',
+    '.conf',
+    '.cfg',
+    '.properties',
   ];
 
   return textExtensions.some(ext => name.endsWith(ext));

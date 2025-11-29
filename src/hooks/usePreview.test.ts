@@ -43,6 +43,77 @@ function isPreviewableFile(entry: Entry | undefined): boolean {
   if (!entry || entry.type !== EntryType.File) return false;
 
   const name = entry.name.toLowerCase();
+
+  // Common extensionless text files (exact matches)
+  const extensionlessTextFiles = [
+    'dockerfile',
+    'makefile',
+    'gnumakefile',
+    'rakefile',
+    'gemfile',
+    'procfile',
+    'brewfile',
+    'vagrantfile',
+    'jenkinsfile',
+    'justfile',
+    'license',
+    'licence',
+    'readme',
+    'authors',
+    'contributors',
+    'changelog',
+    'changes',
+    'history',
+    'news',
+    'todo',
+    'copying',
+    'install',
+    'cmakelists.txt', // Special case: has extension but commonly searched without
+  ];
+
+  // Dotfiles that are text (exact matches)
+  const textDotfiles = [
+    '.gitignore',
+    '.gitattributes',
+    '.gitmodules',
+    '.gitconfig',
+    '.npmignore',
+    '.npmrc',
+    '.nvmrc',
+    '.yarnrc',
+    '.editorconfig',
+    '.prettierrc',
+    '.prettierignore',
+    '.eslintrc',
+    '.eslintignore',
+    '.babelrc',
+    '.env',
+    '.env.local',
+    '.env.development',
+    '.env.production',
+    '.env.test',
+    '.env.example',
+    '.dockerignore',
+    '.hgignore',
+    '.mailmap',
+    '.htaccess',
+    '.htpasswd',
+    '.profile',
+    '.bashrc',
+    '.bash_profile',
+    '.zshrc',
+    '.zprofile',
+    '.vimrc',
+    '.inputrc',
+  ];
+
+  // Check exact matches for extensionless files
+  if (extensionlessTextFiles.includes(name)) return true;
+
+  // Check exact matches for dotfiles
+  if (textDotfiles.includes(name)) return true;
+
+  // Check file extensions
   const textExtensions = [
     '.txt',
     '.md',
@@ -78,6 +149,10 @@ function isPreviewableFile(entry: Entry | undefined): boolean {
     '.swift',
     '.kt',
     '.kts',
+    '.ini',
+    '.conf',
+    '.cfg',
+    '.properties',
   ];
 
   return textExtensions.some(ext => name.endsWith(ext));
@@ -190,6 +265,99 @@ describe('usePreview - isPreviewableFile logic', () => {
     ];
 
     webFiles.forEach(filename => {
+      const entry = createTextFileEntry(filename);
+      expect(isPreviewableFile(entry)).toBe(true);
+    });
+  });
+
+  it('should support common extensionless text files', () => {
+    const extensionlessFiles = [
+      'Dockerfile',
+      'Makefile',
+      'GNUmakefile',
+      'Rakefile',
+      'Gemfile',
+      'Procfile',
+      'Brewfile',
+      'Vagrantfile',
+      'Jenkinsfile',
+      'Justfile',
+      'LICENSE',
+      'LICENCE',
+      'README',
+      'AUTHORS',
+      'CONTRIBUTORS',
+      'CHANGELOG',
+      'CHANGES',
+      'HISTORY',
+      'NEWS',
+      'TODO',
+      'COPYING',
+      'INSTALL',
+    ];
+
+    extensionlessFiles.forEach(filename => {
+      const entry = createTextFileEntry(filename);
+      expect(isPreviewableFile(entry)).toBe(true);
+    });
+  });
+
+  it('should be case-insensitive for extensionless files', () => {
+    expect(isPreviewableFile(createTextFileEntry('dockerfile'))).toBe(true);
+    expect(isPreviewableFile(createTextFileEntry('DOCKERFILE'))).toBe(true);
+    expect(isPreviewableFile(createTextFileEntry('Dockerfile'))).toBe(true);
+    expect(isPreviewableFile(createTextFileEntry('makefile'))).toBe(true);
+    expect(isPreviewableFile(createTextFileEntry('MAKEFILE'))).toBe(true);
+    expect(isPreviewableFile(createTextFileEntry('license'))).toBe(true);
+    expect(isPreviewableFile(createTextFileEntry('LICENSE'))).toBe(true);
+  });
+
+  it('should support common dotfiles', () => {
+    const dotfiles = [
+      '.gitignore',
+      '.gitattributes',
+      '.gitmodules',
+      '.gitconfig',
+      '.npmignore',
+      '.npmrc',
+      '.nvmrc',
+      '.yarnrc',
+      '.editorconfig',
+      '.prettierrc',
+      '.prettierignore',
+      '.eslintrc',
+      '.eslintignore',
+      '.babelrc',
+      '.env',
+      '.env.local',
+      '.env.development',
+      '.env.production',
+      '.env.test',
+      '.env.example',
+      '.dockerignore',
+      '.hgignore',
+      '.mailmap',
+      '.htaccess',
+      '.htpasswd',
+      '.profile',
+      '.bashrc',
+      '.bash_profile',
+      '.zshrc',
+      '.zprofile',
+      '.vimrc',
+      '.inputrc',
+    ];
+
+    dotfiles.forEach(filename => {
+      const entry = createTextFileEntry(filename);
+      expect(isPreviewableFile(entry)).toBe(true);
+    });
+  });
+
+  it('should support config file extensions', () => {
+    const configFiles = ['config.ini', 'app.conf', 'settings.cfg', 'database.properties'];
+
+    configFiles.forEach(filename => {
       const entry = createTextFileEntry(filename);
       expect(isPreviewableFile(entry)).toBe(true);
     });
