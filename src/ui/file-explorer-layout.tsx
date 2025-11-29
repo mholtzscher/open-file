@@ -5,7 +5,6 @@
  * This is a pure presentational component that receives all state via props.
  */
 
-import { MultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { UseTerminalSizeReturn, LayoutDimensions } from '../hooks/useTerminalSize.js';
 
@@ -28,8 +27,9 @@ export interface StatusBarState {
  * Props for the preview pane
  */
 export interface PreviewState {
-  enabled: boolean;
+  /** Preview content (text), if any */
   content: string | null;
+  /** Filename associated with the preview */
   filename: string;
 }
 
@@ -43,14 +43,8 @@ export interface FileExplorerLayoutProps {
   /** Whether the component is initialized */
   isInitialized: boolean;
 
-  /** Main buffer state for single pane mode */
+  /** Main buffer state */
   bufferState: UseBufferStateReturn;
-
-  /** Active buffer state (from multi-pane or main) */
-  activeBufferState: UseBufferStateReturn;
-
-  /** Multi-pane layout state */
-  multiPaneLayout: MultiPaneLayout;
 
   /** Terminal size information */
   terminalSize: UseTerminalSizeReturn;
@@ -85,8 +79,6 @@ export function FileExplorerLayout({
   bucket,
   isInitialized,
   bufferState,
-  activeBufferState,
-  multiPaneLayout,
   terminalSize,
   layout,
   statusBar,
@@ -103,74 +95,54 @@ export function FileExplorerLayout({
     );
   }
 
+  const showPreview = preview.content !== null;
+
+  const title = bucket
+    ? `${bucket}${bufferState.currentPath ? ':' + bufferState.currentPath : ''}`
+    : 'Buckets';
+
   return (
     <box flexDirection="column" width="100%" height="100%">
       {/* Header */}
       <Header />
 
-      {/* Main content area with panes - flex layout */}
+      {/* Main content area with buffer + optional preview */}
       <box flexGrow={1} flexDirection="row" gap={1}>
-        {multiPaneLayout.isMultiPaneMode && multiPaneLayout.panes.length > 1 ? (
-          // Multi-pane mode
-          multiPaneLayout.panes.map(pane => {
-            const paneTitle = bucket
-              ? `${bucket}${pane.bufferState.currentPath ? ':' + pane.bufferState.currentPath : ''}`
-              : `Buckets`;
+        <BufferPane
+          id="main-pane"
+          bufferState={bufferState}
+          isActive={true}
+          title={title}
+          showHeader={false}
+          showIcons={!terminalSize.isSmall}
+          showSizes={!terminalSize.isSmall}
+          showDates={!terminalSize.isMedium}
+          flexGrow={showPreview ? 3 : 1}
+          flexShrink={1}
+          flexBasis={0}
+        />
 
-            return (
-              <BufferPane
-                key={pane.id}
-                id={pane.id}
-                bufferState={pane.bufferState}
-                isActive={pane.isActive}
-                title={paneTitle}
-                showIcons={!terminalSize.isSmall}
-                showSizes={!terminalSize.isSmall}
-                showDates={!terminalSize.isMedium}
-                flexGrow={1}
-                flexShrink={1}
-                flexBasis={0}
-              />
-            );
-          })
-        ) : (
-          // Single pane mode - use main buffer state directly
-          <>
-            <BufferPane
-              id="main-pane"
-              bufferState={bufferState}
-              isActive={true}
-              title={
-                bucket
-                  ? `${bucket}${bufferState.currentPath ? ':' + bufferState.currentPath : ''}`
-                  : `Buckets`
-              }
-              showHeader={false}
-              showIcons={!terminalSize.isSmall}
-              showSizes={!terminalSize.isSmall}
-              showDates={!terminalSize.isMedium}
-              flexGrow={preview.enabled ? 1 : 1}
-              flexShrink={1}
-              flexBasis={preview.enabled ? 0 : 0}
-            />
-
-            {/* Preview Pane - only in single pane mode when enabled */}
-            {preview.enabled && preview.content !== null && (
-              <PreviewPane content={preview.content} filename={preview.filename} visible={true} />
-            )}
-          </>
+        {showPreview && (
+          <PreviewPane
+            content={preview.content || undefined}
+            filename={preview.filename}
+            visible={true}
+            flexGrow={2}
+            flexShrink={1}
+            flexBasis={0}
+          />
         )}
       </box>
 
       {/* Status Bar */}
       <box height={layout.footerHeight} flexShrink={0}>
         <StatusBar
-          path={activeBufferState.currentPath}
-          mode={activeBufferState.mode}
+          path={bufferState.currentPath}
+          mode={bufferState.mode}
           message={statusBar.message && !showErrorDialog ? statusBar.message : undefined}
           messageColor={statusBar.messageColor}
-          searchQuery={activeBufferState.searchQuery}
-          commandBuffer={activeBufferState.editBuffer}
+          searchQuery={bufferState.searchQuery}
+          commandBuffer={bufferState.editBuffer}
           bucket={bucket}
         />
       </box>

@@ -8,18 +8,16 @@ import { EditMode } from '../types/edit-mode.js';
 import { KeyAction, KeyboardKey } from '../types/keyboard.js';
 import type { PendingOperation } from '../types/dialog.js';
 import type { UseBufferStateReturn } from './useBufferState.js';
-import type { MultiPaneLayout } from './useMultiPaneLayout.js';
 import type { UseNavigationHandlersReturn as NavigationHandlers } from './useNavigationHandlers.js';
 import type { StorageContextValue } from '../contexts/StorageContext.js';
 
 interface UseS3ActionsProps {
   storage: StorageContextValue;
-  multiPaneLayout: MultiPaneLayout;
   bufferState: UseBufferStateReturn;
   bucket: string | undefined;
   setBucket: (bucket: string | undefined) => void;
-  previewEnabled: boolean;
-  setPreviewEnabled: (enabled: boolean) => void;
+  previewMode: boolean;
+  setPreviewMode: (enabled: boolean) => void;
   setStatusMessage: (msg: string) => void;
   setStatusMessageColor: (color: string) => void;
   navigationHandlers: NavigationHandlers;
@@ -34,12 +32,11 @@ interface UseS3ActionsProps {
 
 export function useS3Actions({
   storage,
-  multiPaneLayout,
   bufferState,
   bucket,
   setBucket,
-  previewEnabled,
-  setPreviewEnabled,
+  previewMode,
+  setPreviewMode,
   setStatusMessage,
   setStatusMessageColor,
   navigationHandlers,
@@ -52,7 +49,7 @@ export function useS3Actions({
   closeDialog,
 }: UseS3ActionsProps) {
   return useMemo(() => {
-    const getActiveBuffer = () => multiPaneLayout.getActiveBufferState() || bufferState;
+    const getActiveBuffer = () => bufferState;
 
     const actionHandlers: Partial<Record<KeyAction, (key?: KeyboardKey) => void | Promise<void>>> =
       {
@@ -85,8 +82,8 @@ export function useS3Actions({
 
           // If it's a file, enable preview mode
           if (currentEntry.type === 'file') {
-            if (!previewEnabled) {
-              setPreviewEnabled(true);
+            if (!previewMode) {
+              setPreviewMode(true);
               setStatusMessage('Preview enabled');
               setStatusMessageColor(CatppuccinMocha.blue);
             }
@@ -97,9 +94,9 @@ export function useS3Actions({
         },
 
         'entry:back': async () => {
-          if (previewEnabled) {
-            setPreviewEnabled(false);
-            // Preview content will be cleared automatically by the hook when previewEnabled is false
+          if (previewMode) {
+            setPreviewMode(false);
+            // Preview content will be cleared automatically by the hook when previewMode is false
             setStatusMessage('Preview closed');
             setStatusMessageColor(CatppuccinMocha.text);
             return;
@@ -605,12 +602,11 @@ export function useS3Actions({
     return actionHandlers;
   }, [
     storage,
-    multiPaneLayout,
     bufferState,
     bucket,
     setBucket,
-    previewEnabled,
-    setPreviewEnabled,
+    previewMode,
+    setPreviewMode,
     setStatusMessage,
     setStatusMessageColor,
     // setOriginalEntries removed

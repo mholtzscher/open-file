@@ -9,7 +9,6 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useBufferState } from '../hooks/useBufferState.js';
 import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
 import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
-import { useMultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
 import { useDialogState } from '../hooks/useDialogState.js';
 import { useStatusMessage } from '../hooks/useStatusMessage.js';
 import { usePreview } from '../hooks/usePreview.js';
@@ -81,9 +80,9 @@ export function FileExplorer({}: FileExplorerProps) {
   const pendingOperations = dialogState.pendingOperations;
 
   // ============================================
-  // Preview State
+  // Preview Mode (controls whether preview hook is active)
   // ============================================
-  const [previewEnabled, setPreviewEnabled] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   // ============================================
   // Operation Executor Hook (combines progress + async operations)
@@ -113,17 +112,6 @@ export function FileExplorer({}: FileExplorerProps) {
   const bufferStateRef = useRef(bufferState);
   bufferStateRef.current = bufferState;
 
-  // Initialize multi-pane layout
-  const multiPaneLayout = useMultiPaneLayout();
-
-  // Add initial pane if none exist - only run once on mount
-  useEffect(() => {
-    if (multiPaneLayout.panes.length === 0) {
-      multiPaneLayout.addPane(bufferStateRef);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Update viewport height when layout changes
   useEffect(() => {
     bufferState.setViewportHeight(layout.contentHeight);
@@ -135,12 +123,11 @@ export function FileExplorer({}: FileExplorerProps) {
   // Currently passed to useNavigationHandlers, which is passed to useS3Actions
   const navigationConfig = {
     onLoadBuffer: async (path: string) => {
-      const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
       try {
         const entries = await storage.list(path);
-        activeBufferState.setEntries([...entries]);
-        activeBufferState.setCurrentPath(path);
-        activeBufferState.cursorToTop();
+        bufferState.setEntries([...entries]);
+        bufferState.setCurrentPath(path);
+        bufferState.cursorToTop();
         setStatusMessage(`Navigated to ${path}`);
         setStatusMessageColor(CatppuccinMocha.green);
       } catch (err) {
@@ -155,7 +142,7 @@ export function FileExplorer({}: FileExplorerProps) {
     },
   };
 
-  const activeBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+  const activeBufferState = bufferState;
   const navigationHandlers = useNavigationHandlers(activeBufferState, navigationConfig);
 
   // ============================================
@@ -182,8 +169,7 @@ export function FileExplorer({}: FileExplorerProps) {
   // Preview Hook
   // ============================================
   const selectedEntry = activeBufferState.entries[activeBufferState.selection.cursorIndex];
-  const previewHookEnabled =
-    previewEnabled && !!bucket && isInitialized && !multiPaneLayout.isMultiPaneMode;
+  const previewHookEnabled = isPreviewMode && !!bucket && isInitialized;
   const preview = usePreview(activeBufferState.currentPath, selectedEntry, {
     enabled: previewHookEnabled,
     maxSize: 100 * 1024, // 100KB
@@ -224,12 +210,11 @@ export function FileExplorer({}: FileExplorerProps) {
   // ============================================
   const actionHandlers = useS3Actions({
     storage,
-    multiPaneLayout,
     bufferState,
     bucket,
     setBucket,
-    previewEnabled,
-    setPreviewEnabled,
+    previewMode: isPreviewMode,
+    setPreviewMode: setIsPreviewMode,
     setStatusMessage,
     setStatusMessageColor,
     navigationHandlers,
@@ -258,7 +243,8 @@ export function FileExplorer({}: FileExplorerProps) {
     await executeOperationsWithProgress(pendingOperations, {
       onSuccess: async (_result, message) => {
         try {
-          const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+          const currentBufferState = bufferState;
+
           const entries = await storage.list(currentBufferState.currentPath);
           currentBufferState.setEntries([...entries]);
           // Clear deletion marks after successful save
@@ -292,7 +278,6 @@ export function FileExplorer({}: FileExplorerProps) {
   }, [
     pendingOperations,
     storage,
-    multiPaneLayout,
     bufferState,
     closeAndClearOperations,
     executeOperationsWithProgress,
@@ -419,7 +404,6 @@ export function FileExplorer({}: FileExplorerProps) {
   };
 
   const previewState: PreviewState = {
-    enabled: previewEnabled,
     content: previewContent,
     filename: previewFilename,
   };
@@ -528,7 +512,7 @@ export function FileExplorer({}: FileExplorerProps) {
         process.exit(0);
       },
       onSaveAndQuit: () => {
-        const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+        const currentBufferState = bufferState;
         const markedForDeletion = currentBufferState.getMarkedForDeletion();
 
         if (markedForDeletion.length > 0) {
@@ -577,7 +561,7 @@ export function FileExplorer({}: FileExplorerProps) {
           });
 
           // Get current buffer state
-          const currentBufferState = multiPaneLayout.getActiveBufferState() || bufferState;
+          const currentBufferState = bufferState;
 
           // Update bucket state based on new storage state
           if (newState.currentContainer) {
@@ -620,9 +604,7 @@ export function FileExplorer({}: FileExplorerProps) {
     <FileExplorerLayout
       bucket={bucket}
       isInitialized={isInitialized}
-      bufferState={bufferState}
-      activeBufferState={activeBufferState}
-      multiPaneLayout={multiPaneLayout}
+      bufferState={activeBufferState}
       terminalSize={terminalSize}
       layout={layout}
       statusBar={statusBarState}
