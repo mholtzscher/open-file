@@ -44,6 +44,7 @@ export type KeyAction =
   | 'entry:back'
   | 'entry:delete'
   | 'entry:rename'
+  | 'entry:cut'
   | 'entry:copy'
   | 'entry:paste'
   | 'entry:download'

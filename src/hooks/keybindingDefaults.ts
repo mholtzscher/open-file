@@ -58,6 +58,7 @@ function createDefaultKeybindings(): KeybindingMap {
     // ['d', 'entry:delete'], // Part of dd sequence
     // ['y', 'entry:copy'], // Part of yy sequence
     ['p', 'entry:paste'],
+    ['x', 'entry:cut'],
     ['shift+d', 'entry:download'],
     ['D', 'entry:download'],
     ['shift+u', 'entry:upload'],
@@ -105,6 +106,7 @@ function createDefaultKeybindings(): KeybindingMap {
     ['k', 'select:extend:up'],
     // Note: d in visual mode deletes selection (handled as single key, not dd)
     ['d', 'entry:delete'],
+    ['x', 'entry:cut'],
     ['y', 'entry:copy'],
   ]);
   map.set(EditMode.Visual, visual);
@@ -172,6 +174,7 @@ export const keybindingDescriptions: Partial<Record<KeyAction, string>> = {
   'entry:back': 'Go to parent directory',
   'entry:delete': 'Delete entry (dd)',
   'entry:rename': 'Rename entry',
+  'entry:cut': 'Cut entry (x)',
   'entry:copy': 'Copy entry (yy)',
   'entry:paste': 'Paste entry',
   'entry:download': 'Download to local',

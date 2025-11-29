@@ -11,10 +11,11 @@ import { BaseDialog } from './base.js';
 
 export interface Operation {
   id: string;
-  type: 'create' | 'delete' | 'move' | 'copy' | 'download' | 'upload';
+  type: 'create' | 'delete' | 'move' | 'copy' | 'rename' | 'download' | 'upload';
   path?: string;
   source?: string;
   destination?: string;
+  newName?: string;
 }
 
 export interface ConfirmationDialogProps {
@@ -55,6 +56,9 @@ function formatOperation(op: Operation, maxWidth: number = 50): string {
       break;
     case 'upload':
       text = `Upload: ${getBasename(op.source!)} → ${getBasename(op.destination!)}`;
+      break;
+    case 'rename':
+      text = `Rename: ${getBasename(op.path!)} → ${op.newName}`;
       break;
     default:
       text = `Unknown: ${op.path || 'unknown'}`;

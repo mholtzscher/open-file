@@ -140,13 +140,21 @@ export function BufferView({
     filteredEntries.length < bufferState.entries.length && bufferState.searchQuery
       ? filteredEntries
       : bufferState.entries;
+
+  // Get virtual entries (pending moves/copies to this directory)
+  // These are displayed separately and are not navigable
+  const virtualEntries = pendingOps?.getVirtualEntries(bufferState.currentPath) ?? [];
+
   const cursorIndex = bufferState.selection.cursorIndex;
 
   // Get visible entries (with scroll offset)
   const viewportHeight = bufferState.viewportHeight;
+  // Reserve space for virtual entries if any
+  const virtualSpace = virtualEntries.length > 0 ? Math.min(virtualEntries.length + 1, 5) : 0;
+  const adjustedViewportHeight = viewportHeight - virtualSpace;
   const visibleEntries = entries.slice(
     bufferState.scrollOffset,
-    bufferState.scrollOffset + viewportHeight
+    bufferState.scrollOffset + adjustedViewportHeight
   );
 
   // Check if in insert mode
@@ -181,22 +189,36 @@ export function BufferView({
               bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
             );
 
-        // Check if entry is marked for deletion (use new store if available)
-        const isMarkedForDeletion = pendingOps
-          ? pendingOps.isMarkedForDeletion(entry)
-          : bufferState.isMarkedForDeletion(entry.id);
+        // Check entry visual state from pending operations store
+        const entryState = pendingOps?.getEntryState(entry);
+        const isMarkedForDeletion =
+          entryState?.isDeleted ?? bufferState.isMarkedForDeletion(entry.id);
+        const isCut = entryState?.isMovedAway ?? false;
 
         const cursor = isSelected ? '> ' : '  ';
-        // Add deletion marker prefix if marked for deletion
-        const deleteMarker = isMarkedForDeletion ? '✗ ' : '';
-        let content = cursor + deleteMarker + formatEntry(entry, showIcons, showSizes, showDates);
+        // Add marker prefix based on state
+        let marker = '';
+        if (isMarkedForDeletion) {
+          marker = '✗ ';
+        } else if (isCut) {
+          marker = '✂ ';
+        }
+        let content = cursor + marker + formatEntry(entry, showIcons, showSizes, showDates);
 
         // Apply strikethrough to deleted entries
         if (isMarkedForDeletion) {
           content = applyStrikethrough(content);
         }
 
-        const color = getEntryColor(entry, isSelected, isMarkedForDeletion);
+        // Determine color based on state
+        let color: string;
+        if (isMarkedForDeletion) {
+          color = CatppuccinMocha.red;
+        } else if (isCut) {
+          color = CatppuccinMocha.overlay0; // Dimmed for cut items
+        } else {
+          color = getEntryColor(entry, isSelected, false);
+        }
 
         return (
           <text
@@ -215,6 +237,25 @@ export function BufferView({
           {editBuffer}
           {'_'}
         </text>
+      )}
+      {/* Show pending virtual entries (moves/copies to this directory) */}
+      {virtualEntries.length > 0 && (
+        <>
+          <text fg={CatppuccinMocha.overlay0}>{'── pending ──'}</text>
+          {virtualEntries.slice(0, 4).map(entry => {
+            const content = '  + ' + formatEntry(entry, showIcons, showSizes, showDates);
+            return (
+              <text key={entry.id} fg={CatppuccinMocha.green}>
+                {content}
+              </text>
+            );
+          })}
+          {virtualEntries.length > 4 && (
+            <text fg={CatppuccinMocha.overlay0}>
+              {`  ... and ${virtualEntries.length - 4} more`}
+            </text>
+          )}
+        </>
       )}
     </box>
   );

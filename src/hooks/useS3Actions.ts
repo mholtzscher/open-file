@@ -188,6 +188,35 @@ export function useS3Actions({
           }
         },
 
+        'entry:cut': () => {
+          if (!storage.hasCapability(Capability.Move)) {
+            setStatusMessage('Move not supported by this storage provider');
+            setStatusMessageColor(CatppuccinMocha.red);
+            return;
+          }
+
+          const currentBufferState = getActiveBuffer();
+          const selected = currentBufferState.getSelectedEntries();
+
+          if (selected.length === 0) {
+            setStatusMessage('No entries selected');
+            setStatusMessageColor(CatppuccinMocha.yellow);
+            return;
+          }
+
+          if (pendingOps) {
+            pendingOps.cut(selected);
+            if (currentBufferState.selection.isActive) {
+              currentBufferState.exitVisualSelection();
+            }
+            setStatusMessage(`Cut ${selected.length} item(s) - navigate and press 'p' to move`);
+            setStatusMessageColor(CatppuccinMocha.blue);
+          } else {
+            setStatusMessage('Cut not available (pending ops not initialized)');
+            setStatusMessageColor(CatppuccinMocha.yellow);
+          }
+        },
+
         'entry:copy': () => {
           if (!storage.hasCapability(Capability.Copy)) {
             setStatusMessage('Copy not supported by this storage provider');
@@ -195,21 +224,60 @@ export function useS3Actions({
             return;
           }
 
-          getActiveBuffer().copySelection();
-          setStatusMessage('Copied');
-          setStatusMessageColor(CatppuccinMocha.green);
-        },
+          const currentBufferState = getActiveBuffer();
+          const selected = currentBufferState.getSelectedEntries();
 
-        'entry:paste': () => {
-          if (!storage.hasCapability(Capability.Copy)) {
-            setStatusMessage('Paste not supported by this storage provider');
-            setStatusMessageColor(CatppuccinMocha.red);
+          if (selected.length === 0) {
+            setStatusMessage('No entries selected');
+            setStatusMessageColor(CatppuccinMocha.yellow);
             return;
           }
 
-          // Paste is handled by buffer state
-          setStatusMessage('Paste not yet implemented');
-          setStatusMessageColor(CatppuccinMocha.yellow);
+          if (pendingOps) {
+            pendingOps.copy(selected);
+            if (currentBufferState.selection.isActive) {
+              currentBufferState.exitVisualSelection();
+            }
+            setStatusMessage(`Copied ${selected.length} item(s) - navigate and press 'p' to paste`);
+            setStatusMessageColor(CatppuccinMocha.blue);
+          } else {
+            // Fallback to old behavior
+            currentBufferState.copySelection();
+            setStatusMessage('Copied');
+            setStatusMessageColor(CatppuccinMocha.green);
+          }
+        },
+
+        'entry:paste': () => {
+          const currentBufferState = getActiveBuffer();
+
+          if (pendingOps) {
+            if (!pendingOps.hasClipboardContent) {
+              setStatusMessage('Nothing to paste - cut or copy first');
+              setStatusMessageColor(CatppuccinMocha.yellow);
+              return;
+            }
+
+            const isCut = pendingOps.isClipboardCut;
+            if (isCut && !storage.hasCapability(Capability.Move)) {
+              setStatusMessage('Move not supported by this storage provider');
+              setStatusMessageColor(CatppuccinMocha.red);
+              return;
+            }
+            if (!isCut && !storage.hasCapability(Capability.Copy)) {
+              setStatusMessage('Copy not supported by this storage provider');
+              setStatusMessageColor(CatppuccinMocha.red);
+              return;
+            }
+
+            pendingOps.paste(currentBufferState.currentPath);
+            const opType = isCut ? 'move' : 'copy';
+            setStatusMessage(`Pending ${opType} operation(s) added. Press 'w' to save.`);
+            setStatusMessageColor(CatppuccinMocha.yellow);
+          } else {
+            setStatusMessage('Paste not yet implemented');
+            setStatusMessageColor(CatppuccinMocha.yellow);
+          }
         },
 
         'entry:download': () => {
@@ -334,24 +402,78 @@ export function useS3Actions({
         // Buffer operations
         'buffer:save': () => {
           // Use the new pending operations store if available
-          const markedForDeletion = pendingOps
-            ? pendingOps.getMarkedForDeletion()
-            : getActiveBuffer().getMarkedForDeletion();
+          if (pendingOps && pendingOps.hasPendingChanges) {
+            // Convert store operations to dialog PendingOperation format
+            const storeOps = pendingOps.operations;
+            const dialogOps: PendingOperation[] = storeOps.map(op => {
+              switch (op.type) {
+                case 'delete':
+                  return {
+                    id: op.id,
+                    type: 'delete' as const,
+                    path: op.entry.path,
+                    entry: op.entry,
+                  };
+                case 'move':
+                  return {
+                    id: op.id,
+                    type: 'move' as const,
+                    source: op.entry.path,
+                    destination: op.destUri.split('/').slice(3).join('/'), // Extract path from URI
+                    entry: op.entry,
+                    recursive: op.entry.type === EntryType.Directory,
+                  };
+                case 'copy':
+                  return {
+                    id: op.id,
+                    type: 'copy' as const,
+                    source: op.entry.path,
+                    destination: op.destUri.split('/').slice(3).join('/'), // Extract path from URI
+                    entry: op.entry,
+                    recursive: op.entry.type === EntryType.Directory,
+                  };
+                case 'rename':
+                  return {
+                    id: op.id,
+                    type: 'rename' as const,
+                    path: op.entry.path,
+                    newName: op.newName,
+                    entry: op.entry,
+                  };
+                case 'create':
+                  return {
+                    id: op.id,
+                    type: 'create' as const,
+                    path: op.uri.split('/').slice(3).join('/'), // Extract path from URI
+                    entry: {
+                      id: op.id,
+                      name: op.name,
+                      type: op.entryType,
+                      path: op.uri.split('/').slice(3).join('/'),
+                    },
+                  };
+              }
+            });
 
-          const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
-            id: entry.id,
-            type: 'delete',
-            path: entry.path,
-            entry,
-          }));
+            showConfirm(dialogOps);
+          } else {
+            // Fallback to old behavior
+            const markedForDeletion = getActiveBuffer().getMarkedForDeletion();
+            const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
+              id: entry.id,
+              type: 'delete',
+              path: entry.path,
+              entry,
+            }));
 
-          if (deleteOperations.length === 0) {
-            setStatusMessage('No changes to save');
-            setStatusMessageColor(CatppuccinMocha.text);
-            return;
+            if (deleteOperations.length === 0) {
+              setStatusMessage('No changes to save');
+              setStatusMessageColor(CatppuccinMocha.text);
+              return;
+            }
+
+            showConfirm(deleteOperations);
           }
-
-          showConfirm(deleteOperations);
         },
 
         'buffer:refresh': () => {

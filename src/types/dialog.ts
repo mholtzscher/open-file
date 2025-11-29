@@ -28,10 +28,12 @@ export interface DialogState {
  */
 export interface PendingOperation {
   id: string;
-  type: 'create' | 'delete' | 'move' | 'copy' | 'download' | 'upload';
+  type: 'create' | 'delete' | 'move' | 'copy' | 'rename' | 'download' | 'upload';
   path?: string;
   source?: string;
   destination?: string;
+  /** New name for rename operations */
+  newName?: string;
   /** Entry associated with this operation (uses the Entry type from entry.ts) */
   entry?: import('./entry.js').Entry;
   entryType?: 'file' | 'directory';
