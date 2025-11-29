@@ -59,24 +59,26 @@ export function SortMenu({
       if (key.name === 'j' || key.name === 'down') {
         setSelectedIndex(prev => {
           const next = (prev + 1) % TOTAL_ITEMS;
-          // Apply immediately when navigating to a field
-          if (next < ORDER_INDEX) {
-            onFieldSelect(sortFields[next]);
-          }
           return next;
         });
+        // Apply field selection after state update
+        const nextIndex = (selectedIndex + 1) % TOTAL_ITEMS;
+        if (nextIndex < ORDER_INDEX) {
+          onFieldSelect(sortFields[nextIndex]);
+        }
         return true;
       }
 
       if (key.name === 'k' || key.name === 'up') {
         setSelectedIndex(prev => {
           const next = (prev - 1 + TOTAL_ITEMS) % TOTAL_ITEMS;
-          // Apply immediately when navigating to a field
-          if (next < ORDER_INDEX) {
-            onFieldSelect(sortFields[next]);
-          }
           return next;
         });
+        // Apply field selection after state update
+        const nextIndex = (selectedIndex - 1 + TOTAL_ITEMS) % TOTAL_ITEMS;
+        if (nextIndex < ORDER_INDEX) {
+          onFieldSelect(sortFields[nextIndex]);
+        }
         return true;
       }
 
@@ -127,9 +129,8 @@ export function SortMenu({
             fg={isCurrentField ? CatppuccinMocha.green : CatppuccinMocha.text}
             bg={isSelected ? CatppuccinMocha.surface0 : undefined}
           >
-            {isCurrentField ? '● ' : '  '}
+            {isCurrentField ? '▶ ' : '  '}
             {formatSortField(field)}
-            {isSelected ? ' ◀' : ''}
           </text>
         );
       })}
@@ -142,8 +143,8 @@ export function SortMenu({
         fg={CatppuccinMocha.text}
         bg={selectedIndex === ORDER_INDEX ? CatppuccinMocha.surface0 : undefined}
       >
+        {selectedIndex === ORDER_INDEX ? '▶ ' : '  '}
         {formatSortOrder(currentOrder)}
-        {selectedIndex === ORDER_INDEX ? ' ◀' : ''}
       </text>
 
       {/* Help text */}

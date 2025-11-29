@@ -128,25 +128,13 @@ describe('SortMenu', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      // Current field should have bullet indicator
-      expect(frame).toContain('●');
+      // Current field should have triangle indicator
+      expect(frame).toContain('▶ Name');
     });
   });
 
   describe('visual indicators', () => {
-    it('shows selection indicator on current item', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedSortMenu visible={true} currentField={SortField.Name} />,
-        { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
-      );
-      await renderOnce();
-
-      const frame = captureCharFrame();
-      // Should show cursor indicator
-      expect(frame).toContain('◀');
-    });
-
-    it('shows active field with bullet indicator', async () => {
+    it('shows triangle indicator for current field', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
         <WrappedSortMenu visible={true} currentField={SortField.Size} />,
         { width: TERMINAL_WIDTH, height: TERMINAL_HEIGHT }
@@ -154,7 +142,7 @@ describe('SortMenu', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      expect(frame).toContain('●');
+      expect(frame).toContain('▶ Size');
     });
   });
 
@@ -167,7 +155,7 @@ describe('SortMenu', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      expect(frame).toContain('● Name');
+      expect(frame).toContain('▶ Name');
     });
 
     it('highlights Size when selected', async () => {
@@ -178,7 +166,7 @@ describe('SortMenu', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      expect(frame).toContain('● Size');
+      expect(frame).toContain('▶ Size');
     });
 
     it('highlights Modified when selected', async () => {
@@ -189,7 +177,7 @@ describe('SortMenu', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      expect(frame).toContain('● Modified');
+      expect(frame).toContain('▶ Modified');
     });
 
     it('highlights Type when selected', async () => {
@@ -200,7 +188,7 @@ describe('SortMenu', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      expect(frame).toContain('● Type');
+      expect(frame).toContain('▶ Type');
     });
   });
 
