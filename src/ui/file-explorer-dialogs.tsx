@@ -113,32 +113,26 @@ export function FileExplorerDialogs({ dialogs }: FileExplorerDialogsProps) {
   return (
     <>
       {/* Error Dialog - shows when there's an error */}
-      {error.visible && (
-        <ErrorDialog visible={true} message={error.message} onDismiss={error.onDismiss} />
-      )}
+      <ErrorDialog visible={error.visible} message={error.message} onDismiss={error.onDismiss} />
 
       {/* Confirmation Dialog */}
-      {confirm.visible && (
-        <ConfirmationDialog
-          title="Confirm Operations"
-          operations={confirm.operations}
-          visible={confirm.visible}
-          onConfirm={confirm.onConfirm}
-          onCancel={confirm.onCancel}
-        />
-      )}
+      <ConfirmationDialog
+        title="Confirm Operations"
+        operations={confirm.operations}
+        visible={confirm.visible}
+        onConfirm={confirm.onConfirm}
+        onCancel={confirm.onCancel}
+      />
 
       {/* Sort Menu Dialog */}
-      {sortMenu.visible && (
-        <SortMenu
-          visible={sortMenu.visible}
-          currentField={sortMenu.currentField}
-          currentOrder={sortMenu.currentOrder}
-          onFieldSelect={sortMenu.onFieldSelect}
-          onOrderToggle={sortMenu.onOrderToggle}
-          onClose={sortMenu.onClose}
-        />
-      )}
+      <SortMenu
+        visible={sortMenu.visible}
+        currentField={sortMenu.currentField}
+        currentOrder={sortMenu.currentOrder}
+        onFieldSelect={sortMenu.onFieldSelect}
+        onOrderToggle={sortMenu.onOrderToggle}
+        onClose={sortMenu.onClose}
+      />
 
       {/* Help Dialog */}
       <HelpDialog visible={help.visible} onClose={help.onClose} />
@@ -176,15 +170,13 @@ export function FileExplorerDialogs({ dialogs }: FileExplorerDialogsProps) {
       )}
 
       {/* Profile Selector Dialog */}
-      {profileSelector.visible && profileSelector.profileManager && (
-        <ProfileSelectorDialog
-          visible={profileSelector.visible}
-          profileManager={profileSelector.profileManager}
-          currentProfileId={profileSelector.currentProfileId}
-          onProfileSelect={profileSelector.onProfileSelect}
-          onCancel={profileSelector.onCancel}
-        />
-      )}
+      <ProfileSelectorDialog
+        visible={profileSelector.visible}
+        profileManager={profileSelector.profileManager}
+        currentProfileId={profileSelector.currentProfileId}
+        onProfileSelect={profileSelector.onProfileSelect}
+        onCancel={profileSelector.onCancel}
+      />
     </>
   );
 }

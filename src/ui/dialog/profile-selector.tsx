@@ -23,7 +23,7 @@ export interface ProfileSelectorDialogProps {
   visible: boolean;
 
   /** ProfileManager instance to use for listing profiles */
-  profileManager: ProfileManager;
+  profileManager: ProfileManager | undefined;
 
   /** Current active profile ID */
   currentProfileId?: string;
@@ -68,6 +68,14 @@ export function ProfileSelectorDialog({
   // Load profiles when dialog becomes visible
   useEffect(() => {
     if (!visible) return;
+
+    // If no profile manager is available, show an error state
+    if (!profileManager) {
+      setIsLoading(false);
+      setProfiles([]);
+      setError('Profile manager is not available');
+      return;
+    }
 
     const loadProfiles = async () => {
       try {
