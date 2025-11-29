@@ -50,6 +50,9 @@ export interface SortMenuState {
   visible: boolean;
   currentField: SortField;
   currentOrder: SortOrder;
+  onFieldSelect: (field: SortField) => void;
+  onOrderToggle: () => void;
+  onClose: () => void;
 }
 
 export interface ProgressWindowState {
@@ -131,6 +134,9 @@ export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
           visible={sortMenu.visible}
           currentField={sortMenu.currentField}
           currentOrder={sortMenu.currentOrder}
+          onFieldSelect={sortMenu.onFieldSelect}
+          onOrderToggle={sortMenu.onOrderToggle}
+          onClose={sortMenu.onClose}
         />
       )}
 
