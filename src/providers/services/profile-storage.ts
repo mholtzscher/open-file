@@ -28,7 +28,7 @@ const PROFILES_FILENAME = 'profiles.json';
  * Get the platform-appropriate configuration directory
  *
  * Follows platform conventions:
- * - macOS: ~/Library/Application Support/open-file
+ * - macOS: ~/.config/open-file (XDG_CONFIG_HOME)
  * - Linux: ~/.config/open-file (XDG_CONFIG_HOME)
  * - Windows: %APPDATA%/open-file
  *
@@ -39,19 +39,17 @@ export function getConfigDir(): string {
   const plat = platform();
 
   switch (plat) {
-    case 'darwin':
-      // macOS: ~/Library/Application Support/open-file
-      return join(home, 'Library', 'Application Support', APP_NAME);
-
-    case 'win32':
+    case 'win32': {
       // Windows: %APPDATA%/open-file
       const appData = process.env.APPDATA || join(home, 'AppData', 'Roaming');
       return join(appData, APP_NAME);
+    }
 
-    default:
-      // Linux and others: ~/.config/open-file (XDG Base Directory spec)
+    default: {
+      // macOS, Linux and others: ~/.config/open-file (XDG Base Directory spec)
       const xdgConfig = process.env.XDG_CONFIG_HOME || join(home, '.config');
       return join(xdgConfig, APP_NAME);
+    }
   }
 }
 

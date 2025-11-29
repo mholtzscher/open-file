@@ -61,11 +61,11 @@ describe('Profile Storage - Path Functions', () => {
       expect(dir).toContain('open-file');
     });
 
-    it('should respect XDG_CONFIG_HOME on Linux', () => {
+    it('should respect XDG_CONFIG_HOME on Linux and macOS', () => {
       const originalXdg = process.env.XDG_CONFIG_HOME;
 
-      // Only test if we can modify platform behavior or are on Linux
-      if (process.platform === 'linux') {
+      // Test on Linux and macOS (both use XDG_CONFIG_HOME)
+      if (process.platform === 'linux' || process.platform === 'darwin') {
         process.env.XDG_CONFIG_HOME = '/custom/config';
         const dir = getConfigDir();
         expect(dir).toContain('/custom/config');
