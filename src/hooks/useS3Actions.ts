@@ -206,9 +206,9 @@ export function useS3Actions({
 
           if (pendingOps) {
             pendingOps.cut(selected);
-            if (currentBufferState.selection.isActive) {
-              currentBufferState.exitVisualSelection();
-            }
+            // Always exit visual mode and return to normal after cut
+            currentBufferState.exitVisualSelection();
+            currentBufferState.setMode(EditMode.Normal);
             setStatusMessage(`Cut ${selected.length} item(s) - navigate and press 'p' to move`);
             setStatusMessageColor(CatppuccinMocha.blue);
           } else {
@@ -235,14 +235,17 @@ export function useS3Actions({
 
           if (pendingOps) {
             pendingOps.copy(selected);
-            if (currentBufferState.selection.isActive) {
-              currentBufferState.exitVisualSelection();
-            }
+            // Always exit visual mode and return to normal after copy
+            currentBufferState.exitVisualSelection();
+            currentBufferState.setMode(EditMode.Normal);
             setStatusMessage(`Copied ${selected.length} item(s) - navigate and press 'p' to paste`);
             setStatusMessageColor(CatppuccinMocha.blue);
           } else {
             // Fallback to old behavior
             currentBufferState.copySelection();
+            // Also exit visual mode in fallback
+            currentBufferState.exitVisualSelection();
+            currentBufferState.setMode(EditMode.Normal);
             setStatusMessage('Copied');
             setStatusMessageColor(CatppuccinMocha.green);
           }
