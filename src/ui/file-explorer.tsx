@@ -30,12 +30,10 @@ import { useKeySequence } from '../hooks/useKeySequence.js';
 
 import type { PendingOperation } from '../types/dialog.js';
 
-interface FileExplorerProps {}
-
 /**
  * Main FileExplorer component - declarative React implementation
  */
-export function FileExplorer({}: FileExplorerProps) {
+export function FileExplorer() {
   // ============================================
   // Storage Context
   // ============================================
@@ -96,8 +94,6 @@ export function FileExplorer({}: FileExplorerProps) {
   // ============================================
   // Refs
   // ============================================
-  const showUploadDialogRef = useRef(showUploadDialog);
-  const showConfirmDialogRef = useRef(showConfirmDialog);
   const quitAfterSaveRef = useRef(false);
 
   // ============================================
@@ -142,19 +138,18 @@ export function FileExplorer({}: FileExplorerProps) {
     },
   };
 
-  const activeBufferState = bufferState;
-  const navigationHandlers = useNavigationHandlers(activeBufferState, navigationConfig);
+  const navigationHandlers = useNavigationHandlers(bufferState, navigationConfig);
 
   // ============================================
   // Data Loader Hook
   // ============================================
   const { isInitialized } = useDataLoader({
     bucket,
-    currentPath: activeBufferState.currentPath,
+    currentPath: bufferState.currentPath,
     setEntries: entries => {
-      activeBufferState.setEntries([...entries]);
+      bufferState.setEntries([...entries]);
     },
-    setCurrentPath: activeBufferState.setCurrentPath,
+    setCurrentPath: bufferState.setCurrentPath,
     onSuccess: msg => {
       setStatusMessage(msg);
       setStatusMessageColor(CatppuccinMocha.green);
@@ -168,9 +163,9 @@ export function FileExplorer({}: FileExplorerProps) {
   // ============================================
   // Preview Hook
   // ============================================
-  const selectedEntry = activeBufferState.entries[activeBufferState.selection.cursorIndex];
+  const selectedEntry = bufferState.entries[bufferState.selection.cursorIndex];
   const previewHookEnabled = isPreviewMode && !!bucket && isInitialized;
-  const preview = usePreview(activeBufferState.currentPath, selectedEntry, {
+  const preview = usePreview(bufferState.currentPath, selectedEntry, {
     enabled: previewHookEnabled,
     maxSize: 100 * 1024, // 100KB
   });
@@ -234,16 +229,13 @@ export function FileExplorer({}: FileExplorerProps) {
 
   // ============================================
   // Confirm Handler
-
   // ============================================
-  const confirmHandlerRef = useRef<() => Promise<void>>(async () => {});
-
   const createConfirmHandler = useCallback(async () => {
     // Use the unified operation executor hook
     await executeOperationsWithProgress(pendingOperations, {
       onSuccess: async (_result, message) => {
         try {
-          const currentBufferState = bufferState;
+          const currentBufferState = bufferStateRef.current;
 
           const entries = await storage.list(currentBufferState.currentPath);
           currentBufferState.setEntries([...entries]);
@@ -275,32 +267,11 @@ export function FileExplorer({}: FileExplorerProps) {
         closeAndClearOperations();
       },
     });
-  }, [
-    pendingOperations,
-    storage,
-    bufferState,
-    closeAndClearOperations,
-    executeOperationsWithProgress,
-  ]);
-
-  useEffect(() => {
-    confirmHandlerRef.current = createConfirmHandler;
-  }, [createConfirmHandler]);
+  }, [pendingOperations, storage, closeAndClearOperations, executeOperationsWithProgress]);
 
   const handleCancelOperation = useCallback(() => {
     cancelOperation();
   }, [cancelOperation]);
-
-  // ============================================
-  // Ref Sync Effects
-  // ============================================
-  useEffect(() => {
-    showConfirmDialogRef.current = showConfirmDialog;
-  }, [showConfirmDialog]);
-
-  useEffect(() => {
-    showUploadDialogRef.current = showUploadDialog;
-  }, [showUploadDialog]);
 
   // ============================================
   // Keyboard Handler (via Context)
@@ -313,7 +284,7 @@ export function FileExplorer({}: FileExplorerProps) {
         return false;
       }
 
-      const mode = activeBufferState.mode;
+      const mode = bufferState.mode;
 
       // Helper to execute an action via useS3Actions map
       const executeAction = (action: KeyAction, event?: KeyboardKey): boolean => {
@@ -380,7 +351,7 @@ export function FileExplorer({}: FileExplorerProps) {
       }
 
       // Global bindings
-      const globalBindings = keybindings.get('global' as EditMode);
+      const globalBindings = keybindings.get('global');
       const globalAction = globalBindings?.get(keyStr);
 
       if (globalAction) {
@@ -389,7 +360,7 @@ export function FileExplorer({}: FileExplorerProps) {
 
       return false;
     },
-    [isAnyDialogOpen, activeBufferState.mode, actionHandlers, keybindings, handleSequence]
+    [isAnyDialogOpen, bufferState.mode, actionHandlers, keybindings, handleSequence]
   );
 
   // Register keyboard handler with context at normal priority
@@ -433,10 +404,10 @@ export function FileExplorer({}: FileExplorerProps) {
     },
     upload: {
       visible: showUploadDialog,
-      destinationPath: activeBufferState.currentPath,
+      destinationPath: bufferState.currentPath,
       onConfirm: selectedFiles => {
         closeDialog();
-        const currentPath = activeBufferState.currentPath;
+        const currentPath = bufferState.currentPath;
         const newOperations = selectedFiles.map((filePath, index) => {
           const filename = filePath.split('/').pop() || filePath;
           const s3Destination = currentPath ? `${currentPath}${filename}` : filename;
@@ -542,51 +513,30 @@ export function FileExplorer({}: FileExplorerProps) {
       currentProfileId: storage.state.profileId,
       onProfileSelect: async profile => {
         try {
-          console.error(`[FileExplorer] Starting profile switch to: ${profile.displayName}`);
           setStatusMessage(`Switching to profile: ${profile.displayName}...`);
           setStatusMessageColor(CatppuccinMocha.blue);
           closeDialog();
 
           // Switch to the new profile
           await storage.switchProfile(profile.id);
-          console.error(`[FileExplorer] Profile switched successfully`);
 
           // Get the new state from storage
           const newState = storage.state;
-          console.error(`[FileExplorer] New state:`, {
-            providerId: newState.providerId,
-            currentPath: newState.currentPath,
-            currentContainer: newState.currentContainer,
-            entriesCount: newState.entries.length,
-          });
-
-          // Get current buffer state
-          const currentBufferState = bufferState;
 
           // Update bucket state based on new storage state
           if (newState.currentContainer) {
-            console.error(`[FileExplorer] Setting bucket to: ${newState.currentContainer}`);
             setBucket(newState.currentContainer);
           } else {
-            console.error(`[FileExplorer] Clearing bucket`);
             setBucket(undefined);
           }
 
           // Update buffer with new entries and path
-          console.error(
-            `[FileExplorer] Updating buffer state with ${newState.entries.length} entries`
-          );
-          currentBufferState.setEntries([...newState.entries]);
-          currentBufferState.setCurrentPath(newState.currentPath);
+          bufferState.setEntries([...newState.entries]);
+          bufferState.setCurrentPath(newState.currentPath);
 
-          // Note: isInitialized is managed by useDataLoader hook
-          // and will be set automatically when data loads
-
-          console.error(`[FileExplorer] Profile switch UI update complete`);
           setStatusMessage(`Switched to profile: ${profile.displayName}`);
           setStatusMessageColor(CatppuccinMocha.green);
         } catch (err) {
-          console.error('Failed to switch profile:', err);
           setStatusMessage(
             `Failed to switch profile: ${err instanceof Error ? err.message : 'Unknown error'}`
           );
@@ -604,7 +554,7 @@ export function FileExplorer({}: FileExplorerProps) {
     <FileExplorerLayout
       bucket={bucket}
       isInitialized={isInitialized}
-      bufferState={activeBufferState}
+      bufferState={bufferState}
       terminalSize={terminalSize}
       layout={layout}
       statusBar={statusBarState}
