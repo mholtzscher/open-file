@@ -4,9 +4,9 @@
  * Modal dialog for selecting sort field and order
  */
 
-import { CatppuccinMocha } from './theme.js';
-import { SortField, SortOrder, formatSortField, formatSortOrder } from '../utils/sorting.js';
-import { BaseDialog } from './dialog/base.js';
+import { CatppuccinMocha } from '../theme.js';
+import { SortField, SortOrder, formatSortField, formatSortOrder } from '../../utils/sorting.js';
+import { BaseDialog } from './base.js';
 
 export interface SortMenuProps {
   visible: boolean;

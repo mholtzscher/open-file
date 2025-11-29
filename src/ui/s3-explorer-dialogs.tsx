@@ -9,7 +9,7 @@ import { ConfirmationDialog } from './dialog/confirmation.js';
 import { HelpDialog } from './dialog/help.js';
 import { ErrorDialog } from './dialog/error.js';
 import { UploadDialog } from './dialog/upload.js';
-import { SortMenu } from './sort-menu.js';
+import { SortMenu } from './dialog/sort.js';
 import { ProgressWindow } from './progress-window.js';
 import { QuitDialog } from './dialog/quit.js';
 import { ProfileSelectorDialog } from './dialog/profile-selector.js';
