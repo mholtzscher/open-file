@@ -44,7 +44,7 @@ describe('ProgressWindow Integration', () => {
     };
 
     // Simulate multiple files being uploaded
-    operations.forEach((filename, opIndex) => {
+    operations.forEach(filename => {
       const chunks = 3;
       for (let i = 0; i < chunks; i++) {
         onProgress({

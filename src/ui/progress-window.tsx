@@ -62,29 +62,24 @@ export function ProgressWindow({
       height={WINDOW_HEIGHT}
       borderColor={CatppuccinMocha.blue}
     >
-      {/* Description */}
       <text fg={CatppuccinMocha.text} width={contentWidth}>
         {description.substring(0, contentWidth)}
       </text>
 
-      {/* Current file info */}
       {currentFile && (
         <text fg={CatppuccinMocha.subtext0} width={contentWidth}>
           {(fileInfo + currentFile).substring(0, contentWidth)}
         </text>
       )}
 
-      {/* Progress bar */}
       <text fg={CatppuccinMocha.sky} width={contentWidth}>
         {progressBar}
       </text>
 
-      {/* Progress percentage */}
       <text fg={CatppuccinMocha.yellow} width={contentWidth}>
         {clampedProgress}% complete
       </text>
 
-      {/* Cancellation hint */}
       <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
         Press Ctrl+C to cancel
       </text>
