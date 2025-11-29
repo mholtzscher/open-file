@@ -92,10 +92,11 @@ export function useDataLoader(options: DataLoaderOptions): UseDataLoaderReturn {
       console.error(`[useDataLoader] Loading data...`);
 
       if (!bucket) {
-        // Root view - load bucket/container listing
+        // Root view - load bucket/container listing or root directory
         console.error(`[useDataLoader] Root view mode, loading containers...`);
 
         if (storage.hasCapability(Capability.Containers)) {
+          // Container-based providers (S3, GCS) - list containers first
           const entries = await storage.listContainers();
           console.error(`[useDataLoader] Received ${entries.length} containers`);
 
@@ -104,7 +105,15 @@ export function useDataLoader(options: DataLoaderOptions): UseDataLoaderReturn {
 
           onSuccess?.(`Found ${entries.length} bucket(s)`);
         } else {
-          throw new Error('Storage provider does not support container listing');
+          // Non-container providers (Local, SFTP, FTP) - list root directory directly
+          console.error(`[useDataLoader] No containers, listing root directory`);
+          const entries = await storage.list('');
+          console.error(`[useDataLoader] Received ${entries.length} entries from root`);
+
+          setEntries([...entries]);
+          setCurrentPath('');
+
+          onSuccess?.(`Loaded ${entries.length} items`);
         }
       } else {
         // Bucket selected - load bucket contents

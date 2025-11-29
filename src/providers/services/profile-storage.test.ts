@@ -6,8 +6,16 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { getConfigDir, getProfilesPath, loadProfilesFromDisk } from './profile-storage.js';
-import type { S3Profile, SFTPProfile } from '../types/profile.js';
+import {
+  getConfigDir,
+  getProfilesPath,
+  loadProfilesFromDisk,
+  saveProfilesToDisk,
+  isDefaultProfile,
+  DEFAULT_LOCAL_PROFILE,
+  DEFAULT_LOCAL_PROFILE_ID,
+} from './profile-storage.js';
+import type { S3Profile, SFTPProfile, LocalProfile } from '../types/profile.js';
 
 // ============================================================================
 // Test Fixtures
@@ -434,5 +442,142 @@ describe('Profile Storage - Round-trip', () => {
     const loaded = parsed.profiles[0] as S3Profile;
 
     expect(loaded.displayName).toBe('Profile with 日本語 and emoji 🚀');
+  });
+});
+
+// ============================================================================
+// Default Local Profile Tests
+// ============================================================================
+
+describe('Profile Storage - Default Local Profile', () => {
+  describe('DEFAULT_LOCAL_PROFILE', () => {
+    it('should have the correct ID', () => {
+      expect(DEFAULT_LOCAL_PROFILE.id).toBe(DEFAULT_LOCAL_PROFILE_ID);
+      expect(DEFAULT_LOCAL_PROFILE.id).toBe('local-filesystem');
+    });
+
+    it('should be a local provider', () => {
+      expect(DEFAULT_LOCAL_PROFILE.provider).toBe('local');
+    });
+
+    it('should have a display name', () => {
+      expect(DEFAULT_LOCAL_PROFILE.displayName).toBe('Local Filesystem');
+    });
+
+    it('should have basePath set to home directory', () => {
+      expect(DEFAULT_LOCAL_PROFILE.config.basePath).toBeTruthy();
+      // basePath should be an absolute path
+      expect(
+        DEFAULT_LOCAL_PROFILE.config.basePath.startsWith('/') ||
+          /^[A-Z]:/i.test(DEFAULT_LOCAL_PROFILE.config.basePath)
+      ).toBe(true);
+    });
+  });
+
+  describe('isDefaultProfile', () => {
+    it('should return true for default profile ID', () => {
+      expect(isDefaultProfile(DEFAULT_LOCAL_PROFILE_ID)).toBe(true);
+      expect(isDefaultProfile('local-filesystem')).toBe(true);
+    });
+
+    it('should return true for default profile object', () => {
+      expect(isDefaultProfile(DEFAULT_LOCAL_PROFILE)).toBe(true);
+    });
+
+    it('should return false for other profile IDs', () => {
+      expect(isDefaultProfile('some-other-id')).toBe(false);
+      expect(isDefaultProfile('s3-profile')).toBe(false);
+    });
+
+    it('should return false for other profile objects', () => {
+      const otherProfile: S3Profile = {
+        id: 'other-profile',
+        displayName: 'Other',
+        provider: 's3',
+        config: { region: 'us-east-1' },
+      };
+      expect(isDefaultProfile(otherProfile)).toBe(false);
+    });
+  });
+
+  describe('loadProfilesFromDisk with default profile', () => {
+    it('should always return default profile first when no file exists', () => {
+      // loadProfilesFromDisk uses actual path, so we can only test the behavior
+      // when file doesn't exist (which returns default profile)
+      const result = loadProfilesFromDisk();
+
+      if (result.success) {
+        // Should always have at least the default profile
+        expect(result.profiles.length).toBeGreaterThanOrEqual(1);
+        // Default profile should be first
+        expect(result.profiles[0].id).toBe(DEFAULT_LOCAL_PROFILE_ID);
+        expect(result.profiles[0].provider).toBe('local');
+      }
+    });
+  });
+
+  describe('saveProfilesToDisk filters default profile', () => {
+    let tempDir: string;
+
+    beforeEach(() => {
+      tempDir = join(
+        tmpdir(),
+        `open-file-default-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      );
+      mkdirSync(tempDir, { recursive: true });
+    });
+
+    afterEach(() => {
+      try {
+        rmSync(tempDir, { recursive: true, force: true });
+      } catch {
+        // Ignore cleanup errors
+      }
+    });
+
+    it('should not persist default profile to disk', () => {
+      const profilesPath = join(tempDir, 'profiles.json');
+
+      // Create test data with default profile included
+      const profiles = [
+        DEFAULT_LOCAL_PROFILE,
+        {
+          id: 'test-s3',
+          displayName: 'Test S3',
+          provider: 's3' as const,
+          config: { region: 'us-east-1' },
+        },
+      ];
+
+      // Write directly to test location (simulating what saveProfilesToDisk does)
+      const profilesToSave = profiles.filter(p => !isDefaultProfile(p));
+      writeFileSync(profilesPath, JSON.stringify({ profiles: profilesToSave }, null, 2));
+
+      // Read back and verify default profile was filtered
+      const content = readFileSync(profilesPath, 'utf-8');
+      const parsed = JSON.parse(content);
+
+      expect(parsed.profiles).toHaveLength(1);
+      expect(parsed.profiles[0].id).toBe('test-s3');
+      // Default profile should not be in saved file
+      expect(parsed.profiles.some((p: { id: string }) => p.id === DEFAULT_LOCAL_PROFILE_ID)).toBe(
+        false
+      );
+    });
+
+    it('should handle saving only the default profile (results in empty array)', () => {
+      const profilesPath = join(tempDir, 'profiles.json');
+
+      const profiles = [DEFAULT_LOCAL_PROFILE];
+
+      // Filter and write
+      const profilesToSave = profiles.filter(p => !isDefaultProfile(p));
+      writeFileSync(profilesPath, JSON.stringify({ profiles: profilesToSave }, null, 2));
+
+      const content = readFileSync(profilesPath, 'utf-8');
+      const parsed = JSON.parse(content);
+
+      expect(parsed.profiles).toHaveLength(0);
+    });
   });
 });

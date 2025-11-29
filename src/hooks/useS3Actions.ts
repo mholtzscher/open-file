@@ -115,23 +115,27 @@ export function useS3Actions({
           }
 
           const currentBufferState = getActiveBuffer();
-          if (!bucket) {
-            setStatusMessage('Already at root');
-            setStatusMessageColor(CatppuccinMocha.text);
-            return;
-          }
-
           const currentPath = currentBufferState.currentPath;
           const { parentPath, atContainerRoot } = calculateParentPath(currentPath);
 
+          // For container-based providers (S3, GCS), bucket must be set to navigate
+          // For non-container providers (Local, SFTP), we navigate directly
+          const hasContainers = storage.hasCapability(Capability.Containers);
+
           if (atContainerRoot) {
-            // Already at container root - go back to container listing
-            setBucket(undefined);
-            setStatusMessage('Back to bucket listing');
-            setStatusMessageColor(CatppuccinMocha.blue);
+            if (hasContainers) {
+              // Container-based provider at container root - go back to container listing
+              setBucket(undefined);
+              setStatusMessage('Back to bucket listing');
+              setStatusMessageColor(CatppuccinMocha.blue);
+            } else {
+              // Non-container provider at root - can't go further up
+              setStatusMessage('Already at root');
+              setStatusMessageColor(CatppuccinMocha.text);
+            }
           } else {
             await navigationHandlers.navigateToPath(parentPath);
-            setStatusMessage(`Navigated to ${parentPath || 'bucket root'}`);
+            setStatusMessage(`Navigated to ${parentPath || 'root'}`);
             setStatusMessageColor(CatppuccinMocha.green);
           }
         },
@@ -463,6 +467,21 @@ export function useS3Actions({
                   setStatusMessage(formatErrorForDisplay(parsedError, 70));
                   setStatusMessageColor(CatppuccinMocha.red);
                 });
+            } else {
+              // Non-container providers - refresh root directory
+              const currentPath = currentBufferState.currentPath;
+              storage
+                .list(currentPath)
+                .then(entries => {
+                  currentBufferState.setEntries([...entries]);
+                  setStatusMessage(`Refreshed: ${entries.length} items`);
+                  setStatusMessageColor(CatppuccinMocha.green);
+                })
+                .catch((err: unknown) => {
+                  const parsedError = parseAwsError(err, 'Refresh failed');
+                  setStatusMessage(formatErrorForDisplay(parsedError, 70));
+                  setStatusMessageColor(CatppuccinMocha.red);
+                });
             }
           } else {
             const currentPath = currentBufferState.currentPath;
@@ -551,6 +570,10 @@ export function useS3Actions({
               // setOriginalEntries removed from here
             } else if (storage.hasCapability(Capability.Containers)) {
               const entries = await storage.listContainers();
+              currentBufferState.setEntries([...entries]);
+            } else {
+              // Non-container providers - list root directory
+              const entries = await storage.list(currentBufferState.currentPath);
               currentBufferState.setEntries([...entries]);
             }
           } catch (err) {

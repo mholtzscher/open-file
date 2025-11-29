@@ -18,6 +18,7 @@ import type {
 import {
   loadProfilesFromDisk,
   saveProfilesToDisk,
+  isDefaultProfile,
   type LoadProfilesResult,
 } from './profile-storage.js';
 import { validateProfile } from './profile-validator.js';
@@ -244,8 +245,15 @@ export class FileProfileManager implements ProfileManager {
 
   /**
    * Delete a profile by ID
+   *
+   * Note: The default local profile cannot be deleted.
    */
   async deleteProfile(id: string): Promise<boolean> {
+    // Cannot delete the default profile
+    if (isDefaultProfile(id)) {
+      return false;
+    }
+
     await this.ensureLoaded();
 
     const existing = this.profiles.get(id);

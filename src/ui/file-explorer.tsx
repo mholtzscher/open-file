@@ -23,6 +23,7 @@ import { providerNameToScheme } from '../utils/storage-uri.js';
 import { FileExplorerLayout, StatusBarState, PreviewState } from './file-explorer-layout.js';
 import { CatppuccinMocha } from './theme.js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
+import { Capability } from '../providers/types/capabilities.js';
 
 /**
  * Main FileExplorer component - declarative React implementation
@@ -147,7 +148,10 @@ export function FileExplorer() {
   // Preview Hook
   // ============================================
   const selectedEntry = bufferState.entries[bufferState.selection.cursorIndex];
-  const previewHookEnabled = isPreviewMode && !!bucket && isInitialized;
+  // For container-based providers (S3, GCS), require bucket to be selected
+  // For non-container providers (Local, SFTP, FTP), just need to be initialized
+  const hasContainers = storage.hasCapability(Capability.Containers);
+  const previewHookEnabled = isPreviewMode && isInitialized && (hasContainers ? !!bucket : true);
   const preview = usePreview(bufferState.currentPath, selectedEntry, {
     enabled: previewHookEnabled,
     maxSize: 100 * 1024, // 100KB

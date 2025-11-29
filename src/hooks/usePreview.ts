@@ -275,8 +275,11 @@ export function usePreview(
     }));
 
     try {
-      // Construct full path
-      const fullPath = currentPath ? `${currentPath}${selectedEntry.name}` : selectedEntry.name;
+      // Construct full path - ensure proper path separator
+      const separator = currentPath && !currentPath.endsWith('/') ? '/' : '';
+      const fullPath = currentPath
+        ? `${currentPath}${separator}${selectedEntry.name}`
+        : selectedEntry.name;
 
       // Read file content using storage context
       const buffer = await storage.read(fullPath);

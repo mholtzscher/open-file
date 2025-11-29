@@ -8,7 +8,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'fs';
 import { homedir, platform } from 'os';
 import { join, dirname } from 'path';
-import type { Profile } from '../types/profile.js';
+import type { Profile, LocalProfile } from '../types/profile.js';
 
 // ============================================================================
 // Constants
@@ -19,6 +19,35 @@ const APP_NAME = 'open-file';
 
 /** Profile storage filename */
 const PROFILES_FILENAME = 'profiles.json';
+
+/** ID for the default local filesystem profile */
+export const DEFAULT_LOCAL_PROFILE_ID = 'local-filesystem';
+
+/**
+ * Default local filesystem profile
+ *
+ * This profile is always present and always first in the list.
+ * It provides access to the local filesystem starting from the user's home directory.
+ */
+export const DEFAULT_LOCAL_PROFILE: LocalProfile = {
+  id: DEFAULT_LOCAL_PROFILE_ID,
+  displayName: 'Local Filesystem',
+  provider: 'local',
+  config: {
+    basePath: homedir(),
+  },
+};
+
+/**
+ * Check if a profile is the default local profile
+ *
+ * @param profile - Profile or profile ID to check
+ * @returns true if this is the default local profile
+ */
+export function isDefaultProfile(profile: Profile | string): boolean {
+  const id = typeof profile === 'string' ? profile : profile.id;
+  return id === DEFAULT_LOCAL_PROFILE_ID;
+}
 
 // ============================================================================
 // Path Utilities
@@ -138,9 +167,9 @@ export function ensureConfigDir(): boolean {
 export function loadProfilesFromDisk(): LoadProfilesResult {
   const profilesPath = getProfilesPath();
 
-  // File doesn't exist - return empty array (not an error)
+  // File doesn't exist - return just the default profile (not an error)
   if (!existsSync(profilesPath)) {
-    return { success: true, profiles: [] };
+    return { success: true, profiles: [DEFAULT_LOCAL_PROFILE] };
   }
 
   // Try to read and parse the file
@@ -169,9 +198,9 @@ export function loadProfilesFromDisk(): LoadProfilesResult {
     };
   }
 
-  // Handle empty file
+  // Handle empty file - return just the default profile
   if (!content.trim()) {
-    return { success: true, profiles: [] };
+    return { success: true, profiles: [DEFAULT_LOCAL_PROFILE] };
   }
 
   // Parse JSON
@@ -200,7 +229,10 @@ export function loadProfilesFromDisk(): LoadProfilesResult {
     };
   }
 
-  return { success: true, profiles: parsed.profiles };
+  // Filter out the default profile from disk (it's auto-generated)
+  // and prepend the current default profile
+  const userProfiles = parsed.profiles.filter(p => !isDefaultProfile(p));
+  return { success: true, profiles: [DEFAULT_LOCAL_PROFILE, ...userProfiles] };
 }
 
 /**
@@ -208,6 +240,9 @@ export function loadProfilesFromDisk(): LoadProfilesResult {
  *
  * Uses atomic write (write to temp file, then rename) to prevent corruption.
  * Creates config directory if it doesn't exist.
+ *
+ * Note: The default local profile is automatically filtered out since it's
+ * auto-generated and should not be persisted to disk.
  *
  * @param profiles - Array of profiles to save
  * @returns SaveProfilesResult indicating success or error
@@ -232,8 +267,11 @@ export function saveProfilesToDisk(profiles: Profile[]): SaveProfilesResult {
     };
   }
 
+  // Filter out the default profile - it's auto-generated and shouldn't be persisted
+  const profilesToSave = profiles.filter(p => !isDefaultProfile(p));
+
   // Serialize to JSON with pretty printing
-  const data: ProfilesFile = { profiles };
+  const data: ProfilesFile = { profiles: profilesToSave };
   const content = JSON.stringify(data, null, 2);
 
   // Atomic write: write to temp file, then rename

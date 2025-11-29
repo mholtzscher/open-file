@@ -58,6 +58,9 @@ export {
   loadProfilesFromDisk,
   saveProfilesToDisk,
   ensureConfigDir,
+  isDefaultProfile,
+  DEFAULT_LOCAL_PROFILE,
+  DEFAULT_LOCAL_PROFILE_ID,
   type LoadProfilesResult,
   type SaveProfilesResult,
   type ProfileStorageError,
@@ -78,6 +81,10 @@ export type { SFTPProviderLogger, SFTPProviderDependencies } from './sftp/index.
 // FTP Provider
 export { FTPProvider } from './ftp/index.js';
 export type { FTPProviderLogger, FTPProviderDependencies } from './ftp/index.js';
+
+// Local Filesystem Provider
+export { LocalProvider } from './local/index.js';
+export type { LocalProviderLogger, LocalProviderDependencies } from './local/index.js';
 
 // Test utilities (for consumers that need to test provider integrations)
 export * from './__tests__/fixtures.js';

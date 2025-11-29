@@ -12,6 +12,7 @@ import type {
   GCSProfile,
   SFTPProfile,
   FTPProfile,
+  LocalProfile,
 } from './types/profile.js';
 import type { StorageProvider } from './provider.js';
 
@@ -79,11 +80,10 @@ export async function createProvider(profile: Profile): Promise<StorageProvider>
       // return new GoogleDriveProvider(profile);
       throw new Error('GoogleDriveProvider not yet implemented');
 
-    case 'local':
-      // Phase 4F: Local Filesystem Provider
-      // const { LocalProvider } = await import('./local/local-provider.js');
-      // return new LocalProvider(profile);
-      throw new Error('LocalProvider not yet implemented');
+    case 'local': {
+      const { LocalProvider } = await import('./local/local-provider.js');
+      return new LocalProvider(profile as LocalProfile);
+    }
 
     default:
       // TypeScript exhaustive check - this should never happen
@@ -127,10 +127,11 @@ export function isProviderImplemented(providerType: ProviderType): boolean {
       return true; // SFTPProvider implemented
     case 'ftp':
       return true; // FTPProvider implemented
+    case 'local':
+      return true; // LocalProvider implemented
     case 'nfs':
     case 'smb':
     case 'gdrive':
-    case 'local':
       return false;
     default:
       return false;
