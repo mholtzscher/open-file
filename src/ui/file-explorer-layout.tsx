@@ -13,7 +13,7 @@ import { Pane } from './pane.js';
 import { StatusBar } from './status-bar.js';
 import { Header } from './header.js';
 import { PreviewPane } from './preview-pane.js';
-import { S3ExplorerDialogs, DialogsState } from './s3-explorer-dialogs.js';
+import { S3ExplorerDialogs, DialogsState } from './file-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
 
 /**
@@ -81,7 +81,7 @@ export interface S3ExplorerLayoutProps {
  * - Status bar
  * - All dialog overlays
  */
-export function S3ExplorerLayout({
+export function FileExplorerLayout({
   bucket,
   isInitialized,
   bufferState,

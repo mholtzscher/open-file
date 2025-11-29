@@ -1,7 +1,7 @@
 /**
- * S3Explorer React component
+ * FileExplorer React component
  *
- * Main application component that manages the S3 bucket exploration interface.
+ * Main application component that manages the file exploration interface.
  * Declarative React component that uses hooks for state management and rendering.
  */
 
@@ -17,8 +17,8 @@ import { useDataLoader } from '../hooks/useDataLoader.js';
 import { useOperationExecutor } from '../hooks/useOperationExecutor.js';
 import { useS3Actions } from '../hooks/useS3Actions.js';
 
-import { S3ExplorerLayout, StatusBarState, PreviewState } from './s3-explorer-layout.js';
-import { DialogsState } from './s3-explorer-dialogs.js';
+import { FileExplorerLayout, StatusBarState, PreviewState } from './file-explorer-layout.js';
+import { DialogsState } from './file-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
 import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
@@ -31,14 +31,14 @@ import { useKeySequence } from '../hooks/useKeySequence.js';
 
 import type { PendingOperation } from '../types/dialog.js';
 
-interface S3ExplorerProps {
+interface FileExplorerProps {
   bucket?: string;
 }
 
 /**
- * Main S3Explorer component - declarative React implementation
+ * Main FileExplorer component - declarative React implementation
  */
-export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
+export function FileExplorer({ bucket: initialBucket }: FileExplorerProps) {
   // ============================================
   // Storage Context
   // ============================================
@@ -560,18 +560,18 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
       currentProfileId: storage.state.providerId,
       onProfileSelect: async profile => {
         try {
-          console.error(`[S3Explorer] Starting profile switch to: ${profile.displayName}`);
+          console.error(`[FileExplorer] Starting profile switch to: ${profile.displayName}`);
           setStatusMessage(`Switching to profile: ${profile.displayName}...`);
           setStatusMessageColor(CatppuccinMocha.blue);
           closeDialog();
 
           // Switch to the new profile
           await storage.switchProfile(profile.id);
-          console.error(`[S3Explorer] Profile switched successfully`);
+          console.error(`[FileExplorer] Profile switched successfully`);
 
           // Get the new state from storage
           const newState = storage.state;
-          console.error(`[S3Explorer] New state:`, {
+          console.error(`[FileExplorer] New state:`, {
             providerId: newState.providerId,
             currentPath: newState.currentPath,
             currentContainer: newState.currentContainer,
@@ -583,16 +583,16 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
 
           // Update bucket state based on new storage state
           if (newState.currentContainer) {
-            console.error(`[S3Explorer] Setting bucket to: ${newState.currentContainer}`);
+            console.error(`[FileExplorer] Setting bucket to: ${newState.currentContainer}`);
             setBucket(newState.currentContainer);
           } else {
-            console.error(`[S3Explorer] Clearing bucket`);
+            console.error(`[FileExplorer] Clearing bucket`);
             setBucket(undefined);
           }
 
           // Update buffer with new entries and path
           console.error(
-            `[S3Explorer] Updating buffer state with ${newState.entries.length} entries`
+            `[FileExplorer] Updating buffer state with ${newState.entries.length} entries`
           );
           currentBufferState.setEntries([...newState.entries]);
           currentBufferState.setCurrentPath(newState.currentPath);
@@ -600,7 +600,7 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
           // Note: isInitialized is managed by useDataLoader hook
           // and will be set automatically when data loads
 
-          console.error(`[S3Explorer] Profile switch UI update complete`);
+          console.error(`[FileExplorer] Profile switch UI update complete`);
           setStatusMessage(`Switched to profile: ${profile.displayName}`);
           setStatusMessageColor(CatppuccinMocha.green);
         } catch (err) {
@@ -619,7 +619,7 @@ export function S3Explorer({ bucket: initialBucket }: S3ExplorerProps) {
   // Render
   // ============================================
   return (
-    <S3ExplorerLayout
+    <FileExplorerLayout
       bucket={bucket}
       isInitialized={isInitialized}
       bufferState={bufferState}

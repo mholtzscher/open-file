@@ -3,7 +3,7 @@
 import { createCliRenderer } from '@opentui/core';
 import { createRoot } from '@opentui/react';
 import { useState, useEffect, useCallback } from 'react';
-import { S3Explorer } from './ui/s3-explorer.jsx';
+import { FileExplorer } from './ui/file-explorer.js';
 import { ProfileSelectorDialog } from './ui/dialog/profile-selector.js';
 import { StorageProvider } from './providers/provider.js';
 import { S3Provider } from './providers/s3/s3-provider.js';
@@ -113,7 +113,7 @@ function AppWrapper({
       profileManager={profileManager}
       profileName={profileName}
     >
-      <S3Explorer bucket={bucket} />
+      <FileExplorer bucket={bucket} />
     </StorageContextProvider>
   );
 }
