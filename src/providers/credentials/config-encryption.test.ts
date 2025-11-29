@@ -64,7 +64,7 @@ describe('Config Encryption', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         const parsed = JSON.parse(result.data);
-        expect(parsed.magic).toBe('OPEN-S3-ENC');
+        expect(parsed.magic).toBe('OPEN-FILE-ENC');
       }
     });
 
@@ -184,7 +184,7 @@ describe('Config Encryption', () => {
 
     it('should fail with unsupported version', () => {
       const fakeEncrypted = JSON.stringify({
-        magic: 'OPEN-S3-ENC',
+        magic: 'OPEN-FILE-ENC',
         version: 999,
         salt: 'abc',
         iv: 'def',

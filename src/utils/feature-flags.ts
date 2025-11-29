@@ -1,5 +1,5 @@
 /**
- * Feature Flag System for open-s3
+ * Feature Flag System for open-file
  *
  * Manages feature flags for progressive migration and experimental features.
  * Flags can be set via:
@@ -20,17 +20,17 @@ export enum FeatureFlag {
   /**
    * Use the new provider system instead of legacy adapters
    *
-   * Environment: OPEN_S3_USE_PROVIDERS=true|false
+   * Environment: OPEN_FILE_USE_PROVIDERS=true|false
    * Config: featureFlags.useProviders
    * Default: true (as of 2025-11-27 cutover)
    *
-   * ROLLBACK: Set OPEN_S3_USE_LEGACY=true to revert to legacy adapter system
+   * ROLLBACK: Set OPEN_FILE_USE_LEGACY=true to revert to legacy adapter system
    */
   USE_NEW_PROVIDER_SYSTEM = 'USE_NEW_PROVIDER_SYSTEM',
 
   /**
    * Enable multi-provider support (switching between different storage backends)
-   * Environment: OPEN_S3_MULTI_PROVIDER=true|false
+   * Environment: OPEN_FILE_MULTI_PROVIDER=true|false
    * Config: featureFlags.multiProvider
    * Default: false
    */
@@ -38,7 +38,7 @@ export enum FeatureFlag {
 
   /**
    * Enable experimental features
-   * Environment: OPEN_S3_EXPERIMENTAL=true|false
+   * Environment: OPEN_FILE_EXPERIMENTAL=true|false
    * Config: featureFlags.experimental
    * Default: false
    */
@@ -46,7 +46,7 @@ export enum FeatureFlag {
 
   /**
    * Enable debug mode (verbose logging, diagnostics)
-   * Environment: OPEN_S3_DEBUG=true|false
+   * Environment: OPEN_FILE_DEBUG=true|false
    * Config: featureFlags.debug
    * Default: false
    */
@@ -57,17 +57,17 @@ export enum FeatureFlag {
  * Environment variable names for feature flags
  */
 const ENV_VAR_MAP: Record<FeatureFlag, string> = {
-  [FeatureFlag.USE_NEW_PROVIDER_SYSTEM]: 'OPEN_S3_USE_PROVIDERS',
-  [FeatureFlag.MULTI_PROVIDER]: 'OPEN_S3_MULTI_PROVIDER',
-  [FeatureFlag.EXPERIMENTAL]: 'OPEN_S3_EXPERIMENTAL',
-  [FeatureFlag.DEBUG]: 'OPEN_S3_DEBUG',
+  [FeatureFlag.USE_NEW_PROVIDER_SYSTEM]: 'OPEN_FILE_USE_PROVIDERS',
+  [FeatureFlag.MULTI_PROVIDER]: 'OPEN_FILE_MULTI_PROVIDER',
+  [FeatureFlag.EXPERIMENTAL]: 'OPEN_FILE_EXPERIMENTAL',
+  [FeatureFlag.DEBUG]: 'OPEN_FILE_DEBUG',
 };
 
 /**
  * Legacy escape hatch environment variable
- * Set OPEN_S3_USE_LEGACY=true to revert to the legacy adapter system
+ * Set OPEN_FILE_USE_LEGACY=true to revert to the legacy adapter system
  */
-const LEGACY_ESCAPE_HATCH = 'OPEN_S3_USE_LEGACY';
+const LEGACY_ESCAPE_HATCH = 'OPEN_FILE_USE_LEGACY';
 
 /**
  * Config file keys for feature flags
@@ -83,7 +83,7 @@ const CONFIG_KEY_MAP: Record<FeatureFlag, string> = {
  * Default values for feature flags
  *
  * NOTE: USE_NEW_PROVIDER_SYSTEM defaults to TRUE as of 2025-11-27 cutover.
- * To use the legacy system, set OPEN_S3_USE_LEGACY=true
+ * To use the legacy system, set OPEN_FILE_USE_LEGACY=true
  */
 const DEFAULT_VALUES: Record<FeatureFlag, boolean> = {
   [FeatureFlag.USE_NEW_PROVIDER_SYSTEM]: true, // CUTOVER: New provider system is now the default
@@ -133,7 +133,7 @@ export class FeatureFlagManager {
    * Check if a feature flag is enabled
    *
    * Resolution order:
-   * 1. Legacy escape hatch (OPEN_S3_USE_LEGACY=true disables new provider system)
+   * 1. Legacy escape hatch (OPEN_FILE_USE_LEGACY=true disables new provider system)
    * 2. Environment variable
    * 3. Default value
    *
@@ -147,7 +147,7 @@ export class FeatureFlagManager {
     }
 
     // 0. Check legacy escape hatch for USE_NEW_PROVIDER_SYSTEM
-    // This allows users to rollback to legacy system with OPEN_S3_USE_LEGACY=true
+    // This allows users to rollback to legacy system with OPEN_FILE_USE_LEGACY=true
     if (flag === FeatureFlag.USE_NEW_PROVIDER_SYSTEM) {
       const legacyEscapeValue = process.env[LEGACY_ESCAPE_HATCH];
       if (legacyEscapeValue !== undefined && this.parseBoolean(legacyEscapeValue)) {

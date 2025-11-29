@@ -1,8 +1,8 @@
-# Justfile for open-s3 development
+# Justfile for open-file development
 
 # Default recipe to display help
 default:
-    @echo "Open-S3 - Terminal UI for AWS S3"
+    @echo "Open-File - Terminal UI for cloud storage"
     @echo ""
     @echo "Quick Start:"
     @echo "  just demo              - Run with mock data (no AWS required)"
@@ -77,7 +77,7 @@ test-react:
 
 # Show project info
 info:
-    @echo "Project: open-s3"
+    @echo "Project: open-file"
     @echo "Bun version: $(bun --version)"
     @echo "TypeScript version: $(bun run --no-install tsc --version)"
 
@@ -86,7 +86,7 @@ quick: clean install run
 
 # Run demo with mock data (no AWS required)
 demo:
-    @echo "Starting open-s3 with mock data..."
+    @echo "Starting open-file with mock data..."
     @echo "Press 'q' to quit"
     @echo ""
     bun run src/index.tsx --mock
@@ -97,13 +97,13 @@ run-mock: demo
 # Run with real S3 (shows all buckets if no bucket specified)
 s3 BUCKET="" REGION="us-east-1":
     @if [ -z "{{BUCKET}}" ]; then \
-        echo "Starting open-s3 - showing all S3 buckets (root view)"; \
+        echo "Starting open-file - showing all S3 buckets (root view)"; \
         echo "Use vim keybindings to navigate, Enter to select a bucket"; \
         echo "Press 'q' to quit"; \
         echo ""; \
         bun run src/index.tsx --region {{REGION}}; \
     else \
-        echo "Starting open-s3 with bucket: {{BUCKET}} in region: {{REGION}}"; \
+        echo "Starting open-file with bucket: {{BUCKET}} in region: {{REGION}}"; \
         echo "Using AWS credentials from environment"; \
         echo "Press 'q' to quit"; \
         echo ""; \
@@ -113,12 +113,12 @@ s3 BUCKET="" REGION="us-east-1":
 # Run with LocalStack (local S3 testing) - shows all buckets if no bucket specified
 localstack BUCKET="":
     @if [ -z "{{BUCKET}}" ]; then \
-        echo "Starting open-s3 with LocalStack - showing all buckets"; \
+        echo "Starting open-file with LocalStack - showing all buckets"; \
         echo "Endpoint: http://localhost:4566"; \
         echo ""; \
         bun run src/index.tsx --endpoint http://localhost:4566; \
     else \
-        echo "Starting open-s3 with LocalStack..."; \
+        echo "Starting open-file with LocalStack..."; \
         echo "Bucket: {{BUCKET}}"; \
         echo "Endpoint: http://localhost:4566"; \
         echo ""; \

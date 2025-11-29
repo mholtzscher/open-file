@@ -25,17 +25,17 @@ function getLogDirectory(): string {
   switch (platform()) {
     case 'linux': {
       const xdgStateHome = process.env.XDG_STATE_HOME || join(home, '.local', 'state');
-      return join(xdgStateHome, 'open-s3', 'logs');
+      return join(xdgStateHome, 'open-file', 'logs');
     }
     case 'darwin': {
-      return join(home, 'Library', 'Logs', 'open-s3');
+      return join(home, 'Library', 'Logs', 'open-file');
     }
     case 'win32': {
       const localAppData = process.env.LOCALAPPDATA || join(home, 'AppData', 'Local');
-      return join(localAppData, 'open-s3', 'logs');
+      return join(localAppData, 'open-file', 'logs');
     }
     default: {
-      return join(home, '.open-s3', 'logs');
+      return join(home, '.open-file', 'logs');
     }
   }
 }
@@ -80,7 +80,7 @@ export class Logger {
       // Do not throw in constructor
     }
 
-    const name = options.name ?? 'open-s3';
+    const name = options.name ?? 'open-file';
     this.logFile = join(this.logDir, `${name}.log`);
 
     try {

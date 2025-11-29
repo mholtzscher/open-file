@@ -1,6 +1,6 @@
 #!/bin/bash
 # LocalStack S3 initialization script
-# Creates sample buckets, folders, and objects for testing open-s3
+# Creates sample buckets, folders, and objects for testing open-file
 
 set -e
 
@@ -32,7 +32,7 @@ echo "Populating test-bucket..."
 
 # Root level files
 echo "Hello, World!" | awslocal s3 cp - s3://test-bucket/hello.txt
-echo "# README\n\nThis is a test bucket for open-s3 development." | awslocal s3 cp - s3://test-bucket/README.md
+echo "# README\n\nThis is a test bucket for open-file development." | awslocal s3 cp - s3://test-bucket/README.md
 echo '{"name": "test", "version": "1.0.0"}' | awslocal s3 cp - s3://test-bucket/config.json
 
 # Create folders with files

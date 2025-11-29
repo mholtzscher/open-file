@@ -1,6 +1,6 @@
 #!/bin/bash
 # Fake GCS Server initialization script
-# Creates sample buckets and objects for testing open-s3
+# Creates sample buckets and objects for testing open-file
 
 set -e
 
@@ -67,7 +67,7 @@ echo "Populating test-bucket..."
 upload_object "test-bucket" "hello.txt" "Hello, World!"
 upload_object "test-bucket" "README.md" "# README
 
-This is a test bucket for open-s3 development."
+This is a test bucket for open-file development."
 upload_object "test-bucket" "config.json" '{"name": "test", "version": "1.0.0"}' "application/json"
 
 # Create folders with files

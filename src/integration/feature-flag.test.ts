@@ -15,76 +15,76 @@ import { isNewProviderSystemEnabled, getFeatureFlagManager } from '../utils/feat
 
 describe('Feature Flag System', () => {
   // Store original env values
-  const originalEnv = process.env.OPEN_S3_USE_PROVIDERS;
-  const originalLegacyEnv = process.env.OPEN_S3_USE_LEGACY;
+  const originalEnv = process.env.OPEN_FILE_USE_PROVIDERS;
+  const originalLegacyEnv = process.env.OPEN_FILE_USE_LEGACY;
 
   afterEach(() => {
     // Clear the feature flag cache to pick up env changes
     getFeatureFlagManager().clearCache();
     // Restore original env
     if (originalEnv !== undefined) {
-      process.env.OPEN_S3_USE_PROVIDERS = originalEnv;
+      process.env.OPEN_FILE_USE_PROVIDERS = originalEnv;
     } else {
-      delete process.env.OPEN_S3_USE_PROVIDERS;
+      delete process.env.OPEN_FILE_USE_PROVIDERS;
     }
     if (originalLegacyEnv !== undefined) {
-      process.env.OPEN_S3_USE_LEGACY = originalLegacyEnv;
+      process.env.OPEN_FILE_USE_LEGACY = originalLegacyEnv;
     } else {
-      delete process.env.OPEN_S3_USE_LEGACY;
+      delete process.env.OPEN_FILE_USE_LEGACY;
     }
   });
 
   it('defaults to true after cutover (2025-11-27)', () => {
-    delete process.env.OPEN_S3_USE_PROVIDERS;
-    delete process.env.OPEN_S3_USE_LEGACY;
+    delete process.env.OPEN_FILE_USE_PROVIDERS;
+    delete process.env.OPEN_FILE_USE_LEGACY;
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(true);
   });
 
   it('returns true when env is "true"', () => {
-    process.env.OPEN_S3_USE_PROVIDERS = 'true';
+    process.env.OPEN_FILE_USE_PROVIDERS = 'true';
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(true);
   });
 
   it('returns true when env is "1"', () => {
-    process.env.OPEN_S3_USE_PROVIDERS = '1';
+    process.env.OPEN_FILE_USE_PROVIDERS = '1';
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(true);
   });
 
   it('returns false when env is "false"', () => {
-    process.env.OPEN_S3_USE_PROVIDERS = 'false';
+    process.env.OPEN_FILE_USE_PROVIDERS = 'false';
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(false);
   });
 
   it('returns false when env is "0"', () => {
-    process.env.OPEN_S3_USE_PROVIDERS = '0';
+    process.env.OPEN_FILE_USE_PROVIDERS = '0';
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(false);
   });
 
   it('can be set via environment variable', () => {
-    process.env.OPEN_S3_USE_PROVIDERS = 'true';
+    process.env.OPEN_FILE_USE_PROVIDERS = 'true';
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(true);
 
-    process.env.OPEN_S3_USE_PROVIDERS = 'false';
+    process.env.OPEN_FILE_USE_PROVIDERS = 'false';
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(false);
   });
 
   it('legacy escape hatch disables new provider system', () => {
-    delete process.env.OPEN_S3_USE_PROVIDERS;
-    process.env.OPEN_S3_USE_LEGACY = 'true';
+    delete process.env.OPEN_FILE_USE_PROVIDERS;
+    process.env.OPEN_FILE_USE_LEGACY = 'true';
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(false);
   });
 
   it('legacy escape hatch takes precedence over explicit enable', () => {
-    process.env.OPEN_S3_USE_PROVIDERS = 'true';
-    process.env.OPEN_S3_USE_LEGACY = 'true';
+    process.env.OPEN_FILE_USE_PROVIDERS = 'true';
+    process.env.OPEN_FILE_USE_LEGACY = 'true';
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(false);
   });
@@ -98,23 +98,23 @@ describe('Legacy Adapter System Integration', () => {
   afterEach(() => {
     // Cleanup
     getFeatureFlagManager().clearCache();
-    if (process.env.OPEN_S3_USE_PROVIDERS) {
-      delete process.env.OPEN_S3_USE_PROVIDERS;
+    if (process.env.OPEN_FILE_USE_PROVIDERS) {
+      delete process.env.OPEN_FILE_USE_PROVIDERS;
     }
-    if (process.env.OPEN_S3_USE_LEGACY) {
-      delete process.env.OPEN_S3_USE_LEGACY;
+    if (process.env.OPEN_FILE_USE_LEGACY) {
+      delete process.env.OPEN_FILE_USE_LEGACY;
     }
   });
 
-  it('legacy mode can be enabled via OPEN_S3_USE_LEGACY=true', () => {
-    process.env.OPEN_S3_USE_LEGACY = 'true';
+  it('legacy mode can be enabled via OPEN_FILE_USE_LEGACY=true', () => {
+    process.env.OPEN_FILE_USE_LEGACY = 'true';
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(false);
   });
 
-  it('uses legacy adapter when OPEN_S3_USE_LEGACY=true', () => {
+  it('uses legacy adapter when OPEN_FILE_USE_LEGACY=true', () => {
     // In legacy mode (escape hatch), components should use AdapterContext
-    process.env.OPEN_S3_USE_LEGACY = 'true';
+    process.env.OPEN_FILE_USE_LEGACY = 'true';
     getFeatureFlagManager().clearCache();
     const usesLegacy = !isNewProviderSystemEnabled();
     expect(usesLegacy).toBe(true);
@@ -165,20 +165,20 @@ describe('New Provider System Integration', () => {
   afterEach(() => {
     // Cleanup
     getFeatureFlagManager().clearCache();
-    if (process.env.OPEN_S3_USE_PROVIDERS) {
-      delete process.env.OPEN_S3_USE_PROVIDERS;
+    if (process.env.OPEN_FILE_USE_PROVIDERS) {
+      delete process.env.OPEN_FILE_USE_PROVIDERS;
     }
   });
 
   it('feature flag can be enabled', () => {
-    process.env.OPEN_S3_USE_PROVIDERS = 'true';
+    process.env.OPEN_FILE_USE_PROVIDERS = 'true';
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(true);
   });
 
   it('uses provider-based storage operations', () => {
     // In new mode, components should use StorageContext
-    process.env.OPEN_S3_USE_PROVIDERS = 'true';
+    process.env.OPEN_FILE_USE_PROVIDERS = 'true';
     getFeatureFlagManager().clearCache();
     const usesNew = isNewProviderSystemEnabled();
     expect(usesNew).toBe(true);
@@ -368,23 +368,23 @@ describe('Migration Path Validation', () => {
   afterEach(() => {
     // Cleanup
     getFeatureFlagManager().clearCache();
-    if (process.env.OPEN_S3_USE_PROVIDERS) {
-      delete process.env.OPEN_S3_USE_PROVIDERS;
+    if (process.env.OPEN_FILE_USE_PROVIDERS) {
+      delete process.env.OPEN_FILE_USE_PROVIDERS;
     }
-    if (process.env.OPEN_S3_USE_LEGACY) {
-      delete process.env.OPEN_S3_USE_LEGACY;
+    if (process.env.OPEN_FILE_USE_LEGACY) {
+      delete process.env.OPEN_FILE_USE_LEGACY;
     }
   });
 
   it('can switch between new and legacy using escape hatch', () => {
     // New system is now default
-    delete process.env.OPEN_S3_USE_PROVIDERS;
-    delete process.env.OPEN_S3_USE_LEGACY;
+    delete process.env.OPEN_FILE_USE_PROVIDERS;
+    delete process.env.OPEN_FILE_USE_LEGACY;
     getFeatureFlagManager().clearCache();
     const newModeDefault = isNewProviderSystemEnabled();
 
     // Can rollback to legacy using escape hatch
-    process.env.OPEN_S3_USE_LEGACY = 'true';
+    process.env.OPEN_FILE_USE_LEGACY = 'true';
     getFeatureFlagManager().clearCache();
     const legacyMode = !isNewProviderSystemEnabled();
 
@@ -395,7 +395,7 @@ describe('Migration Path Validation', () => {
   it('legacy adapter still works when new system is enabled', () => {
     // LegacyStorageAdapter should work in new system
     // This ensures backward compatibility
-    process.env.OPEN_S3_USE_PROVIDERS = 'true';
+    process.env.OPEN_FILE_USE_PROVIDERS = 'true';
     getFeatureFlagManager().clearCache();
     const supportsLegacy = true; // LegacyStorageAdapter wraps old adapter
 
@@ -415,18 +415,18 @@ describe('Migration Path Validation', () => {
 
   it('feature flag can be toggled at runtime via escape hatch', () => {
     // New system is default
-    delete process.env.OPEN_S3_USE_PROVIDERS;
-    delete process.env.OPEN_S3_USE_LEGACY;
+    delete process.env.OPEN_FILE_USE_PROVIDERS;
+    delete process.env.OPEN_FILE_USE_LEGACY;
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(true);
 
     // Enable legacy mode
-    process.env.OPEN_S3_USE_LEGACY = 'true';
+    process.env.OPEN_FILE_USE_LEGACY = 'true';
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(false);
 
     // Back to new mode
-    delete process.env.OPEN_S3_USE_LEGACY;
+    delete process.env.OPEN_FILE_USE_LEGACY;
     getFeatureFlagManager().clearCache();
     expect(isNewProviderSystemEnabled()).toBe(true);
   });

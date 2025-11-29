@@ -1,4 +1,4 @@
-# open-s3
+# open-file
 
 A Terminal User Interface (TUI) for exploring and managing AWS S3 buckets, inspired by oil.nvim's buffer-as-editor approach.
 
@@ -26,8 +26,8 @@ A Terminal User Interface (TUI) for exploring and managing AWS S3 buckets, inspi
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/open-s3.git
-cd open-s3
+git clone https://github.com/yourusername/open-file.git
+cd open-file
 
 # Install Bun (if not already installed)
 curl -fsSL https://bun.sh/install | bash
@@ -43,8 +43,8 @@ bun run src/index.ts
 
 ```bash
 # Clone and setup
-git clone https://github.com/yourusername/open-s3.git
-cd open-s3
+git clone https://github.com/yourusername/open-file.git
+cd open-file
 npm install
 
 # Run (requires Bun runtime)
@@ -53,7 +53,7 @@ bun run src/index.ts
 
 ### First Time Setup
 
-After installing open-s3, follow these steps to get started:
+After installing open-file, follow these steps to get started:
 
 1. **Set up AWS credentials** (choose one method):
 
@@ -84,7 +84,7 @@ After installing open-s3, follow these steps to get started:
    aws s3 ls
    ```
 
-3. **Start open-s3**:
+3. **Start open-file**:
 
    ```bash
    bun run src/index.ts
@@ -99,7 +99,7 @@ After installing open-s3, follow these steps to get started:
 
 ### Bucket Root View
 
-When you start open-s3 without specifying a bucket, you'll see a list of all S3 buckets in your AWS account. This is the root view where you can:
+When you start open-file without specifying a bucket, you'll see a list of all S3 buckets in your AWS account. This is the root view where you can:
 
 1. **Browse buckets** - Use `j` and `k` to move cursor down and up
 2. **Enter a bucket** - Press `Enter` or `l` to open a bucket and view its contents
@@ -220,10 +220,10 @@ After making changes (creates, deletes, moves), you must save them:
 
 ### Command Line Options
 
-open-s3 is configured primarily through command-line arguments:
+open-file is configured primarily through command-line arguments:
 
 ```bash
-open-s3 [OPTIONS] [BUCKET]
+open-file [OPTIONS] [BUCKET]
 
 OPTIONS:
   -b, --bucket NAME       S3 bucket name
@@ -243,16 +243,16 @@ All configuration is done through CLI arguments and environment variables:
 
 ```bash
 # Use specific AWS profile
-open-s3 --profile production my-bucket
+open-file --profile production my-bucket
 
 # Override region
-open-s3 --region us-west-2 my-bucket
+open-file --region us-west-2 my-bucket
 
 # Use custom endpoint (LocalStack)
-open-s3 --endpoint http://localhost:4566 test-bucket
+open-file --endpoint http://localhost:4566 test-bucket
 
 # Specify credentials explicitly
-open-s3 --access-key KEY --secret-key SECRET --region us-east-1 my-bucket
+open-file --access-key KEY --secret-key SECRET --region us-east-1 my-bucket
 ```
 
 ### Customization
@@ -280,7 +280,7 @@ open-s3 --access-key KEY --secret-key SECRET --region us-east-1 my-bucket
 }
 ```
 
-**Note:** The `bucket` field is now optional. If omitted, open-s3 will start at the bucket root view, allowing you to browse and select from all available buckets in your AWS account.
+**Note:** The `bucket` field is now optional. If omitted, open-file will start at the bucket root view, allowing you to browse and select from all available buckets in your AWS account.
 
 ### Configuration Examples
 
@@ -352,7 +352,7 @@ open-s3 --access-key KEY --secret-key SECRET --region us-east-1 my-bucket
 
 ### Credential Resolution Order
 
-open-s3 looks for AWS credentials in this order:
+open-file looks for AWS credentials in this order:
 
 1. Command-line arguments (`--access-key`, `--secret-key`, `--region`)
 2. Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`)
@@ -361,7 +361,7 @@ open-s3 looks for AWS credentials in this order:
 
 ## Architecture
 
-The application follows a clean, modular architecture with a React-based UI. As of November 2025, open-s3 uses a provider-based architecture that supports multiple storage backends with better error handling, capability-based UI, and connection status tracking.
+The application follows a clean, modular architecture with a React-based UI. As of November 2025, open-file uses a provider-based architecture that supports multiple storage backends with better error handling, capability-based UI, and connection status tracking.
 
 ### Providers (`src/providers/`)
 
@@ -427,7 +427,7 @@ docker-compose up -d sftp          # SFTP Server
 # Test with AWS CLI
 aws --endpoint-url=http://localhost:4566 s3 ls
 
-# Run open-s3 with LocalStack
+# Run open-file with LocalStack
 bun run src/index.ts --endpoint http://localhost:4566
 ```
 
@@ -500,7 +500,7 @@ just build
 ## Project Structure
 
 ```
-open-s3/
+open-file/
 ├── src/
 │   ├── providers/         # Storage provider system
 │   │   ├── provider.ts   # StorageProvider interface
@@ -642,7 +642,7 @@ The S3 adapter uses AWS SDK v3 and supports multiple credential methods:
 3. **Command Line Arguments**
 
    ```bash
-   open-s3 --access-key your-key --secret-key your-secret --region us-east-1
+   open-file --access-key your-key --secret-key your-secret --region us-east-1
    ```
 
 ## Troubleshooting
@@ -651,7 +651,7 @@ The S3 adapter uses AWS SDK v3 and supports multiple credential methods:
 
 #### "Access Denied" or "Invalid Credentials"
 
-**Problem**: Getting authentication errors when trying to list S3 buckets
+**Problem**: Getting authentication errors when trying to list buckets
 
 **Solutions**:
 
@@ -731,7 +731,7 @@ The S3 adapter uses AWS SDK v3 and supports multiple credential methods:
 
 #### Performance Issues with Large Buckets
 
-**Problem**: open-s3 is slow when working with buckets containing many entries
+**Problem**: open-file is slow when working with buckets containing many entries
 
 **Solutions**:
 
@@ -744,7 +744,7 @@ The S3 adapter uses AWS SDK v3 and supports multiple credential methods:
 
 If you encounter an issue not listed here:
 
-1. Check the [GitHub Issues](https://github.com/yourusername/open-s3/issues)
+1. Check the [GitHub Issues](https://github.com/yourusername/open-file/issues)
 2. Enable verbose logging (if available)
 3. Report with details about your environment:
    - Bun version (`bun --version`)

@@ -27,13 +27,13 @@ describe('Logger', () => {
   it('should get log file path', () => {
     const logPath = logger.getLogFilePath();
     expect(logPath).toBeTruthy();
-    expect(logPath.includes('open-s3')).toBe(true);
+    expect(logPath.includes('open-file')).toBe(true);
   });
 
   it('should get log directory path', () => {
     const logDir = logger.getLogDirectoryPath();
     expect(logDir).toBeTruthy();
-    expect(logDir.includes('open-s3')).toBe(true);
+    expect(logDir.includes('open-file')).toBe(true);
   });
 
   it('should create log directory if it does not exist', () => {
@@ -118,8 +118,8 @@ describe('Log directory detection', () => {
     const logger = new Logger();
     const logDir = logger.getLogDirectoryPath();
 
-    // Should contain open-s3 in the path
-    expect(logDir.includes('open-s3')).toBe(true);
+    // Should contain open-file in the path
+    expect(logDir.includes('open-file')).toBe(true);
 
     // Should be under home directory or platform-specific locations
     const home = homedir();

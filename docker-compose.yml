@@ -1,7 +1,7 @@
 services:
   localstack:
     image: localstack/localstack:latest
-    container_name: open-s3-localstack
+    container_name: open-file-localstack
     ports:
       - '4566:4566'
     environment:
@@ -21,7 +21,7 @@ services:
 
   fake-gcs:
     image: fsouza/fake-gcs-server:latest
-    container_name: open-s3-fake-gcs
+    container_name: open-file-fake-gcs
     ports:
       - '4443:4443'
     command: ['-scheme', 'http', '-port', '4443', '-external-url', 'http://localhost:4443']
@@ -35,7 +35,7 @@ services:
 
   fake-gcs-init:
     image: curlimages/curl:latest
-    container_name: open-s3-fake-gcs-init
+    container_name: open-file-fake-gcs-init
     depends_on:
       fake-gcs:
         condition: service_healthy
@@ -47,7 +47,7 @@ services:
 
   sftp:
     image: atmoz/sftp:latest
-    container_name: open-s3-sftp
+    container_name: open-file-sftp
     ports:
       - '2222:22'
     volumes:

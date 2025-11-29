@@ -1,11 +1,11 @@
 {
-  "name": "open-s3",
+  "name": "open-file",
   "version": "1.0.0",
   "description": "Terminal UI for S3 bucket exploration",
   "main": "src/index.tsx",
   "type": "module",
   "bin": {
-    "open-s3": "./src/index.tsx"
+    "open-file": "./src/index.tsx"
   },
   "scripts": {
     "start": "bun run src/index.ts",

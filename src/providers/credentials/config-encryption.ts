@@ -19,7 +19,7 @@ import { scryptSync, randomBytes, createCipheriv, createDecipheriv, timingSafeEq
 // ============================================================================
 
 /** Magic bytes to identify encrypted config files */
-const MAGIC_HEADER = 'OPEN-S3-ENC';
+const MAGIC_HEADER = 'OPEN-FILE-ENC';
 
 /** Current encryption version */
 const VERSION = 1;
@@ -211,7 +211,7 @@ export function decryptConfig<T>(encryptedData: string, password: string): Encry
       success: false,
       error: {
         code: 'invalid_format',
-        message: 'Data is not an encrypted open-s3 config',
+        message: 'Data is not an encrypted open-file config',
       },
     };
   }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 /**
- * Entry point for open-s3 application
+ * Entry point for open-file application
  *
  * Sets up the CLI renderer and bridges keyboard events to the App.
  */
@@ -18,7 +18,7 @@ import type { KeyboardKey, KeyboardDispatcher } from './types/keyboard.js';
 let globalKeyboardDispatcher: KeyboardDispatcher | null = null;
 
 /**
- * Main entry point for open-s3 application
+ * Main entry point for open-file application
  */
 async function main() {
   try {

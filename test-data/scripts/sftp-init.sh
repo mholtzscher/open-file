@@ -1,6 +1,6 @@
 #!/bin/sh
 # SFTP server initialization script
-# Creates sample directories and files for testing open-s3 SFTP provider
+# Creates sample directories and files for testing open-file SFTP provider
 
 # Don't exit on error - some operations may fail on read-only mounts
 # set -e
@@ -43,7 +43,7 @@ echo "Creating test files..."
 echo "Hello, SFTP World!" > "$DATA_DIR/hello.txt"
 echo "# SFTP Test Data
 
-This directory contains test data for open-s3 SFTP integration testing.
+This directory contains test data for open-file SFTP integration testing.
 
 ## Structure
 - documents/ - Office documents

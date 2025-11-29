@@ -4,7 +4,7 @@ This document describes how operation dialogs (Upload, Confirmation) work with b
 
 ## Overview
 
-The operation dialogs in open-s3 are **presentational components** that don't directly interact with storage systems. Instead, they:
+The operation dialogs in open-file are **presentational components** that don't directly interact with storage systems. Instead, they:
 
 1. **UploadDialog**: Provides file selection UI for choosing files to upload
 2. **ConfirmationDialog**: Displays pending operations for user confirmation

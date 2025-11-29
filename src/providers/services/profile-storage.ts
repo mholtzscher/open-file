@@ -15,7 +15,7 @@ import type { Profile } from '../types/profile.js';
 // ============================================================================
 
 /** Application name for config directories */
-const APP_NAME = 'open-s3';
+const APP_NAME = 'open-file';
 
 /** Profile storage filename */
 const PROFILES_FILENAME = 'profiles.json';
@@ -28,9 +28,9 @@ const PROFILES_FILENAME = 'profiles.json';
  * Get the platform-appropriate configuration directory
  *
  * Follows platform conventions:
- * - macOS: ~/Library/Application Support/open-s3
- * - Linux: ~/.config/open-s3 (XDG_CONFIG_HOME)
- * - Windows: %APPDATA%/open-s3
+ * - macOS: ~/Library/Application Support/open-file
+ * - Linux: ~/.config/open-file (XDG_CONFIG_HOME)
+ * - Windows: %APPDATA%/open-file
  *
  * @returns Absolute path to config directory
  */
@@ -40,16 +40,16 @@ export function getConfigDir(): string {
 
   switch (plat) {
     case 'darwin':
-      // macOS: ~/Library/Application Support/open-s3
+      // macOS: ~/Library/Application Support/open-file
       return join(home, 'Library', 'Application Support', APP_NAME);
 
     case 'win32':
-      // Windows: %APPDATA%/open-s3
+      // Windows: %APPDATA%/open-file
       const appData = process.env.APPDATA || join(home, 'AppData', 'Roaming');
       return join(appData, APP_NAME);
 
     default:
-      // Linux and others: ~/.config/open-s3 (XDG Base Directory spec)
+      // Linux and others: ~/.config/open-file (XDG Base Directory spec)
       const xdgConfig = process.env.XDG_CONFIG_HOME || join(home, '.config');
       return join(xdgConfig, APP_NAME);
   }

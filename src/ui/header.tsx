@@ -19,7 +19,7 @@ export interface HeaderProps {}
 /**
  * Header React component
  *
- * Displays "open-s3" in the title border and container/bucket info inside the box.
+ * Displays "open-file" in the title border and container/bucket info inside the box.
  * Shows the current AWS profile on the right side.
  * Uses padding to keep content inside the bordered box.
  *
@@ -47,7 +47,7 @@ export function Header() {
       flexShrink={0}
       borderStyle="rounded"
       borderColor={CatppuccinMocha.mauve}
-      title="open-s3"
+      title="open-file"
       paddingLeft={1}
       paddingRight={1}
       flexDirection="row"

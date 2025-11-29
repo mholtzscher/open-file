@@ -324,7 +324,7 @@ describe('ProfileManager Integration Tests', () => {
     // Create unique temp directory for each test
     tempDir = join(
       tmpdir(),
-      `open-s3-profile-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      `open-file-profile-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
     );
     mkdirSync(tempDir, { recursive: true });
     profilesPath = join(tempDir, 'profiles.json');

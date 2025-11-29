@@ -58,7 +58,7 @@ describe('Profile Storage - Path Functions', () => {
 
     it('should include app name in path', () => {
       const dir = getConfigDir();
-      expect(dir).toContain('open-s3');
+      expect(dir).toContain('open-file');
     });
 
     it('should respect XDG_CONFIG_HOME on Linux', () => {
@@ -97,7 +97,7 @@ describe('Profile Storage - File Operations', () => {
 
   beforeEach(() => {
     // Create a unique temp directory for each test
-    tempDir = join(tmpdir(), `open-s3-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    tempDir = join(tmpdir(), `open-file-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     mkdirSync(tempDir, { recursive: true });
   });
 
@@ -339,7 +339,7 @@ describe('Profile Storage - Round-trip', () => {
   beforeEach(() => {
     tempDir = join(
       tmpdir(),
-      `open-s3-roundtrip-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      `open-file-roundtrip-${Date.now()}-${Math.random().toString(36).slice(2)}`
     );
     mkdirSync(tempDir, { recursive: true });
   });

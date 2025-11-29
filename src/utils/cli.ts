@@ -37,10 +37,10 @@ export function parseArgs(args: string[]): CliArgs {
  */
 export function printHelp(): void {
   console.log(`
-open-s3 - Terminal UI for exploring cloud storage
+open-file - Terminal UI for exploring cloud storage
 
 USAGE:
-  open-s3 [OPTIONS]
+  open-file [OPTIONS]
 
 OPTIONS:
     --debug                 Enable debug logging to file
@@ -74,5 +74,5 @@ export function getVersion(): string {
  * Print version
  */
 export function printVersion(): void {
-  console.log(`open-s3 v${getVersion()}`);
+  console.log(`open-file v${getVersion()}`);
 }

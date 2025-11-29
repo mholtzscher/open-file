@@ -54,99 +54,99 @@ describe('FeatureFlagManager', () => {
   });
 
   describe('Environment variable resolution', () => {
-    it('should read from OPEN_S3_USE_PROVIDERS environment variable', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = 'true';
+    it('should read from OPEN_FILE_USE_PROVIDERS environment variable', () => {
+      process.env.OPEN_FILE_USE_PROVIDERS = 'true';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
     });
 
-    it('should read from OPEN_S3_MULTI_PROVIDER environment variable', () => {
-      process.env.OPEN_S3_MULTI_PROVIDER = 'true';
+    it('should read from OPEN_FILE_MULTI_PROVIDER environment variable', () => {
+      process.env.OPEN_FILE_MULTI_PROVIDER = 'true';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.MULTI_PROVIDER)).toBe(true);
     });
 
-    it('should read from OPEN_S3_EXPERIMENTAL environment variable', () => {
-      process.env.OPEN_S3_EXPERIMENTAL = 'true';
+    it('should read from OPEN_FILE_EXPERIMENTAL environment variable', () => {
+      process.env.OPEN_FILE_EXPERIMENTAL = 'true';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.EXPERIMENTAL)).toBe(true);
     });
 
-    it('should read from OPEN_S3_DEBUG environment variable', () => {
-      process.env.OPEN_S3_DEBUG = 'true';
+    it('should read from OPEN_FILE_DEBUG environment variable', () => {
+      process.env.OPEN_FILE_DEBUG = 'true';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.DEBUG)).toBe(true);
     });
 
     it('should parse "true" as true', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = 'true';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'true';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
     });
 
     it('should parse "false" as false', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = 'false';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'false';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
     });
 
     it('should parse "1" as true', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = '1';
+      process.env.OPEN_FILE_USE_PROVIDERS = '1';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
     });
 
     it('should parse "0" as false', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = '0';
+      process.env.OPEN_FILE_USE_PROVIDERS = '0';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
     });
 
     it('should parse "yes" as true', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = 'yes';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'yes';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
     });
 
     it('should parse "no" as false', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = 'no';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'no';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
     });
 
     it('should parse "on" as true', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = 'on';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'on';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
     });
 
     it('should parse "off" as false', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = 'off';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'off';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
     });
 
     it('should be case-insensitive', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = 'TRUE';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'TRUE';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
     });
 
     it('should trim whitespace', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = '  true  ';
+      process.env.OPEN_FILE_USE_PROVIDERS = '  true  ';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
@@ -156,7 +156,7 @@ describe('FeatureFlagManager', () => {
   describe('Precedence order', () => {
     it('should prefer environment variable over default', () => {
       // Environment says false (overrides default true)
-      process.env.OPEN_S3_USE_PROVIDERS = 'false';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'false';
 
       const manager = new FeatureFlagManager();
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
@@ -170,16 +170,16 @@ describe('FeatureFlagManager', () => {
   });
 
   describe('Legacy escape hatch', () => {
-    it('should disable new provider system when OPEN_S3_USE_LEGACY=true', () => {
-      process.env.OPEN_S3_USE_LEGACY = 'true';
+    it('should disable new provider system when OPEN_FILE_USE_LEGACY=true', () => {
+      process.env.OPEN_FILE_USE_LEGACY = 'true';
       const manager = new FeatureFlagManager();
 
       // Despite default being true, legacy escape hatch overrides
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
     });
 
-    it('should not affect new provider system when OPEN_S3_USE_LEGACY=false', () => {
-      process.env.OPEN_S3_USE_LEGACY = 'false';
+    it('should not affect new provider system when OPEN_FILE_USE_LEGACY=false', () => {
+      process.env.OPEN_FILE_USE_LEGACY = 'false';
       const manager = new FeatureFlagManager();
 
       // Default is true, and legacy escape hatch is false, so still true
@@ -187,16 +187,16 @@ describe('FeatureFlagManager', () => {
     });
 
     it('should have legacy escape hatch take highest precedence', () => {
-      // Even if OPEN_S3_USE_PROVIDERS=true, legacy escape hatch wins
-      process.env.OPEN_S3_USE_PROVIDERS = 'true';
-      process.env.OPEN_S3_USE_LEGACY = 'true';
+      // Even if OPEN_FILE_USE_PROVIDERS=true, legacy escape hatch wins
+      process.env.OPEN_FILE_USE_PROVIDERS = 'true';
+      process.env.OPEN_FILE_USE_LEGACY = 'true';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
     });
 
     it('should only affect USE_NEW_PROVIDER_SYSTEM flag', () => {
-      process.env.OPEN_S3_USE_LEGACY = 'true';
+      process.env.OPEN_FILE_USE_LEGACY = 'true';
       const manager = new FeatureFlagManager();
 
       // Legacy escape hatch should not affect other flags
@@ -208,25 +208,25 @@ describe('FeatureFlagManager', () => {
 
   describe('Caching', () => {
     it('should cache flag values', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = 'true';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'true';
       const manager = new FeatureFlagManager();
 
       // First call
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
 
       // Change env (but cache should still return old value)
-      process.env.OPEN_S3_USE_PROVIDERS = 'false';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'false';
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
     });
 
     it('should clear cache and pick up new values', () => {
-      process.env.OPEN_S3_USE_PROVIDERS = 'true';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'true';
       const manager = new FeatureFlagManager();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
 
       // Change env and clear cache
-      process.env.OPEN_S3_USE_PROVIDERS = 'false';
+      process.env.OPEN_FILE_USE_PROVIDERS = 'false';
       manager.clearCache();
 
       expect(manager.isEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(false);
@@ -248,43 +248,43 @@ describe('Global convenience functions', () => {
   });
 
   it('should provide isFeatureEnabled convenience function', () => {
-    process.env.OPEN_S3_USE_PROVIDERS = 'true';
+    process.env.OPEN_FILE_USE_PROVIDERS = 'true';
     initializeFeatureFlags(); // Re-initialize to pick up env change
 
     expect(isFeatureEnabled(FeatureFlag.USE_NEW_PROVIDER_SYSTEM)).toBe(true);
   });
 
   it('should provide isNewProviderSystemEnabled convenience function', () => {
-    process.env.OPEN_S3_USE_PROVIDERS = 'true';
+    process.env.OPEN_FILE_USE_PROVIDERS = 'true';
     initializeFeatureFlags();
 
     expect(isNewProviderSystemEnabled()).toBe(true);
   });
 
   it('should provide isMultiProviderEnabled convenience function', () => {
-    process.env.OPEN_S3_MULTI_PROVIDER = 'true';
+    process.env.OPEN_FILE_MULTI_PROVIDER = 'true';
     initializeFeatureFlags();
 
     expect(isMultiProviderEnabled()).toBe(true);
   });
 
   it('should provide isExperimentalEnabled convenience function', () => {
-    process.env.OPEN_S3_EXPERIMENTAL = 'true';
+    process.env.OPEN_FILE_EXPERIMENTAL = 'true';
     initializeFeatureFlags();
 
     expect(isExperimentalEnabled()).toBe(true);
   });
 
   it('should provide isDebugEnabled convenience function', () => {
-    process.env.OPEN_S3_DEBUG = 'true';
+    process.env.OPEN_FILE_DEBUG = 'true';
     initializeFeatureFlags();
 
     expect(isDebugEnabled()).toBe(true);
   });
 
   it('should provide getAllFeatureFlags convenience function', () => {
-    process.env.OPEN_S3_USE_PROVIDERS = 'true';
-    process.env.OPEN_S3_DEBUG = 'true';
+    process.env.OPEN_FILE_USE_PROVIDERS = 'true';
+    process.env.OPEN_FILE_DEBUG = 'true';
     initializeFeatureFlags();
 
     const flags = getAllFeatureFlags();

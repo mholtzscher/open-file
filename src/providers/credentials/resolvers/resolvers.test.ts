@@ -50,7 +50,7 @@ import type { S3Credentials, FTPCredentials, SMBCredentials } from '../types.js'
 let tempDir: string;
 
 beforeEach(() => {
-  tempDir = join(tmpdir(), `open-s3-resolver-test-${Date.now()}`);
+  tempDir = join(tmpdir(), `open-file-resolver-test-${Date.now()}`);
   mkdirSync(tempDir, { recursive: true });
 });
 
