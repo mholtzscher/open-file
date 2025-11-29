@@ -10,6 +10,7 @@ import type { PendingOperation } from '../types/dialog.js';
 import type { UseBufferStateReturn } from './useBufferState.js';
 import type { UseNavigationHandlersReturn as NavigationHandlers } from './useNavigationHandlers.js';
 import type { StorageContextValue } from '../contexts/StorageContext.js';
+import type { UsePendingOperationsReturn } from './usePendingOperations.js';
 
 interface UseS3ActionsProps {
   storage: StorageContextValue;
@@ -28,6 +29,8 @@ interface UseS3ActionsProps {
   toggleHelp: () => void;
   toggleSort: () => void;
   closeDialog: () => void;
+  /** Optional: New pending operations hook for global state management */
+  pendingOps?: UsePendingOperationsReturn;
 }
 
 export function useS3Actions({
@@ -47,6 +50,7 @@ export function useS3Actions({
   toggleHelp,
   toggleSort,
   closeDialog,
+  pendingOps,
 }: UseS3ActionsProps) {
   return useMemo(() => {
     const getActiveBuffer = () => bufferState;
@@ -134,29 +138,52 @@ export function useS3Actions({
           const currentBufferState = getActiveBuffer();
           const selected = currentBufferState.getSelectedEntries();
           if (selected.length > 0) {
-            currentBufferState.saveSnapshot();
-
-            for (const entry of selected) {
-              if (currentBufferState.isMarkedForDeletion(entry.id)) {
-                currentBufferState.unmarkForDeletion(entry.id);
-              } else {
-                currentBufferState.markForDeletion(entry.id);
+            // Use the new pending operations store if available
+            if (pendingOps) {
+              for (const entry of selected) {
+                pendingOps.toggleDeletion(entry);
               }
-            }
 
-            if (currentBufferState.selection.isActive) {
-              currentBufferState.exitVisualSelection();
-            }
+              if (currentBufferState.selection.isActive) {
+                currentBufferState.exitVisualSelection();
+              }
 
-            const markedCount = currentBufferState.getMarkedForDeletion().length;
-            if (markedCount > 0) {
-              setStatusMessage(
-                `${markedCount} item(s) marked for deletion. Press 'w' to save or 'u' to undo.`
-              );
-              setStatusMessageColor(CatppuccinMocha.yellow);
+              const markedCount = pendingOps.getMarkedForDeletion().length;
+              if (markedCount > 0) {
+                setStatusMessage(
+                  `${markedCount} item(s) marked for deletion. Press 'w' to save or 'u' to undo.`
+                );
+                setStatusMessageColor(CatppuccinMocha.yellow);
+              } else {
+                setStatusMessage('No items marked for deletion');
+                setStatusMessageColor(CatppuccinMocha.text);
+              }
             } else {
-              setStatusMessage('No items marked for deletion');
-              setStatusMessageColor(CatppuccinMocha.text);
+              // Fallback to old buffer-scoped deletion tracking
+              currentBufferState.saveSnapshot();
+
+              for (const entry of selected) {
+                if (currentBufferState.isMarkedForDeletion(entry.id)) {
+                  currentBufferState.unmarkForDeletion(entry.id);
+                } else {
+                  currentBufferState.markForDeletion(entry.id);
+                }
+              }
+
+              if (currentBufferState.selection.isActive) {
+                currentBufferState.exitVisualSelection();
+              }
+
+              const markedCount = currentBufferState.getMarkedForDeletion().length;
+              if (markedCount > 0) {
+                setStatusMessage(
+                  `${markedCount} item(s) marked for deletion. Press 'w' to save or 'u' to undo.`
+                );
+                setStatusMessageColor(CatppuccinMocha.yellow);
+              } else {
+                setStatusMessage('No items marked for deletion');
+                setStatusMessageColor(CatppuccinMocha.text);
+              }
             }
           }
         },
@@ -306,8 +333,10 @@ export function useS3Actions({
 
         // Buffer operations
         'buffer:save': () => {
-          const currentBufferState = getActiveBuffer();
-          const markedForDeletion = currentBufferState.getMarkedForDeletion();
+          // Use the new pending operations store if available
+          const markedForDeletion = pendingOps
+            ? pendingOps.getMarkedForDeletion()
+            : getActiveBuffer().getMarkedForDeletion();
 
           const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
             id: entry.id,
@@ -362,24 +391,46 @@ export function useS3Actions({
         },
 
         'buffer:undo': () => {
-          const currentBufferState = getActiveBuffer();
-          if (currentBufferState.undo()) {
-            setStatusMessage('Undo');
-            setStatusMessageColor(CatppuccinMocha.green);
+          // Use the new pending operations store if available
+          if (pendingOps) {
+            if (pendingOps.undo()) {
+              setStatusMessage('Undo');
+              setStatusMessageColor(CatppuccinMocha.green);
+            } else {
+              setStatusMessage('Nothing to undo');
+              setStatusMessageColor(CatppuccinMocha.yellow);
+            }
           } else {
-            setStatusMessage('Nothing to undo');
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            const currentBufferState = getActiveBuffer();
+            if (currentBufferState.undo()) {
+              setStatusMessage('Undo');
+              setStatusMessageColor(CatppuccinMocha.green);
+            } else {
+              setStatusMessage('Nothing to undo');
+              setStatusMessageColor(CatppuccinMocha.yellow);
+            }
           }
         },
 
         'buffer:redo': () => {
-          const currentBufferState = getActiveBuffer();
-          if (currentBufferState.redo()) {
-            setStatusMessage('Redo');
-            setStatusMessageColor(CatppuccinMocha.green);
+          // Use the new pending operations store if available
+          if (pendingOps) {
+            if (pendingOps.redo()) {
+              setStatusMessage('Redo');
+              setStatusMessageColor(CatppuccinMocha.green);
+            } else {
+              setStatusMessage('Nothing to redo');
+              setStatusMessageColor(CatppuccinMocha.yellow);
+            }
           } else {
-            setStatusMessage('Nothing to redo');
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            const currentBufferState = getActiveBuffer();
+            if (currentBufferState.redo()) {
+              setStatusMessage('Redo');
+              setStatusMessageColor(CatppuccinMocha.green);
+            } else {
+              setStatusMessage('Nothing to redo');
+              setStatusMessageColor(CatppuccinMocha.yellow);
+            }
           }
         },
 
@@ -389,8 +440,10 @@ export function useS3Actions({
 
         // Application
         'app:quit': () => {
-          const currentBufferState = getActiveBuffer();
-          const pendingChanges = currentBufferState.getMarkedForDeletion().length;
+          // Use the new pending operations store if available
+          const pendingChanges = pendingOps
+            ? pendingOps.pendingCount
+            : getActiveBuffer().getMarkedForDeletion().length;
 
           if (pendingChanges > 0) {
             // Show quit confirmation dialog
@@ -609,7 +662,6 @@ export function useS3Actions({
     setPreviewMode,
     setStatusMessage,
     setStatusMessageColor,
-    // setOriginalEntries removed
     navigationHandlers,
     showConfirm,
     showUpload,
@@ -618,5 +670,6 @@ export function useS3Actions({
     toggleHelp,
     toggleSort,
     closeDialog,
+    pendingOps,
   ]);
 }

@@ -13,6 +13,7 @@ import { SortField, SortOrder } from '../utils/sorting.js';
 import type { PendingOperation, DialogState } from '../types/dialog.js';
 import type { UseBufferStateReturn } from './useBufferState.js';
 import type { StorageContextValue } from '../contexts/StorageContext.js';
+import type { UsePendingOperationsReturn } from './usePendingOperations.js';
 
 /**
  * Progress state from useOperationExecutor
@@ -73,6 +74,9 @@ export interface UseDialogHandlersProps {
     }
   ) => Promise<unknown>;
   handleCancelOperation: () => void;
+
+  /** Optional: New pending operations hook for global state management */
+  pendingOps?: UsePendingOperationsReturn;
 }
 
 /**
@@ -101,6 +105,7 @@ export function useDialogHandlers({
   setBucket,
   executeOperationsWithProgress,
   handleCancelOperation,
+  pendingOps,
 }: UseDialogHandlersProps): DialogsState {
   // Ref to track if we should quit after saving
   const quitAfterSaveRef = useRef(false);
@@ -118,7 +123,14 @@ export function useDialogHandlers({
 
             const entries = await storage.list(currentBufferState.currentPath);
             currentBufferState.setEntries([...entries]);
-            currentBufferState.clearDeletionMarks();
+
+            // Clear deletion marks from both old and new stores
+            if (pendingOps) {
+              pendingOps.discard();
+            } else {
+              currentBufferState.clearDeletionMarks();
+            }
+
             setStatusMessage(message);
             setStatusMessageColor(CatppuccinMocha.green);
 
@@ -152,6 +164,7 @@ export function useDialogHandlers({
     executeOperationsWithProgress,
     setStatusMessage,
     setStatusMessageColor,
+    pendingOps,
   ]);
 
   // ============================================
@@ -258,10 +271,17 @@ export function useDialogHandlers({
       visible: showQuitDialog,
       pendingChanges: dialogState.quitPendingChanges,
       onQuitWithoutSave: () => {
+        // Discard pending operations if using the new store
+        if (pendingOps) {
+          pendingOps.discard();
+        }
         process.exit(0);
       },
       onSaveAndQuit: () => {
-        const markedForDeletion = bufferState.getMarkedForDeletion();
+        // Get marked for deletion from the appropriate store
+        const markedForDeletion = pendingOps
+          ? pendingOps.getMarkedForDeletion()
+          : bufferState.getMarkedForDeletion();
 
         if (markedForDeletion.length > 0) {
           const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({

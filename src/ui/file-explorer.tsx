@@ -17,6 +17,8 @@ import { useOperationExecutor } from '../hooks/useOperationExecutor.js';
 import { useS3Actions } from '../hooks/useS3Actions.js';
 import { useDialogHandlers } from '../hooks/useDialogHandlers.js';
 import { useFileExplorerKeyboard } from '../hooks/useFileExplorerKeyboard.js';
+import { usePendingOperations } from '../hooks/usePendingOperations.js';
+import { providerNameToScheme } from '../utils/storage-uri.js';
 
 import { FileExplorerLayout, StatusBarState, PreviewState } from './file-explorer-layout.js';
 import { CatppuccinMocha } from './theme.js';
@@ -35,6 +37,16 @@ export function FileExplorer() {
   // Core State
   // ============================================
   const [bucket, setBucket] = useState<string>();
+
+  // ============================================
+  // Pending Operations Store (global state for file operations)
+  // ============================================
+  // Derive the storage scheme from the provider ID
+  const scheme = providerNameToScheme(storage.state.providerId || 'mock');
+  // Note: We don't pass a provider here yet - operations will be executed
+  // through the existing executeOperationsWithProgress flow for now.
+  // Full integration with the provider will come in Phase 4.
+  const pendingOps = usePendingOperations(scheme, bucket);
 
   // ============================================
   // Status Bar State
@@ -174,6 +186,7 @@ export function FileExplorer() {
     toggleHelp,
     toggleSort,
     closeDialog,
+    pendingOps,
   });
 
   // ============================================
@@ -214,6 +227,7 @@ export function FileExplorer() {
     setBucket,
     executeOperationsWithProgress,
     handleCancelOperation,
+    pendingOps,
   });
 
   // ============================================
@@ -252,6 +266,7 @@ export function FileExplorer() {
       preview={previewState}
       dialogs={dialogsState}
       showErrorDialog={showErrorDialog}
+      pendingOps={pendingOps}
     />
   );
 }

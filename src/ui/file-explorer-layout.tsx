@@ -14,6 +14,7 @@ import { Header } from './header.js';
 import { PreviewPane } from './preview-pane.js';
 import { FileExplorerDialogs, DialogsState } from './file-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
+import type { UsePendingOperationsReturn } from '../hooks/usePendingOperations.js';
 
 /**
  * Props for the status bar display
@@ -63,6 +64,9 @@ export interface FileExplorerLayoutProps {
 
   /** Whether error dialog should be shown */
   showErrorDialog: boolean;
+
+  /** Optional: New pending operations hook for global state management */
+  pendingOps?: UsePendingOperationsReturn;
 }
 
 /**
@@ -85,6 +89,7 @@ export function FileExplorerLayout({
   preview,
   dialogs,
   showErrorDialog,
+  pendingOps,
 }: FileExplorerLayoutProps) {
   const showPreview = isInitialized && preview.content !== null;
 
@@ -122,6 +127,7 @@ export function FileExplorerLayout({
             flexGrow={showPreview ? 3 : 1}
             flexShrink={1}
             flexBasis={0}
+            pendingOps={pendingOps}
           />
         )}
 

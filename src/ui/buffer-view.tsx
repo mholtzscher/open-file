@@ -10,12 +10,15 @@ import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { Theme, CatppuccinMocha } from './theme.js';
 import { EditMode } from '../types/edit-mode.js';
 import { formatBytes } from '../utils/file-browser.js';
+import type { UsePendingOperationsReturn } from '../hooks/usePendingOperations.js';
 
 export interface BufferViewProps {
   bufferState: UseBufferStateReturn;
   showIcons?: boolean;
   showSizes?: boolean;
   showDates?: boolean;
+  /** Optional: New pending operations hook for global state management */
+  pendingOps?: UsePendingOperationsReturn;
 }
 
 /**
@@ -129,6 +132,7 @@ export function BufferView({
   showIcons = true,
   showSizes = true,
   showDates = false,
+  pendingOps,
 }: BufferViewProps) {
   // Use filtered entries when searching
   const filteredEntries = bufferState.getFilteredEntries();
@@ -177,8 +181,10 @@ export function BufferView({
               bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
             );
 
-        // Check if entry is marked for deletion
-        const isMarkedForDeletion = bufferState.isMarkedForDeletion(entry.id);
+        // Check if entry is marked for deletion (use new store if available)
+        const isMarkedForDeletion = pendingOps
+          ? pendingOps.isMarkedForDeletion(entry)
+          : bufferState.isMarkedForDeletion(entry.id);
 
         const cursor = isSelected ? '> ' : '  ';
         // Add deletion marker prefix if marked for deletion

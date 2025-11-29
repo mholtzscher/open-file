@@ -1021,9 +1021,8 @@ describe('Credential Resolution Chain', () => {
   });
 
   it('should register and unregister providers', async () => {
-    const { CredentialChain, EnvironmentCredentialProvider } = await import(
-      '../credentials/credential-chain.js'
-    );
+    const { CredentialChain, EnvironmentCredentialProvider } =
+      await import('../credentials/credential-chain.js');
 
     const chain = new CredentialChain();
     expect(chain.getProviders().length).toBe(0);
@@ -1036,9 +1035,8 @@ describe('Credential Resolution Chain', () => {
   });
 
   it('should resolve S3 credentials from environment', async () => {
-    const { CredentialChain, EnvironmentCredentialProvider } = await import(
-      '../credentials/credential-chain.js'
-    );
+    const { CredentialChain, EnvironmentCredentialProvider } =
+      await import('../credentials/credential-chain.js');
 
     // Save original env vars
     const originalAccessKey = process.env.AWS_ACCESS_KEY_ID;
@@ -1087,9 +1085,8 @@ describe('Credential Resolution Chain', () => {
   });
 
   it('should aggregate errors from failed providers', async () => {
-    const { CredentialChain, EnvironmentCredentialProvider } = await import(
-      '../credentials/credential-chain.js'
-    );
+    const { CredentialChain, EnvironmentCredentialProvider } =
+      await import('../credentials/credential-chain.js');
 
     // Save and clear env vars
     const originalAccessKey = process.env.AWS_ACCESS_KEY_ID;
@@ -1119,9 +1116,8 @@ describe('Credential Resolution Chain', () => {
   });
 
   it('should throw CredentialChainError from resolveOrThrow', async () => {
-    const { CredentialChain, CredentialChainError } = await import(
-      '../credentials/credential-chain.js'
-    );
+    const { CredentialChain, CredentialChainError } =
+      await import('../credentials/credential-chain.js');
 
     const chain = new CredentialChain();
 
