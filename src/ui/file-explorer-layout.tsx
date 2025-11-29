@@ -86,16 +86,7 @@ export function FileExplorerLayout({
   dialogs,
   showErrorDialog,
 }: FileExplorerLayoutProps) {
-  // Loading state
-  if (!isInitialized) {
-    return (
-      <text fg={CatppuccinMocha.blue} position="absolute" left={2} top={2}>
-        Loading...
-      </text>
-    );
-  }
-
-  const showPreview = preview.content !== null;
+  const showPreview = isInitialized && preview.content !== null;
 
   const title = bucket
     ? `${bucket}${bufferState.currentPath ? ':' + bufferState.currentPath : ''}`
@@ -108,19 +99,31 @@ export function FileExplorerLayout({
 
       {/* Main content area with buffer + optional preview */}
       <box flexGrow={1} flexDirection="row" gap={1}>
-        <BufferPane
-          id="main-pane"
-          bufferState={bufferState}
-          isActive={true}
-          title={title}
-          showHeader={false}
-          showIcons={!terminalSize.isSmall}
-          showSizes={!terminalSize.isSmall}
-          showDates={!terminalSize.isMedium}
-          flexGrow={showPreview ? 3 : 1}
-          flexShrink={1}
-          flexBasis={0}
-        />
+        {!isInitialized && (
+          <box
+            flexGrow={1}
+            justifyContent="center"
+            alignItems="center"
+            borderStyle="rounded"
+            borderColor={CatppuccinMocha.blue}
+          >
+            <text fg={CatppuccinMocha.blue}>Loading...</text>
+          </box>
+        )}
+
+        {isInitialized && (
+          <BufferPane
+            bufferState={bufferState}
+            title={title}
+            showHeader={false}
+            showIcons={!terminalSize.isSmall}
+            showSizes={!terminalSize.isSmall}
+            showDates={!terminalSize.isMedium}
+            flexGrow={showPreview ? 3 : 1}
+            flexShrink={1}
+            flexBasis={0}
+          />
+        )}
 
         {showPreview && (
           <PreviewPane

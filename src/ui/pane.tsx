@@ -10,9 +10,7 @@ import { BufferView } from './buffer-view.js';
 import { CatppuccinMocha } from './theme.js';
 
 export interface PaneProps {
-  id: string;
   bufferState: UseBufferStateReturn;
-  isActive: boolean;
   title?: string;
   showHeader?: boolean;
   showIcons?: boolean;
@@ -30,9 +28,7 @@ export interface PaneProps {
  * and visual indicators for active state using flexbox layout.
  */
 export function BufferPane({
-  id: _paneId,
   bufferState,
-  isActive,
   title,
   showHeader = true,
   showIcons = true,
@@ -48,8 +44,8 @@ export function BufferPane({
       flexShrink={flexShrink}
       flexBasis={flexBasis}
       flexDirection="column"
-      borderStyle={isActive ? 'rounded' : undefined}
-      borderColor={isActive ? CatppuccinMocha.blue : undefined}
+      borderStyle={'rounded'}
+      borderColor={CatppuccinMocha.blue}
       paddingLeft={1}
       paddingRight={1}
       overflow="hidden"
@@ -57,10 +53,7 @@ export function BufferPane({
       {/* Pane header */}
       {showHeader && title && (
         <box height={1} flexShrink={0}>
-          <text
-            fg={isActive ? CatppuccinMocha.blue : CatppuccinMocha.subtext1}
-            bg={isActive ? CatppuccinMocha.surface0 : undefined}
-          >
+          <text fg={CatppuccinMocha.blue} bg={CatppuccinMocha.surface0}>
             {title}
           </text>
         </box>
