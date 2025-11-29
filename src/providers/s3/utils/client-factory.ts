@@ -5,7 +5,7 @@
  */
 
 import { S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
-import { loadAwsProfile } from '../../../utils/aws-profile.js';
+import { loadAwsProfile } from './aws-profile.js';
 import { getLogger } from '../../../utils/logger.js';
 
 /**

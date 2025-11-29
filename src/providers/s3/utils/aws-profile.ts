@@ -6,7 +6,7 @@
  */
 
 import { existsSync, readFileSync } from 'fs';
-import { expandUser } from './path-utils.js';
+import { expandUser } from '../../../utils/path-utils.js';
 
 /**
  * AWS profile configuration loaded from ~/.aws/config and ~/.aws/credentials

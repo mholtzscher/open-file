@@ -14,7 +14,7 @@ import type {
   CredentialResult,
   S3Credentials,
 } from '../types.js';
-import { loadAwsProfile } from '../../../utils/aws-profile.js';
+import { loadAwsProfile } from '../../s3/utils/aws-profile.js';
 
 // ============================================================================
 // Environment Credential Provider for S3

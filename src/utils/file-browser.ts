@@ -210,67 +210,6 @@ export async function listFiles(options: FileBrowserOptions = {}): Promise<FileB
 }
 
 /**
- * Get file stats (size, modified date)
- */
-export async function getFileStats(filePath: string): Promise<LocalFileEntry> {
-  const normalizedPath = getNormalizedPath(filePath);
-
-  try {
-    const stats = await fs.stat(normalizedPath);
-    return {
-      name: path.basename(normalizedPath),
-      path: normalizedPath,
-      size: stats.size,
-      modified: stats.mtime,
-      isDirectory: stats.isDirectory(),
-      extension: stats.isDirectory() ? undefined : getFileType(path.basename(normalizedPath)),
-    };
-  } catch (err) {
-    throw new Error(`Failed to get file stats: ${(err as Error).message}`);
-  }
-}
-
-/**
- * Check if directory exists
- */
-export async function directoryExists(dirPath: string): Promise<boolean> {
-  try {
-    const stats = await fs.stat(getNormalizedPath(dirPath));
-    return stats.isDirectory();
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Get size of file or directory recursively
- */
-export async function getDirectorySize(dirPath: string): Promise<number> {
-  const normalizedPath = getNormalizedPath(dirPath);
-
-  try {
-    const stats = await fs.stat(normalizedPath);
-
-    if (!stats.isDirectory()) {
-      return stats.size;
-    }
-
-    const entries = await fs.readdir(normalizedPath, { withFileTypes: true });
-    let totalSize = 0;
-
-    for (const entry of entries) {
-      const fullPath = path.join(normalizedPath, entry.name);
-      totalSize += await getDirectorySize(fullPath);
-    }
-
-    return totalSize;
-  } catch (err) {
-    console.error(`Failed to get directory size:`, err);
-    return 0;
-  }
-}
-
-/**
  * Format bytes for display
  * Returns '-' for undefined (e.g., folders), '0B' for zero-byte files
  * Supports B, KB, MB, GB, TB
