@@ -40,6 +40,11 @@ export interface StorageContextProviderProps extends Omit<StorageProviderProps, 
    * Optional profile display name (shown in header)
    */
   profileName?: string;
+
+  /**
+   * Optional profile ID (unique identifier for the profile)
+   */
+  profileId?: string;
 }
 
 // ============================================================================
@@ -69,6 +74,7 @@ export function StorageContextProvider({
   provider,
   profileManager,
   profileName,
+  profileId,
   initialPath = '/',
   initialContainer,
 }: StorageContextProviderProps) {
@@ -82,9 +88,10 @@ export function StorageContextProvider({
       initialPath,
       initialContainer,
       profileManager,
-      profileName
+      profileName,
+      profileId
     );
-  }, [provider, initialPath, initialContainer, profileManager, profileName]);
+  }, [provider, initialPath, initialContainer, profileManager, profileName, profileId]);
 
   // Initialize on mount (only if we have a provider)
   useEffect(() => {

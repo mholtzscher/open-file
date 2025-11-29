@@ -539,7 +539,7 @@ export function FileExplorer({}: FileExplorerProps) {
     profileSelector: {
       visible: showProfileSelectorDialog,
       profileManager: storage.getProfileManager(),
-      currentProfileId: storage.state.providerId,
+      currentProfileId: storage.state.profileId,
       onProfileSelect: async profile => {
         try {
           console.error(`[FileExplorer] Starting profile switch to: ${profile.displayName}`);

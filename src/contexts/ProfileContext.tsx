@@ -23,6 +23,9 @@ export interface ProfileContextValue {
   /** Current storage provider (undefined if no profile selected) */
   provider: StorageProvider | undefined;
 
+  /** Current profile ID (unique identifier) */
+  profileId: string | undefined;
+
   /** Current profile display name */
   profileName: string | undefined;
 
@@ -75,6 +78,7 @@ export function ProfileProvider({
   onExitWithoutProvider,
 }: ProfileProviderProps) {
   const [provider, setProvider] = useState<StorageProvider | undefined>(undefined);
+  const [profileId, setProfileId] = useState<string | undefined>(undefined);
   const [profileName, setProfileName] = useState<string | undefined>(undefined);
   const [isSelectingProfile, setIsSelectingProfile] = useState(true);
 
@@ -83,6 +87,7 @@ export function ProfileProvider({
       try {
         const newProvider = await profileManager.createProviderFromProfile(profile.id);
         setProvider(newProvider);
+        setProfileId(profile.id);
         setProfileName(profile.displayName);
         setIsSelectingProfile(false);
       } catch (err) {
@@ -111,6 +116,7 @@ export function ProfileProvider({
 
   const value: ProfileContextValue = {
     provider,
+    profileId,
     profileName,
     isSelectingProfile,
     profileManager,

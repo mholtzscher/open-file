@@ -197,6 +197,31 @@ describe('ProfileSelectorDialog', () => {
       // Current profile should have filled circle
       expect(frame).toContain('●');
     });
+
+    it('selects current profile on initial render', async () => {
+      const profileManager = createMockProfileManager();
+      const onProfileSelect = mock(() => {});
+      const onCancel = mock(() => {});
+
+      // Render with profile-2 as current - it should be pre-selected
+      const { renderOnce, captureCharFrame } = await testRender(
+        <WrappedProfileSelectorDialog
+          visible={true}
+          profileManager={profileManager}
+          currentProfileId="profile-2"
+          onProfileSelect={onProfileSelect}
+          onCancel={onCancel}
+        />,
+        { width: 80, height: 30 }
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      await renderOnce();
+
+      // Profile 2 should be selected (cursor '>' on it along with current indicator '●')
+      const frame = captureCharFrame();
+      expect(frame).toContain('> ● Development GCS');
+    });
   });
 
   describe('empty state', () => {

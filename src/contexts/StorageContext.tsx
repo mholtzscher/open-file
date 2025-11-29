@@ -37,6 +37,9 @@ export interface StorageState {
   /** Display name of the current provider/adapter (e.g., 'Amazon S3') */
   providerDisplayName: string;
 
+  /** Current profile ID (unique identifier for the profile) */
+  profileId?: string;
+
   /** Current profile name (e.g., 'LocalStack (Dev)', 'Personal AWS Account') */
   profileName?: string;
 

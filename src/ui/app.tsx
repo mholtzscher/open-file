@@ -39,6 +39,7 @@ export interface AppProps {
 function AppContent() {
   const {
     provider,
+    profileId,
     profileName,
     profileManager,
     isSelectingProfile,
@@ -52,6 +53,7 @@ function AppContent() {
       <ProfileSelectorDialog
         visible={true}
         profileManager={profileManager}
+        currentProfileId={profileId}
         onProfileSelect={selectProfile}
         onCancel={closeProfileSelector}
       />
@@ -63,6 +65,7 @@ function AppContent() {
     <StorageContextProvider
       provider={provider}
       profileManager={profileManager}
+      profileId={profileId}
       profileName={profileName}
     >
       <FileExplorer />

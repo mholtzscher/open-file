@@ -63,13 +63,15 @@ export class ProviderStorageAdapter implements StorageContextValue {
     initialPath: string = '/',
     initialContainer?: string,
     profileManager?: ProfileManager,
-    profileName?: string
+    profileName?: string,
+    profileId?: string
   ) {
     this.provider = provider;
     this.profileManager = profileManager;
     this.internalState = {
       providerId: provider.name,
       providerDisplayName: provider.displayName,
+      profileId: profileId,
       profileName: profileName,
       currentPath: initialPath,
       currentContainer: initialContainer,
@@ -614,6 +616,7 @@ export class ProviderStorageAdapter implements StorageContextValue {
         this.setState({
           providerId: newProvider.name,
           providerDisplayName: newProvider.displayName,
+          profileId: profileId,
           profileName: profile?.displayName,
           isConnected: newProvider.isConnected?.() ?? true,
           currentPath: '/', // Reset to root on provider switch

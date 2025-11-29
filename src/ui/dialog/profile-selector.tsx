@@ -5,7 +5,7 @@
  * Only shown when the new provider system is enabled.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CatppuccinMocha } from '../theme.js';
 import { ProviderIndicator } from '../provider-indicator.js';
 import { BaseDialog } from './base.js';
@@ -64,6 +64,29 @@ export function ProfileSelectorDialog({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
+  const prevVisibleRef = useRef(false); // Start as false to handle initial visible=true case
+  const hasSetInitialSelectionRef = useRef(false);
+
+  // Reset selection to current profile when dialog opens
+  useEffect(() => {
+    const wasHidden = !prevVisibleRef.current;
+    prevVisibleRef.current = visible;
+
+    // Reset the initial selection flag when dialog closes
+    if (!visible) {
+      hasSetInitialSelectionRef.current = false;
+      return;
+    }
+
+    // Set selection when: dialog just opened OR profiles just loaded for first time
+    if (visible && profiles.length > 0 && currentProfileId) {
+      if (wasHidden || !hasSetInitialSelectionRef.current) {
+        const index = profiles.findIndex(p => p.id === currentProfileId);
+        setSelectedIndex(index >= 0 ? index : 0);
+        hasSetInitialSelectionRef.current = true;
+      }
+    }
+  }, [visible, currentProfileId, profiles]);
 
   // Load profiles when dialog becomes visible
   useEffect(() => {
@@ -83,14 +106,6 @@ export function ProfileSelectorDialog({
         setError(undefined);
         const profileList = await profileManager.listProfiles();
         setProfiles(profileList);
-
-        // Set selected index to current profile if specified
-        if (currentProfileId) {
-          const index = profileList.findIndex(p => p.id === currentProfileId);
-          if (index >= 0) {
-            setSelectedIndex(index);
-          }
-        }
       } catch (err) {
         console.error('Failed to load profiles:', err);
         setError(err instanceof Error ? err.message : 'Failed to load profiles');
@@ -100,7 +115,7 @@ export function ProfileSelectorDialog({
     };
 
     loadProfiles();
-  }, [visible, profileManager, currentProfileId]);
+  }, [visible, profileManager]);
 
   // Keyboard handler for KeyboardContext (KeyboardKey-based)
   const handleKeyboard = useCallback(
