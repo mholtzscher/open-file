@@ -15,7 +15,7 @@ export interface ProviderIndicatorProps {
 /**
  * Get a short icon/indicator for provider type
  */
-export function getProviderTypeIndicator(providerType: string): string {
+function getProviderTypeDisplay(providerType: string): string {
   const indicators: Record<string, string> = {
     s3: 'S3',
     gcs: 'GCS',
@@ -36,7 +36,7 @@ export function getProviderTypeIndicator(providerType: string): string {
  * Example output: "[S3]" in the S3 provider color.
  */
 export function ProviderIndicator({ providerType }: ProviderIndicatorProps) {
-  const indicator = getProviderTypeIndicator(providerType);
+  const indicator = getProviderTypeDisplay(providerType);
   const providerColor = Theme.getProviderColor(providerType);
   const badge = `[${indicator}]`;
 
