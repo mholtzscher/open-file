@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { FileExplorer } from './ui/file-explorer.js';
 import { ProfileSelectorDialog } from './ui/dialog/profile-selector.js';
 import { StorageProvider } from './providers/provider.js';
-import { S3Provider } from './providers/s3/s3-provider.js';
 import { FileProfileManager } from './providers/services/file-profile-manager.js';
 import type { ProfileManager } from './providers/services/profile-manager.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
@@ -14,7 +13,7 @@ import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger
 import { KeyboardProvider, useKeyboardDispatch } from './contexts/KeyboardContext.js';
 import { StorageContextProvider } from './contexts/StorageContextProvider.js';
 import type { KeyboardKey, KeyboardDispatcher } from './types/keyboard.js';
-import type { S3Profile, Profile } from './providers/types/profile.js';
+import type { Profile } from './providers/types/profile.js';
 
 // Global keyboard event dispatcher - bridges external renderer to React context
 // This is set once when App mounts and provides the dispatch function from context
@@ -38,28 +37,20 @@ export function getGlobalKeyboardDispatcher() {
  * Props for the main App wrapper
  */
 interface AppWrapperProps {
-  initialProvider?: StorageProvider;
-  initialProfileName?: string;
   profileManager: ProfileManager;
-  bucket?: string;
 }
 
 /**
  * AppWrapper - Manages the provider lifecycle and profile selection
  *
- * When no provider is available, shows the profile selector.
- * Once a profile is selected, creates the provider and renders S3Explorer.
+ * Always starts with profile selector.
+ * Once a profile is selected, creates the provider and renders FileExplorer.
  */
-function AppWrapper({
-  initialProvider,
-  initialProfileName,
-  profileManager,
-  bucket,
-}: AppWrapperProps) {
+function AppWrapper({ profileManager }: AppWrapperProps) {
   const dispatch = useKeyboardDispatch();
-  const [provider, setProvider] = useState<StorageProvider | undefined>(initialProvider);
-  const [profileName, setProfileName] = useState<string | undefined>(initialProfileName);
-  const [isSelectingProfile, setIsSelectingProfile] = useState(!initialProvider);
+  const [provider, setProvider] = useState<StorageProvider | undefined>(undefined);
+  const [profileName, setProfileName] = useState<string | undefined>(undefined);
+  const [isSelectingProfile, setIsSelectingProfile] = useState(true);
 
   // Connect the context dispatch to the global dispatcher
   useEffect(() => {
@@ -113,7 +104,7 @@ function AppWrapper({
       profileManager={profileManager}
       profileName={profileName}
     >
-      <FileExplorer bucket={bucket} />
+      <FileExplorer />
     </StorageContextProvider>
   );
 }
@@ -148,58 +139,6 @@ async function main() {
     // Always create ProfileManager for profile management
     const profileManager = new FileProfileManager();
     logger.info('ProfileManager initialized');
-
-    // Determine how to start the app:
-    // 1. If --profile is provided, load that profile
-    // 2. If ad-hoc options (--endpoint, --access-key, etc) are provided, create ad-hoc provider
-    // 3. Otherwise, start with profile selector
-
-    let provider: StorageProvider | undefined;
-    let initialProfileName: string | undefined;
-
-    if (cliArgs.profile) {
-      // Load provider from saved profile
-      try {
-        const profile = await profileManager.getProfile(cliArgs.profile);
-        provider = await profileManager.createProviderFromProfile(cliArgs.profile);
-        initialProfileName = profile?.displayName;
-        logger.info('Provider loaded from profile', { profileId: cliArgs.profile });
-      } catch (err) {
-        logger.error(`Failed to load profile: ${cliArgs.profile}`, err);
-        console.error(
-          `Error: Failed to load profile "${cliArgs.profile}": ${(err as Error).message}`
-        );
-        process.exit(1);
-      }
-    } else if (cliArgs.endpoint || cliArgs.accessKey) {
-      // Ad-hoc S3 connection with explicit credentials/endpoint
-      const region = cliArgs.region || process.env.AWS_REGION || 'us-east-1';
-
-      const s3Profile: S3Profile = {
-        id: 'cli-adhoc-profile',
-        displayName: 'Ad-hoc Connection',
-        provider: 's3',
-        config: {
-          region,
-          endpoint: cliArgs.endpoint,
-          accessKeyId: cliArgs.accessKey,
-          secretAccessKey: cliArgs.secretKey,
-          forcePathStyle: !!cliArgs.endpoint, // Force path style for custom endpoints
-        },
-      };
-      provider = new S3Provider(s3Profile);
-      initialProfileName = 'Ad-hoc Connection';
-      logger.info('Ad-hoc S3 provider initialized', {
-        region,
-        endpoint: cliArgs.endpoint,
-      });
-    } else {
-      // No profile or ad-hoc options - start with profile selector
-      logger.info('Starting with profile selector');
-    }
-
-    // Get bucket name - can be undefined for root view mode
-    const bucket = cliArgs.bucket;
 
     // Create and start renderer
     // Note: Using type assertion for external library type
@@ -268,12 +207,7 @@ async function main() {
       const root = createRoot(renderer);
       root.render(
         <KeyboardProvider>
-          <AppWrapper
-            initialProvider={provider}
-            initialProfileName={initialProfileName}
-            profileManager={profileManager}
-            bucket={bucket}
-          />
+          <AppWrapper profileManager={profileManager} />
         </KeyboardProvider>
       );
     } catch (renderError) {

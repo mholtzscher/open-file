@@ -31,14 +31,12 @@ import { useKeySequence } from '../hooks/useKeySequence.js';
 
 import type { PendingOperation } from '../types/dialog.js';
 
-interface FileExplorerProps {
-  bucket?: string;
-}
+interface FileExplorerProps {}
 
 /**
  * Main FileExplorer component - declarative React implementation
  */
-export function FileExplorer({ bucket: initialBucket }: FileExplorerProps) {
+export function FileExplorer({}: FileExplorerProps) {
   // ============================================
   // Storage Context
   // ============================================
@@ -47,7 +45,7 @@ export function FileExplorer({ bucket: initialBucket }: FileExplorerProps) {
   // ============================================
   // Core State
   // ============================================
-  const [bucket, setBucket] = useState<string | undefined>(initialBucket);
+  const [bucket, setBucket] = useState<string>();
 
   // ============================================
   // Status Bar State
