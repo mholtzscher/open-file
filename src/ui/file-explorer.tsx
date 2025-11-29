@@ -16,15 +16,11 @@ import { useDataLoader } from '../hooks/useDataLoader.js';
 import { useOperationExecutor } from '../hooks/useOperationExecutor.js';
 import { useS3Actions } from '../hooks/useS3Actions.js';
 import { useDialogHandlers } from '../hooks/useDialogHandlers.js';
+import { useFileExplorerKeyboard } from '../hooks/useFileExplorerKeyboard.js';
 
 import { FileExplorerLayout, StatusBarState, PreviewState } from './file-explorer-layout.js';
 import { CatppuccinMocha } from './theme.js';
-import { useKeyboardHandler } from '../contexts/KeyboardContext.js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
-import { EditMode } from '../types/edit-mode.js';
-import { keyToString, type KeyboardKey, type KeyAction } from '../types/keyboard.js';
-import { defaultKeybindings } from '../hooks/keybindingDefaults.js';
-import { useKeySequence } from '../hooks/useKeySequence.js';
 
 /**
  * Main FileExplorer component - declarative React implementation
@@ -172,19 +168,6 @@ export function FileExplorer() {
     showQuitDialog ||
     showProfileSelectorDialog;
 
-  // Multi-key sequence handling (gg, dd, yy, g?)
-  const { handleSequence } = useKeySequence({
-    timeout: 500,
-    sequenceStarters: ['g', 'd', 'y'],
-    sequences: {
-      gg: 'cursor:top',
-      dd: 'entry:delete',
-      yy: 'entry:copy',
-      'g?': 'dialog:help',
-    },
-    bottomAction: 'cursor:bottom',
-  });
-
   // ============================================
   // Action Handlers (via Custom Hook)
   // ============================================
@@ -248,94 +231,13 @@ export function FileExplorer() {
   });
 
   // ============================================
-  // Keyboard Handler (via Context)
+  // Keyboard Handler (extracted to separate hook)
   // ============================================
-  const keyboardHandlerCallback = useCallback(
-    (key: KeyboardKey): boolean => {
-      if (isAnyDialogOpen) {
-        return false;
-      }
-
-      const mode = bufferState.mode;
-
-      const executeAction = (action: KeyAction, event?: KeyboardKey): boolean => {
-        const handler = actionHandlers[action];
-        if (handler) {
-          handler(event);
-          return true;
-        }
-        return false;
-      };
-
-      // Text input modes: Search, Command, Insert, Edit
-      const isTextInputMode =
-        mode === EditMode.Search ||
-        mode === EditMode.Command ||
-        mode === EditMode.Insert ||
-        mode === EditMode.Edit;
-
-      if (isTextInputMode) {
-        if (key.name === 'escape') {
-          return executeAction('input:cancel', key);
-        }
-        if (key.name === 'return' || key.name === 'enter') {
-          return executeAction('input:confirm', key);
-        }
-        if (key.name === 'backspace') {
-          return executeAction('input:backspace', key);
-        }
-        if (key.name === 'tab') {
-          return executeAction('input:tab', key);
-        }
-        if (key.char && key.char.length === 1) {
-          return executeAction('input:char', key);
-        }
-        if (mode === EditMode.Search) {
-          if (key.name === 'n') {
-            return executeAction('cursor:down', key);
-          }
-          if (key.name === 'N' || (key.shift && key.name === 'n')) {
-            return executeAction('cursor:up', key);
-          }
-        }
-        return false;
-      }
-
-      // Normal mode: handle multi-key sequences (gg, dd, yy, g?)
-      if (mode === EditMode.Normal) {
-        const seqResult = handleSequence(key);
-        if (seqResult.handled && seqResult.action) {
-          return executeAction(seqResult.action, key);
-        }
-        if (seqResult.waitingForMore) {
-          return true;
-        }
-      }
-
-      // Keybinding lookup: mode-specific first
-      const keyStr = keyToString(key);
-      const modeBindings = defaultKeybindings.get(mode);
-      const action = modeBindings?.get(keyStr);
-
-      if (action) {
-        return executeAction(action, key);
-      }
-
-      // Global bindings
-      const globalBindings = defaultKeybindings.get('global');
-      const globalAction = globalBindings?.get(keyStr);
-
-      if (globalAction) {
-        return executeAction(globalAction, key);
-      }
-
-      return false;
-    },
-    [isAnyDialogOpen, bufferState.mode, actionHandlers, handleSequence]
-  );
-
-  // Register keyboard handler with context at normal priority
-  useKeyboardHandler(keyboardHandlerCallback);
+  useFileExplorerKeyboard({
+    mode: bufferState.mode,
+    actionHandlers,
+    isAnyDialogOpen,
+  });
 
   // ============================================
   // Build Props for Layout Component
