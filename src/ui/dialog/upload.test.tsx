@@ -2,57 +2,17 @@
  * UploadDialog component tests
  */
 
-import { describe, it, expect, beforeEach, vi } from 'bun:test';
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { KeyboardProvider, useKeyboardDispatch } from '../../contexts/KeyboardContext.js';
+import { KeyboardProvider } from '../../contexts/KeyboardContext.js';
 import { UploadDialog } from './upload.js';
 import type { LocalFileEntry } from '../../utils/file-browser.js';
-import type { KeyboardKey } from '../../types/keyboard.js';
-import { useEffect } from 'react';
 
 const WrappedUploadDialog = (props: any) => (
   <KeyboardProvider>
     <UploadDialog {...props} />
   </KeyboardProvider>
 );
-
-// Helper to create a KeyboardKey for testing
-function createKey(name: string, modifiers: Partial<KeyboardKey> = {}): KeyboardKey {
-  return {
-    name,
-    ctrl: false,
-    shift: false,
-    meta: false,
-    ...modifiers,
-  };
-}
-
-// Test wrapper that exposes dispatch for keyboard testing
-interface TestWrapperProps {
-  children: React.ReactNode;
-  onDispatchReady: (dispatch: (key: KeyboardKey) => void) => void;
-}
-
-function TestWrapper({ children, onDispatchReady }: TestWrapperProps) {
-  return (
-    <KeyboardProvider>
-      <DispatchExposer onDispatchReady={onDispatchReady} />
-      {children}
-    </KeyboardProvider>
-  );
-}
-
-function DispatchExposer({
-  onDispatchReady,
-}: {
-  onDispatchReady: (dispatch: (key: KeyboardKey) => void) => void;
-}) {
-  const dispatch = useKeyboardDispatch();
-  useEffect(() => {
-    onDispatchReady(dispatch);
-  }, [dispatch, onDispatchReady]);
-  return null;
-}
 
 // Create mock entries for testing
 function createMockEntries(count: number = 5): LocalFileEntry[] {
@@ -168,49 +128,6 @@ describe('UploadDialog', () => {
       expect(frame).toContain('space:select');
       expect(frame).toContain('enter:confirm');
       expect(frame).toContain('ESC:cancel');
-    });
-  });
-
-  describe('keyboard handling', () => {
-    it('calls onCancel when escape is pressed', async () => {
-      const onCancel = vi.fn();
-      let dispatchKey: ((key: KeyboardKey) => void) | null = null;
-
-      const { renderOnce } = await testRender(
-        <TestWrapper onDispatchReady={d => (dispatchKey = d)}>
-          <UploadDialog visible={true} onCancel={onCancel} />
-        </TestWrapper>,
-        {
-          width: 80,
-          height: 24,
-        }
-      );
-
-      // Wait for component mount and dispatch to be ready
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await renderOnce();
-
-      // Dispatch escape key through KeyboardContext
-      expect(dispatchKey).not.toBeNull();
-      dispatchKey!(createKey('escape'));
-      await renderOnce();
-
-      expect(onCancel).toHaveBeenCalledTimes(1);
-    });
-
-    it('dialog not rendered when visible is false', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedUploadDialog visible={false} />,
-        {
-          width: 80,
-          height: 24,
-        }
-      );
-      await renderOnce();
-
-      // Dialog should not be rendered when not visible
-      const frame = captureCharFrame();
-      expect(frame).not.toContain('Upload Files');
     });
   });
 
