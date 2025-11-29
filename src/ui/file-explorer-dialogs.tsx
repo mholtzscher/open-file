@@ -97,7 +97,7 @@ export interface DialogsState {
   profileSelector: ProfileSelectorDialogState;
 }
 
-interface S3ExplorerDialogsProps {
+interface FileExplorerDialogsProps {
   dialogs: DialogsState;
 }
 
@@ -107,7 +107,7 @@ interface S3ExplorerDialogsProps {
  * Renders all dialog overlays based on their visibility state.
  * Dialogs are rendered in a specific order to ensure proper z-index stacking.
  */
-export function S3ExplorerDialogs({ dialogs }: S3ExplorerDialogsProps) {
+export function FileExplorerDialogs({ dialogs }: FileExplorerDialogsProps) {
   const { confirm, error, help, upload, sortMenu, progress, quit, profileSelector } = dialogs;
 
   return (

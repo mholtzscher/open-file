@@ -1,5 +1,5 @@
 /**
- * S3ExplorerLayout - Presentational layout component
+ * FileExplorerLayout - Presentational layout component
  *
  * Renders the main layout structure with header, panes, status bar, and dialogs.
  * This is a pure presentational component that receives all state via props.
@@ -9,11 +9,11 @@ import { MultiPaneLayout } from '../hooks/useMultiPaneLayout.js';
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { UseTerminalSizeReturn, LayoutDimensions } from '../hooks/useTerminalSize.js';
 
-import { Pane } from './pane.js';
+import { BufferPane } from './pane.js';
 import { StatusBar } from './status-bar.js';
 import { Header } from './header.js';
 import { PreviewPane } from './preview-pane.js';
-import { S3ExplorerDialogs, DialogsState } from './file-explorer-dialogs.js';
+import { FileExplorerDialogs, DialogsState } from './file-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
 
 /**
@@ -34,9 +34,9 @@ export interface PreviewState {
 }
 
 /**
- * Props for S3ExplorerLayout
+ * Props for FileExplorerLayout
  */
-export interface S3ExplorerLayoutProps {
+export interface FileExplorerLayoutProps {
   /** Current bucket name or undefined for root view */
   bucket: string | undefined;
 
@@ -72,7 +72,7 @@ export interface S3ExplorerLayoutProps {
 }
 
 /**
- * S3ExplorerLayout - Main layout component
+ * FileExplorerLayout - Main layout component
  *
  * Renders the entire UI layout including:
  * - Header with bucket info
@@ -93,7 +93,7 @@ export function FileExplorerLayout({
   preview,
   dialogs,
   showErrorDialog,
-}: S3ExplorerLayoutProps) {
+}: FileExplorerLayoutProps) {
   // Loading state
   if (!isInitialized) {
     return (
@@ -118,7 +118,7 @@ export function FileExplorerLayout({
               : `Buckets`;
 
             return (
-              <Pane
+              <BufferPane
                 key={pane.id}
                 id={pane.id}
                 bufferState={pane.bufferState}
@@ -136,7 +136,7 @@ export function FileExplorerLayout({
         ) : (
           // Single pane mode - use main buffer state directly
           <>
-            <Pane
+            <BufferPane
               id="main-pane"
               bufferState={bufferState}
               isActive={true}
@@ -176,7 +176,7 @@ export function FileExplorerLayout({
       </box>
 
       {/* Dialog overlays */}
-      <S3ExplorerDialogs dialogs={dialogs} />
+      <FileExplorerDialogs dialogs={dialogs} />
     </box>
   );
 }

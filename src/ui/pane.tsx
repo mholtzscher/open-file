@@ -29,7 +29,7 @@ export interface PaneProps {
  * Renders a single pane with its buffer view, optional header,
  * and visual indicators for active state using flexbox layout.
  */
-export function Pane({
+export function BufferPane({
   id: _paneId,
   bufferState,
   isActive,
