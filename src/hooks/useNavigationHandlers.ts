@@ -13,6 +13,7 @@
 import { useCallback } from 'react';
 import { Entry, EntryType } from '../types/entry.js';
 import { UseBufferStateReturn } from './useBufferState.js';
+import type { StorageContextValue } from '../contexts/StorageContext.js';
 
 export interface NavigationState {
   currentPath: string;
@@ -36,6 +37,9 @@ export interface UseNavigationHandlersReturn {
   navigationError?: string;
 }
 
+/**
+ * Callback-based configuration (legacy interface)
+ */
 interface NavigationConfig {
   onLoadBuffer?: (path: string) => Promise<void>;
   onErrorOccurred?: (error: string) => void;
@@ -44,12 +48,66 @@ interface NavigationConfig {
 }
 
 /**
+ * Direct dependencies interface (preferred)
+ * Provides storage and status functions directly instead of callbacks
+ */
+export interface NavigationDependencies {
+  storage: StorageContextValue;
+  setStatusMessage: (message: string) => void;
+  setStatusMessageColor: (color: string) => void;
+  successColor: string;
+  errorColor: string;
+  onBucketSelected?: (bucketName: string, region?: string) => void;
+  onNavigationComplete?: () => void;
+}
+
+/**
+ * Build NavigationConfig from NavigationDependencies
+ */
+function buildConfigFromDependencies(
+  bufferState: UseBufferStateReturn,
+  deps: NavigationDependencies
+): NavigationConfig {
+  return {
+    onLoadBuffer: async (path: string) => {
+      try {
+        const entries = await deps.storage.list(path);
+        bufferState.setEntries([...entries]);
+        bufferState.setCurrentPath(path);
+        bufferState.cursorToTop();
+        deps.setStatusMessage(`Navigated to ${path}`);
+        deps.setStatusMessageColor(deps.successColor);
+      } catch (err) {
+        deps.setStatusMessage(
+          `Navigation failed: ${err instanceof Error ? err.message : String(err)}`
+        );
+        deps.setStatusMessageColor(deps.errorColor);
+      }
+    },
+    onErrorOccurred: (error: string) => {
+      deps.setStatusMessage(error);
+      deps.setStatusMessageColor(deps.errorColor);
+    },
+    onNavigationComplete: deps.onNavigationComplete,
+    onBucketSelected: deps.onBucketSelected,
+  };
+}
+
+/**
  * Custom hook for navigation handling
+ *
+ * @overload With NavigationDependencies (preferred) - provides storage and status directly
+ * @overload With NavigationConfig (legacy) - uses callbacks
  */
 export function useNavigationHandlers(
   bufferState: UseBufferStateReturn,
-  config: NavigationConfig = {}
+  configOrDeps: NavigationConfig | NavigationDependencies = {}
 ): UseNavigationHandlersReturn {
+  // Determine if we received dependencies or config
+  const isDependencies = 'storage' in configOrDeps;
+  const config: NavigationConfig = isDependencies
+    ? buildConfigFromDependencies(bufferState, configOrDeps as NavigationDependencies)
+    : (configOrDeps as NavigationConfig);
   // Navigate into selected directory or bucket
   const navigateInto = useCallback(async () => {
     const selected = bufferState.getSelectedEntry();

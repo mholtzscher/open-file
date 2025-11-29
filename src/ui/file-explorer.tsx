@@ -101,29 +101,15 @@ export function FileExplorer() {
   }, [layout.contentHeight, bufferState.setViewportHeight]);
 
   // ============================================
-  // Navigation Config and Handlers
+  // Navigation Handlers
   // ============================================
-  const navigationConfig = {
-    onLoadBuffer: async (path: string) => {
-      try {
-        const entries = await storage.list(path);
-        bufferState.setEntries([...entries]);
-        bufferState.setCurrentPath(path);
-        bufferState.cursorToTop();
-        setStatusMessage(`Navigated to ${path}`);
-        setStatusMessageColor(CatppuccinMocha.green);
-      } catch (err) {
-        setStatusMessage(`Navigation failed: ${err instanceof Error ? err.message : String(err)}`);
-        setStatusMessageColor(CatppuccinMocha.red);
-      }
-    },
-    onErrorOccurred: (error: string) => {
-      setStatusMessage(error);
-      setStatusMessageColor(CatppuccinMocha.red);
-    },
-  };
-
-  const navigationHandlers = useNavigationHandlers(bufferState, navigationConfig);
+  const navigationHandlers = useNavigationHandlers(bufferState, {
+    storage,
+    setStatusMessage,
+    setStatusMessageColor,
+    successColor: CatppuccinMocha.green,
+    errorColor: CatppuccinMocha.red,
+  });
 
   // ============================================
   // Data Loader Hook
