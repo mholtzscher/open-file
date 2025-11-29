@@ -17,8 +17,8 @@ export interface BufferViewProps {
   showIcons?: boolean;
   showSizes?: boolean;
   showDates?: boolean;
-  /** Optional: New pending operations hook for global state management */
-  pendingOps?: UsePendingOperationsReturn;
+  /** Pending operations hook for global state management */
+  pendingOps: UsePendingOperationsReturn;
 }
 
 /**
@@ -190,10 +190,9 @@ export function BufferView({
             );
 
         // Check entry visual state from pending operations store
-        const entryState = pendingOps?.getEntryState(entry);
-        const isMarkedForDeletion =
-          entryState?.isDeleted ?? bufferState.isMarkedForDeletion(entry.id);
-        const isCut = entryState?.isMovedAway ?? false;
+        const entryState = pendingOps.getEntryState(entry);
+        const isMarkedForDeletion = entryState.isDeleted;
+        const isCut = entryState.isMovedAway;
 
         const cursor = isSelected ? '> ' : '  ';
         // Add marker prefix based on state

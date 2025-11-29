@@ -24,7 +24,6 @@ export interface UseBufferStateReturn {
   copyRegister: Entry[];
   viewportHeight: number;
   editBuffer: string; // Buffer for edit/insert mode
-  deletedEntryIds: Set<string>; // Entries marked for deletion
 
   // Buffer data operations
   setEntries: (entries: Entry[]) => void;
@@ -77,14 +76,7 @@ export interface UseBufferStateReturn {
   getSelectedEntries: () => Entry[];
   getFilteredEntries: () => Entry[];
 
-  // Deletion marking (oil.nvim style)
-  markForDeletion: (entryId: string) => void;
-  unmarkForDeletion: (entryId: string) => void;
-  isMarkedForDeletion: (entryId: string) => boolean;
-  getMarkedForDeletion: () => Entry[];
-  clearDeletionMarks: () => void;
-
-  // Undo/redo
+  // Undo/redo (for buffer entries only - pending operations have their own undo stack)
   undo: () => boolean;
   redo: () => boolean;
   canUndo: () => boolean;
@@ -266,31 +258,7 @@ export function useBufferState(
     return state.entries.filter(entry => entry.name.toLowerCase().includes(query));
   }, [state.entries, state.searchQuery]);
 
-  // Deletion marking (oil.nvim style)
-  const markForDeletion = useCallback((entryId: string): void => {
-    dispatch({ type: 'MARK_FOR_DELETION', entryId });
-  }, []);
-
-  const unmarkForDeletion = useCallback((entryId: string): void => {
-    dispatch({ type: 'UNMARK_FOR_DELETION', entryId });
-  }, []);
-
-  const isMarkedForDeletion = useCallback(
-    (entryId: string): boolean => {
-      return state.deletedEntryIds.has(entryId);
-    },
-    [state.deletedEntryIds]
-  );
-
-  const getMarkedForDeletion = useCallback((): Entry[] => {
-    return state.entries.filter(e => state.deletedEntryIds.has(e.id));
-  }, [state.entries, state.deletedEntryIds]);
-
-  const clearDeletionMarks = useCallback((): void => {
-    dispatch({ type: 'CLEAR_DELETION_MARKS' });
-  }, []);
-
-  // Undo/redo
+  // Undo/redo (for buffer entries only - pending operations have their own undo stack)
   const canUndo = useCallback((): boolean => {
     return state.undoHistory.length > 0;
   }, [state.undoHistory.length]);
@@ -350,11 +318,6 @@ export function useBufferState(
     getSelectedEntry,
     getSelectedEntries,
     getFilteredEntries,
-    markForDeletion,
-    unmarkForDeletion,
-    isMarkedForDeletion,
-    getMarkedForDeletion,
-    clearDeletionMarks,
     undo,
     redo,
     canUndo,

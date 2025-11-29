@@ -65,8 +65,8 @@ export interface FileExplorerLayoutProps {
   /** Whether error dialog should be shown */
   showErrorDialog: boolean;
 
-  /** Optional: New pending operations hook for global state management */
-  pendingOps?: UsePendingOperationsReturn;
+  /** Pending operations hook for global state management */
+  pendingOps: UsePendingOperationsReturn;
 }
 
 /**

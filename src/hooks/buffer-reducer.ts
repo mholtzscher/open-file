@@ -15,7 +15,6 @@ export interface SelectionState {
 
 export type BufferSnapshot = {
   entries: Entry[];
-  deletedIds: Set<string>;
 };
 
 export interface BufferState {
@@ -33,7 +32,6 @@ export interface BufferState {
   editBuffer: string;
   undoHistory: BufferSnapshot[];
   redoHistory: BufferSnapshot[];
-  deletedEntryIds: Set<string>;
 }
 
 export const INITIAL_BUFFER_STATE: BufferState = {
@@ -51,7 +49,6 @@ export const INITIAL_BUFFER_STATE: BufferState = {
   editBuffer: '',
   undoHistory: [],
   redoHistory: [],
-  deletedEntryIds: new Set(),
 };
 
 // ============================================================================
@@ -78,9 +75,6 @@ export type BufferAction =
   | { type: 'APPEND_TO_EDIT_BUFFER'; char: string }
   | { type: 'BACKSPACE_EDIT_BUFFER' }
   | { type: 'CLEAR_EDIT_BUFFER' }
-  | { type: 'MARK_FOR_DELETION'; entryId: string }
-  | { type: 'UNMARK_FOR_DELETION'; entryId: string }
-  | { type: 'CLEAR_DELETION_MARKS' }
   | { type: 'SAVE_SNAPSHOT' }
   | { type: 'UNDO' }
   | { type: 'REDO' };
@@ -375,34 +369,9 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
         editBuffer: '',
       };
 
-    case 'MARK_FOR_DELETION': {
-      const newDeletedIds = new Set(state.deletedEntryIds);
-      newDeletedIds.add(action.entryId);
-      return {
-        ...state,
-        deletedEntryIds: newDeletedIds,
-      };
-    }
-
-    case 'UNMARK_FOR_DELETION': {
-      const newDeletedIds = new Set(state.deletedEntryIds);
-      newDeletedIds.delete(action.entryId);
-      return {
-        ...state,
-        deletedEntryIds: newDeletedIds,
-      };
-    }
-
-    case 'CLEAR_DELETION_MARKS':
-      return {
-        ...state,
-        deletedEntryIds: new Set(),
-      };
-
     case 'SAVE_SNAPSHOT': {
       const snapshot: BufferSnapshot = {
         entries: structuredClone(state.entries),
-        deletedIds: new Set(state.deletedEntryIds),
       };
       return {
         ...state,
@@ -417,7 +386,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
       // Save current state to redo
       const currentSnapshot: BufferSnapshot = {
         entries: structuredClone(state.entries),
-        deletedIds: new Set(state.deletedEntryIds),
       };
 
       // Get previous state
@@ -426,7 +394,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
       return {
         ...state,
         entries: previousSnapshot.entries,
-        deletedEntryIds: previousSnapshot.deletedIds,
         undoHistory: state.undoHistory.slice(0, -1),
         redoHistory: [...state.redoHistory, currentSnapshot],
       };
@@ -438,7 +405,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
       // Save current state to undo
       const currentSnapshot: BufferSnapshot = {
         entries: structuredClone(state.entries),
-        deletedIds: new Set(state.deletedEntryIds),
       };
 
       // Get next state
@@ -447,7 +413,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
       return {
         ...state,
         entries: nextSnapshot.entries,
-        deletedEntryIds: nextSnapshot.deletedIds,
         redoHistory: state.redoHistory.slice(0, -1),
         undoHistory: [...state.undoHistory, currentSnapshot],
       };

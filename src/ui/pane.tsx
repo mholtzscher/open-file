@@ -20,8 +20,8 @@ export interface PaneProps {
   flexGrow?: number;
   flexShrink?: number;
   flexBasis?: number;
-  /** Optional: New pending operations hook for global state management */
-  pendingOps?: UsePendingOperationsReturn;
+  /** Pending operations hook for global state management */
+  pendingOps: UsePendingOperationsReturn;
 }
 
 /**

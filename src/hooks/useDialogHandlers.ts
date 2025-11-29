@@ -75,8 +75,8 @@ export interface UseDialogHandlersProps {
   ) => Promise<unknown>;
   handleCancelOperation: () => void;
 
-  /** Optional: New pending operations hook for global state management */
-  pendingOps?: UsePendingOperationsReturn;
+  /** Pending operations hook for global state management */
+  pendingOps: UsePendingOperationsReturn;
 }
 
 /**
@@ -124,12 +124,8 @@ export function useDialogHandlers({
             const entries = await storage.list(currentBufferState.currentPath);
             currentBufferState.setEntries([...entries]);
 
-            // Clear deletion marks from both old and new stores
-            if (pendingOps) {
-              pendingOps.discard();
-            } else {
-              currentBufferState.clearDeletionMarks();
-            }
+            // Clear pending operations after successful save
+            pendingOps.discard();
 
             setStatusMessage(message);
             setStatusMessageColor(CatppuccinMocha.green);
@@ -271,29 +267,69 @@ export function useDialogHandlers({
       visible: showQuitDialog,
       pendingChanges: dialogState.quitPendingChanges,
       onQuitWithoutSave: () => {
-        // Discard pending operations if using the new store
-        if (pendingOps) {
-          pendingOps.discard();
-        }
+        pendingOps.discard();
         process.exit(0);
       },
       onSaveAndQuit: () => {
-        // Get marked for deletion from the appropriate store
-        const markedForDeletion = pendingOps
-          ? pendingOps.getMarkedForDeletion()
-          : bufferState.getMarkedForDeletion();
+        // Get all pending operations
+        const storeOps = pendingOps.operations;
 
-        if (markedForDeletion.length > 0) {
-          const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
-            id: entry.id,
-            type: 'delete' as const,
-            path: entry.path,
-            entry,
-          }));
+        if (storeOps.length > 0) {
+          // Convert store operations to dialog PendingOperation format
+          const dialogOps: PendingOperation[] = storeOps.map(op => {
+            switch (op.type) {
+              case 'delete':
+                return {
+                  id: op.id,
+                  type: 'delete' as const,
+                  path: op.entry.path,
+                  entry: op.entry,
+                };
+              case 'move':
+                return {
+                  id: op.id,
+                  type: 'move' as const,
+                  source: op.entry.path,
+                  destination: op.destUri.split('/').slice(3).join('/'),
+                  entry: op.entry,
+                  recursive: op.entry.type === EntryType.Directory,
+                };
+              case 'copy':
+                return {
+                  id: op.id,
+                  type: 'copy' as const,
+                  source: op.entry.path,
+                  destination: op.destUri.split('/').slice(3).join('/'),
+                  entry: op.entry,
+                  recursive: op.entry.type === EntryType.Directory,
+                };
+              case 'rename':
+                return {
+                  id: op.id,
+                  type: 'rename' as const,
+                  path: op.entry.path,
+                  newName: op.newName,
+                  entry: op.entry,
+                };
+              case 'create':
+                return {
+                  id: op.id,
+                  type: 'create' as const,
+                  path: op.uri.split('/').slice(3).join('/'),
+                  entryType: op.entryType === EntryType.Directory ? 'directory' : 'file',
+                  entry: {
+                    id: op.id,
+                    name: op.name,
+                    type: op.entryType,
+                    path: op.uri.split('/').slice(3).join('/'),
+                  },
+                };
+            }
+          });
 
           quitAfterSaveRef.current = true;
           closeDialog();
-          showConfirm(deleteOperations);
+          showConfirm(dialogOps);
         } else {
           process.exit(0);
         }

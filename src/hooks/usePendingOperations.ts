@@ -226,11 +226,13 @@ export function usePendingOperations(
   );
 
   const getMarkedForDeletion = useCallback((): Entry[] => {
-    // Return entries from operations that are deletes
-    return snapshot.operations
+    // Read directly from store to get immediate state (not stale React snapshot)
+    // This is important for getting accurate counts right after mutations
+    return store
+      .getOperations()
       .filter((op): op is Extract<PendingOperation, { type: 'delete' }> => op.type === 'delete')
       .map(op => op.entry);
-  }, [snapshot.operations]);
+  }, [store]);
 
   // ============================================
   // Other Mutation Actions

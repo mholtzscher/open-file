@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { CatppuccinMocha } from '../ui/theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { calculateParentPath } from '../utils/path-utils.js';
@@ -29,8 +29,8 @@ interface UseS3ActionsProps {
   toggleHelp: () => void;
   toggleSort: () => void;
   closeDialog: () => void;
-  /** Optional: New pending operations hook for global state management */
-  pendingOps?: UsePendingOperationsReturn;
+  /** Pending operations hook for global state management */
+  pendingOps: UsePendingOperationsReturn;
 }
 
 export function useS3Actions({
@@ -52,8 +52,16 @@ export function useS3Actions({
   closeDialog,
   pendingOps,
 }: UseS3ActionsProps) {
+  // Use ref to always access the latest pendingOps without requiring re-memoization
+  // This ensures handlers always use the current pendingOps even if called before
+  // React's effect cleanup/setup cycle completes after a state change
+  const pendingOpsRef = useRef(pendingOps);
+  pendingOpsRef.current = pendingOps;
+
   return useMemo(() => {
     const getActiveBuffer = () => bufferState;
+    // Access pendingOps through ref to always get the latest value
+    const getPendingOps = () => pendingOpsRef.current;
 
     const actionHandlers: Partial<Record<KeyAction, (key?: KeyboardKey) => void | Promise<void>>> =
       {
@@ -138,52 +146,24 @@ export function useS3Actions({
           const currentBufferState = getActiveBuffer();
           const selected = currentBufferState.getSelectedEntries();
           if (selected.length > 0) {
-            // Use the new pending operations store if available
-            if (pendingOps) {
-              for (const entry of selected) {
-                pendingOps.toggleDeletion(entry);
-              }
+            for (const entry of selected) {
+              getPendingOps().toggleDeletion(entry);
+            }
 
-              if (currentBufferState.selection.isActive) {
-                currentBufferState.exitVisualSelection();
-              }
+            if (currentBufferState.selection.isActive) {
+              currentBufferState.exitVisualSelection();
+            }
 
-              const markedCount = pendingOps.getMarkedForDeletion().length;
-              if (markedCount > 0) {
-                setStatusMessage(
-                  `${markedCount} item(s) marked for deletion. Press 'w' to save or 'u' to undo.`
-                );
-                setStatusMessageColor(CatppuccinMocha.yellow);
-              } else {
-                setStatusMessage('No items marked for deletion');
-                setStatusMessageColor(CatppuccinMocha.text);
-              }
+            // getMarkedForDeletion reads directly from store, so it returns immediate state
+            const markedCount = getPendingOps().getMarkedForDeletion().length;
+            if (markedCount > 0) {
+              setStatusMessage(
+                `${markedCount} item(s) marked for deletion. Press 'w' to save or 'u' to undo.`
+              );
+              setStatusMessageColor(CatppuccinMocha.yellow);
             } else {
-              // Fallback to old buffer-scoped deletion tracking
-              currentBufferState.saveSnapshot();
-
-              for (const entry of selected) {
-                if (currentBufferState.isMarkedForDeletion(entry.id)) {
-                  currentBufferState.unmarkForDeletion(entry.id);
-                } else {
-                  currentBufferState.markForDeletion(entry.id);
-                }
-              }
-
-              if (currentBufferState.selection.isActive) {
-                currentBufferState.exitVisualSelection();
-              }
-
-              const markedCount = currentBufferState.getMarkedForDeletion().length;
-              if (markedCount > 0) {
-                setStatusMessage(
-                  `${markedCount} item(s) marked for deletion. Press 'w' to save or 'u' to undo.`
-                );
-                setStatusMessageColor(CatppuccinMocha.yellow);
-              } else {
-                setStatusMessage('No items marked for deletion');
-                setStatusMessageColor(CatppuccinMocha.text);
-              }
+              setStatusMessage('No items marked for deletion');
+              setStatusMessageColor(CatppuccinMocha.text);
             }
           }
         },
@@ -205,7 +185,7 @@ export function useS3Actions({
           }
 
           if (pendingOps) {
-            pendingOps.cut(selected);
+            getPendingOps().cut(selected);
             // Always exit visual mode and return to normal after cut
             currentBufferState.exitVisualSelection();
             currentBufferState.setMode(EditMode.Normal);
@@ -234,7 +214,7 @@ export function useS3Actions({
           }
 
           if (pendingOps) {
-            pendingOps.copy(selected);
+            getPendingOps().copy(selected);
             // Always exit visual mode and return to normal after copy
             currentBufferState.exitVisualSelection();
             currentBufferState.setMode(EditMode.Normal);
@@ -255,13 +235,13 @@ export function useS3Actions({
           const currentBufferState = getActiveBuffer();
 
           if (pendingOps) {
-            if (!pendingOps.hasClipboardContent) {
+            if (!getPendingOps().hasClipboardContent) {
               setStatusMessage('Nothing to paste - cut or copy first');
               setStatusMessageColor(CatppuccinMocha.yellow);
               return;
             }
 
-            const isCut = pendingOps.isClipboardCut;
+            const isCut = getPendingOps().isClipboardCut;
             if (isCut && !storage.hasCapability(Capability.Move)) {
               setStatusMessage('Move not supported by this storage provider');
               setStatusMessageColor(CatppuccinMocha.red);
@@ -273,7 +253,7 @@ export function useS3Actions({
               return;
             }
 
-            pendingOps.paste(currentBufferState.currentPath);
+            getPendingOps().paste(currentBufferState.currentPath);
             const opType = isCut ? 'move' : 'copy';
             setStatusMessage(`Pending ${opType} operation(s) added. Press 'w' to save.`);
             setStatusMessageColor(CatppuccinMocha.yellow);
@@ -404,79 +384,66 @@ export function useS3Actions({
 
         // Buffer operations
         'buffer:save': () => {
-          // Use the new pending operations store if available
-          if (pendingOps && pendingOps.hasPendingChanges) {
-            // Convert store operations to dialog PendingOperation format
-            const storeOps = pendingOps.operations;
-            const dialogOps: PendingOperation[] = storeOps.map(op => {
-              switch (op.type) {
-                case 'delete':
-                  return {
-                    id: op.id,
-                    type: 'delete' as const,
-                    path: op.entry.path,
-                    entry: op.entry,
-                  };
-                case 'move':
-                  return {
-                    id: op.id,
-                    type: 'move' as const,
-                    source: op.entry.path,
-                    destination: op.destUri.split('/').slice(3).join('/'), // Extract path from URI
-                    entry: op.entry,
-                    recursive: op.entry.type === EntryType.Directory,
-                  };
-                case 'copy':
-                  return {
-                    id: op.id,
-                    type: 'copy' as const,
-                    source: op.entry.path,
-                    destination: op.destUri.split('/').slice(3).join('/'), // Extract path from URI
-                    entry: op.entry,
-                    recursive: op.entry.type === EntryType.Directory,
-                  };
-                case 'rename':
-                  return {
-                    id: op.id,
-                    type: 'rename' as const,
-                    path: op.entry.path,
-                    newName: op.newName,
-                    entry: op.entry,
-                  };
-                case 'create':
-                  return {
-                    id: op.id,
-                    type: 'create' as const,
-                    path: op.uri.split('/').slice(3).join('/'), // Extract path from URI
-                    entry: {
-                      id: op.id,
-                      name: op.name,
-                      type: op.entryType,
-                      path: op.uri.split('/').slice(3).join('/'),
-                    },
-                  };
-              }
-            });
-
-            showConfirm(dialogOps);
-          } else {
-            // Fallback to old behavior
-            const markedForDeletion = getActiveBuffer().getMarkedForDeletion();
-            const deleteOperations: PendingOperation[] = markedForDeletion.map(entry => ({
-              id: entry.id,
-              type: 'delete',
-              path: entry.path,
-              entry,
-            }));
-
-            if (deleteOperations.length === 0) {
-              setStatusMessage('No changes to save');
-              setStatusMessageColor(CatppuccinMocha.text);
-              return;
-            }
-
-            showConfirm(deleteOperations);
+          if (!getPendingOps().hasPendingChanges) {
+            setStatusMessage('No changes to save');
+            setStatusMessageColor(CatppuccinMocha.text);
+            return;
           }
+
+          // Convert store operations to dialog PendingOperation format
+          const storeOps = getPendingOps().operations;
+          const dialogOps: PendingOperation[] = storeOps.map(op => {
+            switch (op.type) {
+              case 'delete':
+                return {
+                  id: op.id,
+                  type: 'delete' as const,
+                  path: op.entry.path,
+                  entry: op.entry,
+                };
+              case 'move':
+                return {
+                  id: op.id,
+                  type: 'move' as const,
+                  source: op.entry.path,
+                  destination: op.destUri.split('/').slice(3).join('/'), // Extract path from URI
+                  entry: op.entry,
+                  recursive: op.entry.type === EntryType.Directory,
+                };
+              case 'copy':
+                return {
+                  id: op.id,
+                  type: 'copy' as const,
+                  source: op.entry.path,
+                  destination: op.destUri.split('/').slice(3).join('/'), // Extract path from URI
+                  entry: op.entry,
+                  recursive: op.entry.type === EntryType.Directory,
+                };
+              case 'rename':
+                return {
+                  id: op.id,
+                  type: 'rename' as const,
+                  path: op.entry.path,
+                  newName: op.newName,
+                  entry: op.entry,
+                };
+              case 'create':
+                return {
+                  id: op.id,
+                  type: 'create' as const,
+                  path: op.uri.split('/').slice(3).join('/'), // Extract path from URI
+                  entryType: op.entryType === EntryType.Directory ? 'directory' : 'file',
+                  entry: {
+                    id: op.id,
+                    name: op.name,
+                    type: op.entryType,
+                    path: op.uri.split('/').slice(3).join('/'),
+                  },
+                };
+            }
+          });
+
+          showConfirm(dialogOps);
         },
 
         'buffer:refresh': () => {
@@ -516,46 +483,22 @@ export function useS3Actions({
         },
 
         'buffer:undo': () => {
-          // Use the new pending operations store if available
-          if (pendingOps) {
-            if (pendingOps.undo()) {
-              setStatusMessage('Undo');
-              setStatusMessageColor(CatppuccinMocha.green);
-            } else {
-              setStatusMessage('Nothing to undo');
-              setStatusMessageColor(CatppuccinMocha.yellow);
-            }
+          if (getPendingOps().undo()) {
+            setStatusMessage('Undo');
+            setStatusMessageColor(CatppuccinMocha.green);
           } else {
-            const currentBufferState = getActiveBuffer();
-            if (currentBufferState.undo()) {
-              setStatusMessage('Undo');
-              setStatusMessageColor(CatppuccinMocha.green);
-            } else {
-              setStatusMessage('Nothing to undo');
-              setStatusMessageColor(CatppuccinMocha.yellow);
-            }
+            setStatusMessage('Nothing to undo');
+            setStatusMessageColor(CatppuccinMocha.yellow);
           }
         },
 
         'buffer:redo': () => {
-          // Use the new pending operations store if available
-          if (pendingOps) {
-            if (pendingOps.redo()) {
-              setStatusMessage('Redo');
-              setStatusMessageColor(CatppuccinMocha.green);
-            } else {
-              setStatusMessage('Nothing to redo');
-              setStatusMessageColor(CatppuccinMocha.yellow);
-            }
+          if (getPendingOps().redo()) {
+            setStatusMessage('Redo');
+            setStatusMessageColor(CatppuccinMocha.green);
           } else {
-            const currentBufferState = getActiveBuffer();
-            if (currentBufferState.redo()) {
-              setStatusMessage('Redo');
-              setStatusMessageColor(CatppuccinMocha.green);
-            } else {
-              setStatusMessage('Nothing to redo');
-              setStatusMessageColor(CatppuccinMocha.yellow);
-            }
+            setStatusMessage('Nothing to redo');
+            setStatusMessageColor(CatppuccinMocha.yellow);
           }
         },
 
@@ -565,14 +508,9 @@ export function useS3Actions({
 
         // Application
         'app:quit': () => {
-          // Use the new pending operations store if available
-          const pendingChanges = pendingOps
-            ? pendingOps.pendingCount
-            : getActiveBuffer().getMarkedForDeletion().length;
-
-          if (pendingChanges > 0) {
+          if (getPendingOps().pendingCount > 0) {
             // Show quit confirmation dialog
-            showQuit(pendingChanges);
+            showQuit(getPendingOps().pendingCount);
             return;
           }
 
@@ -688,58 +626,92 @@ export function useS3Actions({
           } else if (buf.mode === EditMode.Insert) {
             const entryName = buf.getEditBuffer().trim();
             if (entryName) {
-              buf.saveSnapshot();
               const currentPath = buf.currentPath;
-              const entryPath = currentPath ? `${currentPath}${entryName}` : entryName;
               const isDirectory = entryName.endsWith('/');
+              const cleanName = entryName.replace(/\/$/, '');
 
-              const newEntry = {
-                id: Math.random().toString(36),
-                name: entryName.replace(/\/$/, ''),
-                type: isDirectory ? EntryType.Directory : EntryType.File,
-                path: entryPath,
-                modified: new Date(),
-              };
+              if (pendingOps) {
+                // Add to pending operations store
+                getPendingOps().create(
+                  currentPath,
+                  cleanName,
+                  isDirectory ? EntryType.Directory : EntryType.File
+                );
+                buf.clearEditBuffer();
+                buf.exitInsertMode();
+                setStatusMessage(`Pending create: ${cleanName}. Press 'w' to save.`);
+                setStatusMessageColor(CatppuccinMocha.yellow);
+              } else {
+                // Fallback: add to buffer directly (won't persist)
+                buf.saveSnapshot();
+                const entryPath = currentPath ? `${currentPath}${entryName}` : entryName;
 
-              const insertIndex = buf.selection.cursorIndex + 1;
-              const currentEntries = [...buf.entries];
-              currentEntries.splice(insertIndex, 0, newEntry);
-              buf.setEntries(currentEntries);
+                const newEntry = {
+                  id: Math.random().toString(36),
+                  name: cleanName,
+                  type: isDirectory ? EntryType.Directory : EntryType.File,
+                  path: entryPath,
+                  modified: new Date(),
+                };
 
-              buf.clearEditBuffer();
-              buf.exitInsertMode();
-              setStatusMessage(`Created ${isDirectory ? 'directory' : 'file'}: ${entryName}`);
-              setStatusMessageColor(CatppuccinMocha.green);
+                const insertIndex = buf.selection.cursorIndex + 1;
+                const currentEntries = [...buf.entries];
+                currentEntries.splice(insertIndex, 0, newEntry);
+                buf.setEntries(currentEntries);
+
+                buf.clearEditBuffer();
+                buf.exitInsertMode();
+                setStatusMessage(
+                  `Created ${isDirectory ? 'directory' : 'file'}: ${entryName} (local only)`
+                );
+                setStatusMessageColor(CatppuccinMocha.green);
+              }
             }
           } else if (buf.mode === EditMode.Edit) {
             const newName = buf.getEditBuffer().trim();
             if (newName && newName.length > 0) {
               const currentEntry = buf.getSelectedEntry();
               if (currentEntry) {
-                const currentEntries = buf.entries;
-                const updatedEntries = currentEntries.map(entry => {
-                  if (entry.id === currentEntry.id) {
-                    const isDirectory = newName.endsWith('/');
-                    const cleanName = newName.replace(/\/$/, '');
-                    const currentPath = buf.currentPath;
-                    const newPath = currentPath ? `${currentPath}${cleanName}` : cleanName;
+                const cleanName = newName.replace(/\/$/, '');
 
-                    return {
-                      ...entry,
-                      name: cleanName,
-                      path: newPath,
-                      type: isDirectory ? EntryType.Directory : EntryType.File,
-                    };
-                  }
-                  return entry;
-                });
-                buf.setEntries(updatedEntries);
-                setStatusMessage(`Renamed to: ${newName}`);
-                setStatusMessageColor(CatppuccinMocha.green);
+                if (pendingOps) {
+                  // Add rename to pending operations store
+                  getPendingOps().rename(currentEntry, cleanName);
+                  buf.clearEditBuffer();
+                  buf.exitEditMode();
+                  setStatusMessage(
+                    `Pending rename: ${currentEntry.name} → ${cleanName}. Press 'w' to save.`
+                  );
+                  setStatusMessageColor(CatppuccinMocha.yellow);
+                } else {
+                  // Fallback: modify buffer directly (won't persist)
+                  const currentEntries = buf.entries;
+                  const isDirectory = newName.endsWith('/');
+                  const currentPath = buf.currentPath;
+                  const newPath = currentPath ? `${currentPath}${cleanName}` : cleanName;
+
+                  const updatedEntries = currentEntries.map(entry => {
+                    if (entry.id === currentEntry.id) {
+                      return {
+                        ...entry,
+                        name: cleanName,
+                        path: newPath,
+                        type: isDirectory ? EntryType.Directory : EntryType.File,
+                      };
+                    }
+                    return entry;
+                  });
+                  buf.setEntries(updatedEntries);
+                  buf.clearEditBuffer();
+                  buf.exitEditMode();
+                  setStatusMessage(`Renamed to: ${newName} (local only)`);
+                  setStatusMessageColor(CatppuccinMocha.green);
+                }
               }
+            } else {
+              buf.clearEditBuffer();
+              buf.exitEditMode();
             }
-            buf.clearEditBuffer();
-            buf.exitEditMode();
           }
         },
 
@@ -778,6 +750,9 @@ export function useS3Actions({
       };
 
     return actionHandlers;
+    // Note: pendingOps is accessed via pendingOpsRef, so it's not in the dependency array.
+    // This ensures handlers always use the latest pendingOps value without needing to
+    // re-create the entire actionHandlers object when pendingOps changes.
   }, [
     storage,
     bufferState,
@@ -795,6 +770,5 @@ export function useS3Actions({
     toggleHelp,
     toggleSort,
     closeDialog,
-    pendingOps,
   ]);
 }
