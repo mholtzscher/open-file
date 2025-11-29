@@ -2,20 +2,21 @@
 
 ## 6 Naming Conventions Used
 
-| Convention | Example | Context | Count |
-|-----------|---------|---------|-------|
-| **kebab-case** | `open-s3` | Package name, CLI, directories, docs | ~150 |
-| **UPPERCASE_SNAKE** | `OPEN_S3_USE_PROVIDERS` | Environment variables | ~120 |
-| **UPPERCASE_HYPHEN** | `OPEN-S3-ENC` | Encryption magic header | 4 |
-| **Title Case** | `Open-S3` | Documentation headings | ~20 |
-| **Hidden Directory** | `.open-s3` | User local storage | 4 |
-| **PascalCase** | `OpenS3` | Research docs (rare) | <5 |
+| Convention           | Example                 | Context                              | Count |
+| -------------------- | ----------------------- | ------------------------------------ | ----- |
+| **kebab-case**       | `open-s3`               | Package name, CLI, directories, docs | ~150  |
+| **UPPERCASE_SNAKE**  | `OPEN_S3_USE_PROVIDERS` | Environment variables                | ~120  |
+| **UPPERCASE_HYPHEN** | `OPEN-S3-ENC`           | Encryption magic header              | 4     |
+| **Title Case**       | `Open-S3`               | Documentation headings               | ~20   |
+| **Hidden Directory** | `.open-s3`              | User local storage                   | 4     |
+| **PascalCase**       | `OpenS3`                | Research docs (rare)                 | <5    |
 
 ---
 
 ## Where Each Format Is Used
 
 ### `open-s3` (kebab-case) - ~150 occurrences
+
 **Primary format across the codebase**
 
 ```
@@ -28,6 +29,7 @@
 ```
 
 ### `OPEN_S3_*` (UPPERCASE_SNAKE) - ~120 occurrences
+
 **Environment variables only**
 
 ```
@@ -39,11 +41,13 @@
 ```
 
 **Files using these**:
+
 - src/utils/feature-flags.ts (12 refs)
 - src/utils/feature-flags.test.ts (73 refs)
 - src/integration/feature-flag.test.ts (32 refs)
 
 ### `OPEN-S3-ENC` (UPPERCASE_HYPHEN) - 4 occurrences
+
 **Encryption magic header only**
 
 ```
@@ -54,6 +58,7 @@
 Used to identify encrypted configuration files in binary format.
 
 ### `Open-S3` (Title Case) - ~20 occurrences
+
 **Documentation and proper nouns**
 
 ```
@@ -63,6 +68,7 @@ Used to identify encrypted configuration files in binary format.
 ```
 
 ### `.open-s3` (Hidden Directory) - 4 occurrences
+
 **Unix/Linux hidden directory for local data**
 
 ```
@@ -71,6 +77,7 @@ Used to identify encrypted configuration files in binary format.
 ```
 
 ### `OpenS3` (PascalCase) - <5 occurrences
+
 **Rare, found only in research documents**
 
 ---
@@ -93,21 +100,25 @@ Used to identify encrypted configuration files in binary format.
 ### Quick Search by Category
 
 **To find all package/CLI references:**
+
 ```bash
 grep -r "open-s3" --include="package.json" --include="README.md" src/utils/cli.ts
 ```
 
 **To find all environment variables:**
+
 ```bash
 grep -r "OPEN_S3_" src/ --include="*.ts" --include="*.tsx"
 ```
 
 **To find all file paths:**
+
 ```bash
 grep -r "\.config/open-s3\|Library/.*open-s3\|APPDATA/open-s3" --include="*.ts"
 ```
 
 **To find all encryption references:**
+
 ```bash
 grep -r "OPEN-S3-ENC" --include="*.ts"
 ```
@@ -135,12 +146,14 @@ grep -r "OPEN-S3-ENC" --include="*.ts"
 ## Platform-Specific Paths
 
 ### macOS
+
 ```
 ~/Library/Application Support/open-s3/    # Profile storage
 ~/Library/Logs/open-s3/                   # Logs
 ```
 
 ### Linux
+
 ```
 ~/.config/open-s3/                        # Profile storage (XDG)
 ~/.local/state/open-s3/logs/             # Logs (XDG)
@@ -148,6 +161,7 @@ grep -r "OPEN-S3-ENC" --include="*.ts"
 ```
 
 ### Windows
+
 ```
 %APPDATA%/open-s3/                       # Profile storage
 %APPDATA%/open-s3/logs/                  # Logs
@@ -173,6 +187,7 @@ const FEATURE_FLAG_ENV_VARS: Record<FeatureFlag, string> = {
 ```
 
 **Then use:**
+
 ```bash
 OPEN_S3_MY_NEW_FEATURE=true open-s3
 ```

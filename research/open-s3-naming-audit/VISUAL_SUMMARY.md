@@ -32,7 +32,7 @@ TOTAL REFERENCES: 240+
 
 ```
                 ARCHITECTURE MAP
-                   
+
                     ┌─────────────┐
                     │  "open-s3"  │
                     │   Package   │
