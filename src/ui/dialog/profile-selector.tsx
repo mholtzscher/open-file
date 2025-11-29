@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { CatppuccinMocha, Theme } from '../theme.js';
+import { CatppuccinMocha } from '../theme.js';
+import { ProviderIndicator } from '../provider-indicator.js';
 import { BaseDialog } from './base.js';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import type { Profile } from '../../providers/types/profile.js';
@@ -37,24 +38,6 @@ export interface ProfileSelectorDialogProps {
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-/**
- * Get a short icon/indicator for provider type
- */
-function getProviderTypeIndicator(providerType: string): string {
-  const indicators: Record<string, string> = {
-    s3: 'S3',
-    gcs: 'GCS',
-    sftp: 'SFTP',
-    ftp: 'FTP',
-    nfs: 'NFS',
-    smb: 'SMB',
-    gdrive: 'Drive',
-    local: 'Local',
-  };
-
-  return indicators[providerType] || providerType.toUpperCase();
-}
 
 // ============================================================================
 // Component
@@ -210,22 +193,19 @@ export function ProfileSelectorDialog({
       {profiles.map((profile, index) => {
         const isSelected = index === selectedIndex;
         const isCurrent = profile.id === currentProfileId;
-        const indicator = getProviderTypeIndicator(profile.provider);
-        const providerColor = Theme.getProviderColor(profile.provider);
 
         // Build the line text
         const selectionChar = isSelected ? '>' : ' ';
         const currentChar = isCurrent ? '●' : '○';
         const prefix = `${selectionChar} ${currentChar} ${profile.displayName} `;
-        const badge = `[${indicator}]`;
 
-        // Use provider-specific color for the badge
+        // Use provider-specific color for the badge via ProviderIndicator
         const textColor = isCurrent ? CatppuccinMocha.text : CatppuccinMocha.subtext0;
 
         return (
           <box key={profile.id} flexDirection="row">
             <text fg={textColor}>{prefix}</text>
-            <text fg={providerColor}>{badge}</text>
+            <ProviderIndicator providerType={profile.provider} />
           </box>
         );
       })}

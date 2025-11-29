@@ -8,6 +8,7 @@
  */
 
 import { CatppuccinMocha } from './theme.js';
+import { ProviderIndicator } from './provider-indicator.js';
 import { useHasStorage } from '../contexts/StorageContext.js';
 import { useStorageState, useStorageCapabilities } from '../hooks/useStorage.js';
 import { ConnectionStatus } from './connection-status.js';
@@ -39,9 +40,7 @@ export function Header() {
   const profileName = state?.profileName;
   const providerId = state?.providerId;
 
-  const profileDisplay = profileName
-    ? `${profileName} [${providerId || 'unknown'}]`
-    : providerName || 'none';
+  const profileDisplay = profileName ? `${profileName} ` : providerName || 'none';
 
   return (
     <box
@@ -59,6 +58,7 @@ export function Header() {
         <box flexDirection="row" alignItems="center">
           <text fg={CatppuccinMocha.mauve}>profile: </text>
           <text fg={CatppuccinMocha.text}>{profileDisplay}</text>
+          {profileName && providerId && <ProviderIndicator providerType={providerId} />}
         </box>
         <box paddingLeft={1}>{hasConnection && <ConnectionStatus showReconnect={true} />}</box>
       </box>
