@@ -6,7 +6,7 @@ import { describe, it, expect, mock } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
 import { ProfileSelectorDialog } from './profile-selector.js';
 import { KeyboardProvider, useKeyboardDispatch } from '../../contexts/KeyboardContext.js';
-import { useEffect } from 'react';
+import { useEffect, act } from 'react';
 import type { KeyboardKey } from '../../types/keyboard.js';
 import type { Profile } from '../../providers/types/profile.js';
 import type { ProfileManager } from '../../providers/services/profile-manager.js';
@@ -351,8 +351,10 @@ describe('ProfileSelectorDialog', () => {
       await renderOnce();
 
       expect(dispatchKey).not.toBeNull();
-      dispatchKey!(createKey('escape'));
-      await renderOnce();
+      await act(async () => {
+        dispatchKey!(createKey('escape'));
+        await renderOnce();
+      });
 
       expect(onCancel).toHaveBeenCalledTimes(1);
     });
@@ -379,8 +381,10 @@ describe('ProfileSelectorDialog', () => {
       await renderOnce();
 
       expect(dispatchKey).not.toBeNull();
-      dispatchKey!(createKey('enter'));
-      await renderOnce();
+      await act(async () => {
+        dispatchKey!(createKey('enter'));
+        await renderOnce();
+      });
 
       expect(onProfileSelect).toHaveBeenCalledTimes(1);
     });
@@ -412,13 +416,17 @@ describe('ProfileSelectorDialog', () => {
       const initialFrame = captureCharFrame();
       expect(initialFrame).toContain('> ○ Production S3');
 
-      dispatchKey!(createKey('j'));
-      await renderOnce();
+      await act(async () => {
+        dispatchKey!(createKey('j'));
+        await renderOnce();
+      });
       const afterDown = captureCharFrame();
       expect(afterDown).toContain('> ○ Development GCS');
 
-      dispatchKey!(createKey('k'));
-      await renderOnce();
+      await act(async () => {
+        dispatchKey!(createKey('k'));
+        await renderOnce();
+      });
       const afterUp = captureCharFrame();
       expect(afterUp).toContain('> ○ Production S3');
     });
@@ -447,14 +455,18 @@ describe('ProfileSelectorDialog', () => {
       expect(dispatchKey).not.toBeNull();
 
       // Move to last profile with G
-      dispatchKey!(createKey('G'));
-      await renderOnce();
+      await act(async () => {
+        dispatchKey!(createKey('G'));
+        await renderOnce();
+      });
       const afterG = captureCharFrame();
       expect(afterG).toContain('> ○ Backup SFTP');
 
       // Move back to first profile with g
-      dispatchKey!(createKey('g'));
-      await renderOnce();
+      await act(async () => {
+        dispatchKey!(createKey('g'));
+        await renderOnce();
+      });
       const afterg = captureCharFrame();
       expect(afterg).toContain('> ○ Production S3');
     });
@@ -483,14 +495,18 @@ describe('ProfileSelectorDialog', () => {
       expect(dispatchKey).not.toBeNull();
 
       // Use down arrow to move selection
-      dispatchKey!(createKey('down'));
-      await renderOnce();
+      await act(async () => {
+        dispatchKey!(createKey('down'));
+        await renderOnce();
+      });
       const afterDownArrow = captureCharFrame();
       expect(afterDownArrow).toContain('> ○ Development GCS');
 
       // Use up arrow to move back
-      dispatchKey!(createKey('up'));
-      await renderOnce();
+      await act(async () => {
+        dispatchKey!(createKey('up'));
+        await renderOnce();
+      });
       const afterUpArrow = captureCharFrame();
       expect(afterUpArrow).toContain('> ○ Production S3');
     });

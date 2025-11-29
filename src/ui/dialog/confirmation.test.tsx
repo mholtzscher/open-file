@@ -288,7 +288,7 @@ describe('ConfirmationDialog', () => {
 
       const frame = captureCharFrame();
       expect(frame).toContain('Press y to confirm');
-      expect(frame).toContain('n to cancel');
+      expect(frame).toContain('n or Esc to cancel');
     });
   });
 
