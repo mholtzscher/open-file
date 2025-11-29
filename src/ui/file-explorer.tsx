@@ -20,7 +20,7 @@ import { useS3Actions } from '../hooks/useS3Actions.js';
 import { FileExplorerLayout, StatusBarState, PreviewState } from './file-explorer-layout.js';
 import { DialogsState } from './file-explorer-dialogs.js';
 import { CatppuccinMocha } from './theme.js';
-import { useKeyboardHandler, KeyboardPriority } from '../contexts/KeyboardContext.js';
+import { useKeyboardHandler } from '../contexts/KeyboardContext.js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { SortField, SortOrder } from '../utils/sorting.js';

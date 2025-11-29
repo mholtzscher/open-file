@@ -106,7 +106,7 @@ export function FileExplorerLayout({
   return (
     <box flexDirection="column" width="100%" height="100%">
       {/* Header */}
-      <Header bucket={bucket} />
+      <Header />
 
       {/* Main content area with panes - flex layout */}
       <box flexGrow={1} flexDirection="row" gap={1}>
