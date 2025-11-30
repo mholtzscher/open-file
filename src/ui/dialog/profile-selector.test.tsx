@@ -47,6 +47,7 @@ function createMockProfileManager(profiles: Profile[] = mockProfiles): ProfileMa
     deleteProfile: mock(() => Promise.resolve(true)),
     validateProfile: mock(() => Promise.resolve({ valid: true, errors: [] })),
     createProviderFromProfile: mock(() => Promise.resolve({} as any)),
+    reload: mock(() => Promise.resolve()),
   };
 }
 
@@ -299,6 +300,29 @@ describe('ProfileSelectorDialog', () => {
       // Check for help text (may be truncated, so check partial)
       expect(frame).toContain('Enter');
       expect(frame).toContain('jk');
+    });
+
+    it('displays edit keybind in help text', async () => {
+      const profileManager = createMockProfileManager();
+      const onProfileSelect = mock(() => {});
+      const onCancel = mock(() => {});
+
+      const { renderOnce, captureCharFrame } = await testRender(
+        <WrappedProfileSelectorDialog
+          visible={true}
+          profileManager={profileManager}
+          onProfileSelect={onProfileSelect}
+          onCancel={onCancel}
+        />,
+        { width: 100, height: 40 }
+      );
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+      await renderOnce();
+
+      const frame = captureCharFrame();
+      // Check for edit keybind in help text
+      expect(frame).toContain('e: Edit');
     });
   });
 

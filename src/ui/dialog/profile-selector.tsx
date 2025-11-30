@@ -33,6 +33,9 @@ export interface ProfileSelectorDialogProps {
 
   /** Callback when dialog is cancelled/closed */
   onCancel: () => void;
+
+  /** Callback to edit profiles in external editor (optional) */
+  onEditProfiles?: () => Promise<void>;
 }
 
 // ============================================================================
@@ -59,6 +62,7 @@ export function ProfileSelectorDialog({
   currentProfileId,
   onProfileSelect,
   onCancel,
+  onEditProfiles,
 }: ProfileSelectorDialogProps) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -159,6 +163,13 @@ export function ProfileSelectorDialog({
           }
           return true;
 
+        case 'e':
+          // Open profiles.json in external editor
+          if (onEditProfiles) {
+            onEditProfiles();
+          }
+          return true;
+
         case 'escape':
         case 'q':
           onCancel();
@@ -235,7 +246,7 @@ export function ProfileSelectorDialog({
 
       {/* Footer help text */}
       <text fg={CatppuccinMocha.overlay0}> </text>
-      <text fg={CatppuccinMocha.overlay0}>↑↓/jk: Select Enter: Switch Esc: Cancel</text>
+      <text fg={CatppuccinMocha.overlay0}>↑↓/jk: Select Enter: Switch e: Edit Esc: Cancel</text>
     </BaseDialog>
   );
 }

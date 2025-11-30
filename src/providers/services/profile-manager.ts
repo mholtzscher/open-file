@@ -179,4 +179,18 @@ export interface ProfileManager {
     profileId: string,
     options?: CreateProviderOptions
   ): Promise<StorageProvider>;
+
+  // ==========================================================================
+  // Refresh Operations
+  // ==========================================================================
+
+  /**
+   * Reload profiles from the underlying storage
+   *
+   * Forces a fresh read from disk/storage, discarding the in-memory cache.
+   * Useful after external modifications to the profiles file.
+   *
+   * @returns Promise that resolves when reload is complete
+   */
+  reload(): Promise<void>;
 }

@@ -27,6 +27,8 @@ export interface AppProps {
   onDispatchReady?: (dispatch: KeyboardDispatcher | null) => void;
   /** Optional handler when profile selection is cancelled without an active provider */
   onExitWithoutProvider?: () => void;
+  /** Optional handler to edit profiles in external editor (called from profile selector) */
+  onEditProfiles?: () => Promise<void>;
 }
 
 // ============================================================================
@@ -34,9 +36,17 @@ export interface AppProps {
 // ============================================================================
 
 /**
+ * Props for AppContent
+ */
+interface AppContentProps {
+  /** Handler to edit profiles in external editor */
+  onEditProfiles?: () => Promise<void>;
+}
+
+/**
  * AppContent - Renders profile selector or main content based on profile state
  */
-function AppContent() {
+function AppContent({ onEditProfiles }: AppContentProps) {
   const {
     provider,
     profileId,
@@ -56,6 +66,7 @@ function AppContent() {
         currentProfileId={profileId}
         onProfileSelect={selectProfile}
         onCancel={closeProfileSelector}
+        onEditProfiles={onEditProfiles}
       />
     );
   }
@@ -82,14 +93,19 @@ function AppContent() {
  *
  * Provides all contexts and renders the appropriate content.
  */
-export function App({ profileManager, onDispatchReady, onExitWithoutProvider }: AppProps) {
+export function App({
+  profileManager,
+  onDispatchReady,
+  onExitWithoutProvider,
+  onEditProfiles,
+}: AppProps) {
   return (
     <KeyboardProvider onDispatchReady={onDispatchReady}>
       <ProfileProvider
         profileManager={profileManager}
         onExitWithoutProvider={onExitWithoutProvider}
       >
-        <AppContent />
+        <AppContent onEditProfiles={onEditProfiles} />
       </ProfileProvider>
     </KeyboardProvider>
   );

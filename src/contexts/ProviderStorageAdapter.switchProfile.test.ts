@@ -162,6 +162,10 @@ class MockProfileManager implements ProfileManager {
     }
     return provider;
   }
+
+  async reload(): Promise<void> {
+    // No-op for mock
+  }
 }
 
 // ============================================================================

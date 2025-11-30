@@ -8,6 +8,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync } from 'fs';
 import { homedir, platform } from 'os';
 import { join, dirname } from 'path';
+import { parse as parseJsonc, ParseError, printParseErrorCode } from 'jsonc-parser';
 import type { Profile, LocalProfile } from '../types/profile.js';
 
 // ============================================================================
@@ -17,8 +18,105 @@ import type { Profile, LocalProfile } from '../types/profile.js';
 /** Application name for config directories */
 const APP_NAME = 'open-file';
 
-/** Profile storage filename */
-const PROFILES_FILENAME = 'profiles.json';
+/** Profile storage filename (JSONC format for comment support) */
+const PROFILES_FILENAME = 'profiles.jsonc';
+
+/**
+ * Template for new profiles.jsonc file with helpful comments
+ *
+ * This template is written when the file doesn't exist, giving users
+ * guidance on how to configure their profiles.
+ */
+const PROFILES_TEMPLATE = `// Open-File Profiles Configuration
+// ================================
+// Add your storage provider profiles here. Press 'e' in the profile
+// selector to edit this file. The "Local Filesystem" profile is
+// built-in and always available.
+//
+// Supported providers: s3, gcs, sftp, ftp, local
+// (nfs, smb, gdrive coming soon)
+//
+// Documentation: https://github.com/mikea/open-file#profiles
+{
+  "profiles": [
+    // ============================================================
+    // AWS S3 Example
+    // ============================================================
+    // {
+    //   "id": "my-s3-bucket",
+    //   "displayName": "My S3 Bucket",
+    //   "provider": "s3",
+    //   "config": {
+    //     "region": "us-east-1",
+    //     // Option 1: Use AWS CLI profile (recommended)
+    //     "profile": "default",
+    //     // Option 2: Use explicit credentials (not recommended for security)
+    //     // "accessKeyId": "AKIA...",
+    //     // "secretAccessKey": "...",
+    //     // Optional: Custom endpoint for MinIO, LocalStack, etc.
+    //     // "endpoint": "http://localhost:9000",
+    //     // "forcePathStyle": true
+    //   }
+    // },
+
+    // ============================================================
+    // Google Cloud Storage Example
+    // ============================================================
+    // {
+    //   "id": "my-gcs-bucket",
+    //   "displayName": "My GCS Bucket",
+    //   "provider": "gcs",
+    //   "config": {
+    //     "projectId": "my-project-id",
+    //     // Option 1: Use Application Default Credentials (recommended)
+    //     "useApplicationDefault": true,
+    //     // Option 2: Use service account key file
+    //     // "keyFilePath": "/path/to/service-account.json"
+    //   }
+    // },
+
+    // ============================================================
+    // SFTP Example
+    // ============================================================
+    // {
+    //   "id": "my-sftp-server",
+    //   "displayName": "My SFTP Server",
+    //   "provider": "sftp",
+    //   "config": {
+    //     "host": "sftp.example.com",
+    //     "port": 22,
+    //     "username": "myuser",
+    //     // Authentication: "password", "key", or "agent"
+    //     "authMethod": "key",
+    //     // For password auth:
+    //     // "password": "...",
+    //     // For key auth:
+    //     "privateKeyPath": "~/.ssh/id_rsa",
+    //     // "passphrase": "...",  // if key is encrypted
+    //     // Starting directory (optional):
+    //     "basePath": "/home/myuser"
+    //   }
+    // },
+
+    // ============================================================
+    // FTP Example
+    // ============================================================
+    // {
+    //   "id": "my-ftp-server",
+    //   "displayName": "My FTP Server",
+    //   "provider": "ftp",
+    //   "config": {
+    //     "host": "ftp.example.com",
+    //     "port": 21,
+    //     "username": "anonymous",
+    //     "password": "anonymous@",
+    //     // For FTPS: true (explicit) or "implicit"
+    //     // "secure": true
+    //   }
+    // }
+  ]
+}
+`;
 
 /** ID for the default local filesystem profile */
 export const DEFAULT_LOCAL_PROFILE_ID = 'local-filesystem';
@@ -154,6 +252,33 @@ export function ensureConfigDir(): boolean {
 }
 
 /**
+ * Create the profiles template file with helpful comments
+ *
+ * Called when the profiles file doesn't exist on first load.
+ * Creates the config directory if needed and writes the template.
+ *
+ * @returns true if template was created successfully
+ */
+export function createProfilesTemplate(): boolean {
+  const profilesPath = getProfilesPath();
+  const configDir = dirname(profilesPath);
+
+  try {
+    // Ensure directory exists
+    if (!existsSync(configDir)) {
+      mkdirSync(configDir, { recursive: true });
+    }
+
+    // Write template file
+    writeFileSync(profilesPath, PROFILES_TEMPLATE, 'utf-8');
+    return true;
+  } catch {
+    // Silently fail - we'll still return the default profile
+    return false;
+  }
+}
+
+/**
  * Load profiles from disk
  *
  * Handles:
@@ -167,8 +292,9 @@ export function ensureConfigDir(): boolean {
 export function loadProfilesFromDisk(): LoadProfilesResult {
   const profilesPath = getProfilesPath();
 
-  // File doesn't exist - return just the default profile (not an error)
+  // File doesn't exist - create template and return default profile
   if (!existsSync(profilesPath)) {
+    createProfilesTemplate();
     return { success: true, profiles: [DEFAULT_LOCAL_PROFILE] };
   }
 
@@ -203,17 +329,19 @@ export function loadProfilesFromDisk(): LoadProfilesResult {
     return { success: true, profiles: [DEFAULT_LOCAL_PROFILE] };
   }
 
-  // Parse JSON
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch (err) {
+  // Parse JSONC (JSON with comments)
+  const parseErrors: ParseError[] = [];
+  const parsed = parseJsonc(content, parseErrors, { allowTrailingComma: true });
+
+  if (parseErrors.length > 0) {
+    const errorMessages = parseErrors
+      .map(e => `${printParseErrorCode(e.error)} at offset ${e.offset}`)
+      .join(', ');
     return {
       success: false,
       error: {
         code: 'corrupted_json',
-        message: `Profiles file contains invalid JSON: ${profilesPath}`,
-        cause: err as Error,
+        message: `Profiles file contains invalid JSONC: ${errorMessages}`,
       },
     };
   }
