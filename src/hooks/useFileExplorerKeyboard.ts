@@ -108,8 +108,25 @@ export function useFileExplorerKeyboard({
         if (key.name === 'backspace') {
           return executeAction('input:backspace', key);
         }
+        if (key.name === 'delete') {
+          return executeAction('input:delete', key);
+        }
         if (key.name === 'tab') {
           return executeAction('input:tab', key);
+        }
+        // Cursor movement
+        if (key.name === 'left') {
+          return executeAction('input:cursorLeft', key);
+        }
+        if (key.name === 'right') {
+          return executeAction('input:cursorRight', key);
+        }
+        // Home/End for start/end of line
+        if (key.name === 'home' || (key.ctrl && key.name === 'a')) {
+          return executeAction('input:cursorStart', key);
+        }
+        if (key.name === 'end' || (key.ctrl && key.name === 'e')) {
+          return executeAction('input:cursorEnd', key);
         }
         if (key.char && key.char.length === 1) {
           return executeAction('input:char', key);

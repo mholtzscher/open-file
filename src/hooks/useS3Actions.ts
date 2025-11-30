@@ -327,7 +327,17 @@ export function useS3Actions({
         },
 
         'mode:edit': () => {
-          getActiveBuffer().enterEditMode();
+          const buf = getActiveBuffer();
+          const currentEntry = buf.getSelectedEntry();
+          if (currentEntry) {
+            // Check if there's a pending rename and use that name instead
+            const entryState = getPendingOps().getEntryState(currentEntry);
+            const nameToEdit =
+              entryState.isRenamed && entryState.newName ? entryState.newName : currentEntry.name;
+            buf.enterEditMode(nameToEdit);
+          } else {
+            buf.enterEditMode('');
+          }
           setStatusMessage('');
         },
 
@@ -588,10 +598,10 @@ export function useS3Actions({
               setStatusMessage(`Searching: ${currentQuery + key.char}`);
               setStatusMessageColor(Theme.getInfoColor());
             } else if (buf.mode === EditMode.Command) {
-              buf.appendToEditBuffer(key.char);
+              buf.insertAtEditCursor(key.char);
             } else if (buf.mode === EditMode.Insert || buf.mode === EditMode.Edit) {
               if (key.char.match(/[a-zA-Z0-9._\-\s/]/)) {
-                buf.appendToEditBuffer(key.char);
+                buf.insertAtEditCursor(key.char);
               }
             }
           }
@@ -607,6 +617,33 @@ export function useS3Actions({
           } else {
             buf.backspaceEditBuffer();
           }
+        },
+
+        'input:delete': () => {
+          const buf = getActiveBuffer();
+          if (buf.mode !== EditMode.Search) {
+            buf.deleteAtEditCursor();
+          }
+        },
+
+        'input:cursorLeft': () => {
+          const buf = getActiveBuffer();
+          buf.moveEditCursor('left');
+        },
+
+        'input:cursorRight': () => {
+          const buf = getActiveBuffer();
+          buf.moveEditCursor('right');
+        },
+
+        'input:cursorStart': () => {
+          const buf = getActiveBuffer();
+          buf.moveEditCursorToStart();
+        },
+
+        'input:cursorEnd': () => {
+          const buf = getActiveBuffer();
+          buf.moveEditCursorToEnd();
         },
 
         'input:confirm': () => {
@@ -719,10 +756,30 @@ export function useS3Actions({
               const currentEntry = buf.getSelectedEntry();
               if (currentEntry) {
                 const cleanName = newName.replace(/\/$/, '');
+                const ops = getPendingOps();
+                const entryState = ops.getEntryState(currentEntry);
+
+                // If name is back to original, remove pending rename
+                if (cleanName === currentEntry.name) {
+                  if (entryState.isRenamed) {
+                    // Find and remove the pending rename operation
+                    const renameOp = ops.operations.find(
+                      op => op.type === 'rename' && op.entry.id === currentEntry.id
+                    );
+                    if (renameOp) {
+                      ops.removeOperation(renameOp.id);
+                      setStatusMessage('Rename cancelled');
+                      setStatusMessageColor(Theme.getInfoColor());
+                    }
+                  }
+                  buf.clearEditBuffer();
+                  buf.exitEditMode();
+                  return;
+                }
 
                 if (pendingOps) {
                   // Add rename to pending operations store
-                  getPendingOps().rename(currentEntry, cleanName);
+                  ops.rename(currentEntry, cleanName);
                   buf.clearEditBuffer();
                   buf.exitEditMode();
                   setStatusMessage(

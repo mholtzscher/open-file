@@ -193,6 +193,8 @@ export function BufferView({
         const entryState = pendingOps.getEntryState(entry);
         const isMarkedForDeletion = entryState.isDeleted;
         const isCut = entryState.isMovedAway;
+        const isRenamed = entryState.isRenamed;
+        const newName = entryState.newName;
 
         const cursor = isSelected ? '> ' : '  ';
         // Add marker prefix based on state
@@ -201,8 +203,13 @@ export function BufferView({
           marker = '✗ ';
         } else if (isCut) {
           marker = '✂ ';
+        } else if (isRenamed) {
+          marker = '✎ ';
         }
-        let content = cursor + marker + formatEntry(entry, showIcons, showSizes, showDates);
+
+        // For renamed entries, display with the new name
+        const displayEntry = isRenamed && newName ? { ...entry, name: newName } : entry;
+        let content = cursor + marker + formatEntry(displayEntry, showIcons, showSizes, showDates);
 
         // Apply strikethrough to deleted entries
         if (isMarkedForDeletion) {
@@ -215,6 +222,8 @@ export function BufferView({
           color = Theme.getErrorColor();
         } else if (isCut) {
           color = Theme.getDimColor(); // Dimmed for cut items
+        } else if (isRenamed) {
+          color = Theme.getWarningColor(); // Orange for pending rename
         } else {
           color = getEntryColor(entry, isSelected, false);
         }

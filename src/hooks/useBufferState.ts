@@ -32,10 +32,15 @@ export interface UseBufferStateReturn {
 
   // Edit buffer operations
   getEditBuffer: () => string;
+  getEditBufferCursor: () => number;
   setEditBuffer: (text: string) => void;
-  appendToEditBuffer: (char: string) => void;
+  insertAtEditCursor: (char: string) => void;
   backspaceEditBuffer: () => void;
+  deleteAtEditCursor: () => void;
   clearEditBuffer: () => void;
+  moveEditCursor: (direction: 'left' | 'right') => void;
+  moveEditCursorToStart: () => void;
+  moveEditCursorToEnd: () => void;
 
   // Cursor/Selection operations
   moveCursorDown: (amount: number) => void;
@@ -50,7 +55,7 @@ export interface UseBufferStateReturn {
   setMode: (mode: EditMode) => void;
   enterInsertMode: () => void;
   exitInsertMode: () => void;
-  enterEditMode: () => void;
+  enterEditMode: (initialValue?: string) => void;
   exitEditMode: () => void;
   enterSearchMode: () => void;
   exitSearchMode: () => void;
@@ -115,21 +120,38 @@ export function useBufferState(
 
   // Edit buffer operations
   const getEditBuffer = useCallback(() => state.editBuffer, [state.editBuffer]);
+  const getEditBufferCursor = useCallback(() => state.editBufferCursor, [state.editBufferCursor]);
 
   const setEditBuffer = useCallback((text: string) => {
     dispatch({ type: 'SET_EDIT_BUFFER', text });
   }, []);
 
-  const appendToEditBuffer = useCallback((char: string) => {
-    dispatch({ type: 'APPEND_TO_EDIT_BUFFER', char });
+  const insertAtEditCursor = useCallback((char: string) => {
+    dispatch({ type: 'INSERT_AT_EDIT_CURSOR', char });
   }, []);
 
   const backspaceEditBuffer = useCallback(() => {
     dispatch({ type: 'BACKSPACE_EDIT_BUFFER' });
   }, []);
 
+  const deleteAtEditCursor = useCallback(() => {
+    dispatch({ type: 'DELETE_AT_EDIT_CURSOR' });
+  }, []);
+
   const clearEditBuffer = useCallback(() => {
     dispatch({ type: 'CLEAR_EDIT_BUFFER' });
+  }, []);
+
+  const moveEditCursor = useCallback((direction: 'left' | 'right') => {
+    dispatch({ type: 'MOVE_EDIT_CURSOR', direction });
+  }, []);
+
+  const moveEditCursorToStart = useCallback(() => {
+    dispatch({ type: 'MOVE_EDIT_CURSOR_TO_START' });
+  }, []);
+
+  const moveEditCursorToEnd = useCallback(() => {
+    dispatch({ type: 'MOVE_EDIT_CURSOR_TO_END' });
   }, []);
 
   // Cursor/Selection operations
@@ -174,8 +196,8 @@ export function useBufferState(
     dispatch({ type: 'SET_MODE', mode: EditMode.Normal });
   }, []);
 
-  const enterEditMode = useCallback(() => {
-    dispatch({ type: 'SET_MODE', mode: EditMode.Edit });
+  const enterEditMode = useCallback((initialValue?: string) => {
+    dispatch({ type: 'SET_MODE', mode: EditMode.Edit, initialEditBuffer: initialValue });
   }, []);
 
   const exitEditMode = useCallback(() => {
@@ -294,10 +316,15 @@ export function useBufferState(
     setCurrentPath,
     setViewportHeight,
     getEditBuffer,
+    getEditBufferCursor,
     setEditBuffer,
-    appendToEditBuffer,
+    insertAtEditCursor,
     backspaceEditBuffer,
+    deleteAtEditCursor,
     clearEditBuffer,
+    moveEditCursor,
+    moveEditCursorToStart,
+    moveEditCursorToEnd,
     moveCursorDown,
     moveCursorUp,
     cursorToTop,

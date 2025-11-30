@@ -152,6 +152,7 @@ export function FileExplorerLayout({
           messageColor={statusBar.messageColor}
           searchQuery={bufferState.searchQuery}
           commandBuffer={bufferState.editBuffer}
+          commandBufferCursor={bufferState.getEditBufferCursor()}
           bucket={bucket}
         />
       </box>

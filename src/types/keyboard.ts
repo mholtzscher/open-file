@@ -81,9 +81,14 @@ export type KeyAction =
   // Special - for text input in modes like search/command/insert
   | 'input:char'
   | 'input:backspace'
+  | 'input:delete'
   | 'input:confirm'
   | 'input:cancel'
-  | 'input:tab';
+  | 'input:tab'
+  | 'input:cursorLeft'
+  | 'input:cursorRight'
+  | 'input:cursorStart'
+  | 'input:cursorEnd';
 
 /**
  * Keybinding definition

@@ -30,6 +30,7 @@ export interface BufferState {
   copyRegister: Entry[];
   viewportHeight: number;
   editBuffer: string;
+  editBufferCursor: number;
   undoHistory: BufferSnapshot[];
   redoHistory: BufferSnapshot[];
 }
@@ -47,6 +48,7 @@ export const INITIAL_BUFFER_STATE: BufferState = {
   copyRegister: [],
   viewportHeight: 20,
   editBuffer: '',
+  editBufferCursor: 0,
   undoHistory: [],
   redoHistory: [],
 };
@@ -65,7 +67,7 @@ export type BufferAction =
   | { type: 'START_VISUAL_SELECTION' }
   | { type: 'EXTEND_VISUAL_SELECTION'; direction: 'up' | 'down' }
   | { type: 'EXIT_VISUAL_SELECTION' }
-  | { type: 'SET_MODE'; mode: EditMode }
+  | { type: 'SET_MODE'; mode: EditMode; initialEditBuffer?: string }
   | { type: 'CONFIRM_SEARCH_MODE' }
   | { type: 'SET_SORT_CONFIG'; config: SortConfig }
   | { type: 'UPDATE_SEARCH_QUERY'; query: string }
@@ -73,9 +75,13 @@ export type BufferAction =
   | { type: 'COPY_SELECTION' }
   | { type: 'PASTE_AFTER_CURSOR' }
   | { type: 'SET_EDIT_BUFFER'; text: string }
-  | { type: 'APPEND_TO_EDIT_BUFFER'; char: string }
+  | { type: 'INSERT_AT_EDIT_CURSOR'; char: string }
   | { type: 'BACKSPACE_EDIT_BUFFER' }
+  | { type: 'DELETE_AT_EDIT_CURSOR' }
   | { type: 'CLEAR_EDIT_BUFFER' }
+  | { type: 'MOVE_EDIT_CURSOR'; direction: 'left' | 'right' }
+  | { type: 'MOVE_EDIT_CURSOR_TO_START' }
+  | { type: 'MOVE_EDIT_CURSOR_TO_END' }
   | { type: 'SAVE_SNAPSHOT' }
   | { type: 'UNDO' }
   | { type: 'REDO' };
@@ -277,28 +283,35 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
         // Actually `exitVisualSelection` just reset selection state.
       };
 
-    case 'SET_MODE':
+    case 'SET_MODE': {
+      // Determine edit buffer based on mode
+      let editBuffer: string;
+      let editBufferCursor: number;
+      if (action.mode === EditMode.Command) {
+        editBuffer = ':';
+        editBufferCursor = 1;
+      } else if (action.mode === EditMode.Edit) {
+        editBuffer = action.initialEditBuffer ?? '';
+        editBufferCursor = editBuffer.length; // Cursor at end
+      } else if (action.mode === EditMode.Normal) {
+        editBuffer = '';
+        editBufferCursor = 0;
+      } else {
+        editBuffer = state.editBuffer;
+        editBufferCursor = state.editBufferCursor;
+      }
+
       return {
         ...state,
         mode: action.mode,
-        // Reset edit buffer on mode changes if needed?
-        // Original code:
-        // enterCommandMode -> setEditBuffer(':')
-        // exitCommandMode -> setEditBuffer('')
-        // exitSearchMode -> setSearchQuery('')
-        // Let's handle side effects here or in dispatch call sites.
-        // Better to handle state consistency here.
-        editBuffer:
-          action.mode === EditMode.Command
-            ? ':'
-            : action.mode === EditMode.Normal
-              ? ''
-              : state.editBuffer,
+        editBuffer,
+        editBufferCursor,
         searchQuery:
           action.mode === EditMode.Normal && state.mode === EditMode.Search
             ? ''
             : state.searchQuery,
       };
+    }
 
     case 'CONFIRM_SEARCH_MODE':
       // Keep search query when confirming search mode
@@ -360,24 +373,70 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
       return {
         ...state,
         editBuffer: action.text,
+        editBufferCursor: action.text.length,
       };
 
-    case 'APPEND_TO_EDIT_BUFFER':
+    case 'INSERT_AT_EDIT_CURSOR': {
+      const before = state.editBuffer.slice(0, state.editBufferCursor);
+      const after = state.editBuffer.slice(state.editBufferCursor);
       return {
         ...state,
-        editBuffer: state.editBuffer + action.char,
+        editBuffer: before + action.char + after,
+        editBufferCursor: state.editBufferCursor + 1,
       };
+    }
 
-    case 'BACKSPACE_EDIT_BUFFER':
+    case 'BACKSPACE_EDIT_BUFFER': {
+      if (state.editBufferCursor === 0) return state;
+      const before = state.editBuffer.slice(0, state.editBufferCursor - 1);
+      const after = state.editBuffer.slice(state.editBufferCursor);
       return {
         ...state,
-        editBuffer: state.editBuffer.slice(0, -1),
+        editBuffer: before + after,
+        editBufferCursor: state.editBufferCursor - 1,
       };
+    }
+
+    case 'DELETE_AT_EDIT_CURSOR': {
+      if (state.editBufferCursor >= state.editBuffer.length) return state;
+      const before = state.editBuffer.slice(0, state.editBufferCursor);
+      const after = state.editBuffer.slice(state.editBufferCursor + 1);
+      return {
+        ...state,
+        editBuffer: before + after,
+      };
+    }
 
     case 'CLEAR_EDIT_BUFFER':
       return {
         ...state,
         editBuffer: '',
+        editBufferCursor: 0,
+      };
+
+    case 'MOVE_EDIT_CURSOR':
+      if (action.direction === 'left') {
+        return {
+          ...state,
+          editBufferCursor: Math.max(0, state.editBufferCursor - 1),
+        };
+      } else {
+        return {
+          ...state,
+          editBufferCursor: Math.min(state.editBuffer.length, state.editBufferCursor + 1),
+        };
+      }
+
+    case 'MOVE_EDIT_CURSOR_TO_START':
+      return {
+        ...state,
+        editBufferCursor: 0,
+      };
+
+    case 'MOVE_EDIT_CURSOR_TO_END':
+      return {
+        ...state,
+        editBufferCursor: state.editBuffer.length,
       };
 
     case 'SAVE_SNAPSHOT': {

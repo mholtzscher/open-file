@@ -15,6 +15,7 @@ interface StatusBarProps {
   messageColor?: string;
   searchQuery?: string;
   commandBuffer?: string;
+  commandBufferCursor?: number;
   bucket?: string;
 }
 
@@ -59,6 +60,15 @@ function formatBreadcrumb(bucket: string | undefined, path: string): string {
 /**
  * StatusBar React component
  */
+/**
+ * Insert cursor character at position in text
+ */
+function insertCursor(text: string, position: number): string {
+  const before = text.slice(0, position);
+  const after = text.slice(position);
+  return `${before}│${after}`;
+}
+
 export function StatusBar({
   path,
   mode,
@@ -66,14 +76,19 @@ export function StatusBar({
   messageColor = Theme.getMutedColor(),
   searchQuery = '',
   commandBuffer = '',
+  commandBufferCursor = 0,
   bucket,
 }: StatusBarProps) {
   // Left side: path and mode
   const breadcrumb = formatBreadcrumb(bucket, path);
   const pathText = `📂 ${breadcrumb}`;
   const modeText = `[${getModeString(mode)}]`;
-  const searchText = mode === EditMode.Search ? ` /${searchQuery}` : '';
-  const editText = mode === EditMode.Edit ? ` ${commandBuffer}` : '';
+
+  // Format text with cursor for edit modes
+  const searchText =
+    mode === EditMode.Search ? ` /${insertCursor(searchQuery, searchQuery.length)}` : '';
+  const editText =
+    mode === EditMode.Edit ? ` ${insertCursor(commandBuffer, commandBufferCursor)}` : '';
   const commandText = mode === EditMode.Command ? ` ${commandBuffer}` : '';
   const leftContent = `${pathText} ${modeText}${searchText}${editText}${commandText}`;
 
