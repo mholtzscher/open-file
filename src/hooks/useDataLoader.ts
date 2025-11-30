@@ -12,7 +12,7 @@
  * - Integration with useStatusMessage
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { createSignal, createEffect, on } from 'solid-js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Capability } from '../providers/types/capabilities.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
@@ -24,10 +24,10 @@ import type { Entry } from '../types/entry.js';
 
 export interface DataLoaderOptions {
   /** Current bucket name (undefined for root/bucket listing view) */
-  bucket: string | undefined;
+  bucket: () => string | undefined;
 
   /** Current path within the bucket */
-  currentPath: string;
+  currentPath: () => string;
 
   /** Callback to set entries in the buffer */
   setEntries: (entries: Entry[]) => void;
@@ -43,11 +43,11 @@ export interface DataLoaderOptions {
 }
 
 export interface UseDataLoaderReturn {
-  /** Whether data has been loaded at least once */
-  isInitialized: boolean;
+  /** Whether data has been loaded at least once (call as function) */
+  isInitialized: () => boolean;
 
-  /** Whether data is currently being loaded */
-  isLoading: boolean;
+  /** Whether data is currently being loaded (call as function) */
+  isLoading: () => boolean;
 
   /** Manually reload the current data */
   reload: () => Promise<void>;
@@ -66,8 +66,8 @@ export interface UseDataLoaderReturn {
  * @example
  * ```tsx
  * const { isInitialized, isLoading, reload } = useDataLoader({
- *   bucket,
- *   currentPath: bufferState.currentPath,
+ *   bucket: () => bucket,
+ *   currentPath: () => bufferState.currentPath,
  *   setEntries: bufferState.setEntries,
  *   setCurrentPath: bufferState.setCurrentPath,
  *   onSuccess: (msg) => showSuccess(msg),
@@ -79,19 +79,21 @@ export function useDataLoader(options: DataLoaderOptions): UseDataLoaderReturn {
   const { bucket, currentPath, setEntries, setCurrentPath, onSuccess, onError } = options;
 
   const storage = useStorage();
-  const [isInitialized, setIsInitialized] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = createSignal(false);
+  const [isLoading, setIsLoading] = createSignal(false);
 
   // Track the current bucket to detect changes
-  const prevBucketRef = useRef<string | undefined>(bucket);
+  let prevBucket: string | undefined = bucket();
 
-  const loadData = useCallback(async () => {
+  const loadData = async () => {
     setIsLoading(true);
+    const currentBucket = bucket();
+    const path = currentPath();
 
     try {
       console.error(`[useDataLoader] Loading data...`);
 
-      if (!bucket) {
+      if (!currentBucket) {
         // Root view - load bucket/container listing or root directory
         console.error(`[useDataLoader] Root view mode, loading containers...`);
 
@@ -117,9 +119,9 @@ export function useDataLoader(options: DataLoaderOptions): UseDataLoaderReturn {
         }
       } else {
         // Bucket selected - load bucket contents
-        console.error(`[useDataLoader] Loading bucket: ${bucket}, path: "${currentPath}"`);
+        console.error(`[useDataLoader] Loading bucket: ${currentBucket}, path: "${path}"`);
 
-        const entries = await storage.list(currentPath);
+        const entries = await storage.list(path);
         console.error(`[useDataLoader] Received ${entries.length} entries`);
 
         setEntries([...entries]);
@@ -135,7 +137,7 @@ export function useDataLoader(options: DataLoaderOptions): UseDataLoaderReturn {
 
       const parsedError = parseAwsError(
         err,
-        bucket ? 'Failed to load bucket' : 'Failed to list buckets'
+        currentBucket ? 'Failed to load bucket' : 'Failed to list buckets'
       );
       const errorDisplay = formatErrorForDisplay(parsedError, 70);
 
@@ -147,29 +149,31 @@ export function useDataLoader(options: DataLoaderOptions): UseDataLoaderReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [bucket, currentPath, storage, setEntries, setCurrentPath, onSuccess, onError]);
+  };
 
   // Load data when bucket changes or on initial mount
-  useEffect(() => {
-    console.error(`[useDataLoader] useEffect triggered, bucket: ${bucket}`);
+  createEffect(
+    on([bucket], () => {
+      const currentBucket = bucket();
+      console.error(`[useDataLoader] createEffect triggered, bucket: ${currentBucket}`);
 
-    // Always reload when bucket changes
-    if (prevBucketRef.current !== bucket) {
-      console.error(
-        `[useDataLoader] Bucket changed from ${prevBucketRef.current} to ${bucket}, reloading...`
-      );
-      prevBucketRef.current = bucket;
-    }
+      // Always reload when bucket changes
+      if (prevBucket !== currentBucket) {
+        console.error(
+          `[useDataLoader] Bucket changed from ${prevBucket} to ${currentBucket}, reloading...`
+        );
+        prevBucket = currentBucket;
+      }
 
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bucket, storage]);
+      loadData();
+    })
+  );
 
   // Provide reload function that can be called manually
-  const reload = useCallback(async () => {
+  const reload = async () => {
     console.error('[useDataLoader] Manual reload triggered');
     await loadData();
-  }, [loadData]);
+  };
 
   return {
     isInitialized,

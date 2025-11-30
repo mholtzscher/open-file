@@ -5,7 +5,7 @@
  * Changes apply immediately as you navigate, Enter confirms and closes.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { createSignal, createEffect, For } from 'solid-js';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import { Theme } from '../theme.js';
 import { SortField, SortOrder, formatSortField, formatSortOrder } from '../../utils/sorting.js';
@@ -28,113 +28,99 @@ const TOTAL_ITEMS = sortFields.length + 1;
 const ORDER_INDEX = sortFields.length; // Index of the order toggle option
 
 /**
- * SortMenu React component with j/k navigation
+ * SortMenu SolidJS component with j/k navigation
  */
-export function SortMenu({
-  visible,
-  currentField,
-  currentOrder,
-  onFieldSelect,
-  onOrderToggle,
-  onClose,
-}: SortMenuProps) {
+export function SortMenu(props: SortMenuProps) {
   // Track which menu item is selected (0-3 = fields, 4 = order toggle)
-  const [selectedIndex, setSelectedIndex] = useState(() => {
-    const fieldIndex = sortFields.indexOf(currentField);
+  const getInitialIndex = () => {
+    const fieldIndex = sortFields.indexOf(props.currentField);
     return fieldIndex >= 0 ? fieldIndex : 0;
-  });
+  };
+  const [selectedIndex, setSelectedIndex] = createSignal(getInitialIndex());
 
   // Reset selection when dialog opens
-  useEffect(() => {
-    if (visible) {
-      const fieldIndex = sortFields.indexOf(currentField);
+  createEffect(() => {
+    if (props.visible) {
+      const fieldIndex = sortFields.indexOf(props.currentField);
       setSelectedIndex(fieldIndex >= 0 ? fieldIndex : 0);
     }
-  }, [visible, currentField]);
+  });
 
-  const handleKey = useCallback<Parameters<typeof useKeyboardHandler>[0]>(
-    key => {
-      if (!visible) return false;
+  const handleKey = (key: Parameters<Parameters<typeof useKeyboardHandler>[0]>[0]) => {
+    if (!props.visible) return false;
 
-      // Navigation
-      if (key.name === 'j' || key.name === 'down') {
-        setSelectedIndex(prev => {
-          const next = (prev + 1) % TOTAL_ITEMS;
-          return next;
-        });
-        // Apply field selection after state update
-        const nextIndex = (selectedIndex + 1) % TOTAL_ITEMS;
-        if (nextIndex < ORDER_INDEX) {
-          onFieldSelect(sortFields[nextIndex]);
-        }
-        return true;
+    // Navigation
+    if (key.name === 'j' || key.name === 'down') {
+      setSelectedIndex(prev => (prev + 1) % TOTAL_ITEMS);
+      // Apply field selection after state update
+      const nextIndex = (selectedIndex() + 1) % TOTAL_ITEMS;
+      if (nextIndex < ORDER_INDEX) {
+        props.onFieldSelect(sortFields[nextIndex]);
       }
+      return true;
+    }
 
-      if (key.name === 'k' || key.name === 'up') {
-        setSelectedIndex(prev => {
-          const next = (prev - 1 + TOTAL_ITEMS) % TOTAL_ITEMS;
-          return next;
-        });
-        // Apply field selection after state update
-        const nextIndex = (selectedIndex - 1 + TOTAL_ITEMS) % TOTAL_ITEMS;
-        if (nextIndex < ORDER_INDEX) {
-          onFieldSelect(sortFields[nextIndex]);
-        }
-        return true;
+    if (key.name === 'k' || key.name === 'up') {
+      setSelectedIndex(prev => (prev - 1 + TOTAL_ITEMS) % TOTAL_ITEMS);
+      // Apply field selection after state update
+      const nextIndex = (selectedIndex() - 1 + TOTAL_ITEMS) % TOTAL_ITEMS;
+      if (nextIndex < ORDER_INDEX) {
+        props.onFieldSelect(sortFields[nextIndex]);
       }
+      return true;
+    }
 
-      // Toggle order when on the order option, or with space anywhere
-      if (key.name === 'space') {
-        onOrderToggle();
-        return true;
+    // Toggle order when on the order option, or with space anywhere
+    if (key.name === 'space') {
+      props.onOrderToggle();
+      return true;
+    }
+
+    // Select current item with Enter
+    if (key.name === 'return') {
+      if (selectedIndex() < ORDER_INDEX) {
+        // Field is already applied, just close
+        props.onClose();
+      } else {
+        // Toggle order and close
+        props.onOrderToggle();
+        props.onClose();
       }
+      return true;
+    }
 
-      // Select current item with Enter
-      if (key.name === 'return') {
-        if (selectedIndex < ORDER_INDEX) {
-          // Field is already applied, just close
-          onClose();
-        } else {
-          // Toggle order and close
-          onOrderToggle();
-          onClose();
-        }
-        return true;
-      }
+    // Close with escape
+    if (key.name === 'escape') {
+      props.onClose();
+      return true;
+    }
 
-      // Close with escape
-      if (key.name === 'escape') {
-        onClose();
-        return true;
-      }
-
-      return true; // Block all other keys when dialog is open
-    },
-    [visible, selectedIndex, onFieldSelect, onOrderToggle, onClose]
-  );
+    return true; // Block all other keys when dialog is open
+  };
 
   useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   return (
-    <BaseDialog visible={visible} title="Sort Options" borderColor={Theme.getInfoColor()}>
+    <BaseDialog visible={props.visible} title="Sort Options" borderColor={Theme.getInfoColor()}>
       {/* Section header */}
       <text fg={Theme.getInfoColor()}>SORT BY</text>
 
       {/* Sort field options */}
-      {sortFields.map((field, index) => {
-        const isSelected = selectedIndex === index;
-        const isCurrentField = currentField === field;
-        return (
-          <text
-            key={field}
-            fg={isCurrentField ? Theme.getSuccessColor() : Theme.getTextColor()}
-            bg={isSelected ? Theme.getBgSurface() : undefined}
-          >
-            {isCurrentField ? '▶ ' : '  '}
-            {formatSortField(field)}
-          </text>
-        );
-      })}
+      <For each={sortFields}>
+        {(field, index) => {
+          const isSelected = () => selectedIndex() === index();
+          const isCurrentField = () => props.currentField === field;
+          return (
+            <text
+              fg={isCurrentField() ? Theme.getSuccessColor() : Theme.getTextColor()}
+              bg={isSelected() ? Theme.getBgSurface() : undefined}
+            >
+              {isCurrentField() ? '▶ ' : '  '}
+              {formatSortField(field)}
+            </text>
+          );
+        }}
+      </For>
 
       {/* Separator */}
       <text fg={Theme.getBgHighlight()}>{'─'.repeat(32)}</text>
@@ -142,10 +128,10 @@ export function SortMenu({
       {/* Sort order option */}
       <text
         fg={Theme.getTextColor()}
-        bg={selectedIndex === ORDER_INDEX ? Theme.getBgSurface() : undefined}
+        bg={selectedIndex() === ORDER_INDEX ? Theme.getBgSurface() : undefined}
       >
-        {selectedIndex === ORDER_INDEX ? '▶ ' : '  '}
-        {formatSortOrder(currentOrder)}
+        {selectedIndex() === ORDER_INDEX ? '▶ ' : '  '}
+        {formatSortOrder(props.currentOrder)}
       </text>
 
       {/* Help text */}

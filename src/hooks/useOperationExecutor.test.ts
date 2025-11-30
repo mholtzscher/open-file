@@ -84,20 +84,20 @@ describe('useOperationExecutor types', () => {
   });
 
   describe('UseOperationExecutorReturn', () => {
-    it('should define correct return shape', () => {
+    it('should define correct return shape with accessor functions (SolidJS pattern)', () => {
       const mockReturn: UseOperationExecutorReturn = {
-        isRunning: false,
+        isRunning: () => false,
         execute: async () => ({ successCount: 0, failureCount: 0, cancelled: false }),
         cancel: () => {},
         progress: {
-          visible: false,
-          title: 'Test',
-          description: 'Testing...',
-          value: 0,
-          currentFile: '',
-          currentNum: 0,
-          totalNum: 0,
-          cancellable: true,
+          visible: () => false,
+          title: () => 'Test',
+          description: () => 'Testing...',
+          value: () => 0,
+          currentFile: () => '',
+          currentNum: () => 0,
+          totalNum: () => 0,
+          cancellable: () => true,
         },
         progressActions: {
           showProgress: () => {},
@@ -108,10 +108,11 @@ describe('useOperationExecutor types', () => {
         },
       };
 
-      expect(mockReturn.isRunning).toBe(false);
+      // Accessor functions need to be called to get the value
+      expect(mockReturn.isRunning()).toBe(false);
       expect(typeof mockReturn.execute).toBe('function');
       expect(typeof mockReturn.cancel).toBe('function');
-      expect(mockReturn.progress.visible).toBe(false);
+      expect(mockReturn.progress.visible()).toBe(false);
       expect(typeof mockReturn.progressActions.showProgress).toBe('function');
     });
 
@@ -120,7 +121,7 @@ describe('useOperationExecutor types', () => {
 
       let executeCalled = false;
       const mockReturn: UseOperationExecutorReturn = {
-        isRunning: false,
+        isRunning: () => false,
         execute: async (ops, callbacks) => {
           executeCalled = true;
           expect(ops).toEqual(operations);
@@ -129,14 +130,14 @@ describe('useOperationExecutor types', () => {
         },
         cancel: () => {},
         progress: {
-          visible: false,
-          title: '',
-          description: '',
-          value: 0,
-          currentFile: '',
-          currentNum: 0,
-          totalNum: 0,
-          cancellable: true,
+          visible: () => false,
+          title: () => '',
+          description: () => '',
+          value: () => 0,
+          currentFile: () => '',
+          currentNum: () => 0,
+          totalNum: () => 0,
+          cancellable: () => true,
         },
         progressActions: {
           showProgress: () => {},
@@ -161,26 +162,27 @@ describe('useOperationExecutor types', () => {
   });
 
   describe('Progress state shape', () => {
-    it('should contain all required progress fields', () => {
+    it('should contain all required progress fields as accessor functions (SolidJS pattern)', () => {
       const progress: UseOperationExecutorReturn['progress'] = {
-        visible: true,
-        title: 'Uploading Files',
-        description: 'Processing file.txt',
-        value: 50,
-        currentFile: 'file.txt',
-        currentNum: 3,
-        totalNum: 5,
-        cancellable: true,
+        visible: () => true,
+        title: () => 'Uploading Files',
+        description: () => 'Processing file.txt',
+        value: () => 50,
+        currentFile: () => 'file.txt',
+        currentNum: () => 3,
+        totalNum: () => 5,
+        cancellable: () => true,
       };
 
-      expect(progress.visible).toBe(true);
-      expect(progress.title).toBe('Uploading Files');
-      expect(progress.description).toBe('Processing file.txt');
-      expect(progress.value).toBe(50);
-      expect(progress.currentFile).toBe('file.txt');
-      expect(progress.currentNum).toBe(3);
-      expect(progress.totalNum).toBe(5);
-      expect(progress.cancellable).toBe(true);
+      // Accessor functions need to be called to get the value
+      expect(progress.visible()).toBe(true);
+      expect(progress.title()).toBe('Uploading Files');
+      expect(progress.description()).toBe('Processing file.txt');
+      expect(progress.value()).toBe(50);
+      expect(progress.currentFile()).toBe('file.txt');
+      expect(progress.currentNum()).toBe(3);
+      expect(progress.totalNum()).toBe(5);
+      expect(progress.cancellable()).toBe(true);
     });
   });
 });

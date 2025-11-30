@@ -8,7 +8,7 @@
  * making it reusable and testable.
  */
 
-import { useCallback, useRef } from 'react';
+import { onCleanup } from 'solid-js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
 import { PendingOperation } from '../types/dialog.js';
 
@@ -80,111 +80,117 @@ export interface ExecuteOperationsOptions {
  */
 export function useAsyncOperations() {
   const storage = useStorage();
-  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // In Solid, regular variables persist across renders (no need for useRef)
+  let abortController: AbortController | null = null;
 
   /**
    * Execute a batch of pending operations
    */
-  const executeOperations = useCallback(
-    async (
-      operations: PendingOperation[],
-      options: ExecuteOperationsOptions = {}
-    ): Promise<OperationResult> => {
-      const { onProgress, onOperationError, signal } = options;
+  const executeOperations = async (
+    operations: PendingOperation[],
+    options: ExecuteOperationsOptions = {}
+  ): Promise<OperationResult> => {
+    const { onProgress, onOperationError, signal } = options;
 
-      // Create abort controller if not provided
-      const abortController = signal ? null : new AbortController();
-      if (abortController) {
-        abortControllerRef.current = abortController;
+    // Create abort controller if not provided
+    const newAbortController = signal ? null : new AbortController();
+    if (newAbortController) {
+      abortController = newAbortController;
+    }
+    const effectiveSignal = signal || newAbortController?.signal;
+
+    let successCount = 0;
+    let failureCount = 0;
+    let cancelled = false;
+
+    for (let opIndex = 0; opIndex < operations.length; opIndex++) {
+      const op = operations[opIndex];
+
+      // Check for cancellation
+      if (effectiveSignal?.aborted) {
+        cancelled = true;
+        break;
       }
-      const effectiveSignal = signal || abortController?.signal;
 
-      let successCount = 0;
-      let failureCount = 0;
-      let cancelled = false;
+      try {
+        // Calculate progress
+        const baseProgress = (opIndex / operations.length) * 100;
+        const totalProgress = Math.round(baseProgress);
 
-      for (let opIndex = 0; opIndex < operations.length; opIndex++) {
-        const op = operations[opIndex];
+        // Create progress callback for this operation
+        const operationProgressCallback = (event: ProgressEvent) => {
+          const opProgress = event.percentage / operations.length;
+          const combinedProgress = Math.round(baseProgress + opProgress);
 
-        // Check for cancellation
-        if (effectiveSignal?.aborted) {
-          cancelled = true;
-          break;
-        }
-
-        try {
-          // Calculate progress
-          const baseProgress = (opIndex / operations.length) * 100;
-          const totalProgress = Math.round(baseProgress);
-
-          // Create progress callback for this operation
-          const operationProgressCallback = (event: ProgressEvent) => {
-            const opProgress = event.percentage / operations.length;
-            const combinedProgress = Math.round(baseProgress + opProgress);
-
-            onProgress?.({
-              currentIndex: opIndex,
-              totalCount: operations.length,
-              overallProgress: combinedProgress,
-              operationType: op.type,
-              currentFile: event.currentFile || op.path || op.source || '',
-              description: event.operation || `${op.type}: ${op.path || op.source || 'processing'}`,
-            });
-          };
-
-          // Report start of operation
           onProgress?.({
             currentIndex: opIndex,
             totalCount: operations.length,
-            overallProgress: totalProgress,
+            overallProgress: combinedProgress,
             operationType: op.type,
-            currentFile: op.path || op.source || '',
-            description: `${op.type}: ${op.path || op.source || 'processing'}`,
+            currentFile: event.currentFile || op.path || op.source || '',
+            description: event.operation || `${op.type}: ${op.path || op.source || 'processing'}`,
           });
+        };
 
-          // Execute operation
-          await executeOperationWithStorage(op, storage, operationProgressCallback);
-
-          successCount++;
-        } catch (error) {
-          failureCount++;
-          onOperationError?.(op, error as Error);
-
-          // For critical operations, might want to stop on first error
-          // For now, we continue with remaining operations
-        }
-      }
-
-      // Report completion
-      if (!cancelled) {
+        // Report start of operation
         onProgress?.({
-          currentIndex: operations.length,
+          currentIndex: opIndex,
           totalCount: operations.length,
-          overallProgress: 100,
-          operationType: 'complete',
-          description: `Completed: ${successCount} succeeded, ${failureCount} failed`,
+          overallProgress: totalProgress,
+          operationType: op.type,
+          currentFile: op.path || op.source || '',
+          description: `${op.type}: ${op.path || op.source || 'processing'}`,
         });
-      }
 
-      return {
-        successCount,
-        failureCount,
-        cancelled,
-        error: failureCount > 0 ? `${failureCount} operation(s) failed` : undefined,
-      };
-    },
-    [storage]
-  );
+        // Execute operation
+        await executeOperationWithStorage(op, storage, operationProgressCallback);
+
+        successCount++;
+      } catch (error) {
+        failureCount++;
+        onOperationError?.(op, error as Error);
+
+        // For critical operations, might want to stop on first error
+        // For now, we continue with remaining operations
+      }
+    }
+
+    // Report completion
+    if (!cancelled) {
+      onProgress?.({
+        currentIndex: operations.length,
+        totalCount: operations.length,
+        overallProgress: 100,
+        operationType: 'complete',
+        description: `Completed: ${successCount} succeeded, ${failureCount} failed`,
+      });
+    }
+
+    return {
+      successCount,
+      failureCount,
+      cancelled,
+      error: failureCount > 0 ? `${failureCount} operation(s) failed` : undefined,
+    };
+  };
 
   /**
    * Cancel ongoing operations
    */
-  const cancelOperations = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
+  const cancelOperations = () => {
+    if (abortController) {
+      abortController.abort();
+      abortController = null;
     }
-  }, []);
+  };
+
+  // Cleanup on component unmount
+  onCleanup(() => {
+    if (abortController) {
+      abortController.abort();
+    }
+  });
 
   return {
     executeOperations,

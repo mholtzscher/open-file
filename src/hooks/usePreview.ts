@@ -11,7 +11,7 @@
  * - Loading state management
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { createSignal, createEffect, on } from 'solid-js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { formatBytes } from '../utils/file-browser.js';
@@ -191,24 +191,25 @@ function isPreviewableFile(entry: Entry | undefined): boolean {
  *
  *   return (
  *     <div>
- *       {preview.isLoading && <div>Loading preview...</div>}
- *       {preview.error && <div>Error: {preview.error}</div>}
- *       {preview.content && <PreviewPane content={preview.content} filename={preview.filename} />}
+ *       {preview().isLoading && <div>Loading preview...</div>}
+ *       {preview().error && <div>Error: {preview().error}</div>}
+ *       {preview().content && <PreviewPane content={preview().content} filename={preview().filename} />}
  *     </div>
  *   );
  * }
  * ```
  */
 export function usePreview(
-  currentPath: string,
-  selectedEntry: Entry | undefined,
+  currentPath: () => string,
+  selectedEntry: () => Entry | undefined,
   options: PreviewOptions = {}
-): PreviewState {
-  const { maxSize = 100 * 1024, enabled = true } = options;
+): () => PreviewState {
+  const maxSize = options.maxSize ?? 100 * 1024;
+  const enabled = options.enabled ?? true;
 
   const storage = useStorage();
 
-  const [state, setState] = useState<PreviewState>({
+  const [state, setState] = createSignal<PreviewState>({
     content: null,
     filename: '',
     isLoading: false,
@@ -216,7 +217,7 @@ export function usePreview(
     isPreviewable: false,
   });
 
-  const loadPreview = useCallback(async () => {
+  const loadPreview = async () => {
     // Early exit if preview is disabled
     if (!enabled) {
       setState({
@@ -229,8 +230,10 @@ export function usePreview(
       return;
     }
 
+    const entry = selectedEntry();
+
     // Early exit if no entry selected
-    if (!selectedEntry) {
+    if (!entry) {
       setState({
         content: null,
         filename: '',
@@ -242,7 +245,7 @@ export function usePreview(
     }
 
     // Check if file is previewable
-    if (!isPreviewableFile(selectedEntry)) {
+    if (!isPreviewableFile(entry)) {
       setState({
         content: null,
         filename: '',
@@ -254,10 +257,10 @@ export function usePreview(
     }
 
     // Check file size
-    if (selectedEntry.size && selectedEntry.size > maxSize) {
+    if (entry.size && entry.size > maxSize) {
       setState({
-        content: `File too large to preview (${formatBytes(selectedEntry.size)})`,
-        filename: selectedEntry.name,
+        content: `File too large to preview (${formatBytes(entry.size)})`,
+        filename: entry.name,
         isLoading: false,
         error: null,
         isPreviewable: true,
@@ -271,15 +274,14 @@ export function usePreview(
       isLoading: true,
       error: null,
       isPreviewable: true,
-      filename: selectedEntry.name,
+      filename: entry.name,
     }));
 
     try {
       // Construct full path - ensure proper path separator
-      const separator = currentPath && !currentPath.endsWith('/') ? '/' : '';
-      const fullPath = currentPath
-        ? `${currentPath}${separator}${selectedEntry.name}`
-        : selectedEntry.name;
+      const path = currentPath();
+      const separator = path && !path.endsWith('/') ? '/' : '';
+      const fullPath = path ? `${path}${separator}${entry.name}` : entry.name;
 
       // Read file content using storage context
       const buffer = await storage.read(fullPath);
@@ -287,7 +289,7 @@ export function usePreview(
 
       setState({
         content,
-        filename: selectedEntry.name,
+        filename: entry.name,
         isLoading: false,
         error: null,
         isPreviewable: true,
@@ -296,18 +298,20 @@ export function usePreview(
       console.error('Failed to load preview:', err);
       setState({
         content: null,
-        filename: selectedEntry.name,
+        filename: entry?.name ?? '',
         isLoading: false,
         error: err instanceof Error ? err.message : 'Failed to load preview',
         isPreviewable: true,
       });
     }
-  }, [enabled, storage, selectedEntry, currentPath, maxSize]);
+  };
 
   // Load preview when dependencies change
-  useEffect(() => {
-    loadPreview();
-  }, [loadPreview]);
+  createEffect(
+    on([currentPath, selectedEntry], () => {
+      loadPreview();
+    })
+  );
 
   return state;
 }

@@ -16,7 +16,7 @@
  * - Multi-provider support (switch between different storage backends)
  */
 
-import { createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext } from 'solid-js';
 import { Entry } from '../types/entry.js';
 import { ProgressEvent } from '../types/progress.js';
 import { Capability } from '../providers/types/capabilities.js';
@@ -382,7 +382,7 @@ export interface StorageContextValue {
 // ============================================================================
 
 /**
- * React Context for storage operations
+ * SolidJS Context for storage operations
  */
 const StorageContext = createContext<StorageContextValue | null>(null);
 
@@ -394,9 +394,6 @@ const StorageContext = createContext<StorageContextValue | null>(null);
  * Props for StorageProvider component
  */
 export interface StorageProviderProps {
-  /** Child components */
-  children: ReactNode;
-
   /**
    * Initial provider ID (optional)
    * If not provided, a default provider will be used
@@ -429,11 +426,11 @@ export interface StorageProviderProps {
  * function FileList() {
  *   const storage = useStorage();
  *
- *   useEffect(() => {
+ *   onMount(() => {
  *     storage.list().then(console.log);
- *   }, [storage]);
+ *   });
  *
- *   return <div>...</div>;
+ *   return <box>...</box>;
  * }
  * ```
  */
@@ -454,7 +451,7 @@ export function useStorage(): StorageContextValue {
  *   const hasStorage = useHasStorage();
  *
  *   if (!hasStorage) {
- *     return <div>Feature unavailable</div>;
+ *     return <box>Feature unavailable</box>;
  *   }
  *
  *   return <FeatureWithStorage />;
@@ -487,19 +484,6 @@ export function useHasStorage(): boolean {
 export function useOptionalStorage(): StorageContextValue | null {
   return useContext(StorageContext);
 }
-
-// ============================================================================
-// Provider Implementation
-// ============================================================================
-
-/**
- * StorageProvider component implementation
- *
- * This will be implemented in a separate file (StorageContextProvider.tsx)
- * to avoid circular dependencies and keep the context definition clean.
- *
- * See: StorageContextProvider.tsx for the actual implementation
- */
 
 // ============================================================================
 // Export Context (for provider implementation)

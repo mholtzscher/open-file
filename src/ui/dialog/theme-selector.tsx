@@ -6,7 +6,7 @@
  * Uses j/k navigation, Enter to confirm.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { createSignal, createEffect, For, Show } from 'solid-js';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import { ThemeRegistry } from '../theme-registry.js';
 import { Theme } from '../theme.js';
@@ -19,134 +19,140 @@ export interface ThemeSelectorDialogProps {
 }
 
 /**
- * ThemeSelectorDialog React component
+ * ThemeSelectorDialog SolidJS component
  *
  * Shows available themes with j/k navigation.
  * Theme changes apply immediately as you navigate (preview).
  * Enter confirms the selection, Escape reverts to original theme.
  */
-export function ThemeSelectorDialog({ visible, onClose }: ThemeSelectorDialogProps) {
+export function ThemeSelectorDialog(props: ThemeSelectorDialogProps) {
   // Get available themes
-  const themes = ThemeRegistry.listThemes();
-  const currentThemeId = ThemeRegistry.getActiveId();
+  const themes = () => ThemeRegistry.listThemes();
+  const currentThemeId = () => ThemeRegistry.getActiveId();
 
   // Track which theme is selected and the original theme for reverting
-  const [selectedIndex, setSelectedIndex] = useState(() => {
-    const index = themes.findIndex(t => t.id === currentThemeId);
+  const getInitialIndex = () => {
+    const index = themes().findIndex(t => t.id === currentThemeId());
     return index >= 0 ? index : 0;
-  });
-  const [originalThemeId, setOriginalThemeId] = useState<string | null>(currentThemeId);
+  };
+  const [selectedIndex, setSelectedIndex] = createSignal(getInitialIndex());
+  const [originalThemeId, setOriginalThemeId] = createSignal<string | null>(currentThemeId());
 
   // Reset selection when dialog opens
-  useEffect(() => {
-    if (!visible) {
+  createEffect(() => {
+    if (!props.visible) {
       return;
     }
 
     // Use the currently active theme ID at the moment the dialog opens.
     // This avoids fighting with navigation updates while the dialog is open.
     const activeId = ThemeRegistry.getActiveId();
-    const idToUse = activeId ?? themes[0]?.id ?? null;
+    const themeList = themes();
+    const idToUse = activeId ?? themeList[0]?.id ?? null;
 
     if (idToUse) {
-      const index = themes.findIndex(t => t.id === idToUse);
+      const index = themeList.findIndex(t => t.id === idToUse);
       setSelectedIndex(index >= 0 ? index : 0);
       setOriginalThemeId(idToUse);
     } else {
       setSelectedIndex(0);
       setOriginalThemeId(null);
     }
-  }, [visible]);
+  });
 
   // Apply theme preview as selection changes
-  useEffect(() => {
-    if (visible && themes[selectedIndex]) {
-      const themeId = themes[selectedIndex].id;
+  createEffect(() => {
+    const themeList = themes();
+    const idx = selectedIndex();
+    if (props.visible && themeList[idx]) {
+      const themeId = themeList[idx].id;
       if (ThemeRegistry.has(themeId)) {
         ThemeRegistry.setActive(themeId);
       }
     }
-  }, [visible, selectedIndex, themes]);
+  });
 
-  const handleKey = useCallback<Parameters<typeof useKeyboardHandler>[0]>(
-    key => {
-      if (!visible) return false;
+  const handleKey = (key: Parameters<Parameters<typeof useKeyboardHandler>[0]>[0]) => {
+    if (!props.visible) return false;
 
-      // Navigation
-      if (key.name === 'j' || key.name === 'down') {
-        setSelectedIndex(prev => (prev + 1) % themes.length);
-        return true;
+    const themeList = themes();
+
+    // Navigation
+    if (key.name === 'j' || key.name === 'down') {
+      setSelectedIndex(prev => (prev + 1) % themeList.length);
+      return true;
+    }
+
+    if (key.name === 'k' || key.name === 'up') {
+      setSelectedIndex(prev => (prev - 1 + themeList.length) % themeList.length);
+      return true;
+    }
+
+    // Confirm selection with Enter
+    if (key.name === 'return') {
+      // Theme is already applied, just close
+      props.onClose();
+      return true;
+    }
+
+    // Cancel and revert with Escape
+    if (key.name === 'escape') {
+      // Revert to original theme
+      const origId = originalThemeId();
+      if (origId && ThemeRegistry.has(origId)) {
+        ThemeRegistry.setActive(origId);
       }
+      props.onClose();
+      return true;
+    }
 
-      if (key.name === 'k' || key.name === 'up') {
-        setSelectedIndex(prev => (prev - 1 + themes.length) % themes.length);
-        return true;
-      }
-
-      // Confirm selection with Enter
-      if (key.name === 'return') {
-        // Theme is already applied, just close
-        onClose();
-        return true;
-      }
-
-      // Cancel and revert with Escape
-      if (key.name === 'escape') {
-        // Revert to original theme
-        if (originalThemeId && ThemeRegistry.has(originalThemeId)) {
-          ThemeRegistry.setActive(originalThemeId);
-        }
-        onClose();
-        return true;
-      }
-
-      return true; // Block all other keys when dialog is open
-    },
-    [visible, themes.length, onClose, originalThemeId]
-  );
+    return true; // Block all other keys when dialog is open
+  };
 
   useKeyboardHandler(handleKey, KeyboardPriority.High);
 
-  if (themes.length === 0) {
-    return (
-      <BaseDialog visible={visible} title="Theme" borderColor={Theme.getInfoColor()}>
-        <text fg={Theme.getWarningColor()}>No themes available</text>
-        <HelpBar items={[{ key: 'Esc', description: 'close' }]} />
-      </BaseDialog>
-    );
-  }
-
   return (
-    <BaseDialog visible={visible} title="Select Theme" borderColor={Theme.getInfoColor()}>
-      {/* Theme list */}
-      {themes.map((theme, index) => {
-        const isSelected = selectedIndex === index;
-        const isCurrent = theme.id === ThemeRegistry.getActiveId();
-        return (
-          <text
-            key={theme.id}
-            fg={isCurrent ? Theme.getSuccessColor() : Theme.getTextColor()}
-            bg={isSelected ? Theme.getBgSurface() : undefined}
-          >
-            {isSelected ? '▶ ' : '  '}
-            {theme.name}
-            {theme.variant === 'light' ? ' (light)' : ''}
-            {isCurrent ? ' ✓' : ''}
-          </text>
-        );
-      })}
+    <Show
+      when={themes().length > 0}
+      fallback={
+        <BaseDialog visible={props.visible} title="Theme" borderColor={Theme.getInfoColor()}>
+          <text fg={Theme.getWarningColor()}>No themes available</text>
+          <HelpBar items={[{ key: 'Esc', description: 'close' }]} />
+        </BaseDialog>
+      }
+    >
+      <BaseDialog visible={props.visible} title="Select Theme" borderColor={Theme.getInfoColor()}>
+        {/* Theme list */}
+        <For each={themes()}>
+          {(theme, index) => {
+            const isSelected = () => selectedIndex() === index();
+            const isCurrent = () => theme.id === ThemeRegistry.getActiveId();
+            return (
+              <text
+                fg={isCurrent() ? Theme.getSuccessColor() : Theme.getTextColor()}
+                bg={isSelected() ? Theme.getBgSurface() : undefined}
+              >
+                {isSelected() ? '▶ ' : '  '}
+                {theme.name}
+                {theme.variant === 'light' ? ' (light)' : ''}
+                {isCurrent() ? ' ✓' : ''}
+              </text>
+            );
+          }}
+        </For>
 
-      {/* Separator */}
-      <text fg={Theme.getBgHighlight()}>{'─'.repeat(32)}</text>
+        {/* Separator */}
+        <text fg={Theme.getBgHighlight()}>{'─'.repeat(32)}</text>
 
-      {/* Help text */}
-      <HelpBar
-        items={[
-          { key: 'j/k', description: 'navigate' },
-          { key: 'Enter', description: 'confirm' },
-          { key: 'Esc', description: 'cancel' },
-        ]}
-      />
-    </BaseDialog>
+        {/* Help text */}
+        <HelpBar
+          items={[
+            { key: 'j/k', description: 'navigate' },
+            { key: 'Enter', description: 'confirm' },
+            { key: 'Esc', description: 'cancel' },
+          ]}
+        />
+      </BaseDialog>
+    </Show>
   );
 }

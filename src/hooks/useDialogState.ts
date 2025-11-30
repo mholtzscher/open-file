@@ -6,15 +6,8 @@
  * Only one dialog can be active at a time, preventing conflicting states.
  */
 
-import { useReducer, useCallback } from 'react';
-import {
-  DialogState,
-  DialogAction,
-  DialogType,
-  PendingOperation,
-  ShowConfirmOptions,
-  ShowQuitOptions,
-} from '../types/dialog.js';
+import { createSignal, createMemo } from 'solid-js';
+import { DialogState, DialogAction, PendingOperation } from '../types/dialog.js';
 
 /**
  * Initial state for dialog management
@@ -96,24 +89,24 @@ export function dialogReducer(state: DialogState, action: DialogAction): DialogS
  * Return type for the useDialogState hook
  */
 export interface UseDialogStateReturn {
-  /** Current dialog state */
-  dialog: DialogState;
-  /** Whether any dialog is currently open */
-  isDialogOpen: boolean;
-  /** Whether the confirm dialog is open */
-  isConfirmOpen: boolean;
-  /** Whether the help dialog is open */
-  isHelpOpen: boolean;
-  /** Whether the sort menu is open */
-  isSortOpen: boolean;
-  /** Whether the upload dialog is open */
-  isUploadOpen: boolean;
-  /** Whether the quit confirmation dialog is open */
-  isQuitOpen: boolean;
-  /** Whether the profile selector dialog is open */
-  isProfileSelectorOpen: boolean;
-  /** Whether the theme selector dialog is open */
-  isThemeSelectorOpen: boolean;
+  /** Current dialog state (call as function in Solid) */
+  dialog: () => DialogState;
+  /** Whether any dialog is currently open (call as function) */
+  isDialogOpen: () => boolean;
+  /** Whether the confirm dialog is open (call as function) */
+  isConfirmOpen: () => boolean;
+  /** Whether the help dialog is open (call as function) */
+  isHelpOpen: () => boolean;
+  /** Whether the sort menu is open (call as function) */
+  isSortOpen: () => boolean;
+  /** Whether the upload dialog is open (call as function) */
+  isUploadOpen: () => boolean;
+  /** Whether the quit confirmation dialog is open (call as function) */
+  isQuitOpen: () => boolean;
+  /** Whether the profile selector dialog is open (call as function) */
+  isProfileSelectorOpen: () => boolean;
+  /** Whether the theme selector dialog is open (call as function) */
+  isThemeSelectorOpen: () => boolean;
   /** Show the confirm dialog with pending operations */
   showConfirm: (operations: PendingOperation[]) => void;
   /** Show the help dialog */
@@ -137,7 +130,7 @@ export interface UseDialogStateReturn {
   /** Close dialog and clear pending operations */
   closeAndClearOperations: () => void;
   /** Direct dispatch for advanced use cases */
-  dispatch: React.Dispatch<DialogAction>;
+  dispatch: (action: DialogAction) => void;
 }
 
 /**
@@ -166,70 +159,74 @@ export interface UseDialogStateReturn {
  * ```
  */
 export function useDialogState(): UseDialogStateReturn {
-  const [state, dispatch] = useReducer(dialogReducer, initialDialogState);
+  const [state, setState] = createSignal<DialogState>(initialDialogState);
 
-  const showConfirm = useCallback((operations: PendingOperation[]) => {
+  const dispatch = (action: DialogAction) => {
+    setState(prev => dialogReducer(prev, action));
+  };
+
+  const showConfirm = (operations: PendingOperation[]) => {
     dispatch({ type: 'SHOW_CONFIRM', payload: { operations } });
-  }, []);
+  };
 
-  const showHelp = useCallback(() => {
+  const showHelp = () => {
     dispatch({ type: 'SHOW_HELP' });
-  }, []);
+  };
 
-  const toggleHelp = useCallback(() => {
-    if (state.activeDialog === 'help') {
+  const toggleHelp = () => {
+    if (state().activeDialog === 'help') {
       dispatch({ type: 'CLOSE' });
     } else {
       dispatch({ type: 'SHOW_HELP' });
     }
-  }, [state.activeDialog]);
+  };
 
-  const showSort = useCallback(() => {
+  const showSort = () => {
     dispatch({ type: 'SHOW_SORT' });
-  }, []);
+  };
 
-  const toggleSort = useCallback(() => {
-    if (state.activeDialog === 'sort') {
+  const toggleSort = () => {
+    if (state().activeDialog === 'sort') {
       dispatch({ type: 'CLOSE' });
     } else {
       dispatch({ type: 'SHOW_SORT' });
     }
-  }, [state.activeDialog]);
+  };
 
-  const showUpload = useCallback(() => {
+  const showUpload = () => {
     dispatch({ type: 'SHOW_UPLOAD' });
-  }, []);
+  };
 
-  const showQuit = useCallback((pendingChanges: number) => {
+  const showQuit = (pendingChanges: number) => {
     dispatch({ type: 'SHOW_QUIT', payload: { pendingChanges } });
-  }, []);
+  };
 
-  const showProfileSelector = useCallback(() => {
+  const showProfileSelector = () => {
     dispatch({ type: 'SHOW_PROFILE_SELECTOR' });
-  }, []);
+  };
 
-  const showThemeSelector = useCallback(() => {
+  const showThemeSelector = () => {
     dispatch({ type: 'SHOW_THEME_SELECTOR' });
-  }, []);
+  };
 
-  const closeDialog = useCallback(() => {
+  const closeDialog = () => {
     dispatch({ type: 'CLOSE' });
-  }, []);
+  };
 
-  const closeAndClearOperations = useCallback(() => {
+  const closeAndClearOperations = () => {
     dispatch({ type: 'CLOSE' });
     dispatch({ type: 'CLEAR_OPERATIONS' });
-  }, []);
+  };
 
-  // Computed properties
-  const isDialogOpen = state.activeDialog !== null;
-  const isConfirmOpen = state.activeDialog === 'confirm';
-  const isHelpOpen = state.activeDialog === 'help';
-  const isSortOpen = state.activeDialog === 'sort';
-  const isUploadOpen = state.activeDialog === 'upload';
-  const isQuitOpen = state.activeDialog === 'quit';
-  const isProfileSelectorOpen = state.activeDialog === 'profileSelector';
-  const isThemeSelectorOpen = state.activeDialog === 'themeSelector';
+  // Computed properties using createMemo
+  const isDialogOpen = createMemo(() => state().activeDialog !== null);
+  const isConfirmOpen = createMemo(() => state().activeDialog === 'confirm');
+  const isHelpOpen = createMemo(() => state().activeDialog === 'help');
+  const isSortOpen = createMemo(() => state().activeDialog === 'sort');
+  const isUploadOpen = createMemo(() => state().activeDialog === 'upload');
+  const isQuitOpen = createMemo(() => state().activeDialog === 'quit');
+  const isProfileSelectorOpen = createMemo(() => state().activeDialog === 'profileSelector');
+  const isThemeSelectorOpen = createMemo(() => state().activeDialog === 'themeSelector');
 
   return {
     dialog: state,

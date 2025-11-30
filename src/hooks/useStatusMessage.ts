@@ -11,7 +11,7 @@
  * - Type-safe message state
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { createSignal, createMemo } from 'solid-js';
 import { Theme } from '../ui/theme.js';
 
 // ============================================================================
@@ -30,8 +30,8 @@ export interface StatusMessageState {
 }
 
 export interface UseStatusMessageReturn {
-  /** Current status state */
-  status: StatusMessageState;
+  /** Current status state (call as function in Solid) */
+  status: () => StatusMessageState;
 
   /** Show a success message (green) */
   showSuccess: (message: string) => void;
@@ -51,14 +51,14 @@ export interface UseStatusMessageReturn {
   /** Clear the status message */
   clear: () => void;
 
-  /** Whether the current message is an error (for error dialog detection) */
-  isError: boolean;
+  /** Whether the current message is an error (for error dialog detection) - call as function */
+  isError: () => boolean;
 
   // Direct access for backward compatibility during migration
-  /** The current message text */
-  message: string;
-  /** The current message color */
-  messageColor: string;
+  /** The current message text (call as function) */
+  message: () => string;
+  /** The current message color (call as function) */
+  messageColor: () => string;
   /** Set message directly (for backward compatibility) */
   setMessage: (message: string) => void;
   /** Set color directly (for backward compatibility) */
@@ -98,7 +98,7 @@ const STATUS_COLORS: Record<StatusType, string> = {
  * showInfo('Press ? for help');
  *
  * // Check if error dialog should be shown
- * if (isError) {
+ * if (isError()) {
  *   // Show error dialog
  * }
  *
@@ -107,66 +107,66 @@ const STATUS_COLORS: Record<StatusType, string> = {
  * ```
  */
 export function useStatusMessage(): UseStatusMessageReturn {
-  const [state, setState] = useState<StatusMessageState>({
+  const [state, setState] = createSignal<StatusMessageState>({
     message: '',
     color: Theme.getTextColor(),
     type: 'normal',
   });
 
-  const showSuccess = useCallback((message: string) => {
+  const showSuccess = (message: string) => {
     setState({
       message,
       color: STATUS_COLORS.success,
       type: 'success',
     });
-  }, []);
+  };
 
-  const showError = useCallback((message: string) => {
+  const showError = (message: string) => {
     setState({
       message,
       color: STATUS_COLORS.error,
       type: 'error',
     });
-  }, []);
+  };
 
-  const showWarning = useCallback((message: string) => {
+  const showWarning = (message: string) => {
     setState({
       message,
       color: STATUS_COLORS.warning,
       type: 'warning',
     });
-  }, []);
+  };
 
-  const showInfo = useCallback((message: string) => {
+  const showInfo = (message: string) => {
     setState({
       message,
       color: STATUS_COLORS.info,
       type: 'info',
     });
-  }, []);
+  };
 
-  const showMessage = useCallback((message: string) => {
+  const showMessage = (message: string) => {
     setState({
       message,
       color: STATUS_COLORS.normal,
       type: 'normal',
     });
-  }, []);
+  };
 
-  const clear = useCallback(() => {
+  const clear = () => {
     setState({
       message: '',
       color: STATUS_COLORS.normal,
       type: 'normal',
     });
-  }, []);
+  };
 
   // Backward compatibility setters
-  const setMessage = useCallback((message: string) => {
+  const setMessage = (message: string) => {
     setState(prev => ({ ...prev, message }));
-  }, []);
+  };
 
-  const setMessageColor = useCallback((color: string) => {
+  const setMessageColor = (color: string) => {
     // Determine type based on color for isError detection
     let type: StatusType = 'normal';
     if (color === Theme.getErrorColor()) type = 'error';
@@ -175,12 +175,13 @@ export function useStatusMessage(): UseStatusMessageReturn {
     else if (color === Theme.getInfoColor()) type = 'info';
 
     setState(prev => ({ ...prev, color, type }));
-  }, []);
+  };
 
   // Computed property for error detection
-  const isError = useMemo(() => {
-    return state.message !== '' && state.color === Theme.getErrorColor();
-  }, [state.message, state.color]);
+  const isError = createMemo(() => {
+    const s = state();
+    return s.message !== '' && s.color === Theme.getErrorColor();
+  });
 
   return {
     status: state,
@@ -192,8 +193,8 @@ export function useStatusMessage(): UseStatusMessageReturn {
     clear,
     isError,
     // Backward compatibility
-    message: state.message,
-    messageColor: state.color,
+    message: () => state().message,
+    messageColor: () => state().color,
     setMessage,
     setMessageColor,
   };

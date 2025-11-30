@@ -1,10 +1,10 @@
 /**
- * ConfirmationDialog React component
+ * ConfirmationDialog SolidJS component
  *
  * Displays a modal dialog for confirming operations using flexbox layout
  */
 
-import { useCallback } from 'react';
+import { For, Show } from 'solid-js';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import { Theme } from '../theme.js';
 import { BaseDialog } from './base.js';
@@ -74,55 +74,50 @@ function formatOperation(op: Operation, maxWidth: number = 50): string {
 const MAX_OPERATIONS_DISPLAY = 15;
 
 /**
- * ConfirmationDialog React component
+ * ConfirmationDialog SolidJS component
  */
-export function ConfirmationDialog({
-  title = 'Confirm Operation',
-  operations = [],
-  visible = true,
-  onConfirm,
-  onCancel,
-}: ConfirmationDialogProps) {
-  const handleKey = useCallback<Parameters<typeof useKeyboardHandler>[0]>(
-    key => {
-      if (!visible) return false;
+export function ConfirmationDialog(props: ConfirmationDialogProps) {
+  const title = () => props.title ?? 'Confirm Operation';
+  const operations = () => props.operations ?? [];
+  const visible = () => props.visible ?? true;
 
-      if (key.name === 'y') {
-        onConfirm?.();
-        return true;
-      }
+  const handleKey = (key: Parameters<Parameters<typeof useKeyboardHandler>[0]>[0]) => {
+    if (!visible()) return false;
 
-      if (key.name === 'escape') {
-        onCancel?.();
-        return true;
-      }
+    if (key.name === 'y') {
+      props.onConfirm?.();
+      return true;
+    }
 
-      return true; // Block all other keys when dialog is open
-    },
-    [visible, onConfirm, onCancel]
-  );
+    if (key.name === 'escape') {
+      props.onCancel?.();
+      return true;
+    }
+
+    return true; // Block all other keys when dialog is open
+  };
 
   useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   return (
-    <BaseDialog visible={visible} title={title} borderColor={Theme.getWarningColor()}>
+    <BaseDialog visible={visible()} title={title()} borderColor={Theme.getWarningColor()}>
       <box flexDirection="column">
         <text fg={Theme.getTextColor()}>The following operations will be performed:</text>
 
-        {operations.slice(0, MAX_OPERATIONS_DISPLAY).map(op => (
-          <text
-            key={op.id}
-            fg={op.type === 'delete' ? Theme.getErrorColor() : Theme.getSuccessColor()}
-          >
-            • {formatOperation(op, 60)}
-          </text>
-        ))}
+        <For each={operations().slice(0, MAX_OPERATIONS_DISPLAY)}>
+          {op => (
+            <text fg={op.type === 'delete' ? Theme.getErrorColor() : Theme.getSuccessColor()}>
+              {'• '}
+              {formatOperation(op, 60)}
+            </text>
+          )}
+        </For>
 
-        {operations.length > MAX_OPERATIONS_DISPLAY && (
+        <Show when={operations().length > MAX_OPERATIONS_DISPLAY}>
           <text fg={Theme.getDimColor()}>
-            ... and {operations.length - MAX_OPERATIONS_DISPLAY} more
+            ... and {operations().length - MAX_OPERATIONS_DISPLAY} more
           </text>
-        )}
+        </Show>
 
         <HelpBar
           items={[

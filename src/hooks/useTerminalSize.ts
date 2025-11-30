@@ -1,11 +1,11 @@
 /**
- * Custom React hook for tracking terminal size
+ * Custom SolidJS hook for tracking terminal size
  *
  * Monitors terminal resize events and provides reactive dimensions.
  * Helps create responsive layouts that adapt to terminal size changes.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { createSignal, onMount, onCleanup } from 'solid-js';
 
 export interface TerminalSize {
   width: number;
@@ -29,80 +29,88 @@ const DEFAULT_SIZE: TerminalSize = {
 };
 
 /**
- * Custom hook for terminal size tracking
+ * Get current terminal size - tries multiple APIs for compatibility
+ */
+function getCurrentSize(): TerminalSize {
+  // For tests, use a stable default size to avoid environment-dependent behavior
+  if (process.env.NODE_ENV === 'test') {
+    return DEFAULT_SIZE;
+  }
+
+  try {
+    // Try process.stdout (Node.js/Bun standard)
+    if (process.stdout && process.stdout.isTTY && process.stdout.columns && process.stdout.rows) {
+      return {
+        width: process.stdout.columns,
+        height: process.stdout.rows,
+      };
+    }
+
+    // Fallback to environment variables set by some terminal emulators
+    const width = process.env.COLUMNS ? parseInt(process.env.COLUMNS, 10) : DEFAULT_SIZE.width;
+    const height = process.env.LINES ? parseInt(process.env.LINES, 10) : DEFAULT_SIZE.height;
+
+    if (width > 0 && height > 0) {
+      return { width, height };
+    }
+  } catch {
+    // Silently fall back to default
+  }
+
+  return DEFAULT_SIZE;
+}
+
+/**
+ * Custom hook for terminal size tracking (SolidJS version)
  *
  * Provides reactive terminal dimensions that update on resize events.
  * Works with OpenTUI and Bun's terminal APIs.
  */
 export function useTerminalSize(): UseTerminalSizeReturn {
-  const [size, setSize] = useState<TerminalSize>(DEFAULT_SIZE);
+  const [size, setSize] = createSignal<TerminalSize>(getCurrentSize());
 
-  // Get current terminal size - tries multiple APIs for compatibility
-  const getCurrentSize = useCallback((): TerminalSize => {
-    // For tests, use a stable default size to avoid environment-dependent behavior
-    if (process.env.NODE_ENV === 'test') {
-      return DEFAULT_SIZE;
-    }
-
-    try {
-      // Try process.stdout (Node.js/Bun standard)
-      if (process.stdout && process.stdout.isTTY && process.stdout.columns && process.stdout.rows) {
-        return {
-          width: process.stdout.columns,
-          height: process.stdout.rows,
-        };
-      }
-
-      // Fallback to environment variables set by some terminal emulators
-      const width = process.env.COLUMNS ? parseInt(process.env.COLUMNS, 10) : DEFAULT_SIZE.width;
-      const height = process.env.LINES ? parseInt(process.env.LINES, 10) : DEFAULT_SIZE.height;
-
-      if (width > 0 && height > 0) {
-        return { width, height };
-      }
-    } catch {
-      // Silently fall back to default
-    }
-
-    return DEFAULT_SIZE;
-  }, []);
-
-  // Initialize with current size
-  useEffect(() => {
+  onMount(() => {
+    // Update with current size
     setSize(getCurrentSize());
-  }, [getCurrentSize]);
 
-  // Setup resize listener
-  useEffect(() => {
+    // Setup resize listener
     const handleResize = () => {
-      const newSize = getCurrentSize();
-      setSize(newSize);
+      setSize(getCurrentSize());
     };
 
     // Listen for SIGWINCH (terminal resize signal) on Unix systems
     if (process.platform !== 'win32') {
       process.on('SIGWINCH', handleResize);
-      return () => {
+      onCleanup(() => {
         process.removeListener('SIGWINCH', handleResize);
-      };
+      });
+    } else {
+      // For Windows or other platforms, poll periodically
+      const interval = setInterval(handleResize, 1000);
+      onCleanup(() => clearInterval(interval));
     }
+  });
 
-    // For Windows or other platforms, poll periodically
-    const interval = setInterval(handleResize, 1000);
-    return () => clearInterval(interval);
-  }, [getCurrentSize]);
-
-  const width = size.width;
-  const height = size.height;
-  const isSmall = width < 60 || height < 10;
-  const isMedium = width < 100 || height < 20;
-
+  // Return values - in Solid we compute derived values inline
+  // These are called as getters, so they'll be reactive
   return {
-    size,
-    width,
-    height,
-    isSmall,
-    isMedium,
+    get size() {
+      return size();
+    },
+    get width() {
+      return size().width;
+    },
+    get height() {
+      return size().height;
+    },
+    get isSmall() {
+      const s = size();
+      return s.width < 60 || s.height < 10;
+    },
+    get isMedium() {
+      const s = size();
+      return s.width < 100 || s.height < 20;
+    },
   };
 }
 

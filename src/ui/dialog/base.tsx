@@ -1,5 +1,5 @@
 /**
- * BaseDialog React component
+ * BaseDialog SolidJS component
  *
  * Provides common dialog functionality including:
  * - Automatic centering with terminal size awareness
@@ -7,7 +7,7 @@
  * - Flexible width/height with sensible defaults
  */
 
-import { ReactNode } from 'react';
+import { Show, type JSX } from 'solid-js';
 import { Theme } from '../theme.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 
@@ -23,7 +23,7 @@ export interface BaseDialogProps {
   /** Border color (default: CatppuccinMocha.blue) */
   borderColor?: string;
   /** Dialog content */
-  children: ReactNode;
+  children: JSX.Element;
 }
 
 /**
@@ -36,47 +36,40 @@ export interface BaseDialogProps {
  * </BaseDialog>
  * ```
  */
-export function BaseDialog({
-  visible,
-  title,
-  width = 70,
-  height,
-  borderColor = Theme.getInfoColor(),
-  children,
-}: BaseDialogProps) {
+export function BaseDialog(props: BaseDialogProps) {
   const terminalSize = useTerminalSize();
 
-  if (!visible) return null;
-
   // Calculate dialog width
-  const dialogWidth = Math.min(width, terminalSize.width - 4);
+  const dialogWidth = () => Math.min(props.width ?? 70, terminalSize.width - 4);
 
   return (
-    <box
-      position="absolute"
-      left={0}
-      top={0}
-      width={terminalSize.width}
-      height={terminalSize.height}
-      justifyContent="center"
-      alignItems="center"
-    >
+    <Show when={props.visible}>
       <box
-        width={dialogWidth}
-        height={height}
-        borderStyle="rounded"
-        borderColor={borderColor}
-        backgroundColor={Theme.getBgBase()}
-        title={title}
-        flexDirection="column"
-        paddingLeft={2}
-        paddingRight={2}
-        paddingTop={1}
-        paddingBottom={1}
+        position="absolute"
+        left={0}
+        top={0}
+        width={terminalSize.width}
+        height={terminalSize.height}
+        justifyContent="center"
+        alignItems="center"
       >
-        {children}
+        <box
+          width={dialogWidth()}
+          height={props.height}
+          borderStyle="rounded"
+          borderColor={props.borderColor ?? Theme.getInfoColor()}
+          backgroundColor={Theme.getBgBase()}
+          title={props.title}
+          flexDirection="column"
+          paddingLeft={2}
+          paddingRight={2}
+          paddingTop={1}
+          paddingBottom={1}
+        >
+          {props.children}
+        </box>
       </box>
-    </box>
+    </Show>
   );
 }
 

@@ -1,0 +1,6 @@
+# Preload the OpenTUI Solid JSX transformer for runtime
+preload = ["@opentui/solid/preload"]
+
+[test]
+# Also preload for tests
+preload = ["@opentui/solid/preload"]

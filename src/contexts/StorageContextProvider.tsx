@@ -9,7 +9,7 @@
  * - Handle initialization and cleanup
  */
 
-import { useMemo, useEffect, ReactNode } from 'react';
+import { createMemo, onMount, onCleanup, type ParentProps } from 'solid-js';
 import { StorageContext, StorageContextValue, StorageProviderProps } from './StorageContext.js';
 import { ProviderStorageAdapter } from './ProviderStorageAdapter.js';
 import { StorageProvider } from '../providers/provider.js';
@@ -23,9 +23,6 @@ import type { ProfileManager } from '../providers/services/profile-manager.js';
  * Props for StorageContextProvider
  */
 export interface StorageContextProviderProps extends Omit<StorageProviderProps, 'children'> {
-  /** Child components */
-  children: ReactNode;
-
   /**
    * Storage provider (optional - can start without a provider for profile selection)
    */
@@ -69,33 +66,27 @@ export interface StorageContextProviderProps extends Omit<StorageProviderProps, 
  * }
  * ```
  */
-export function StorageContextProvider({
-  children,
-  provider,
-  profileManager,
-  profileName,
-  profileId,
-  initialPath = '/',
-  initialContainer,
-}: StorageContextProviderProps) {
+export function StorageContextProvider(props: ParentProps<StorageContextProviderProps>) {
   // Create the storage adapter wrapper (or null if no provider)
-  const storageAdapter = useMemo<StorageContextValue | null>(() => {
-    if (!provider) {
+  // Note: In Solid, we use createMemo for derived values
+  const storageAdapter = createMemo<StorageContextValue | null>(() => {
+    if (!props.provider) {
       return null;
     }
     return new ProviderStorageAdapter(
-      provider,
-      initialPath,
-      initialContainer,
-      profileManager,
-      profileName,
-      profileId
+      props.provider,
+      props.initialPath ?? '/',
+      props.initialContainer,
+      props.profileManager,
+      props.profileName,
+      props.profileId
     );
-  }, [provider, initialPath, initialContainer, profileManager, profileName, profileId]);
+  });
 
   // Initialize on mount (only if we have a provider)
-  useEffect(() => {
-    if (!storageAdapter) {
+  onMount(() => {
+    const adapter = storageAdapter();
+    if (!adapter) {
       return;
     }
 
@@ -103,7 +94,7 @@ export function StorageContextProvider({
     const initialize = async () => {
       try {
         // Connect first for connection-oriented providers
-        await storageAdapter.connect();
+        await adapter.connect();
         // Navigation is handled by useDataLoader in the UI components
         // Don't navigate here to avoid conflicts with data loading
       } catch (error) {
@@ -112,17 +103,22 @@ export function StorageContextProvider({
     };
 
     initialize();
+  });
 
-    // Cleanup on unmount
-    return () => {
+  // Cleanup on unmount
+  onCleanup(() => {
+    const adapter = storageAdapter();
+    if (adapter) {
       // Disconnect if provider supports it
-      storageAdapter.disconnect().catch(error => {
+      adapter.disconnect().catch(error => {
         console.error('StorageContextProvider: Failed to disconnect:', error);
       });
-    };
-  }, [storageAdapter, initialPath]);
+    }
+  });
 
-  return <StorageContext.Provider value={storageAdapter}>{children}</StorageContext.Provider>;
+  return (
+    <StorageContext.Provider value={storageAdapter()}>{props.children}</StorageContext.Provider>
+  );
 }
 
 // ============================================================================

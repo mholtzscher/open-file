@@ -5,7 +5,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { testRender } from '@opentui/react/test-utils';
+import { testRender } from '@opentui/solid';
+import type { JSX } from 'solid-js';
 import { ConnectionStatus, type ConnectionStatusProps } from './connection-status.js';
 import { StorageContext, StorageContextValue, StorageState } from '../contexts/StorageContext.js';
 import { Capability } from '../providers/types/capabilities.js';
@@ -76,27 +77,21 @@ function createMockStorageContext(overrides: Partial<StorageState> = {}): Storag
 /**
  * Wrapper component that provides StorageContext for testing
  */
-function TestWrapper({
-  children,
-  storageState,
-}: {
-  children: React.ReactNode;
-  storageState?: Partial<StorageState>;
-}) {
-  const mockContext = createMockStorageContext(storageState);
-  return <StorageContext.Provider value={mockContext}>{children}</StorageContext.Provider>;
+function TestWrapper(props: { children: JSX.Element; storageState?: Partial<StorageState> }) {
+  const mockContext = createMockStorageContext(props.storageState);
+  return <StorageContext.Provider value={mockContext}>{props.children}</StorageContext.Provider>;
 }
 
 /**
  * Helper to render ConnectionStatus with mocked storage context
  */
 async function renderConnectionStatus(
-  props: ConnectionStatusProps = {},
+  componentProps: ConnectionStatusProps = {},
   storageState: Partial<StorageState> = {}
 ) {
   const result = await testRender(
     <TestWrapper storageState={storageState}>
-      <ConnectionStatus {...props} />
+      <ConnectionStatus {...componentProps} />
     </TestWrapper>,
     { width: 80, height: 24 }
   );

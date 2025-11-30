@@ -13,7 +13,7 @@
  * - Per-operation error handling with status messages
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { createSignal, onCleanup } from 'solid-js';
 import { useAsyncOperations, OperationResult } from './useAsyncOperations.js';
 import { useProgressState } from './useProgressState.js';
 import type { PendingOperation } from '../types/dialog.js';
@@ -37,8 +37,8 @@ export interface ExecutorCallbacks {
 }
 
 export interface UseOperationExecutorReturn {
-  /** Whether operations are currently being executed */
-  isRunning: boolean;
+  /** Whether operations are currently being executed (call as function) */
+  isRunning: () => boolean;
 
   /** Execute a batch of pending operations */
   execute: (
@@ -49,16 +49,16 @@ export interface UseOperationExecutorReturn {
   /** Cancel the current operation */
   cancel: () => void;
 
-  /** Progress state for UI display */
+  /** Progress state for UI display (object with accessor functions) */
   progress: {
-    visible: boolean;
-    title: string;
-    description: string;
-    value: number;
-    currentFile: string;
-    currentNum: number;
-    totalNum: number;
-    cancellable: boolean;
+    visible: () => boolean;
+    title: () => string;
+    description: () => string;
+    value: () => number;
+    currentFile: () => string;
+    currentNum: () => number;
+    totalNum: () => number;
+    cancellable: () => boolean;
   };
 
   /** Direct access to progress actions for advanced use */
@@ -93,7 +93,7 @@ export interface UseOperationExecutorReturn {
  * cancel();
  *
  * // Use progress state for UI
- * {progress.visible && <ProgressDialog {...progress} />}
+ * {progress.visible() && <ProgressDialog {...progress} />}
  * ```
  */
 export function useOperationExecutor(): UseOperationExecutorReturn {
@@ -107,123 +107,121 @@ export function useOperationExecutor(): UseOperationExecutorReturn {
     dispatch: dispatchProgress,
   } = useProgressState();
 
-  const [isRunning, setIsRunning] = useState(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
+  const [isRunning, setIsRunning] = createSignal(false);
 
-  const execute = useCallback(
-    async (
-      operations: PendingOperation[],
-      callbacks?: ExecutorCallbacks
-    ): Promise<OperationResult> => {
-      if (operations.length === 0) {
-        return { successCount: 0, failureCount: 0, cancelled: false };
-      }
+  // In Solid, regular variables persist across renders
+  let abortController: AbortController | null = null;
 
-      setIsRunning(true);
+  const execute = async (
+    operations: PendingOperation[],
+    callbacks?: ExecutorCallbacks
+  ): Promise<OperationResult> => {
+    if (operations.length === 0) {
+      return { successCount: 0, failureCount: 0, cancelled: false };
+    }
 
-      // Create abort controller for cancellation
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
+    setIsRunning(true);
 
-      // Show progress dialog
-      showProgress({
-        title: `Executing ${operations[0]?.type || 'operation'}...`,
-        totalNum: operations.length,
-        cancellable: true,
+    // Create abort controller for cancellation
+    abortController = new AbortController();
+
+    // Show progress dialog
+    showProgress({
+      title: `Executing ${operations[0]?.type || 'operation'}...`,
+      totalNum: operations.length,
+      cancellable: true,
+    });
+
+    try {
+      // Execute operations with progress tracking
+      const result = await executeOperations(operations, {
+        onProgress: progressEvent => {
+          updateProgress(progressEvent.overallProgress);
+          updateProgressDescription(progressEvent.description);
+          dispatchProgress({
+            type: 'UPDATE',
+            payload: {
+              value: progressEvent.overallProgress,
+              description: progressEvent.description,
+              currentFile: progressEvent.currentFile || '',
+              currentNum: progressEvent.currentIndex + 1,
+            },
+          });
+        },
+        onOperationError: (op, error) => {
+          console.error(`Failed to execute ${op.type} operation:`, error);
+        },
+        signal: abortController!.signal,
       });
 
-      try {
-        // Execute operations with progress tracking
-        const result = await executeOperations(operations, {
-          onProgress: progressEvent => {
-            updateProgress(progressEvent.overallProgress);
-            updateProgressDescription(progressEvent.description);
-            dispatchProgress({
-              type: 'UPDATE',
-              payload: {
-                value: progressEvent.overallProgress,
-                description: progressEvent.description,
-                currentFile: progressEvent.currentFile || '',
-                currentNum: progressEvent.currentIndex + 1,
-              },
-            });
-          },
-          onOperationError: (op, error) => {
-            console.error(`Failed to execute ${op.type} operation:`, error);
-          },
-          signal: abortController.signal,
-        });
+      hideProgress();
 
-        hideProgress();
-
-        // Handle result
-        if (result.cancelled) {
-          const message = 'Operation cancelled by user';
-          callbacks?.onCancelled?.(message);
-        } else if (result.successCount > 0 && result.failureCount === 0) {
-          const message = `${result.successCount} operation(s) completed successfully`;
-          callbacks?.onSuccess?.(result, message);
-        } else if (result.failureCount > 0) {
-          const message = `${result.failureCount} operation(s) failed`;
-          callbacks?.onError?.(message);
-        } else if (result.successCount > 0) {
-          // Some succeeded, some failed
-          const message = `${result.successCount} succeeded, ${result.failureCount} failed`;
-          callbacks?.onSuccess?.(result, message);
-        }
-
-        callbacks?.onComplete?.();
-        return result;
-      } catch (error) {
-        console.error('Unexpected error in operation execution:', error);
-        hideProgress();
-
-        const message = 'Unexpected error during operation execution';
+      // Handle result
+      if (result.cancelled) {
+        const message = 'Operation cancelled by user';
+        callbacks?.onCancelled?.(message);
+      } else if (result.successCount > 0 && result.failureCount === 0) {
+        const message = `${result.successCount} operation(s) completed successfully`;
+        callbacks?.onSuccess?.(result, message);
+      } else if (result.failureCount > 0) {
+        const message = `${result.failureCount} operation(s) failed`;
         callbacks?.onError?.(message);
-        callbacks?.onComplete?.();
-
-        return {
-          successCount: 0,
-          failureCount: operations.length,
-          cancelled: false,
-          error: message,
-        };
-      } finally {
-        setIsRunning(false);
-        abortControllerRef.current = null;
+      } else if (result.successCount > 0) {
+        // Some succeeded, some failed
+        const message = `${result.successCount} succeeded, ${result.failureCount} failed`;
+        callbacks?.onSuccess?.(result, message);
       }
-    },
-    [
-      executeOperations,
-      showProgress,
-      hideProgress,
-      updateProgress,
-      updateProgressDescription,
-      dispatchProgress,
-    ]
-  );
 
-  const cancel = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+      callbacks?.onComplete?.();
+      return result;
+    } catch (error) {
+      console.error('Unexpected error in operation execution:', error);
+      hideProgress();
+
+      const message = 'Unexpected error during operation execution';
+      callbacks?.onError?.(message);
+      callbacks?.onComplete?.();
+
+      return {
+        successCount: 0,
+        failureCount: operations.length,
+        cancelled: false,
+        error: message,
+      };
+    } finally {
+      setIsRunning(false);
+      abortController = null;
+    }
+  };
+
+  const cancel = () => {
+    if (abortController) {
+      abortController.abort();
       dispatchProgress({ type: 'UPDATE', payload: { cancellable: false } });
     }
     cancelOperations();
-  }, [cancelOperations, dispatchProgress]);
+  };
+
+  // Cleanup on unmount
+  onCleanup(() => {
+    if (abortController) {
+      abortController.abort();
+    }
+  });
 
   return {
     isRunning,
     execute,
     cancel,
     progress: {
-      visible: progress.visible,
-      title: progress.title,
-      description: progress.description,
-      value: progress.value,
-      currentFile: progress.currentFile,
-      currentNum: progress.currentNum,
-      totalNum: progress.totalNum,
-      cancellable: progress.cancellable,
+      visible: () => progress().visible,
+      title: () => progress().title,
+      description: () => progress().description,
+      value: () => progress().value,
+      currentFile: () => progress().currentFile,
+      currentNum: () => progress().currentNum,
+      totalNum: () => progress().totalNum,
+      cancellable: () => progress().cancellable,
     },
     progressActions: {
       showProgress,

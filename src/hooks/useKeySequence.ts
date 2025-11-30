@@ -6,7 +6,7 @@
  * sequence has completed, is in progress, or was not recognized.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { onCleanup } from 'solid-js';
 import type { KeyboardKey, KeyAction } from '../types/keyboard.js';
 
 interface UseKeySequenceOptions {
@@ -32,85 +32,80 @@ interface SequenceResult {
 export function useKeySequence(options: UseKeySequenceOptions) {
   const { timeout = 500, sequenceStarters, sequences, bottomAction } = options;
 
-  const keySequenceRef = useRef<string[]>([]);
-  const sequenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const startersRef = useRef<Set<string>>(new Set(sequenceStarters));
-  const sequencesRef = useRef<Record<string, KeyAction>>(sequences);
+  // In Solid, regular variables persist across renders (no need for useRef)
+  let keySequence: string[] = [];
+  let sequenceTimeout: ReturnType<typeof setTimeout> | null = null;
+  const starters = new Set(sequenceStarters);
 
-  const clearSequence = useCallback(() => {
-    if (sequenceTimeoutRef.current) {
-      clearTimeout(sequenceTimeoutRef.current);
-      sequenceTimeoutRef.current = null;
+  const clearSequence = () => {
+    if (sequenceTimeout) {
+      clearTimeout(sequenceTimeout);
+      sequenceTimeout = null;
     }
-    keySequenceRef.current = [];
-  }, []);
+    keySequence = [];
+  };
 
-  const handleSequence = useCallback(
-    (key: KeyboardKey): SequenceResult => {
-      const keyName = key.name;
+  const handleSequence = (key: KeyboardKey): SequenceResult => {
+    const keyName = key.name;
 
-      // If this is a shifted key for a sequence starter (e.g., D = shift+d, Y = shift+y),
-      // don't treat it as a sequence - let it fall through to keybinding lookup
-      // Exception: G (shift+g) for cursor:bottom is handled separately below
-      if (key.shift && startersRef.current.has(keyName) && keyName !== 'g') {
-        keySequenceRef.current = [];
-        return { handled: false, waitingForMore: false };
-      }
-
-      // Add to sequence
-      keySequenceRef.current.push(keyName);
-
-      // Clear existing timeout
-      if (sequenceTimeoutRef.current) {
-        clearTimeout(sequenceTimeoutRef.current);
-      }
-
-      // Set new timeout to clear sequence
-      sequenceTimeoutRef.current = setTimeout(() => {
-        keySequenceRef.current = [];
-      }, timeout);
-
-      // Check for complete sequence
-      const sequence = keySequenceRef.current.join('');
-
-      if (sequencesRef.current[sequence]) {
-        const action = sequencesRef.current[sequence];
-        keySequenceRef.current = [];
-        return { handled: true, action };
-      }
-
-      // Optional special case: single G (shift+g) for bottom-of-list
-      if (
-        bottomAction &&
-        (sequence === 'G' || (keySequenceRef.current.length === 1 && key.shift && keyName === 'g'))
-      ) {
-        keySequenceRef.current = [];
-        return { handled: true, action: bottomAction };
-      }
-
-      // If waiting for sequence continuation
-      if (keySequenceRef.current.length === 1 && startersRef.current.has(keyName)) {
-        return { handled: false, waitingForMore: true };
-      }
-
-      // Unrecognized sequence - clear and don't handle
-      if (keySequenceRef.current.length > 1) {
-        keySequenceRef.current = [];
-      }
-
+    // If this is a shifted key for a sequence starter (e.g., D = shift+d, Y = shift+y),
+    // don't treat it as a sequence - let it fall through to keybinding lookup
+    // Exception: G (shift+g) for cursor:bottom is handled separately below
+    if (key.shift && starters.has(keyName) && keyName !== 'g') {
+      keySequence = [];
       return { handled: false, waitingForMore: false };
-    },
-    [timeout, bottomAction]
-  );
+    }
 
-  // Clear timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (sequenceTimeoutRef.current) {
-        clearTimeout(sequenceTimeoutRef.current);
-      }
-    };
-  }, []);
+    // Add to sequence
+    keySequence.push(keyName);
+
+    // Clear existing timeout
+    if (sequenceTimeout) {
+      clearTimeout(sequenceTimeout);
+    }
+
+    // Set new timeout to clear sequence
+    sequenceTimeout = setTimeout(() => {
+      keySequence = [];
+    }, timeout);
+
+    // Check for complete sequence
+    const sequence = keySequence.join('');
+
+    if (sequences[sequence]) {
+      const action = sequences[sequence];
+      keySequence = [];
+      return { handled: true, action };
+    }
+
+    // Optional special case: single G (shift+g) for bottom-of-list
+    if (
+      bottomAction &&
+      (sequence === 'G' || (keySequence.length === 1 && key.shift && keyName === 'g'))
+    ) {
+      keySequence = [];
+      return { handled: true, action: bottomAction };
+    }
+
+    // If waiting for sequence continuation
+    if (keySequence.length === 1 && starters.has(keyName)) {
+      return { handled: false, waitingForMore: true };
+    }
+
+    // Unrecognized sequence - clear and don't handle
+    if (keySequence.length > 1) {
+      keySequence = [];
+    }
+
+    return { handled: false, waitingForMore: false };
+  };
+
+  // Clear timeout on cleanup
+  onCleanup(() => {
+    if (sequenceTimeout) {
+      clearTimeout(sequenceTimeout);
+    }
+  });
 
   return { handleSequence, clearSequence };
 }

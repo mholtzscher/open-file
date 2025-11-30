@@ -1,11 +1,11 @@
 /**
- * FileExplorer React component
+ * FileExplorer Solid component
  *
  * Main application component that manages the file exploration interface.
- * Declarative React component that uses hooks for state management and rendering.
+ * Declarative Solid component that uses hooks for state management and rendering.
  */
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { createSignal, createEffect, on, createMemo } from 'solid-js';
 import { useBufferState } from '../hooks/useBufferState.js';
 import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
 import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
@@ -27,7 +27,7 @@ import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Capability } from '../providers/types/capabilities.js';
 
 /**
- * Main FileExplorer component - declarative React implementation
+ * Main FileExplorer component - declarative Solid implementation
  */
 export function FileExplorer() {
   // Subscribe to theme changes so the whole app re-renders when the theme changes
@@ -41,7 +41,7 @@ export function FileExplorer() {
   // ============================================
   // Core State
   // ============================================
-  const [bucket, setBucket] = useState<string>();
+  const [bucket, setBucket] = createSignal<string | undefined>();
 
   // ============================================
   // Pending Operations Store (global state for file operations)
@@ -51,7 +51,7 @@ export function FileExplorer() {
   // Note: We don't pass a provider here yet - operations will be executed
   // through the existing executeOperationsWithProgress flow for now.
   // Full integration with the provider will come in Phase 4.
-  const pendingOps = usePendingOperations(scheme, bucket);
+  const pendingOps = usePendingOperations(scheme, bucket());
 
   // ============================================
   // Status Bar State
@@ -86,12 +86,11 @@ export function FileExplorer() {
     closeDialog,
     closeAndClearOperations,
   } = useDialogState();
-  const pendingOperations = dialogState.pendingOperations;
 
   // ============================================
   // Preview Mode (controls whether preview hook is active)
   // ============================================
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = createSignal(false);
 
   // ============================================
   // Operation Executor Hook (combines progress + async operations)
@@ -111,13 +110,20 @@ export function FileExplorer() {
   // Initialize buffer state
   const initialPath = '';
   const bufferState = useBufferState([], initialPath);
-  const bufferStateRef = useRef(bufferState);
-  bufferStateRef.current = bufferState;
+
+  // In Solid, we can just use a regular variable that persists
+  // since the component function only runs once
+  let bufferStateRef = { current: bufferState };
 
   // Update viewport height when layout changes
-  useEffect(() => {
-    bufferState.setViewportHeight(layout.contentHeight);
-  }, [layout.contentHeight, bufferState.setViewportHeight]);
+  createEffect(
+    on(
+      () => layout.contentHeight,
+      contentHeight => {
+        bufferState.setViewportHeight(contentHeight);
+      }
+    )
+  );
 
   // ============================================
   // Navigation Handlers
@@ -135,7 +141,7 @@ export function FileExplorer() {
   // ============================================
   const { isInitialized } = useDataLoader({
     bucket,
-    currentPath: bufferState.currentPath,
+    currentPath: () => bufferState.currentPath,
     setEntries: entries => {
       bufferState.setEntries([...entries]);
     },
@@ -153,29 +159,31 @@ export function FileExplorer() {
   // ============================================
   // Preview Hook
   // ============================================
-  const selectedEntry = bufferState.entries[bufferState.selection.cursorIndex];
+  const selectedEntry = createMemo(() => bufferState.entries[bufferState.selection.cursorIndex]);
   // For container-based providers (S3, GCS), require bucket to be selected
   // For non-container providers (Local, SFTP, FTP), just need to be initialized
   const hasContainers = storage.hasCapability(Capability.Containers);
-  const previewHookEnabled = isPreviewMode && isInitialized && (hasContainers ? !!bucket : true);
-  const preview = usePreview(bufferState.currentPath, selectedEntry, {
-    enabled: previewHookEnabled,
+  const previewHookEnabled = createMemo(
+    () => isPreviewMode() && isInitialized() && (hasContainers ? !!bucket() : true)
+  );
+  const preview = usePreview(() => bufferState.currentPath, selectedEntry, {
+    enabled: previewHookEnabled(),
     maxSize: 100 * 1024, // 100KB
   });
-  const previewContent = preview.content;
-  const previewFilename = preview.filename;
 
   // ============================================
   // Keyboard State
   // ============================================
-  const isAnyDialogOpen =
-    showConfirmDialog ||
-    showHelpDialog ||
-    showSortMenu ||
-    showUploadDialog ||
-    showQuitDialog ||
-    showProfileSelectorDialog ||
-    showThemeSelectorDialog;
+  const isAnyDialogOpen = createMemo(
+    () =>
+      showConfirmDialog() ||
+      showHelpDialog() ||
+      showSortMenu() ||
+      showUploadDialog() ||
+      showQuitDialog() ||
+      showProfileSelectorDialog() ||
+      showThemeSelectorDialog()
+  );
 
   // ============================================
   // Action Handlers (via Custom Hook)
@@ -183,10 +191,10 @@ export function FileExplorer() {
   const actionHandlers = useS3Actions({
     storage,
     bufferState,
-    bucket,
-    setBucket,
-    previewMode: isPreviewMode,
-    setPreviewMode: setIsPreviewMode,
+    bucket: bucket(),
+    setBucket: (b: string | undefined) => setBucket(b),
+    previewMode: isPreviewMode(),
+    setPreviewMode: (enabled: boolean) => setIsPreviewMode(enabled),
     setStatusMessage,
     setStatusMessageColor,
     navigationHandlers,
@@ -204,40 +212,50 @@ export function FileExplorer() {
   // ============================================
   // Computed State
   // ============================================
-  const showErrorDialog = statusIsError;
+  const showErrorDialog = createMemo(() => statusIsError());
 
   // ============================================
   // Cancel Operation Handler
   // ============================================
-  const handleCancelOperation = useCallback(() => {
+  const handleCancelOperation = () => {
     cancelOperation();
-  }, [cancelOperation]);
+  };
 
   // ============================================
   // Dialog Handlers (extracted to separate hook)
   // ============================================
+  // Convert accessor functions to values for useDialogHandlers which expects values
   const dialogsState = useDialogHandlers({
     bufferState,
     bufferStateRef,
     storage,
-    dialogState,
-    pendingOperations,
-    progressState,
-    showConfirmDialog,
-    showHelpDialog,
-    showSortMenu,
-    showUploadDialog,
-    showQuitDialog,
-    showProfileSelectorDialog,
-    showThemeSelectorDialog,
-    showErrorDialog,
-    statusMessage,
+    dialogState: dialogState(),
+    pendingOperations: dialogState().pendingOperations,
+    progressState: {
+      visible: progressState.visible(),
+      title: progressState.title(),
+      description: progressState.description(),
+      value: progressState.value(),
+      currentFile: progressState.currentFile(),
+      currentNum: progressState.currentNum(),
+      totalNum: progressState.totalNum(),
+      cancellable: progressState.cancellable(),
+    },
+    showConfirmDialog: showConfirmDialog(),
+    showHelpDialog: showHelpDialog(),
+    showSortMenu: showSortMenu(),
+    showUploadDialog: showUploadDialog(),
+    showQuitDialog: showQuitDialog(),
+    showProfileSelectorDialog: showProfileSelectorDialog(),
+    showThemeSelectorDialog: showThemeSelectorDialog(),
+    showErrorDialog: showErrorDialog(),
+    statusMessage: statusMessage(),
     showConfirm,
     closeDialog,
     closeAndClearOperations,
     setStatusMessage,
     setStatusMessageColor,
-    setBucket,
+    setBucket: (b: string | undefined) => setBucket(b),
     executeOperationsWithProgress,
     handleCancelOperation,
     pendingOps,
@@ -249,20 +267,23 @@ export function FileExplorer() {
   useFileExplorerKeyboard({
     mode: bufferState.mode,
     actionHandlers,
-    isAnyDialogOpen,
+    isAnyDialogOpen: isAnyDialogOpen(),
   });
+
+  // Note: We need to call accessor functions when building props for child components
+  // that are still using React and expecting values, not accessor functions.
 
   // ============================================
   // Build Props for Layout Component
   // ============================================
   const statusBarState: StatusBarState = {
-    message: statusMessage,
-    messageColor: statusMessageColor,
+    message: statusMessage(),
+    messageColor: statusMessageColor(),
   };
 
   const previewState: PreviewState = {
-    content: previewContent,
-    filename: previewFilename,
+    content: preview().content,
+    filename: preview().filename,
   };
 
   // ============================================
@@ -270,15 +291,15 @@ export function FileExplorer() {
   // ============================================
   return (
     <FileExplorerLayout
-      bucket={bucket}
-      isInitialized={isInitialized}
+      bucket={bucket()}
+      isInitialized={isInitialized()}
       bufferState={bufferState}
       terminalSize={terminalSize}
       layout={layout}
       statusBar={statusBarState}
       preview={previewState}
       dialogs={dialogsState}
-      showErrorDialog={showErrorDialog}
+      showErrorDialog={showErrorDialog()}
       pendingOps={pendingOps}
     />
   );

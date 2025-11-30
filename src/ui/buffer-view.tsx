@@ -1,10 +1,11 @@
 /**
- * BufferView React component
+ * BufferView SolidJS component
  *
  * Renders the entry list as a buffer that can be edited.
  * Similar to oil.nvim's approach - the buffer itself is the interface.
  */
 
+import { For, Show } from 'solid-js';
 import { Entry, EntryType } from '../types/entry.js';
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { Theme } from './theme.js';
@@ -125,144 +126,146 @@ function applyStrikethrough(text: string): string {
 }
 
 /**
- * BufferView React component
+ * BufferView SolidJS component
  */
-export function BufferView({
-  bufferState,
-  showIcons = true,
-  showSizes = true,
-  showDates = false,
-  pendingOps,
-}: BufferViewProps) {
+export function BufferView(props: BufferViewProps) {
+  const showIcons = () => props.showIcons ?? true;
+  const showSizes = () => props.showSizes ?? true;
+  const showDates = () => props.showDates ?? false;
+
   // Use filtered entries when searching
-  const filteredEntries = bufferState.getFilteredEntries();
-  const entries =
-    filteredEntries.length < bufferState.entries.length && bufferState.searchQuery
-      ? filteredEntries
-      : bufferState.entries;
+  const filteredEntries = () => props.bufferState.getFilteredEntries();
+  const entries = () => {
+    const filtered = filteredEntries();
+    return filtered.length < props.bufferState.entries.length && props.bufferState.searchQuery
+      ? filtered
+      : props.bufferState.entries;
+  };
 
   // Get virtual entries (pending moves/copies to this directory)
   // These are displayed separately and are not navigable
-  const virtualEntries = pendingOps?.getVirtualEntries(bufferState.currentPath) ?? [];
+  const virtualEntries = () =>
+    props.pendingOps?.getVirtualEntries(props.bufferState.currentPath) ?? [];
 
-  const cursorIndex = bufferState.selection.cursorIndex;
+  const cursorIndex = () => props.bufferState.selection.cursorIndex;
 
   // Get visible entries (with scroll offset)
-  const viewportHeight = bufferState.viewportHeight;
+  const viewportHeight = () => props.bufferState.viewportHeight;
   // Reserve space for virtual entries if any
-  const virtualSpace = virtualEntries.length > 0 ? Math.min(virtualEntries.length + 1, 5) : 0;
-  const adjustedViewportHeight = viewportHeight - virtualSpace;
-  const visibleEntries = entries.slice(
-    bufferState.scrollOffset,
-    bufferState.scrollOffset + adjustedViewportHeight
-  );
+  const virtualSpace = () => {
+    const ve = virtualEntries();
+    return ve.length > 0 ? Math.min(ve.length + 1, 5) : 0;
+  };
+  const adjustedViewportHeight = () => viewportHeight() - virtualSpace();
+  const visibleEntries = () =>
+    entries().slice(
+      props.bufferState.scrollOffset,
+      props.bufferState.scrollOffset + adjustedViewportHeight()
+    );
 
   // Check if in insert mode
-  const isInsertMode = bufferState.mode === EditMode.Insert;
-  const editBuffer = bufferState.editBuffer || '';
+  const isInsertMode = () => props.bufferState.mode === EditMode.Insert;
+  const editBuffer = () => props.bufferState.editBuffer || '';
 
   // If no entries, show empty indicator (but still allow insert mode)
-  if (entries.length === 0 && !isInsertMode) {
-    return (
-      <box flexDirection="column" width="100%" height="100%">
-        <text fg={Theme.getEmptyStateColor()}>&lt;empty&gt;</text>
-      </box>
-    );
-  }
-
   return (
-    <box flexDirection="column" width="100%" height="100%">
-      {visibleEntries.map((entry, idx) => {
-        const realIndex = bufferState.scrollOffset + idx;
-        const isSelected = realIndex === cursorIndex;
-        const isInVisualSelection =
-          bufferState.selection.isActive &&
-          bufferState.selection.selectionStart !== undefined &&
-          realIndex >=
-            Math.min(
-              bufferState.selection.selectionStart,
-              bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
-            ) &&
-          realIndex <=
-            Math.max(
-              bufferState.selection.selectionStart,
-              bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
-            );
+    <Show
+      when={entries().length > 0 || isInsertMode()}
+      fallback={
+        <box flexDirection="column" width="100%" height="100%">
+          <text fg={Theme.getEmptyStateColor()}>&lt;empty&gt;</text>
+        </box>
+      }
+    >
+      <box flexDirection="column" width="100%" height="100%">
+        <For each={visibleEntries()}>
+          {(entry, idx) => {
+            const realIndex = () => props.bufferState.scrollOffset + idx();
+            const isSelected = () => realIndex() === cursorIndex();
+            const isInVisualSelection = () =>
+              props.bufferState.selection.isActive &&
+              props.bufferState.selection.selectionStart !== undefined &&
+              realIndex() >=
+                Math.min(
+                  props.bufferState.selection.selectionStart,
+                  props.bufferState.selection.selectionEnd ??
+                    props.bufferState.selection.selectionStart
+                ) &&
+              realIndex() <=
+                Math.max(
+                  props.bufferState.selection.selectionStart,
+                  props.bufferState.selection.selectionEnd ??
+                    props.bufferState.selection.selectionStart
+                );
 
-        // Check entry visual state from pending operations store
-        const entryState = pendingOps.getEntryState(entry);
-        const isMarkedForDeletion = entryState.isDeleted;
-        const isCut = entryState.isMovedAway;
-        const isRenamed = entryState.isRenamed;
-        const newName = entryState.newName;
+            // Check entry visual state from pending operations store
+            const entryState = () => props.pendingOps.getEntryState(entry);
+            const isMarkedForDeletion = () => entryState().isDeleted;
+            const isCut = () => entryState().isMovedAway;
+            const isRenamed = () => entryState().isRenamed;
+            const newName = () => entryState().newName;
 
-        const cursor = isSelected ? '> ' : '  ';
-        // Add marker prefix based on state
-        let marker = '';
-        if (isMarkedForDeletion) {
-          marker = '✗ ';
-        } else if (isCut) {
-          marker = '✂ ';
-        } else if (isRenamed) {
-          marker = '✎ ';
-        }
+            const cursor = () => (isSelected() ? '> ' : '  ');
+            // Add marker prefix based on state
+            const marker = () => {
+              if (isMarkedForDeletion()) return '✗ ';
+              if (isCut()) return '✂ ';
+              if (isRenamed()) return '✎ ';
+              return '';
+            };
 
-        // For renamed entries, display with the new name
-        const displayEntry = isRenamed && newName ? { ...entry, name: newName } : entry;
-        let content = cursor + marker + formatEntry(displayEntry, showIcons, showSizes, showDates);
+            // For renamed entries, display with the new name
+            const displayEntry = () =>
+              isRenamed() && newName() ? { ...entry, name: newName()! } : entry;
+            const content = () => {
+              let c =
+                cursor() +
+                marker() +
+                formatEntry(displayEntry(), showIcons(), showSizes(), showDates());
+              // Apply strikethrough to deleted entries
+              if (isMarkedForDeletion()) {
+                c = applyStrikethrough(c);
+              }
+              return c;
+            };
 
-        // Apply strikethrough to deleted entries
-        if (isMarkedForDeletion) {
-          content = applyStrikethrough(content);
-        }
+            // Determine color based on state
+            const color = () => {
+              if (isMarkedForDeletion()) return Theme.getErrorColor();
+              if (isCut()) return Theme.getDimColor(); // Dimmed for cut items
+              if (isRenamed()) return Theme.getWarningColor(); // Orange for pending rename
+              return getEntryColor(entry, isSelected(), false);
+            };
 
-        // Determine color based on state
-        let color: string;
-        if (isMarkedForDeletion) {
-          color = Theme.getErrorColor();
-        } else if (isCut) {
-          color = Theme.getDimColor(); // Dimmed for cut items
-        } else if (isRenamed) {
-          color = Theme.getWarningColor(); // Orange for pending rename
-        } else {
-          color = getEntryColor(entry, isSelected, false);
-        }
-
-        return (
-          <text
-            key={entry.id}
-            fg={color}
-            bg={isInVisualSelection ? Theme.getBgSurface() : undefined}
-          >
-            {content}
-          </text>
-        );
-      })}
-      {/* Show insert mode input line */}
-      {isInsertMode && (
-        <text fg={Theme.getInsertModeColor()} bg={Theme.getBgSurface()}>
-          {'> + 📄  '}
-          {editBuffer}
-          {'_'}
-        </text>
-      )}
-      {/* Show pending virtual entries (moves/copies to this directory) */}
-      {virtualEntries.length > 0 && (
-        <>
-          <text fg={Theme.getDimColor()}>{'── pending ──'}</text>
-          {virtualEntries.slice(0, 4).map(entry => {
-            const content = '  + ' + formatEntry(entry, showIcons, showSizes, showDates);
             return (
-              <text key={entry.id} fg={Theme.getSuccessColor()}>
-                {content}
+              <text fg={color()} bg={isInVisualSelection() ? Theme.getBgSurface() : undefined}>
+                {content()}
               </text>
             );
-          })}
-          {virtualEntries.length > 4 && (
-            <text fg={Theme.getDimColor()}>{`  ... and ${virtualEntries.length - 4} more`}</text>
-          )}
-        </>
-      )}
-    </box>
+          }}
+        </For>
+        {/* Show insert mode input line */}
+        <Show when={isInsertMode()}>
+          <text fg={Theme.getInsertModeColor()} bg={Theme.getBgSurface()}>
+            {'> + 📄  '}
+            {editBuffer()}
+            {'_'}
+          </text>
+        </Show>
+        {/* Show pending virtual entries (moves/copies to this directory) */}
+        <Show when={virtualEntries().length > 0}>
+          <text fg={Theme.getDimColor()}>{'── pending ──'}</text>
+          <For each={virtualEntries().slice(0, 4)}>
+            {entry => {
+              const content = '  + ' + formatEntry(entry, showIcons(), showSizes(), showDates());
+              return <text fg={Theme.getSuccessColor()}>{content}</text>;
+            }}
+          </For>
+          <Show when={virtualEntries().length > 4}>
+            <text fg={Theme.getDimColor()}>{`  ... and ${virtualEntries().length - 4} more`}</text>
+          </Show>
+        </Show>
+      </box>
+    </Show>
   );
 }

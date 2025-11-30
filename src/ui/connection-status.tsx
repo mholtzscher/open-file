@@ -12,6 +12,7 @@
  * - Integrates with StorageContext
  */
 
+import { Show } from 'solid-js';
 import { useStorageState } from '../hooks/useStorage.js';
 import { Theme } from './theme.js';
 
@@ -45,31 +46,32 @@ export interface ConnectionStatusProps {
  * <ConnectionStatus showReconnect={true} />
  * ```
  */
-export function ConnectionStatus({
-  showReconnect = true,
-  connectedLabel = 'Connected',
-  disconnectedLabel = 'Disconnected',
-  reconnectLabel = '[R]econnect',
-}: ConnectionStatusProps) {
+export function ConnectionStatus(props: ConnectionStatusProps) {
+  const showReconnect = () => props.showReconnect ?? true;
+  const connectedLabel = () => props.connectedLabel ?? 'Connected';
+  const disconnectedLabel = () => props.disconnectedLabel ?? 'Disconnected';
+  const reconnectLabel = () => props.reconnectLabel ?? '[R]econnect';
+
   const state = useStorageState();
 
-  const isConnected = state.isConnected;
+  // state is a () => StorageState accessor, call it to get the state object
+  const isConnected = () => state().isConnected;
 
   // Determine colors based on connection state
-  const statusColor = isConnected ? Theme.getSuccessColor() : Theme.getErrorColor();
-  const statusLabel = isConnected ? connectedLabel : disconnectedLabel;
-  const statusIcon = isConnected ? '●' : '○';
+  const statusColor = () => (isConnected() ? Theme.getSuccessColor() : Theme.getErrorColor());
+  const statusLabel = () => (isConnected() ? connectedLabel() : disconnectedLabel());
+  const statusIcon = () => (isConnected() ? '●' : '○');
 
   return (
     <box flexDirection="row" alignItems="center">
-      <text fg={statusColor}>
-        {statusIcon} {statusLabel}
+      <text fg={statusColor()}>
+        {statusIcon()} {statusLabel()}
       </text>
-      {!isConnected && showReconnect && (
+      <Show when={!isConnected() && showReconnect()}>
         <text fg={Theme.getInfoColor()} marginLeft={1}>
-          {reconnectLabel}
+          {reconnectLabel()}
         </text>
-      )}
+      </Show>
     </box>
   );
 }

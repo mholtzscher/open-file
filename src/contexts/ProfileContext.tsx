@@ -7,11 +7,12 @@
  * - Profile switching capabilities
  */
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createSignal } from 'solid-js';
 import { StorageProvider } from '../providers/provider.js';
 import type { ProfileManager } from '../providers/services/profile-manager.js';
 import type { Profile } from '../providers/types/profile.js';
 import { ThemeRegistry } from '../ui/theme-registry.js';
+import { createSimpleContext } from './helper.js';
 
 // ============================================================================
 // Context Types
@@ -21,17 +22,17 @@ import { ThemeRegistry } from '../ui/theme-registry.js';
  * Profile context value
  */
 export interface ProfileContextValue {
-  /** Current storage provider (undefined if no profile selected) */
-  provider: StorageProvider | undefined;
+  /** Current storage provider (call as function in Solid) */
+  provider: () => StorageProvider | undefined;
 
-  /** Current profile ID (unique identifier) */
-  profileId: string | undefined;
+  /** Current profile ID (call as function in Solid) */
+  profileId: () => string | undefined;
 
-  /** Current profile display name */
-  profileName: string | undefined;
+  /** Current profile display name (call as function in Solid) */
+  profileName: () => string | undefined;
 
-  /** Whether profile selector should be shown */
-  isSelectingProfile: boolean;
+  /** Whether profile selector should be shown (call as function in Solid) */
+  isSelectingProfile: () => boolean;
 
   /** Profile manager instance */
   profileManager: ProfileManager;
@@ -47,46 +48,33 @@ export interface ProfileContextValue {
 }
 
 // ============================================================================
-// Context
-// ============================================================================
-
-const ProfileContext = createContext<ProfileContextValue | null>(null);
-
-// ============================================================================
 // Provider Props
 // ============================================================================
 
 export interface ProfileProviderProps {
-  children: ReactNode;
   profileManager: ProfileManager;
   /** Optional handler when no profile is selected and the selector is closed */
   onExitWithoutProvider?: () => void;
 }
 
 // ============================================================================
-// Provider Component
+// Provider using SST pattern
 // ============================================================================
 
-/**
- * ProfileProvider - Manages profile selection and provider lifecycle
- *
- * Always starts with profile selector visible.
- * Once a profile is selected, creates the provider.
- */
-export function ProfileProvider({
-  children,
-  profileManager,
-  onExitWithoutProvider,
-}: ProfileProviderProps) {
-  const [provider, setProvider] = useState<StorageProvider | undefined>(undefined);
-  const [profileId, setProfileId] = useState<string | undefined>(undefined);
-  const [profileName, setProfileName] = useState<string | undefined>(undefined);
-  const [isSelectingProfile, setIsSelectingProfile] = useState(true);
+const { Provider: ProfileProvider, use: useProfile } = createSimpleContext<
+  ProfileContextValue,
+  ProfileProviderProps
+>({
+  name: 'Profile',
+  init: props => {
+    const [provider, setProvider] = createSignal<StorageProvider | undefined>(undefined);
+    const [profileId, setProfileId] = createSignal<string | undefined>(undefined);
+    const [profileName, setProfileName] = createSignal<string | undefined>(undefined);
+    const [isSelectingProfile, setIsSelectingProfile] = createSignal(true);
 
-  const selectProfile = useCallback(
-    async (profile: Profile) => {
+    const selectProfile = async (profile: Profile) => {
       try {
-        const newProvider = await profileManager.createProviderFromProfile(profile.id);
+        const newProvider = await props.profileManager.createProviderFromProfile(profile.id);
         setProvider(newProvider);
         setProfileId(profile.id);
         setProfileName(profile.displayName);
@@ -100,59 +88,52 @@ export function ProfileProvider({
         // Log error but stay on profile selector
         console.error('Failed to load profile', err);
       }
-    },
-    [profileManager]
-  );
+    };
 
-  const openProfileSelector = useCallback(() => {
-    setIsSelectingProfile(true);
-  }, []);
+    const openProfileSelector = () => {
+      setIsSelectingProfile(true);
+    };
 
-  const closeProfileSelector = useCallback(() => {
-    // Only close if we have a provider to fall back to
-    if (provider) {
-      setIsSelectingProfile(false);
-    } else if (onExitWithoutProvider) {
-      onExitWithoutProvider();
-    } else {
-      // No provider available, exit the app by default
-      process.exit(0);
-    }
-  }, [onExitWithoutProvider, provider]);
+    const closeProfileSelector = () => {
+      // Only close if we have a provider to fall back to
+      if (provider()) {
+        setIsSelectingProfile(false);
+      } else if (props.onExitWithoutProvider) {
+        props.onExitWithoutProvider();
+      } else {
+        // No provider available, exit the app by default
+        process.exit(0);
+      }
+    };
 
-  const value: ProfileContextValue = {
-    provider,
-    profileId,
-    profileName,
-    isSelectingProfile,
-    profileManager,
-    selectProfile,
-    openProfileSelector,
-    closeProfileSelector,
-  };
-
-  return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
-}
+    return {
+      provider,
+      profileId,
+      profileName,
+      isSelectingProfile,
+      profileManager: props.profileManager,
+      selectProfile,
+      openProfileSelector,
+      closeProfileSelector,
+    };
+  },
+});
 
 // ============================================================================
 // Hooks
 // ============================================================================
 
 /**
- * Hook to access profile context
- * @throws Error if used outside ProfileProvider
- */
-export function useProfile(): ProfileContextValue {
-  const context = useContext(ProfileContext);
-  if (!context) {
-    throw new Error('useProfile must be used within a ProfileProvider');
-  }
-  return context;
-}
-
-/**
  * Hook to check if profile context is available
+ * Note: In Solid, we'd need a different pattern for this - returning false outside provider
  */
 export function useHasProfile(): boolean {
-  return useContext(ProfileContext) !== null;
+  try {
+    useProfile();
+    return true;
+  } catch {
+    return false;
+  }
 }
+
+export { ProfileProvider, useProfile };

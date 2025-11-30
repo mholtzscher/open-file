@@ -12,8 +12,8 @@
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
     "noEmit": true,
-    "jsx": "react-jsx",
-    "jsxImportSource": "@opentui/react"
+    "jsx": "preserve",
+    "jsxImportSource": "@opentui/solid"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

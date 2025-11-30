@@ -1,7 +1,7 @@
 /**
  * KeyboardContext
  *
- * React Context for centralized keyboard event handling.
+ * SolidJS Context for centralized keyboard event handling.
  *
  * Features:
  * - Priority-based handler registration (dialogs > main UI)
@@ -10,8 +10,9 @@
  * - Optional external key source integration (CLI renderer)
  */
 
-import { createContext, useContext, useCallback, useRef, useEffect, ReactNode } from 'react';
+import { onMount, onCleanup } from 'solid-js';
 import type { KeyboardKey, KeyboardDispatcher } from '../types/keyboard.js';
+import { createSimpleContext } from './helper.js';
 
 /**
  * Handler priority levels
@@ -65,13 +66,10 @@ interface KeyboardContextValue {
   dispatch: KeyboardDispatcher;
 }
 
-const KeyboardContext = createContext<KeyboardContextValue | null>(null);
-
 /**
  * Props for KeyboardProvider
  */
 interface KeyboardProviderProps {
-  children: ReactNode;
   /**
    * Callback when dispatch function is ready
    * Used to bridge external key sources (e.g., CLI renderer) to the context
@@ -88,18 +86,18 @@ function generateHandlerId(): string {
 }
 
 /**
- * KeyboardProvider component
- *
- * Wraps the application to provide centralized keyboard handling.
- * Handlers are called in priority order - highest priority first.
- * When a handler returns true, the key is considered consumed and
- * no further handlers are called.
+ * KeyboardProvider using the SST createSimpleContext pattern
  */
-export function KeyboardProvider({ children, onDispatchReady }: KeyboardProviderProps) {
-  const handlersRef = useRef<HandlerRegistration[]>([]);
+const { Provider: KeyboardProvider, use: useKeyboard } = createSimpleContext<
+  KeyboardContextValue,
+  KeyboardProviderProps
+>({
+  name: 'Keyboard',
+  init: props => {
+    // Use a plain array for handlers (not reactive - we manage this manually)
+    let handlers: HandlerRegistration[] = [];
 
-  const registerHandler = useCallback(
-    (
+    const registerHandler = (
       handler: (key: KeyboardKey) => boolean,
       priority: KeyboardPriorityLevel = KeyboardPriority.Normal
     ) => {
@@ -107,86 +105,68 @@ export function KeyboardProvider({ children, onDispatchReady }: KeyboardProvider
       const registration: HandlerRegistration = { id, handler, priority };
 
       // Add handler and sort by priority (descending - highest first)
-      handlersRef.current.push(registration);
-      handlersRef.current.sort((a, b) => b.priority - a.priority);
+      handlers.push(registration);
+      handlers.sort((a, b) => b.priority - a.priority);
 
       // Return cleanup function
       return () => {
-        handlersRef.current = handlersRef.current.filter(r => r.id !== id);
+        handlers = handlers.filter(r => r.id !== id);
       };
-    },
-    []
-  );
-
-  const dispatch = useCallback((key: KeyboardKey) => {
-    // Call handlers in priority order until one consumes the key
-    for (const registration of handlersRef.current) {
-      try {
-        const consumed = registration.handler(key);
-        if (consumed) {
-          return; // Key was consumed, stop processing
-        }
-      } catch (error) {
-        // Log error but continue to next handler
-        console.error('Keyboard handler error:', error);
-      }
-    }
-  }, []);
-
-  // Notify parent when dispatch is ready (for bridging external key sources)
-  useEffect(() => {
-    onDispatchReady?.(dispatch);
-    return () => {
-      onDispatchReady?.(null);
     };
-  }, [dispatch, onDispatchReady]);
 
-  return (
-    <KeyboardContext.Provider value={{ registerHandler, dispatch }}>
-      {children}
-    </KeyboardContext.Provider>
-  );
-}
+    const dispatch: KeyboardDispatcher = (key: KeyboardKey) => {
+      // Call handlers in priority order until one consumes the key
+      for (const registration of handlers) {
+        try {
+          const consumed = registration.handler(key);
+          if (consumed) {
+            return; // Key was consumed, stop processing
+          }
+        } catch (error) {
+          // Log error but continue to next handler
+          console.error('Keyboard handler error:', error);
+        }
+      }
+    };
 
-/**
- * Hook to access the keyboard context
- * @throws Error if used outside KeyboardProvider
- */
-export function useKeyboard(): KeyboardContextValue {
-  const context = useContext(KeyboardContext);
-  if (!context) {
-    throw new Error('useKeyboard must be used within a KeyboardProvider');
-  }
-  return context;
-}
+    // Notify parent when dispatch is ready (for bridging external key sources)
+    onMount(() => {
+      props.onDispatchReady?.(dispatch);
+    });
+
+    onCleanup(() => {
+      props.onDispatchReady?.(null);
+    });
+
+    return { registerHandler, dispatch };
+  },
+});
 
 /**
  * Hook to register a keyboard handler
  *
- * @param handler - Memoized handler function (use useCallback)
+ * @param handler - Handler function (no need for useCallback in Solid)
  * @param priority - Handler priority (higher = handled first)
  *
  * @example
  * ```tsx
  * // Main UI handler
- * const handleKey = useCallback((key: KeyboardKey) => {
+ * useKeyboardHandler((key) => {
  *   if (key.name === 'j') {
  *     moveCursorDown();
  *     return true;
  *   }
  *   return false;
- * }, [moveCursorDown]);
- * useKeyboardHandler(handleKey);
+ * });
  *
  * // Dialog handler with high priority
- * const handleDialogKey = useCallback((key: KeyboardKey) => {
+ * useKeyboardHandler((key) => {
  *   if (key.name === 'escape') {
  *     closeDialog();
  *     return true;
  *   }
  *   return false;
- * }, [closeDialog]);
- * useKeyboardHandler(handleDialogKey, KeyboardPriority.High);
+ * }, KeyboardPriority.High);
  * ```
  */
 export function useKeyboardHandler(
@@ -195,7 +175,11 @@ export function useKeyboardHandler(
 ): void {
   const { registerHandler } = useKeyboard();
 
-  useEffect(() => {
-    return registerHandler(handler, priority);
-  }, [registerHandler, handler, priority]);
+  // In Solid, we register on mount and clean up automatically
+  onMount(() => {
+    const cleanup = registerHandler(handler, priority);
+    onCleanup(cleanup);
+  });
 }
+
+export { KeyboardProvider, useKeyboard };

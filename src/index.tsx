@@ -3,11 +3,10 @@
 /**
  * Entry point for open-file application
  *
- * Sets up the CLI renderer and bridges keyboard events to the App.
+ * Sets up the CLI renderer with SolidJS.
  */
 
-import { createCliRenderer } from '@opentui/core';
-import { createRoot } from '@opentui/react';
+import { render } from '@opentui/solid';
 import { App } from './ui/app.js';
 import { FileProfileManager } from './providers/services/file-profile-manager.js';
 import { parseArgs, printHelp, printVersion } from './utils/cli.js';
@@ -15,10 +14,6 @@ import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger
 import { openInExternalEditor } from './utils/external-editor.js';
 import { getProfilesPath } from './providers/services/profile-storage.js';
 import { initializeThemes } from './themes/index.js';
-import type { KeyboardKey, KeyboardDispatcher } from './types/keyboard.js';
-
-// Global keyboard event dispatcher - bridges external renderer to React context
-let globalKeyboardDispatcher: KeyboardDispatcher | null = null;
 
 /**
  * Main entry point for open-file application
@@ -55,66 +50,6 @@ async function main() {
     const profileManager = new FileProfileManager();
     logger.info('ProfileManager initialized');
 
-    // Create CLI renderer
-    type CliRenderer = Awaited<ReturnType<typeof createCliRenderer>> & {
-      keyInput: { on: (event: string, handler: (key: RawKeyEvent) => void) => void };
-      suspend: () => void;
-      resume: () => void;
-    };
-    interface RawKeyEvent {
-      name?: string;
-      key?: string;
-      ctrl?: boolean;
-      ctrlKey?: boolean;
-      shift?: boolean;
-      shiftKey?: boolean;
-      meta?: boolean;
-      metaKey?: boolean;
-      char?: string;
-    }
-
-    let renderer: CliRenderer;
-    try {
-      renderer = (await createCliRenderer({
-        exitOnCtrlC: true,
-      })) as CliRenderer;
-    } catch (rendererError) {
-      logger.error('Failed to create CLI renderer', rendererError);
-      throw rendererError;
-    }
-
-    // Setup keyboard event handling - bridge renderer events to React context
-    try {
-      renderer.keyInput.on('keypress', (key: RawKeyEvent) => {
-        if (globalKeyboardDispatcher) {
-          // Normalize key name - standardize on 'return' for enter key
-          let keyName = key.name || key.key || 'unknown';
-          if (keyName === 'enter') {
-            keyName = 'return';
-          }
-
-          // Derive char from key name for printable characters
-          let char = key.char;
-          if (!char && keyName.length === 1) {
-            char = keyName;
-          }
-
-          // Normalize key object to match expected interface
-          const normalizedKey: KeyboardKey = {
-            name: keyName,
-            ctrl: key.ctrl || key.ctrlKey || false,
-            shift: key.shift || key.shiftKey || false,
-            meta: key.meta || key.metaKey || false,
-            char: char,
-          };
-          globalKeyboardDispatcher(normalizedKey);
-        }
-      });
-    } catch (keyError) {
-      logger.error('Failed to setup keyboard handler', keyError);
-      throw keyError;
-    }
-
     /**
      * Handler to open profiles.json in external editor
      * Suspends the TUI, spawns the editor, then resumes and reloads profiles
@@ -123,20 +58,14 @@ async function main() {
       const profilesPath = getProfilesPath();
       logger.info('Opening profiles in external editor', { path: profilesPath });
 
-      // Suspend the TUI to allow the editor to take over
-      renderer.suspend();
-
+      // TODO: Need to implement suspend/resume for editor
       try {
-        // Spawn the editor synchronously
         const result = openInExternalEditor(profilesPath);
 
         if (!result.success) {
           logger.warn('Editor exited with error', { error: result.error });
         }
       } finally {
-        // Resume the TUI
-        renderer.resume();
-
         // Reload profiles from disk to pick up any changes
         try {
           await profileManager.reload();
@@ -147,26 +76,25 @@ async function main() {
       }
     };
 
-    // Render app
-    try {
-      const root = createRoot(renderer);
-      root.render(
+    // Render app using OpenTUI Solid renderer
+    // Keyboard handling is done via useKeyboard hook inside the App/KeyboardProvider
+    await render(
+      () => (
         <App
           profileManager={profileManager}
-          onDispatchReady={dispatch => {
-            globalKeyboardDispatcher = dispatch;
-          }}
           onExitWithoutProvider={() => {
             // No profile selected and selector closed; terminate the CLI
             process.exit(0);
           }}
           onEditProfiles={handleEditProfiles}
         />
-      );
-    } catch (renderError) {
-      logger.error('Failed to render app', renderError);
-      throw renderError;
-    }
+      ),
+      {
+        targetFps: 60,
+        exitOnCtrlC: false,
+        useKittyKeyboard: true,
+      }
+    );
   } catch (error) {
     const logger = getLogger();
     logger.error('Error in main', error);

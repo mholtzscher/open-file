@@ -5,7 +5,7 @@
  * Replaces 8 separate useState calls in s3-explorer.tsx with a unified state management approach.
  */
 
-import { useReducer, useCallback } from 'react';
+import { createSignal } from 'solid-js';
 import {
   ProgressState,
   ProgressAction,
@@ -87,8 +87,8 @@ export function progressReducer(state: ProgressState, action: ProgressAction): P
  * Return type for the useProgressState hook
  */
 export interface UseProgressStateReturn {
-  /** Current progress state */
-  progress: ProgressState;
+  /** Current progress state (call as function in Solid) */
+  progress: () => ProgressState;
   /** Show the progress window with specified options */
   showProgress: (options: ShowProgressOptions) => void;
   /** Update the current file being processed */
@@ -104,7 +104,7 @@ export interface UseProgressStateReturn {
   /** Reset progress to initial state */
   resetProgress: () => void;
   /** Direct dispatch for advanced use cases */
-  dispatch: React.Dispatch<ProgressAction>;
+  dispatch: (action: ProgressAction) => void;
 }
 
 /**
@@ -140,36 +140,40 @@ export interface UseProgressStateReturn {
  * ```
  */
 export function useProgressState(): UseProgressStateReturn {
-  const [state, dispatch] = useReducer(progressReducer, initialProgressState);
+  const [state, setState] = createSignal<ProgressState>(initialProgressState);
 
-  const showProgress = useCallback((options: ShowProgressOptions) => {
+  const dispatch = (action: ProgressAction) => {
+    setState(prev => progressReducer(prev, action));
+  };
+
+  const showProgress = (options: ShowProgressOptions) => {
     dispatch({ type: 'SHOW', payload: options });
-  }, []);
+  };
 
-  const updateFile = useCallback((file: string, num: number) => {
+  const updateFile = (file: string, num: number) => {
     const payload: FileProgressPayload = { file, num };
     dispatch({ type: 'SET_FILE', payload });
-  }, []);
+  };
 
-  const updateProgress = useCallback((value: number) => {
+  const updateProgress = (value: number) => {
     dispatch({ type: 'UPDATE', payload: { value } });
-  }, []);
+  };
 
-  const updateDescription = useCallback((description: string) => {
+  const updateDescription = (description: string) => {
     dispatch({ type: 'UPDATE', payload: { description } });
-  }, []);
+  };
 
-  const hideProgress = useCallback(() => {
+  const hideProgress = () => {
     dispatch({ type: 'HIDE' });
-  }, []);
+  };
 
-  const cancelOperation = useCallback(() => {
+  const cancelOperation = () => {
     dispatch({ type: 'CANCEL' });
-  }, []);
+  };
 
-  const resetProgress = useCallback(() => {
+  const resetProgress = () => {
     dispatch({ type: 'RESET' });
-  }, []);
+  };
 
   return {
     progress: state,

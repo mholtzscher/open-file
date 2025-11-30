@@ -25,12 +25,7 @@ export type {
 
 // Re-export registry and context
 export { ThemeRegistry } from '../ui/theme-registry.js';
-export {
-  ThemeProvider,
-  useTheme,
-  useThemeContext,
-  ThemeContext,
-} from '../contexts/ThemeContext.js';
+export { ThemeProvider, useTheme, useThemeContext } from '../contexts/ThemeContext.js';
 
 import { CatppuccinMochaTheme } from './catppuccin-mocha.js';
 import { CatppuccinLatteTheme } from './catppuccin-latte.js';

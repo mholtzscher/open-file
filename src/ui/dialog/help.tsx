@@ -1,10 +1,10 @@
 /**
- * HelpDialog React component
+ * HelpDialog SolidJS component
  *
  * Displays comprehensive help dialog with keybindings using absolute positioning
  */
 
-import { useCallback } from 'react';
+import { For, Show } from 'solid-js';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import { Theme } from '../theme.js';
 import { BaseDialog } from './base.js';
@@ -59,43 +59,49 @@ const keybindings: HelpItem[] = [
   { keys: 'Esc', description: 'Close dialog' },
 ];
 
+function isSection(item: HelpItem): item is SectionItem {
+  return 'section' in item;
+}
+
 /**
  * HelpDialog component - displays all keybindings with absolute positioning
  */
-export function HelpDialog({ visible, onClose }: HelpDialogProps) {
-  const handleKey = useCallback<Parameters<typeof useKeyboardHandler>[0]>(
-    key => {
-      if (!visible) return false;
+export function HelpDialog(props: HelpDialogProps) {
+  useKeyboardHandler(key => {
+    if (!props.visible) return false;
 
-      if (key.name === 'escape') {
-        onClose?.();
-        return true;
-      }
+    if (key.name === 'escape') {
+      props.onClose?.();
+      return true;
+    }
 
-      return true; // Block all other keys when help dialog is open
-    },
-    [visible, onClose]
-  );
-
-  useKeyboardHandler(handleKey, KeyboardPriority.High);
+    return true; // Block all other keys when help dialog is open
+  }, KeyboardPriority.High);
 
   return (
-    <BaseDialog visible={visible} title="Help" borderColor={Theme.getWarningColor()}>
+    <BaseDialog visible={props.visible} title="Help" borderColor={Theme.getWarningColor()}>
       <box flexDirection="column">
-        {keybindings.map((item, idx) => {
-          if ('section' in item) {
-            return (
-              <text key={idx} fg={Theme.getTextColor()}>
-                {item.section}
-              </text>
-            );
-          }
-          return (
-            <box key={idx} paddingLeft={2}>
-              <HelpBar items={[{ key: item.keys.padEnd(10), description: item.description }]} />
-            </box>
-          );
-        })}
+        <For each={keybindings}>
+          {item => (
+            <Show
+              when={isSection(item)}
+              fallback={
+                <box paddingLeft={2}>
+                  <HelpBar
+                    items={[
+                      {
+                        key: (item as KeybindingItem).keys.padEnd(10),
+                        description: (item as KeybindingItem).description,
+                      },
+                    ]}
+                  />
+                </box>
+              }
+            >
+              <text fg={Theme.getTextColor()}>{(item as SectionItem).section}</text>
+            </Show>
+          )}
+        </For>
       </box>
     </BaseDialog>
   );

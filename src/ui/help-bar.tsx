@@ -5,6 +5,7 @@
  * Matches the opencode style: bright key + dim description
  */
 
+import { For, Show } from 'solid-js';
 import { Theme } from './theme.js';
 
 // ============================================================================
@@ -41,16 +42,20 @@ export interface HelpBarProps {
  * ]} />
  * // Renders: "j/k navigate  Enter select  Esc cancel"
  */
-export function HelpBar({ items }: HelpBarProps) {
+export function HelpBar(props: HelpBarProps) {
   return (
     <box flexDirection="row">
-      {items.map((item, index) => (
-        <box key={index} flexDirection="row">
-          {index > 0 && <text fg={Theme.getDimColor()}>{'  '}</text>}
-          <text fg={Theme.getTextColor()}>{item.key}</text>
-          <text fg={Theme.getDimColor()}> {item.description}</text>
-        </box>
-      ))}
+      <For each={props.items}>
+        {(item, index) => (
+          <box flexDirection="row">
+            <Show when={index() > 0}>
+              <text fg={Theme.getDimColor()}>{'  '}</text>
+            </Show>
+            <text fg={Theme.getTextColor()}>{item.key}</text>
+            <text fg={Theme.getDimColor()}> {item.description}</text>
+          </box>
+        )}
+      </For>
     </box>
   );
 }

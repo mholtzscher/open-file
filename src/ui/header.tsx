@@ -1,5 +1,5 @@
 /**
- * Header React component
+ * Header SolidJS component
  *
  * Displays the application title and current container/bucket at the top of the screen.
  *
@@ -7,6 +7,7 @@
  * Automatically hides container selector for providers that don't support containers.
  */
 
+import { Show } from 'solid-js';
 import { Theme } from './theme.js';
 import { ProviderIndicator } from './provider-indicator.js';
 import { useHasStorage } from '../contexts/StorageContext.js';
@@ -17,7 +18,7 @@ import { Capability } from '../providers/types/capabilities.js';
 export interface HeaderProps {}
 
 /**
- * Header React component
+ * Header SolidJS component
  *
  * Displays "open-file" in the title border and container/bucket info inside the box.
  * Shows the current AWS profile on the right side.
@@ -34,13 +35,17 @@ export function Header() {
   const state = hasStorage ? useStorageState() : null;
   const capabilities = hasStorage ? useStorageCapabilities() : null;
 
-  // Determine what to display
-  const hasConnection = capabilities?.hasCapability(Capability.Connection) ?? false;
-  const providerName = state?.providerDisplayName;
-  const profileName = state?.profileName;
-  const providerId = state?.providerId;
+  // Determine what to display - use accessor functions
+  // state is already a () => StorageState accessor, so we call it to get the state
+  const hasConnection = () => capabilities?.hasCapability(Capability.Connection) ?? false;
+  const providerName = () => (state ? state().providerDisplayName : undefined);
+  const profileName = () => (state ? state().profileName : undefined);
+  const providerId = () => (state ? state().providerId : undefined);
 
-  const profileDisplay = profileName ? `${profileName} ` : providerName || 'none';
+  const profileDisplay = () => {
+    const name = profileName();
+    return name ? `${name} ` : providerName() || 'none';
+  };
 
   return (
     <box
@@ -57,10 +62,16 @@ export function Header() {
       <box flexDirection="row" alignItems="center">
         <box flexDirection="row" alignItems="center">
           <text fg={Theme.getVisualModeColor()}>profile: </text>
-          <text fg={Theme.getTextColor()}>{profileDisplay}</text>
-          {profileName && providerId && <ProviderIndicator providerType={providerId} />}
+          <text fg={Theme.getTextColor()}>{profileDisplay()}</text>
+          <Show when={profileName() && providerId()}>
+            <ProviderIndicator providerType={providerId()!} />
+          </Show>
         </box>
-        <box paddingLeft={1}>{hasConnection && <ConnectionStatus showReconnect={true} />}</box>
+        <box paddingLeft={1}>
+          <Show when={hasConnection()}>
+            <ConnectionStatus showReconnect={true} />
+          </Show>
+        </box>
       </box>
     </box>
   );

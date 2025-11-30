@@ -11,32 +11,33 @@ import type { Entry } from '../types/entry';
 
 describe('useDataLoader types', () => {
   describe('DataLoaderOptions', () => {
-    it('should accept required options', () => {
+    it('should accept required options with accessor functions (SolidJS pattern)', () => {
       const entries: Entry[] = [];
       const options: DataLoaderOptions = {
-        bucket: 'test-bucket',
-        currentPath: 'some/path/',
+        bucket: () => 'test-bucket',
+        currentPath: () => 'some/path/',
         setEntries: (newEntries: Entry[]) => {
           entries.push(...newEntries);
         },
         setCurrentPath: (_path: string) => {},
       };
 
-      expect(options.bucket).toBe('test-bucket');
-      expect(options.currentPath).toBe('some/path/');
+      // Accessor functions need to be called to get the value
+      expect(options.bucket()).toBe('test-bucket');
+      expect(options.currentPath()).toBe('some/path/');
       expect(typeof options.setEntries).toBe('function');
       expect(typeof options.setCurrentPath).toBe('function');
     });
 
     it('should accept undefined bucket for root view', () => {
       const options: DataLoaderOptions = {
-        bucket: undefined,
-        currentPath: '',
+        bucket: () => undefined,
+        currentPath: () => '',
         setEntries: () => {},
         setCurrentPath: () => {},
       };
 
-      expect(options.bucket).toBeUndefined();
+      expect(options.bucket()).toBeUndefined();
     });
 
     it('should accept optional callbacks', () => {
@@ -44,8 +45,8 @@ describe('useDataLoader types', () => {
       const errorMessages: string[] = [];
 
       const options: DataLoaderOptions = {
-        bucket: 'test',
-        currentPath: '',
+        bucket: () => 'test',
+        currentPath: () => '',
         setEntries: () => {},
         setCurrentPath: () => {},
         onSuccess: (msg: string) => successMessages.push(msg),
@@ -61,23 +62,24 @@ describe('useDataLoader types', () => {
   });
 
   describe('UseDataLoaderReturn', () => {
-    it('should define correct return shape', () => {
+    it('should define correct return shape with accessor functions (SolidJS pattern)', () => {
       const mockReturn: UseDataLoaderReturn = {
-        isInitialized: false,
-        isLoading: true,
+        isInitialized: () => false,
+        isLoading: () => true,
         reload: async () => {},
       };
 
-      expect(mockReturn.isInitialized).toBe(false);
-      expect(mockReturn.isLoading).toBe(true);
+      // Accessor functions need to be called to get the value
+      expect(mockReturn.isInitialized()).toBe(false);
+      expect(mockReturn.isLoading()).toBe(true);
       expect(typeof mockReturn.reload).toBe('function');
     });
 
     it('should have async reload function', async () => {
       let reloadCalled = false;
       const mockReturn: UseDataLoaderReturn = {
-        isInitialized: true,
-        isLoading: false,
+        isInitialized: () => true,
+        isLoading: () => false,
         reload: async () => {
           reloadCalled = true;
         },

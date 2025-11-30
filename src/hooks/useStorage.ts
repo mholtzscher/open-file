@@ -2,7 +2,7 @@
  * Storage Hooks
  *
  * Convenience hooks for accessing and interacting with the storage context.
- * These hooks provide a clean, React-friendly API for UI components.
+ * These hooks provide a clean, Solid-friendly API for UI components.
  *
  * Available hooks:
  * - useStorage: Access the full storage context
@@ -13,7 +13,7 @@
  * - useStorageList: List entries with automatic refresh
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { createSignal, createEffect, onCleanup } from 'solid-js';
 import { useStorage as useStorageContext } from '../contexts/StorageContext.js';
 import { StorageState, StorageOperationOptions } from '../contexts/StorageContext.js';
 import { Entry } from '../types/entry.js';
@@ -41,22 +41,22 @@ export { useStorage } from '../contexts/StorageContext.js';
  * ```tsx
  * function CurrentPath() {
  *   const state = useStorageState();
- *   return <div>Current path: {state.currentPath}</div>;
+ *   return <div>Current path: {state().currentPath}</div>;
  * }
  * ```
  */
-export function useStorageState(): StorageState {
+export function useStorageState(): () => StorageState {
   const storage = useStorageContext();
-  const [state, setState] = useState(storage.state);
+  const [state, setState] = createSignal(storage.state);
 
-  useEffect(() => {
+  createEffect(() => {
     // Subscribe to state changes
     const unsubscribe = storage.subscribe(() => {
       setState(storage.state);
     });
 
-    return unsubscribe;
-  }, [storage]);
+    onCleanup(unsubscribe);
+  });
 
   return state;
 }
@@ -79,7 +79,7 @@ export function useStorageState(): StorageState {
  *       <button onClick={() => navigate('/folder/')}>Go to folder</button>
  *       <button onClick={navigateUp}>Go up</button>
  *       <button onClick={refresh}>Refresh</button>
- *       <div>Current: {currentPath}</div>
+ *       <div>Current: {currentPath()}</div>
  *     </div>
  *   );
  * }
@@ -89,28 +89,25 @@ export function useStorageNavigation() {
   const storage = useStorageContext();
   const state = useStorageState();
 
-  const navigate = useCallback(
-    async (path: string) => {
-      await storage.navigate(path);
-    },
-    [storage]
-  );
+  const navigate = async (path: string) => {
+    await storage.navigate(path);
+  };
 
-  const navigateUp = useCallback(async () => {
+  const navigateUp = async () => {
     await storage.navigateUp();
-  }, [storage]);
+  };
 
-  const refresh = useCallback(async () => {
+  const refresh = async () => {
     await storage.refresh();
-  }, [storage]);
+  };
 
   return {
     navigate,
     navigateUp,
     refresh,
-    currentPath: state.currentPath,
-    isLoading: state.isLoading,
-    error: state.error,
+    currentPath: () => state().currentPath,
+    isLoading: () => state().isLoading,
+    error: () => state().error,
   };
 }
 
@@ -127,12 +124,12 @@ export function useStorageNavigation() {
  * function FileList() {
  *   const { entries, isLoading, error, refresh } = useStorageList();
  *
- *   if (isLoading) return <div>Loading...</div>;
- *   if (error) return <div>Error: {error.message}</div>;
+ *   if (isLoading()) return <div>Loading...</div>;
+ *   if (error()) return <div>Error: {error().message}</div>;
  *
  *   return (
  *     <div>
- *       {entries.map(entry => <div key={entry.id}>{entry.name}</div>)}
+ *       {entries().map(entry => <div>{entry.name}</div>)}
  *       <button onClick={refresh}>Refresh</button>
  *     </div>
  *   );
@@ -143,15 +140,15 @@ export function useStorageList() {
   const storage = useStorageContext();
   const state = useStorageState();
 
-  const refresh = useCallback(async () => {
+  const refresh = async () => {
     await storage.refresh();
-  }, [storage]);
+  };
 
   return {
-    entries: state.entries,
-    isLoading: state.isLoading,
-    error: state.error,
-    currentPath: state.currentPath,
+    entries: () => state().entries,
+    isLoading: () => state().isLoading,
+    error: () => state().error,
+    currentPath: () => state().currentPath,
     refresh,
   };
 }
@@ -183,61 +180,57 @@ export function useStorageList() {
 export function useStorageOperations() {
   const storage = useStorageContext();
 
-  const createDirectory = useCallback(
-    async (path: string) => {
-      await storage.mkdir(path);
-    },
-    [storage]
-  );
+  const createDirectory = async (path: string) => {
+    await storage.mkdir(path);
+  };
 
-  const writeFile = useCallback(
-    async (path: string, content: Buffer | string, options?: StorageOperationOptions) => {
-      await storage.write(path, content, options);
-    },
-    [storage]
-  );
+  const writeFile = async (
+    path: string,
+    content: Buffer | string,
+    options?: StorageOperationOptions
+  ) => {
+    await storage.write(path, content, options);
+  };
 
-  const readFile = useCallback(
-    async (path: string) => {
-      return await storage.read(path);
-    },
-    [storage]
-  );
+  const readFile = async (path: string) => {
+    return await storage.read(path);
+  };
 
-  const deleteFile = useCallback(
-    async (path: string, options?: StorageOperationOptions) => {
-      await storage.delete(path, options);
-    },
-    [storage]
-  );
+  const deleteFile = async (path: string, options?: StorageOperationOptions) => {
+    await storage.delete(path, options);
+  };
 
-  const moveFile = useCallback(
-    async (source: string, destination: string, options?: StorageOperationOptions) => {
-      await storage.move(source, destination, options);
-    },
-    [storage]
-  );
+  const moveFile = async (
+    source: string,
+    destination: string,
+    options?: StorageOperationOptions
+  ) => {
+    await storage.move(source, destination, options);
+  };
 
-  const copyFile = useCallback(
-    async (source: string, destination: string, options?: StorageOperationOptions) => {
-      await storage.copy(source, destination, options);
-    },
-    [storage]
-  );
+  const copyFile = async (
+    source: string,
+    destination: string,
+    options?: StorageOperationOptions
+  ) => {
+    await storage.copy(source, destination, options);
+  };
 
-  const downloadFile = useCallback(
-    async (remotePath: string, localPath: string, options?: StorageOperationOptions) => {
-      await storage.download(remotePath, localPath, options);
-    },
-    [storage]
-  );
+  const downloadFile = async (
+    remotePath: string,
+    localPath: string,
+    options?: StorageOperationOptions
+  ) => {
+    await storage.download(remotePath, localPath, options);
+  };
 
-  const uploadFile = useCallback(
-    async (localPath: string, remotePath: string, options?: StorageOperationOptions) => {
-      await storage.upload(localPath, remotePath, options);
-    },
-    [storage]
-  );
+  const uploadFile = async (
+    localPath: string,
+    remotePath: string,
+    options?: StorageOperationOptions
+  ) => {
+    await storage.upload(localPath, remotePath, options);
+  };
 
   return {
     createDirectory,
@@ -275,35 +268,24 @@ export function useStorageOperations() {
 export function useStorageCapabilities() {
   const storage = useStorageContext();
 
-  const hasCapability = useCallback(
-    (capability: Capability | string) => {
-      return storage.hasCapability(capability);
-    },
-    [storage]
-  );
+  const hasCapability = (capability: Capability | string) => {
+    return storage.hasCapability(capability);
+  };
 
-  const getCapabilities = useCallback(() => {
+  const getCapabilities = () => {
     return storage.getCapabilities();
-  }, [storage]);
-
-  const canDownload = hasCapability(Capability.Download);
-  const canUpload = hasCapability(Capability.Upload);
-  const canCopy = hasCapability(Capability.Copy);
-  const canMove = hasCapability(Capability.Move);
-  const canDelete = hasCapability(Capability.Delete);
-  const canWrite = hasCapability(Capability.Write);
-  const hasContainers = hasCapability(Capability.Containers);
+  };
 
   return {
     hasCapability,
     getCapabilities,
-    canDownload,
-    canUpload,
-    canCopy,
-    canMove,
-    canDelete,
-    canWrite,
-    hasContainers,
+    canDownload: hasCapability(Capability.Download),
+    canUpload: hasCapability(Capability.Upload),
+    canCopy: hasCapability(Capability.Copy),
+    canMove: hasCapability(Capability.Move),
+    canDelete: hasCapability(Capability.Delete),
+    canWrite: hasCapability(Capability.Write),
+    hasContainers: hasCapability(Capability.Containers),
   };
 }
 
@@ -324,20 +306,7 @@ export function useStorageCapabilities() {
  *     return null; // Hide if provider doesn't support containers
  *   }
  *
- *   const [containers, setContainers] = useState<Entry[]>([]);
- *
- *   useEffect(() => {
- *     listContainers().then(setContainers);
- *   }, [listContainers]);
- *
- *   return (
- *     <select
- *       value={currentContainer || ''}
- *       onChange={(e) => setContainer(e.target.value)}
- *     >
- *       {containers.map(c => <option key={c.id}>{c.name}</option>)}
- *     </select>
- *   );
+ *   // ...
  * }
  * ```
  */
@@ -346,26 +315,23 @@ export function useStorageContainer() {
   const { hasContainers } = useStorageCapabilities();
   const state = useStorageState();
 
-  const listContainers = useCallback(async (): Promise<Entry[]> => {
+  const listContainers = async (): Promise<Entry[]> => {
     if (!hasContainers) {
       return [];
     }
     return await storage.listContainers();
-  }, [storage, hasContainers]);
+  };
 
-  const setContainer = useCallback(
-    async (name: string, region?: string) => {
-      await storage.setContainer(name, region);
-    },
-    [storage]
-  );
+  const setContainer = async (name: string, region?: string) => {
+    await storage.setContainer(name, region);
+  };
 
-  const getContainer = useCallback(() => {
+  const getContainer = () => {
     return storage.getContainer();
-  }, [storage]);
+  };
 
   return {
-    currentContainer: state.currentContainer,
+    currentContainer: () => state().currentContainer,
     listContainers,
     setContainer,
     getContainer,
@@ -396,11 +362,11 @@ export function useStorageContainer() {
  *
  *   return (
  *     <div>
- *       <div>Path: {currentPath}</div>
- *       {isLoading ? <div>Loading...</div> : (
+ *       <div>Path: {currentPath()}</div>
+ *       {isLoading() ? <div>Loading...</div> : (
  *         <div>
- *           {entries.map(entry => (
- *             <div key={entry.id}>
+ *           {entries().map(entry => (
+ *             <div>
  *               {entry.name}
  *               {hasCapability(Capability.Delete) && (
  *                 <button onClick={() => deleteFile(entry.path)}>Delete</button>
@@ -422,8 +388,15 @@ export function useStorageManager() {
   const capabilities = useStorageCapabilities();
 
   return {
-    // State
-    ...state,
+    // State (as accessor functions)
+    entries: () => state().entries,
+    isLoading: () => state().isLoading,
+    isConnected: () => state().isConnected,
+    currentPath: () => state().currentPath,
+    error: () => state().error,
+    providerId: () => state().providerId,
+    providerDisplayName: () => state().providerDisplayName,
+    currentContainer: () => state().currentContainer,
 
     // Navigation
     navigate: navigation.navigate,

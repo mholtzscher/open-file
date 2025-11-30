@@ -5,7 +5,8 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { testRender } from '@opentui/react/test-utils';
+import { testRender } from '@opentui/solid';
+import type { JSX } from 'solid-js';
 import { CapabilityGate, type CapabilityGateProps, type GateBehavior } from './capability-gate.js';
 import { StorageContext, StorageContextValue, StorageState } from '../contexts/StorageContext.js';
 import { Capability } from '../providers/types/capabilities.js';
@@ -69,27 +70,21 @@ function createMockStorageContext(
 /**
  * Wrapper component that provides StorageContext for testing
  */
-function TestWrapper({
-  children,
-  capabilities,
-}: {
-  children: React.ReactNode;
-  capabilities?: Set<Capability | string>;
-}) {
-  const mockContext = createMockStorageContext(capabilities);
-  return <StorageContext.Provider value={mockContext}>{children}</StorageContext.Provider>;
+function TestWrapper(props: { children: JSX.Element; capabilities?: Set<Capability | string> }) {
+  const mockContext = createMockStorageContext(props.capabilities);
+  return <StorageContext.Provider value={mockContext}>{props.children}</StorageContext.Provider>;
 }
 
 /**
  * Helper to render CapabilityGate with mocked storage context
  */
 async function renderCapabilityGate(
-  props: CapabilityGateProps,
+  gateProps: CapabilityGateProps,
   capabilities: Set<Capability | string> = new Set()
 ) {
   const result = await testRender(
     <TestWrapper capabilities={capabilities}>
-      <CapabilityGate {...props} />
+      <CapabilityGate {...gateProps} />
     </TestWrapper>,
     { width: 80, height: 24 }
   );
