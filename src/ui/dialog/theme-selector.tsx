@@ -39,12 +39,24 @@ export function ThemeSelectorDialog({ visible, onClose }: ThemeSelectorDialogPro
 
   // Reset selection when dialog opens
   useEffect(() => {
-    if (visible) {
-      const index = themes.findIndex(t => t.id === currentThemeId);
-      setSelectedIndex(index >= 0 ? index : 0);
-      setOriginalThemeId(currentThemeId);
+    if (!visible) {
+      return;
     }
-  }, [visible, currentThemeId, themes]);
+
+    // Use the currently active theme ID at the moment the dialog opens.
+    // This avoids fighting with navigation updates while the dialog is open.
+    const activeId = ThemeRegistry.getActiveId();
+    const idToUse = activeId ?? themes[0]?.id ?? null;
+
+    if (idToUse) {
+      const index = themes.findIndex(t => t.id === idToUse);
+      setSelectedIndex(index >= 0 ? index : 0);
+      setOriginalThemeId(idToUse);
+    } else {
+      setSelectedIndex(0);
+      setOriginalThemeId(null);
+    }
+  }, [visible]);
 
   // Apply theme preview as selection changes
   useEffect(() => {
@@ -109,7 +121,7 @@ export function ThemeSelectorDialog({ visible, onClose }: ThemeSelectorDialogPro
       {/* Theme list */}
       {themes.map((theme, index) => {
         const isSelected = selectedIndex === index;
-        const isCurrent = theme.id === originalThemeId;
+        const isCurrent = theme.id === ThemeRegistry.getActiveId();
         return (
           <text
             key={theme.id}

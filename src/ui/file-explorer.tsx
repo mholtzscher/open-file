@@ -22,6 +22,7 @@ import { providerNameToScheme } from '../utils/storage-uri.js';
 
 import { FileExplorerLayout, StatusBarState, PreviewState } from './file-explorer-layout.js';
 import { Theme } from './theme.js';
+import { useTheme } from '../contexts/ThemeContext.js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Capability } from '../providers/types/capabilities.js';
 
@@ -29,6 +30,9 @@ import { Capability } from '../providers/types/capabilities.js';
  * Main FileExplorer component - declarative React implementation
  */
 export function FileExplorer() {
+  // Subscribe to theme changes so the whole app re-renders when the theme changes
+  useTheme();
+
   // ============================================
   // Storage Context
   // ============================================
