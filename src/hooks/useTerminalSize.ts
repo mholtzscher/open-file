@@ -39,6 +39,11 @@ export function useTerminalSize(): UseTerminalSizeReturn {
 
   // Get current terminal size - tries multiple APIs for compatibility
   const getCurrentSize = useCallback((): TerminalSize => {
+    // For tests, use a stable default size to avoid environment-dependent behavior
+    if (process.env.NODE_ENV === 'test') {
+      return DEFAULT_SIZE;
+    }
+
     try {
       // Try process.stdout (Node.js/Bun standard)
       if (process.stdout && process.stdout.isTTY && process.stdout.columns && process.stdout.rows) {
