@@ -12,6 +12,7 @@ import { ProfileSelectorDialog } from './dialog/profile-selector.js';
 import { KeyboardProvider } from '../contexts/KeyboardContext.js';
 import { ProfileProvider, useProfile } from '../contexts/ProfileContext.js';
 import { StorageContextProvider } from '../contexts/StorageContextProvider.js';
+import { ThemeProvider } from '../contexts/ThemeContext.js';
 import type { ProfileManager } from '../providers/services/profile-manager.js';
 import type { KeyboardDispatcher } from '../types/keyboard.js';
 
@@ -100,13 +101,15 @@ export function App({
   onEditProfiles,
 }: AppProps) {
   return (
-    <KeyboardProvider onDispatchReady={onDispatchReady}>
-      <ProfileProvider
-        profileManager={profileManager}
-        onExitWithoutProvider={onExitWithoutProvider}
-      >
-        <AppContent onEditProfiles={onEditProfiles} />
-      </ProfileProvider>
-    </KeyboardProvider>
+    <ThemeProvider>
+      <KeyboardProvider onDispatchReady={onDispatchReady}>
+        <ProfileProvider
+          profileManager={profileManager}
+          onExitWithoutProvider={onExitWithoutProvider}
+        >
+          <AppContent onEditProfiles={onEditProfiles} />
+        </ProfileProvider>
+      </KeyboardProvider>
+    </ThemeProvider>
   );
 }

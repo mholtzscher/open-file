@@ -14,6 +14,7 @@ import { parseArgs, printHelp, printVersion } from './utils/cli.js';
 import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger.js';
 import { openInExternalEditor } from './utils/external-editor.js';
 import { getProfilesPath } from './providers/services/profile-storage.js';
+import { initializeThemes } from './themes/index.js';
 import type { KeyboardKey, KeyboardDispatcher } from './types/keyboard.js';
 
 // Global keyboard event dispatcher - bridges external renderer to React context
@@ -45,6 +46,10 @@ async function main() {
       printVersion();
       process.exit(0);
     }
+
+    // Initialize theme system before any rendering
+    initializeThemes();
+    logger.info('Theme system initialized');
 
     // Create ProfileManager for profile management
     const profileManager = new FileProfileManager();

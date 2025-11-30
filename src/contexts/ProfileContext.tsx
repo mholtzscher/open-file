@@ -11,6 +11,7 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
 import { StorageProvider } from '../providers/provider.js';
 import type { ProfileManager } from '../providers/services/profile-manager.js';
 import type { Profile } from '../providers/types/profile.js';
+import { ThemeRegistry } from '../ui/theme-registry.js';
 
 // ============================================================================
 // Context Types
@@ -90,6 +91,11 @@ export function ProfileProvider({
         setProfileId(profile.id);
         setProfileName(profile.displayName);
         setIsSelectingProfile(false);
+
+        // Apply profile's theme preference if set
+        if (profile.themeId && ThemeRegistry.has(profile.themeId)) {
+          ThemeRegistry.setActive(profile.themeId);
+        }
       } catch (err) {
         // Log error but stay on profile selector
         console.error('Failed to load profile', err);

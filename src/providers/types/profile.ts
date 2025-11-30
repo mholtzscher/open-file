@@ -20,6 +20,8 @@ export interface BaseProfile {
   displayName: string;
   /** Provider type */
   provider: ProviderType;
+  /** Theme ID preference (optional, defaults to system default) */
+  themeId?: string;
 }
 
 /**
