@@ -77,8 +77,7 @@ function createDefaultKeybindings(): KeybindingMap {
     ['shift+p', 'dialog:profileSelector'],
     ['P', 'dialog:profileSelector'],
 
-    // Buffer operations
-    ['w', 'buffer:save'],
+    // Buffer operations (saving is now primarily via commands like :w)
     ['r', 'buffer:refresh'],
     ['u', 'buffer:undo'],
 
@@ -86,8 +85,7 @@ function createDefaultKeybindings(): KeybindingMap {
     ['shift+r', 'connection:reconnect'],
     ['R', 'connection:reconnect'],
 
-    // Application
-    ['q', 'app:quit'],
+    // Application (quitting is now primarily via commands like :q)
     ['shift+h', 'app:toggleHidden'],
     ['H', 'app:toggleHidden'],
 

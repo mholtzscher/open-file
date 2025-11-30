@@ -80,6 +80,12 @@ export interface UseDialogHandlersProps {
   pendingOps: UsePendingOperationsReturn;
 }
 
+let onNextSaveComplete: (() => void) | null = null;
+
+export function setOnNextSaveComplete(callback: (() => void) | null) {
+  onNextSaveComplete = callback;
+}
+
 /**
  * Hook that builds DialogsState for the FileExplorerDialogs component
  */
@@ -136,6 +142,12 @@ export function useDialogHandlers({
               quitAfterSaveRef.current = false;
               process.exit(0);
             }
+
+            if (onNextSaveComplete) {
+              const callback = onNextSaveComplete;
+              onNextSaveComplete = null;
+              callback();
+            }
           } catch {
             setStatusMessage('Operations completed but failed to reload buffer');
             setStatusMessageColor(Theme.getWarningColor());
@@ -145,10 +157,12 @@ export function useDialogHandlers({
       onError: message => {
         setStatusMessage(message);
         setStatusMessageColor(Theme.getErrorColor());
+        onNextSaveComplete = null;
       },
       onCancelled: message => {
         setStatusMessage(message);
         setStatusMessageColor(Theme.getWarningColor());
+        onNextSaveComplete = null;
       },
       onComplete: () => {
         closeAndClearOperations();

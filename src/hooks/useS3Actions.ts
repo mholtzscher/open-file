@@ -11,6 +11,7 @@ import type { UseBufferStateReturn } from './useBufferState.js';
 import type { UseNavigationHandlersReturn as NavigationHandlers } from './useNavigationHandlers.js';
 import type { StorageContextValue } from '../contexts/StorageContext.js';
 import type { UsePendingOperationsReturn } from './usePendingOperations.js';
+import { setOnNextSaveComplete } from './useDialogHandlers.js';
 
 interface UseS3ActionsProps {
   storage: StorageContextValue;
@@ -164,7 +165,7 @@ export function useS3Actions({
             const markedCount = getPendingOps().getMarkedForDeletion().length;
             if (markedCount > 0) {
               setStatusMessage(
-                `${markedCount} item(s) marked for deletion. Press 'w' to save or 'u' to undo.`
+                `${markedCount} item(s) marked for deletion. Use :w to save or 'u' to undo.`
               );
               setStatusMessageColor(Theme.getWarningColor());
             } else {
@@ -261,7 +262,7 @@ export function useS3Actions({
 
             getPendingOps().paste(currentBufferState.currentPath);
             const opType = isCut ? 'move' : 'copy';
-            setStatusMessage(`Pending ${opType} operation(s) added. Press 'w' to save.`);
+            setStatusMessage(`Pending ${opType} operation(s) added. Use :w to save.`);
             setStatusMessageColor(Theme.getWarningColor());
           } else {
             setStatusMessage('Paste not yet implemented');
@@ -624,6 +625,22 @@ export function useS3Actions({
               actionHandlers['buffer:save']?.();
             } else if (command === ':q') {
               actionHandlers['app:quit']?.();
+            } else if (command === ':wq') {
+              const opsStore = getPendingOps();
+              if (opsStore.hasPendingChanges) {
+                setOnNextSaveComplete(() => {
+                  process.exit(0);
+                });
+                actionHandlers['buffer:save']?.();
+              } else {
+                actionHandlers['app:quit']?.();
+              }
+            } else if (command === ':q!') {
+              const opsStore = getPendingOps();
+              if (opsStore.hasPendingChanges) {
+                opsStore.discard();
+              }
+              process.exit(0);
             } else if (command === ':buckets') {
               if (!bucket) {
                 setStatusMessage('Already viewing buckets');
@@ -666,7 +683,7 @@ export function useS3Actions({
                 );
                 buf.clearEditBuffer();
                 buf.exitInsertMode();
-                setStatusMessage(`Pending create: ${cleanName}. Press 'w' to save.`);
+                setStatusMessage(`Pending create: ${cleanName}. Use :w to save.`);
                 setStatusMessageColor(Theme.getWarningColor());
               } else {
                 // Fallback: add to buffer directly (won't persist)
@@ -707,7 +724,7 @@ export function useS3Actions({
                   buf.clearEditBuffer();
                   buf.exitEditMode();
                   setStatusMessage(
-                    `Pending rename: ${currentEntry.name} → ${cleanName}. Press 'w' to save.`
+                    `Pending rename: ${currentEntry.name} -> ${cleanName}. Use :w to save.`
                   );
                   setStatusMessageColor(Theme.getWarningColor());
                 } else {
