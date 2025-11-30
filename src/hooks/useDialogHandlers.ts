@@ -48,6 +48,7 @@ export interface UseDialogHandlersProps {
   showUploadDialog: boolean;
   showQuitDialog: boolean;
   showProfileSelectorDialog: boolean;
+  showThemeSelectorDialog: boolean;
   showErrorDialog: boolean;
   statusMessage: string;
 
@@ -95,6 +96,7 @@ export function useDialogHandlers({
   showUploadDialog,
   showQuitDialog,
   showProfileSelectorDialog,
+  showThemeSelectorDialog,
   showErrorDialog,
   statusMessage,
   showConfirm,
@@ -373,6 +375,10 @@ export function useDialogHandlers({
         }
       },
       onCancel: () => closeDialog(),
+    },
+    themeSelector: {
+      visible: showThemeSelectorDialog,
+      onClose: () => closeDialog(),
     },
   };
 

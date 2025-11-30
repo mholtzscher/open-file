@@ -13,6 +13,7 @@ import { SortMenu } from './dialog/sort.js';
 import { ProgressWindow } from './progress-window.js';
 import { QuitDialog } from './dialog/quit.js';
 import { ProfileSelectorDialog } from './dialog/profile-selector.js';
+import { ThemeSelectorDialog } from './dialog/theme-selector.js';
 import { SortField, SortOrder } from '../utils/sorting.js';
 import type { PendingOperation } from '../types/dialog.js';
 import type { Profile } from '../providers/types/profile.js';
@@ -83,6 +84,11 @@ export interface ProfileSelectorDialogState {
   onCancel: () => void;
 }
 
+export interface ThemeSelectorDialogState {
+  visible: boolean;
+  onClose: () => void;
+}
+
 /**
  * Combined dialog state for all dialogs
  */
@@ -95,6 +101,7 @@ export interface DialogsState {
   progress: ProgressWindowState;
   quit: QuitDialogState;
   profileSelector: ProfileSelectorDialogState;
+  themeSelector: ThemeSelectorDialogState;
 }
 
 interface FileExplorerDialogsProps {
@@ -108,7 +115,8 @@ interface FileExplorerDialogsProps {
  * Dialogs are rendered in a specific order to ensure proper z-index stacking.
  */
 export function FileExplorerDialogs({ dialogs }: FileExplorerDialogsProps) {
-  const { confirm, error, help, upload, sortMenu, progress, quit, profileSelector } = dialogs;
+  const { confirm, error, help, upload, sortMenu, progress, quit, profileSelector, themeSelector } =
+    dialogs;
 
   return (
     <>
@@ -175,6 +183,9 @@ export function FileExplorerDialogs({ dialogs }: FileExplorerDialogsProps) {
         onProfileSelect={profileSelector.onProfileSelect}
         onCancel={profileSelector.onCancel}
       />
+
+      {/* Theme Selector Dialog */}
+      <ThemeSelectorDialog visible={themeSelector.visible} onClose={themeSelector.onClose} />
     </>
   );
 }

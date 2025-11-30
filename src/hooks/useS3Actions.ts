@@ -26,6 +26,7 @@ interface UseS3ActionsProps {
   showUpload: () => void;
   showQuit: (pendingChanges: number) => void;
   showProfileSelector: () => void;
+  showThemeSelector: () => void;
   toggleHelp: () => void;
   toggleSort: () => void;
   closeDialog: () => void;
@@ -47,6 +48,7 @@ export function useS3Actions({
   showUpload,
   showQuit,
   showProfileSelector,
+  showThemeSelector,
   toggleHelp,
   toggleSort,
   closeDialog,
@@ -641,6 +643,8 @@ export function useS3Actions({
                 setStatusMessage(`Switched to bucket: ${bucketName}`);
                 setStatusMessageColor(Theme.getInfoColor());
               }
+            } else if (command === ':theme') {
+              showThemeSelector();
             } else {
               setStatusMessage(`Unknown command: ${command}`);
               setStatusMessageColor(Theme.getErrorColor());

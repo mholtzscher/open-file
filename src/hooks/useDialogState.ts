@@ -69,6 +69,12 @@ export function dialogReducer(state: DialogState, action: DialogAction): DialogS
         activeDialog: 'profileSelector',
       };
 
+    case 'SHOW_THEME_SELECTOR':
+      return {
+        ...state,
+        activeDialog: 'themeSelector',
+      };
+
     case 'CLOSE':
       return {
         ...state,
@@ -106,6 +112,8 @@ export interface UseDialogStateReturn {
   isQuitOpen: boolean;
   /** Whether the profile selector dialog is open */
   isProfileSelectorOpen: boolean;
+  /** Whether the theme selector dialog is open */
+  isThemeSelectorOpen: boolean;
   /** Show the confirm dialog with pending operations */
   showConfirm: (operations: PendingOperation[]) => void;
   /** Show the help dialog */
@@ -122,6 +130,8 @@ export interface UseDialogStateReturn {
   showQuit: (pendingChanges: number) => void;
   /** Show the profile selector dialog */
   showProfileSelector: () => void;
+  /** Show the theme selector dialog */
+  showThemeSelector: () => void;
   /** Close any open dialog */
   closeDialog: () => void;
   /** Close dialog and clear pending operations */
@@ -198,6 +208,10 @@ export function useDialogState(): UseDialogStateReturn {
     dispatch({ type: 'SHOW_PROFILE_SELECTOR' });
   }, []);
 
+  const showThemeSelector = useCallback(() => {
+    dispatch({ type: 'SHOW_THEME_SELECTOR' });
+  }, []);
+
   const closeDialog = useCallback(() => {
     dispatch({ type: 'CLOSE' });
   }, []);
@@ -215,6 +229,7 @@ export function useDialogState(): UseDialogStateReturn {
   const isUploadOpen = state.activeDialog === 'upload';
   const isQuitOpen = state.activeDialog === 'quit';
   const isProfileSelectorOpen = state.activeDialog === 'profileSelector';
+  const isThemeSelectorOpen = state.activeDialog === 'themeSelector';
 
   return {
     dialog: state,
@@ -225,6 +240,7 @@ export function useDialogState(): UseDialogStateReturn {
     isUploadOpen,
     isQuitOpen,
     isProfileSelectorOpen,
+    isThemeSelectorOpen,
     showConfirm,
     showHelp,
     toggleHelp,
@@ -233,6 +249,7 @@ export function useDialogState(): UseDialogStateReturn {
     showUpload,
     showQuit,
     showProfileSelector,
+    showThemeSelector,
     closeDialog,
     closeAndClearOperations,
     dispatch,

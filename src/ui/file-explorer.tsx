@@ -71,12 +71,14 @@ export function FileExplorer() {
     isUploadOpen: showUploadDialog,
     isQuitOpen: showQuitDialog,
     isProfileSelectorOpen: showProfileSelectorDialog,
+    isThemeSelectorOpen: showThemeSelectorDialog,
     showConfirm,
     toggleHelp,
     toggleSort,
     showUpload,
     showQuit,
     showProfileSelector,
+    showThemeSelector,
     closeDialog,
     closeAndClearOperations,
   } = useDialogState();
@@ -168,7 +170,8 @@ export function FileExplorer() {
     showSortMenu ||
     showUploadDialog ||
     showQuitDialog ||
-    showProfileSelectorDialog;
+    showProfileSelectorDialog ||
+    showThemeSelectorDialog;
 
   // ============================================
   // Action Handlers (via Custom Hook)
@@ -187,6 +190,7 @@ export function FileExplorer() {
     showUpload,
     showQuit,
     showProfileSelector,
+    showThemeSelector,
     toggleHelp,
     toggleSort,
     closeDialog,
@@ -221,6 +225,7 @@ export function FileExplorer() {
     showUploadDialog,
     showQuitDialog,
     showProfileSelectorDialog,
+    showThemeSelectorDialog,
     showErrorDialog,
     statusMessage,
     showConfirm,
