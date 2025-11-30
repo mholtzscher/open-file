@@ -4,8 +4,15 @@
  * These tests verify the PreviewPane component using CodeRenderable with Tree-sitter
  */
 
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { createTreeSitterStyle, detectTreeSitterFiletype } from '../utils/treesitter-theme.js';
+import { ThemeRegistry } from './theme-registry.js';
+import { CatppuccinMochaTheme } from '../themes/catppuccin-mocha.js';
+
+beforeEach(() => {
+  ThemeRegistry.clear();
+  ThemeRegistry.register(CatppuccinMochaTheme);
+});
 
 describe('PreviewPane utilities', () => {
   it('creates Tree-sitter syntax style', () => {

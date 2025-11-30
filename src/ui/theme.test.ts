@@ -2,8 +2,15 @@
  * Tests for theme and syntax highlighting
  */
 
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { Theme, CatppuccinMocha } from './theme.js';
+import { ThemeRegistry } from './theme-registry.js';
+import { CatppuccinMochaTheme } from '../themes/catppuccin-mocha.js';
+
+beforeEach(() => {
+  ThemeRegistry.clear();
+  ThemeRegistry.register(CatppuccinMochaTheme);
+});
 
 describe('Theme', () => {
   describe('Directory colors', () => {
