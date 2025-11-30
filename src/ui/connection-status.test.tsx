@@ -4,12 +4,20 @@
  * Uses OpenTUI testing patterns to properly test rendered output.
  */
 
-import { describe, it, expect } from 'bun:test';
+import { describe, it, expect, beforeEach } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
 import { ConnectionStatus, type ConnectionStatusProps } from './connection-status.js';
 import { StorageContext, StorageContextValue, StorageState } from '../contexts/StorageContext.js';
 import { Capability } from '../providers/types/capabilities.js';
 import { EntryType } from '../types/entry.js';
+import { ThemeRegistry } from './theme-registry.js';
+import { CatppuccinMochaTheme } from '../themes/catppuccin-mocha.js';
+
+// Register theme before tests
+beforeEach(() => {
+  ThemeRegistry.clear();
+  ThemeRegistry.register(CatppuccinMochaTheme);
+});
 
 // ============================================================================
 // Test Utilities
