@@ -225,7 +225,7 @@ export class Theme {
       nfs: CatppuccinMocha.teal,
       smb: CatppuccinMocha.mauve,
       gdrive: CatppuccinMocha.red,
-      local: CatppuccinMocha.text,
+      local: CatppuccinMocha.lavender,
     };
 
     return colors[providerType] || CatppuccinMocha.text;
