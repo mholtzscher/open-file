@@ -6,7 +6,7 @@
 
 import { useCallback } from 'react';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
-import { CatppuccinMocha } from '../theme.js';
+import { Theme } from '../theme.js';
 import { BaseDialog } from './base.js';
 import { HelpBar } from '../help-bar.js';
 
@@ -56,10 +56,12 @@ export function QuitDialog({
   const changeText = pendingChanges === 1 ? 'change' : 'changes';
 
   return (
-    <BaseDialog visible={visible} title="Unsaved Changes" borderColor={CatppuccinMocha.yellow}>
-      <text fg={CatppuccinMocha.yellow}>{`You have ${pendingChanges} unsaved ${changeText}.`}</text>
+    <BaseDialog visible={visible} title="Unsaved Changes" borderColor={Theme.getWarningColor()}>
+      <text
+        fg={Theme.getWarningColor()}
+      >{`You have ${pendingChanges} unsaved ${changeText}.`}</text>
 
-      <text fg={CatppuccinMocha.text}> </text>
+      <text fg={Theme.getTextColor()}> </text>
 
       <HelpBar
         items={[

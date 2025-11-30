@@ -5,7 +5,7 @@
  */
 
 import { useMemo } from 'react';
-import { CatppuccinMocha, Theme } from './theme.js';
+import { Theme } from './theme.js';
 import { createTreeSitterStyle, detectTreeSitterFiletype } from '../utils/treesitter-theme.js';
 
 export interface PreviewPaneProps {
@@ -46,7 +46,7 @@ export function PreviewPane({
         flexShrink={flexShrink}
         flexBasis={flexBasis}
         borderStyle="rounded"
-        borderColor={CatppuccinMocha.blue}
+        borderColor={Theme.getInfoColor()}
         title="Preview (0 lines)"
         flexDirection="column"
         paddingLeft={1}
@@ -66,7 +66,7 @@ export function PreviewPane({
       flexShrink={flexShrink}
       flexBasis={flexBasis}
       borderStyle="rounded"
-      borderColor={CatppuccinMocha.blue}
+      borderColor={Theme.getInfoColor()}
       title={`Preview (${totalLines} lines)`}
       flexDirection="column"
       paddingLeft={1}
@@ -80,7 +80,7 @@ export function PreviewPane({
         flexGrow={1}
         selectable={true}
         wrapMode="none"
-        fg={CatppuccinMocha.text}
+        fg={Theme.getTextColor()}
       />
     </box>
   );

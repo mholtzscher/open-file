@@ -4,7 +4,7 @@
  * Displays progress for long-running S3 operations with progress bar and cancellation
  */
 
-import { CatppuccinMocha } from './theme.js';
+import { Theme } from './theme.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { BaseDialog, getContentWidth } from './dialog/base.js';
 import { HelpBar } from './help-bar.js';
@@ -61,23 +61,23 @@ export function ProgressWindow({
       title={title}
       width={windowWidth}
       height={WINDOW_HEIGHT}
-      borderColor={CatppuccinMocha.blue}
+      borderColor={Theme.getInfoColor()}
     >
-      <text fg={CatppuccinMocha.text} width={contentWidth}>
+      <text fg={Theme.getTextColor()} width={contentWidth}>
         {description.substring(0, contentWidth)}
       </text>
 
       {currentFile && (
-        <text fg={CatppuccinMocha.subtext0} width={contentWidth}>
+        <text fg={Theme.getMutedColor()} width={contentWidth}>
           {(fileInfo + currentFile).substring(0, contentWidth)}
         </text>
       )}
 
-      <text fg={CatppuccinMocha.sky} width={contentWidth}>
+      <text fg={Theme.getSearchModeColor()} width={contentWidth}>
         {progressBar}
       </text>
 
-      <text fg={CatppuccinMocha.yellow} width={contentWidth}>
+      <text fg={Theme.getWarningColor()} width={contentWidth}>
         {clampedProgress}% complete
       </text>
 

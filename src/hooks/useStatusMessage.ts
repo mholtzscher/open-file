@@ -12,7 +12,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import { CatppuccinMocha } from '../ui/theme.js';
+import { Theme } from '../ui/theme.js';
 
 // ============================================================================
 // Types
@@ -70,11 +70,11 @@ export interface UseStatusMessageReturn {
 // ============================================================================
 
 const STATUS_COLORS: Record<StatusType, string> = {
-  success: CatppuccinMocha.green,
-  error: CatppuccinMocha.red,
-  warning: CatppuccinMocha.yellow,
-  info: CatppuccinMocha.blue,
-  normal: CatppuccinMocha.text,
+  success: Theme.getSuccessColor(),
+  error: Theme.getErrorColor(),
+  warning: Theme.getWarningColor(),
+  info: Theme.getInfoColor(),
+  normal: Theme.getTextColor(),
 };
 
 // ============================================================================
@@ -109,7 +109,7 @@ const STATUS_COLORS: Record<StatusType, string> = {
 export function useStatusMessage(): UseStatusMessageReturn {
   const [state, setState] = useState<StatusMessageState>({
     message: '',
-    color: CatppuccinMocha.text,
+    color: Theme.getTextColor(),
     type: 'normal',
   });
 
@@ -169,17 +169,17 @@ export function useStatusMessage(): UseStatusMessageReturn {
   const setMessageColor = useCallback((color: string) => {
     // Determine type based on color for isError detection
     let type: StatusType = 'normal';
-    if (color === CatppuccinMocha.red) type = 'error';
-    else if (color === CatppuccinMocha.green) type = 'success';
-    else if (color === CatppuccinMocha.yellow) type = 'warning';
-    else if (color === CatppuccinMocha.blue) type = 'info';
+    if (color === Theme.getErrorColor()) type = 'error';
+    else if (color === Theme.getSuccessColor()) type = 'success';
+    else if (color === Theme.getWarningColor()) type = 'warning';
+    else if (color === Theme.getInfoColor()) type = 'info';
 
     setState(prev => ({ ...prev, color, type }));
   }, []);
 
   // Computed property for error detection
   const isError = useMemo(() => {
-    return state.message !== '' && state.color === CatppuccinMocha.red;
+    return state.message !== '' && state.color === Theme.getErrorColor();
   }, [state.message, state.color]);
 
   return {

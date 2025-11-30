@@ -7,7 +7,7 @@
 
 import { useCallback, useRef } from 'react';
 import { DialogsState } from '../ui/file-explorer-dialogs.js';
-import { CatppuccinMocha } from '../ui/theme.js';
+import { Theme } from '../ui/theme.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { SortField, SortOrder } from '../utils/sorting.js';
 import type { PendingOperation, DialogState } from '../types/dialog.js';
@@ -128,7 +128,7 @@ export function useDialogHandlers({
             pendingOps.discard();
 
             setStatusMessage(message);
-            setStatusMessageColor(CatppuccinMocha.green);
+            setStatusMessageColor(Theme.getSuccessColor());
 
             if (quitAfterSaveRef.current) {
               quitAfterSaveRef.current = false;
@@ -136,17 +136,17 @@ export function useDialogHandlers({
             }
           } catch {
             setStatusMessage('Operations completed but failed to reload buffer');
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            setStatusMessageColor(Theme.getWarningColor());
           }
         })();
       },
       onError: message => {
         setStatusMessage(message);
-        setStatusMessageColor(CatppuccinMocha.red);
+        setStatusMessageColor(Theme.getErrorColor());
       },
       onCancelled: message => {
         setStatusMessage(message);
-        setStatusMessageColor(CatppuccinMocha.yellow);
+        setStatusMessageColor(Theme.getWarningColor());
       },
       onComplete: () => {
         closeAndClearOperations();
@@ -180,7 +180,7 @@ export function useDialogHandlers({
       message: statusMessage,
       onDismiss: () => {
         setStatusMessage('');
-        setStatusMessageColor(CatppuccinMocha.text);
+        setStatusMessageColor(Theme.getTextColor());
       },
     },
     help: {
@@ -234,7 +234,7 @@ export function useDialogHandlers({
         bufferState.setSortConfig(newConfig);
         const fieldName = field.charAt(0).toUpperCase() + field.slice(1);
         setStatusMessage(`Sorted by ${fieldName}`);
-        setStatusMessageColor(CatppuccinMocha.green);
+        setStatusMessageColor(Theme.getSuccessColor());
       },
       onOrderToggle: () => {
         const newOrder =
@@ -248,7 +248,7 @@ export function useDialogHandlers({
         bufferState.setSortConfig(newConfig);
         const orderStr = newOrder === SortOrder.Ascending ? 'ascending' : 'descending';
         setStatusMessage(`Sort order: ${orderStr}`);
-        setStatusMessageColor(CatppuccinMocha.green);
+        setStatusMessageColor(Theme.getSuccessColor());
       },
       onClose: () => closeDialog(),
     },
@@ -337,7 +337,7 @@ export function useDialogHandlers({
       onCancel: () => {
         closeDialog();
         setStatusMessage('Quit cancelled');
-        setStatusMessageColor(CatppuccinMocha.text);
+        setStatusMessageColor(Theme.getTextColor());
       },
     },
     profileSelector: {
@@ -347,7 +347,7 @@ export function useDialogHandlers({
       onProfileSelect: async profile => {
         try {
           setStatusMessage(`Switching to profile: ${profile.displayName}...`);
-          setStatusMessageColor(CatppuccinMocha.blue);
+          setStatusMessageColor(Theme.getInfoColor());
           closeDialog();
 
           await storage.switchProfile(profile.id);
@@ -364,12 +364,12 @@ export function useDialogHandlers({
           bufferState.setCurrentPath(newState.currentPath);
 
           setStatusMessage(`Switched to profile: ${profile.displayName}`);
-          setStatusMessageColor(CatppuccinMocha.green);
+          setStatusMessageColor(Theme.getSuccessColor());
         } catch (err) {
           setStatusMessage(
             `Failed to switch profile: ${err instanceof Error ? err.message : 'Unknown error'}`
           );
-          setStatusMessageColor(CatppuccinMocha.red);
+          setStatusMessageColor(Theme.getErrorColor());
         }
       },
       onCancel: () => closeDialog(),

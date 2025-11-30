@@ -1,5 +1,5 @@
 import { useMemo, useRef } from 'react';
-import { CatppuccinMocha } from '../ui/theme.js';
+import { Theme } from '../ui/theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { calculateParentPath } from '../utils/path-utils.js';
 import { Capability } from '../providers/types/capabilities.js';
@@ -97,7 +97,7 @@ export function useS3Actions({
             if (!previewMode) {
               setPreviewMode(true);
               setStatusMessage('Preview enabled');
-              setStatusMessageColor(CatppuccinMocha.blue);
+              setStatusMessageColor(Theme.getInfoColor());
             }
             return;
           }
@@ -110,7 +110,7 @@ export function useS3Actions({
             setPreviewMode(false);
             // Preview content will be cleared automatically by the hook when previewMode is false
             setStatusMessage('Preview closed');
-            setStatusMessageColor(CatppuccinMocha.text);
+            setStatusMessageColor(Theme.getTextColor());
             return;
           }
 
@@ -127,23 +127,23 @@ export function useS3Actions({
               // Container-based provider at container root - go back to container listing
               setBucket(undefined);
               setStatusMessage('Back to bucket listing');
-              setStatusMessageColor(CatppuccinMocha.blue);
+              setStatusMessageColor(Theme.getInfoColor());
             } else {
               // Non-container provider at root - can't go further up
               setStatusMessage('Already at root');
-              setStatusMessageColor(CatppuccinMocha.text);
+              setStatusMessageColor(Theme.getTextColor());
             }
           } else {
             await navigationHandlers.navigateToPath(parentPath);
             setStatusMessage(`Navigated to ${parentPath || 'root'}`);
-            setStatusMessageColor(CatppuccinMocha.green);
+            setStatusMessageColor(Theme.getSuccessColor());
           }
         },
 
         'entry:delete': () => {
           if (!storage.hasCapability(Capability.Delete)) {
             setStatusMessage('Delete not supported by this storage provider');
-            setStatusMessageColor(CatppuccinMocha.red);
+            setStatusMessageColor(Theme.getErrorColor());
             return;
           }
 
@@ -164,10 +164,10 @@ export function useS3Actions({
               setStatusMessage(
                 `${markedCount} item(s) marked for deletion. Press 'w' to save or 'u' to undo.`
               );
-              setStatusMessageColor(CatppuccinMocha.yellow);
+              setStatusMessageColor(Theme.getWarningColor());
             } else {
               setStatusMessage('No items marked for deletion');
-              setStatusMessageColor(CatppuccinMocha.text);
+              setStatusMessageColor(Theme.getTextColor());
             }
           }
         },
@@ -175,7 +175,7 @@ export function useS3Actions({
         'entry:cut': () => {
           if (!storage.hasCapability(Capability.Move)) {
             setStatusMessage('Move not supported by this storage provider');
-            setStatusMessageColor(CatppuccinMocha.red);
+            setStatusMessageColor(Theme.getErrorColor());
             return;
           }
 
@@ -184,7 +184,7 @@ export function useS3Actions({
 
           if (selected.length === 0) {
             setStatusMessage('No entries selected');
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            setStatusMessageColor(Theme.getWarningColor());
             return;
           }
 
@@ -194,17 +194,17 @@ export function useS3Actions({
             currentBufferState.exitVisualSelection();
             currentBufferState.setMode(EditMode.Normal);
             setStatusMessage(`Cut ${selected.length} item(s) - navigate and press 'p' to move`);
-            setStatusMessageColor(CatppuccinMocha.blue);
+            setStatusMessageColor(Theme.getInfoColor());
           } else {
             setStatusMessage('Cut not available (pending ops not initialized)');
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            setStatusMessageColor(Theme.getWarningColor());
           }
         },
 
         'entry:copy': () => {
           if (!storage.hasCapability(Capability.Copy)) {
             setStatusMessage('Copy not supported by this storage provider');
-            setStatusMessageColor(CatppuccinMocha.red);
+            setStatusMessageColor(Theme.getErrorColor());
             return;
           }
 
@@ -213,7 +213,7 @@ export function useS3Actions({
 
           if (selected.length === 0) {
             setStatusMessage('No entries selected');
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            setStatusMessageColor(Theme.getWarningColor());
             return;
           }
 
@@ -223,7 +223,7 @@ export function useS3Actions({
             currentBufferState.exitVisualSelection();
             currentBufferState.setMode(EditMode.Normal);
             setStatusMessage(`Copied ${selected.length} item(s) - navigate and press 'p' to paste`);
-            setStatusMessageColor(CatppuccinMocha.blue);
+            setStatusMessageColor(Theme.getInfoColor());
           } else {
             // Fallback to old behavior
             currentBufferState.copySelection();
@@ -231,7 +231,7 @@ export function useS3Actions({
             currentBufferState.exitVisualSelection();
             currentBufferState.setMode(EditMode.Normal);
             setStatusMessage('Copied');
-            setStatusMessageColor(CatppuccinMocha.green);
+            setStatusMessageColor(Theme.getSuccessColor());
           }
         },
 
@@ -241,29 +241,29 @@ export function useS3Actions({
           if (pendingOps) {
             if (!getPendingOps().hasClipboardContent) {
               setStatusMessage('Nothing to paste - cut or copy first');
-              setStatusMessageColor(CatppuccinMocha.yellow);
+              setStatusMessageColor(Theme.getWarningColor());
               return;
             }
 
             const isCut = getPendingOps().isClipboardCut;
             if (isCut && !storage.hasCapability(Capability.Move)) {
               setStatusMessage('Move not supported by this storage provider');
-              setStatusMessageColor(CatppuccinMocha.red);
+              setStatusMessageColor(Theme.getErrorColor());
               return;
             }
             if (!isCut && !storage.hasCapability(Capability.Copy)) {
               setStatusMessage('Copy not supported by this storage provider');
-              setStatusMessageColor(CatppuccinMocha.red);
+              setStatusMessageColor(Theme.getErrorColor());
               return;
             }
 
             getPendingOps().paste(currentBufferState.currentPath);
             const opType = isCut ? 'move' : 'copy';
             setStatusMessage(`Pending ${opType} operation(s) added. Press 'w' to save.`);
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            setStatusMessageColor(Theme.getWarningColor());
           } else {
             setStatusMessage('Paste not yet implemented');
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            setStatusMessageColor(Theme.getWarningColor());
           }
         },
 
@@ -273,13 +273,13 @@ export function useS3Actions({
 
           if (!currentEntry) {
             setStatusMessage('No entry selected');
-            setStatusMessageColor(CatppuccinMocha.red);
+            setStatusMessageColor(Theme.getErrorColor());
             return;
           }
 
           if (!storage.hasCapability(Capability.Download)) {
             setStatusMessage('Download not supported by this storage provider');
-            setStatusMessageColor(CatppuccinMocha.red);
+            setStatusMessageColor(Theme.getErrorColor());
             return;
           }
 
@@ -303,7 +303,7 @@ export function useS3Actions({
         'entry:upload': () => {
           if (!storage.hasCapability(Capability.Upload)) {
             setStatusMessage('Upload not supported by this storage provider');
-            setStatusMessageColor(CatppuccinMocha.red);
+            setStatusMessageColor(Theme.getErrorColor());
             return;
           }
 
@@ -314,43 +314,43 @@ export function useS3Actions({
         'mode:insert': () => {
           if (!storage.hasCapability(Capability.Write)) {
             setStatusMessage('Create not supported by this storage provider');
-            setStatusMessageColor(CatppuccinMocha.red);
+            setStatusMessageColor(Theme.getErrorColor());
             return;
           }
 
           getActiveBuffer().enterInsertMode();
           setStatusMessage('-- INSERT -- (type name, Enter to create, Esc to cancel)');
-          setStatusMessageColor(CatppuccinMocha.blue);
+          setStatusMessageColor(Theme.getInfoColor());
         },
 
         'mode:edit': () => {
           if (!storage.hasCapability(Capability.Move)) {
             setStatusMessage('Rename not supported by this storage provider');
-            setStatusMessageColor(CatppuccinMocha.red);
+            setStatusMessageColor(Theme.getErrorColor());
             return;
           }
 
           getActiveBuffer().enterEditMode();
           setStatusMessage('-- EDIT -- (type to rename, Enter to confirm, Esc to cancel)');
-          setStatusMessageColor(CatppuccinMocha.blue);
+          setStatusMessageColor(Theme.getInfoColor());
         },
 
         'mode:search': () => {
           getActiveBuffer().enterSearchMode();
           setStatusMessage('Search mode: type pattern, n/N to navigate, ESC to clear');
-          setStatusMessageColor(CatppuccinMocha.blue);
+          setStatusMessageColor(Theme.getInfoColor());
         },
 
         'mode:command': () => {
           getActiveBuffer().enterCommandMode();
           setStatusMessage(':');
-          setStatusMessageColor(CatppuccinMocha.text);
+          setStatusMessageColor(Theme.getTextColor());
         },
 
         'mode:visual': () => {
           getActiveBuffer().startVisualSelection();
           setStatusMessage('-- VISUAL --');
-          setStatusMessageColor(CatppuccinMocha.blue);
+          setStatusMessageColor(Theme.getInfoColor());
         },
 
         'mode:normal': () => {
@@ -361,7 +361,7 @@ export function useS3Actions({
           buf.exitInsertMode();
           buf.exitEditMode();
           setStatusMessage('');
-          setStatusMessageColor(CatppuccinMocha.text);
+          setStatusMessageColor(Theme.getTextColor());
         },
 
         // Dialogs
@@ -370,7 +370,7 @@ export function useS3Actions({
         'dialog:upload': () => {
           if (!storage.hasCapability(Capability.Upload)) {
             setStatusMessage('Upload not supported by this storage provider');
-            setStatusMessageColor(CatppuccinMocha.red);
+            setStatusMessageColor(Theme.getErrorColor());
             return;
           }
 
@@ -382,7 +382,7 @@ export function useS3Actions({
             showProfileSelector();
           } else {
             setStatusMessage('Profile selector not available (multi-provider system not enabled)');
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            setStatusMessageColor(Theme.getWarningColor());
           }
         },
 
@@ -390,7 +390,7 @@ export function useS3Actions({
         'buffer:save': () => {
           if (!getPendingOps().hasPendingChanges) {
             setStatusMessage('No changes to save');
-            setStatusMessageColor(CatppuccinMocha.text);
+            setStatusMessageColor(Theme.getTextColor());
             return;
           }
 
@@ -460,12 +460,12 @@ export function useS3Actions({
                 .then((entries: Entry[]) => {
                   currentBufferState.setEntries([...entries]);
                   setStatusMessage(`Refreshed: ${entries.length} bucket(s)`);
-                  setStatusMessageColor(CatppuccinMocha.green);
+                  setStatusMessageColor(Theme.getSuccessColor());
                 })
                 .catch((err: unknown) => {
                   const parsedError = parseAwsError(err, 'Refresh failed');
                   setStatusMessage(formatErrorForDisplay(parsedError, 70));
-                  setStatusMessageColor(CatppuccinMocha.red);
+                  setStatusMessageColor(Theme.getErrorColor());
                 });
             } else {
               // Non-container providers - refresh root directory
@@ -475,12 +475,12 @@ export function useS3Actions({
                 .then(entries => {
                   currentBufferState.setEntries([...entries]);
                   setStatusMessage(`Refreshed: ${entries.length} items`);
-                  setStatusMessageColor(CatppuccinMocha.green);
+                  setStatusMessageColor(Theme.getSuccessColor());
                 })
                 .catch((err: unknown) => {
                   const parsedError = parseAwsError(err, 'Refresh failed');
                   setStatusMessage(formatErrorForDisplay(parsedError, 70));
-                  setStatusMessageColor(CatppuccinMocha.red);
+                  setStatusMessageColor(Theme.getErrorColor());
                 });
             }
           } else {
@@ -491,12 +491,12 @@ export function useS3Actions({
                 currentBufferState.setEntries([...entries]);
                 // setOriginalEntries removed from here
                 setStatusMessage('Refreshed');
-                setStatusMessageColor(CatppuccinMocha.green);
+                setStatusMessageColor(Theme.getSuccessColor());
               })
               .catch((err: unknown) => {
                 const parsedError = parseAwsError(err, 'Refresh failed');
                 setStatusMessage(formatErrorForDisplay(parsedError, 70));
-                setStatusMessageColor(CatppuccinMocha.red);
+                setStatusMessageColor(Theme.getErrorColor());
               });
           }
         },
@@ -504,20 +504,20 @@ export function useS3Actions({
         'buffer:undo': () => {
           if (getPendingOps().undo()) {
             setStatusMessage('Undo');
-            setStatusMessageColor(CatppuccinMocha.green);
+            setStatusMessageColor(Theme.getSuccessColor());
           } else {
             setStatusMessage('Nothing to undo');
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            setStatusMessageColor(Theme.getWarningColor());
           }
         },
 
         'buffer:redo': () => {
           if (getPendingOps().redo()) {
             setStatusMessage('Redo');
-            setStatusMessageColor(CatppuccinMocha.green);
+            setStatusMessageColor(Theme.getSuccessColor());
           } else {
             setStatusMessage('Nothing to redo');
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            setStatusMessageColor(Theme.getWarningColor());
           }
         },
 
@@ -542,7 +542,7 @@ export function useS3Actions({
           currentBufferState.toggleHiddenFiles();
           const state = currentBufferState.showHiddenFiles;
           setStatusMessage(state ? 'Showing hidden files' : 'Hiding hidden files');
-          setStatusMessageColor(CatppuccinMocha.green);
+          setStatusMessageColor(Theme.getSuccessColor());
         },
 
         // Connection operations
@@ -550,17 +550,17 @@ export function useS3Actions({
           // Only for connection-oriented providers
           if (!storage.hasCapability(Capability.Connection)) {
             setStatusMessage('Reconnect not supported for this storage provider');
-            setStatusMessageColor(CatppuccinMocha.yellow);
+            setStatusMessageColor(Theme.getWarningColor());
             return;
           }
 
           setStatusMessage('Reconnecting...');
-          setStatusMessageColor(CatppuccinMocha.blue);
+          setStatusMessageColor(Theme.getInfoColor());
 
           try {
             await storage.connect();
             setStatusMessage('Reconnected successfully');
-            setStatusMessageColor(CatppuccinMocha.green);
+            setStatusMessageColor(Theme.getSuccessColor());
 
             // Refresh the current view after reconnecting
             const currentBufferState = getActiveBuffer();
@@ -579,7 +579,7 @@ export function useS3Actions({
           } catch (err) {
             const parsedError = parseAwsError(err, 'Reconnect failed');
             setStatusMessage(formatErrorForDisplay(parsedError, 70));
-            setStatusMessageColor(CatppuccinMocha.red);
+            setStatusMessageColor(Theme.getErrorColor());
           }
         },
 
@@ -591,7 +591,7 @@ export function useS3Actions({
               const currentQuery = buf.searchQuery || '';
               buf.updateSearchQuery(currentQuery + key.char);
               setStatusMessage(`Searching: ${currentQuery + key.char}`);
-              setStatusMessageColor(CatppuccinMocha.blue);
+              setStatusMessageColor(Theme.getInfoColor());
             } else if (buf.mode === EditMode.Command) {
               buf.appendToEditBuffer(key.char);
             } else if (buf.mode === EditMode.Insert || buf.mode === EditMode.Edit) {
@@ -608,7 +608,7 @@ export function useS3Actions({
             const currentQuery = buf.searchQuery || '';
             buf.updateSearchQuery(currentQuery.slice(0, -1));
             setStatusMessage(`Searching: ${currentQuery.slice(0, -1)}`);
-            setStatusMessageColor(CatppuccinMocha.blue);
+            setStatusMessageColor(Theme.getInfoColor());
           } else {
             buf.backspaceEditBuffer();
           }
@@ -625,11 +625,11 @@ export function useS3Actions({
             } else if (command === ':buckets') {
               if (!bucket) {
                 setStatusMessage('Already viewing buckets');
-                setStatusMessageColor(CatppuccinMocha.text);
+                setStatusMessageColor(Theme.getTextColor());
               } else {
                 setBucket(undefined);
                 setStatusMessage('Switched to bucket listing');
-                setStatusMessageColor(CatppuccinMocha.blue);
+                setStatusMessageColor(Theme.getInfoColor());
               }
             } else if (command.startsWith(':bucket ')) {
               const bucketName = command.substring(':bucket '.length).trim();
@@ -639,11 +639,11 @@ export function useS3Actions({
                 });
                 setBucket(bucketName);
                 setStatusMessage(`Switched to bucket: ${bucketName}`);
-                setStatusMessageColor(CatppuccinMocha.blue);
+                setStatusMessageColor(Theme.getInfoColor());
               }
             } else {
               setStatusMessage(`Unknown command: ${command}`);
-              setStatusMessageColor(CatppuccinMocha.red);
+              setStatusMessageColor(Theme.getErrorColor());
             }
             buf.exitCommandMode();
           } else if (buf.mode === EditMode.Insert) {
@@ -663,7 +663,7 @@ export function useS3Actions({
                 buf.clearEditBuffer();
                 buf.exitInsertMode();
                 setStatusMessage(`Pending create: ${cleanName}. Press 'w' to save.`);
-                setStatusMessageColor(CatppuccinMocha.yellow);
+                setStatusMessageColor(Theme.getWarningColor());
               } else {
                 // Fallback: add to buffer directly (won't persist)
                 buf.saveSnapshot();
@@ -687,7 +687,7 @@ export function useS3Actions({
                 setStatusMessage(
                   `Created ${isDirectory ? 'directory' : 'file'}: ${entryName} (local only)`
                 );
-                setStatusMessageColor(CatppuccinMocha.green);
+                setStatusMessageColor(Theme.getSuccessColor());
               }
             }
           } else if (buf.mode === EditMode.Edit) {
@@ -705,7 +705,7 @@ export function useS3Actions({
                   setStatusMessage(
                     `Pending rename: ${currentEntry.name} → ${cleanName}. Press 'w' to save.`
                   );
-                  setStatusMessageColor(CatppuccinMocha.yellow);
+                  setStatusMessageColor(Theme.getWarningColor());
                 } else {
                   // Fallback: modify buffer directly (won't persist)
                   const currentEntries = buf.entries;
@@ -728,7 +728,7 @@ export function useS3Actions({
                   buf.clearEditBuffer();
                   buf.exitEditMode();
                   setStatusMessage(`Renamed to: ${newName} (local only)`);
-                  setStatusMessageColor(CatppuccinMocha.green);
+                  setStatusMessageColor(Theme.getSuccessColor());
                 }
               }
             } else {
@@ -752,7 +752,7 @@ export function useS3Actions({
             buf.exitEditMode();
           }
           setStatusMessage('');
-          setStatusMessageColor(CatppuccinMocha.text);
+          setStatusMessageColor(Theme.getTextColor());
         },
 
         'input:tab': () => {

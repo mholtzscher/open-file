@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { CatppuccinMocha } from '../theme.js';
+import { Theme } from '../theme.js';
 import { ProviderIndicator } from '../provider-indicator.js';
 import { BaseDialog } from './base.js';
 import { HelpBar } from '../help-bar.js';
@@ -194,8 +194,8 @@ export function ProfileSelectorDialog({
   // Loading state
   if (isLoading) {
     return (
-      <BaseDialog visible={true} title="Select Profile" borderColor={CatppuccinMocha.blue}>
-        <text fg={CatppuccinMocha.overlay0}>Loading profiles...</text>
+      <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getInfoColor()}>
+        <text fg={Theme.getDimColor()}>Loading profiles...</text>
       </BaseDialog>
     );
   }
@@ -203,9 +203,9 @@ export function ProfileSelectorDialog({
   // Error state
   if (error) {
     return (
-      <BaseDialog visible={true} title="Select Profile" borderColor={CatppuccinMocha.red}>
-        <text fg={CatppuccinMocha.red}>Error: {error}</text>
-        <text fg={CatppuccinMocha.overlay0}> </text>
+      <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getErrorColor()}>
+        <text fg={Theme.getErrorColor()}>Error: {error}</text>
+        <text fg={Theme.getDimColor()}> </text>
         <HelpBar
           items={[
             { key: 'e', description: 'edit' },
@@ -219,9 +219,9 @@ export function ProfileSelectorDialog({
   // Empty state
   if (profiles.length === 0) {
     return (
-      <BaseDialog visible={true} title="Select Profile" borderColor={CatppuccinMocha.overlay0}>
-        <text fg={CatppuccinMocha.overlay0}>No profiles configured</text>
-        <text fg={CatppuccinMocha.overlay0}> </text>
+      <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getDimColor()}>
+        <text fg={Theme.getDimColor()}>No profiles configured</text>
+        <text fg={Theme.getDimColor()}> </text>
         <HelpBar
           items={[
             { key: 'e', description: 'edit' },
@@ -234,7 +234,7 @@ export function ProfileSelectorDialog({
 
   // Profile list
   return (
-    <BaseDialog visible={true} title="Select Profile" borderColor={CatppuccinMocha.blue}>
+    <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getInfoColor()}>
       {profiles.map((profile, index) => {
         const isSelected = index === selectedIndex;
         const isCurrent = profile.id === currentProfileId;
@@ -245,7 +245,7 @@ export function ProfileSelectorDialog({
         const prefix = `${selectionChar} ${currentChar} ${profile.displayName} `;
 
         // Use provider-specific color for the badge via ProviderIndicator
-        const textColor = isCurrent ? CatppuccinMocha.text : CatppuccinMocha.subtext0;
+        const textColor = isCurrent ? Theme.getTextColor() : Theme.getMutedColor();
 
         return (
           <box key={profile.id} flexDirection="row">
@@ -256,7 +256,7 @@ export function ProfileSelectorDialog({
       })}
 
       {/* Footer help text */}
-      <text fg={CatppuccinMocha.overlay0}> </text>
+      <text fg={Theme.getDimColor()}> </text>
       <HelpBar
         items={[
           { key: 'j/k', description: 'select' },

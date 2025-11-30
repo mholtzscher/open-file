@@ -13,7 +13,7 @@ import { StatusBar } from './status-bar.js';
 import { Header } from './header.js';
 import { PreviewPane } from './preview-pane.js';
 import { FileExplorerDialogs, DialogsState } from './file-explorer-dialogs.js';
-import { CatppuccinMocha } from './theme.js';
+import { Theme } from './theme.js';
 import type { UsePendingOperationsReturn } from '../hooks/usePendingOperations.js';
 
 /**
@@ -110,9 +110,9 @@ export function FileExplorerLayout({
             justifyContent="center"
             alignItems="center"
             borderStyle="rounded"
-            borderColor={CatppuccinMocha.blue}
+            borderColor={Theme.getInfoColor()}
           >
-            <text fg={CatppuccinMocha.blue}>Loading...</text>
+            <text fg={Theme.getInfoColor()}>Loading...</text>
           </box>
         )}
 

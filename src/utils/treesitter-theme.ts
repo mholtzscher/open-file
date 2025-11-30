@@ -1,11 +1,12 @@
 /**
  * Tree-sitter syntax style configuration for CodeRenderable
  *
- * Maps Catppuccin Mocha theme colors to Tree-sitter token types
+ * Creates syntax highlighting styles from the active theme's syntax definition.
  */
 
 import { SyntaxStyle, parseColor } from '@opentui/core';
-import { CatppuccinMocha } from '../ui/theme.js';
+import { Theme } from '../ui/theme.js';
+import type { ThemeSyntax, SyntaxTokenStyle } from '../types/theme.js';
 
 /**
  * Helper to convert hex color strings to RGBA for Tree-sitter
@@ -13,7 +14,24 @@ import { CatppuccinMocha } from '../ui/theme.js';
 const c = (hex: string) => parseColor(hex);
 
 /**
- * Create a SyntaxStyle for Tree-sitter from Catppuccin Mocha theme
+ * Convert a SyntaxTokenStyle to OpenTUI's style format
+ */
+function convertStyle(style: SyntaxTokenStyle): {
+  fg?: ReturnType<typeof parseColor>;
+  bold?: boolean;
+  italic?: boolean;
+  underline?: boolean;
+} {
+  return {
+    ...(style.fg && { fg: c(style.fg) }),
+    ...(style.bold && { bold: true }),
+    ...(style.italic && { italic: true }),
+    ...(style.underline && { underline: true }),
+  };
+}
+
+/**
+ * Create a SyntaxStyle for Tree-sitter from the active theme
  *
  * Tree-sitter uses semantic token types like "keyword", "function", "string", etc.
  * These are different from highlight.js class names.
@@ -21,111 +39,113 @@ const c = (hex: string) => parseColor(hex);
  * @see https://tree-sitter.github.io/tree-sitter/syntax-highlighting
  */
 export function createTreeSitterStyle(): SyntaxStyle {
+  const syntax: ThemeSyntax = Theme.syntax;
+
   return SyntaxStyle.fromStyles({
     // Keywords and control flow
-    keyword: { fg: c(CatppuccinMocha.mauve), bold: true },
-    'keyword.control': { fg: c(CatppuccinMocha.mauve), bold: true },
-    'keyword.function': { fg: c(CatppuccinMocha.mauve), bold: true },
-    'keyword.return': { fg: c(CatppuccinMocha.mauve), bold: true },
-    'keyword.operator': { fg: c(CatppuccinMocha.sky) },
+    keyword: convertStyle(syntax.keyword),
+    'keyword.control': convertStyle(syntax['keyword.control']),
+    'keyword.function': convertStyle(syntax['keyword.function']),
+    'keyword.return': convertStyle(syntax['keyword.return']),
+    'keyword.operator': convertStyle(syntax['keyword.operator']),
 
     // Functions and methods
-    function: { fg: c(CatppuccinMocha.blue) },
-    'function.call': { fg: c(CatppuccinMocha.blue) },
-    'function.method': { fg: c(CatppuccinMocha.blue) },
-    'function.builtin': { fg: c(CatppuccinMocha.yellow) },
-    method: { fg: c(CatppuccinMocha.blue) },
+    function: convertStyle(syntax.function),
+    'function.call': convertStyle(syntax['function.call']),
+    'function.method': convertStyle(syntax['function.method']),
+    'function.builtin': convertStyle(syntax['function.builtin']),
+    method: convertStyle(syntax.method),
 
     // Variables and identifiers
-    variable: { fg: c(CatppuccinMocha.text) },
-    'variable.builtin': { fg: c(CatppuccinMocha.red) },
-    'variable.parameter': { fg: c(CatppuccinMocha.maroon) },
-    parameter: { fg: c(CatppuccinMocha.maroon) },
-    property: { fg: c(CatppuccinMocha.text) },
+    variable: convertStyle(syntax.variable),
+    'variable.builtin': convertStyle(syntax['variable.builtin']),
+    'variable.parameter': convertStyle(syntax['variable.parameter']),
+    parameter: convertStyle(syntax.parameter),
+    property: convertStyle(syntax.property),
 
     // Types and classes
-    type: { fg: c(CatppuccinMocha.yellow) },
-    'type.builtin': { fg: c(CatppuccinMocha.yellow) },
-    class: { fg: c(CatppuccinMocha.yellow) },
-    interface: { fg: c(CatppuccinMocha.yellow) },
-    struct: { fg: c(CatppuccinMocha.yellow) },
-    enum: { fg: c(CatppuccinMocha.yellow) },
+    type: convertStyle(syntax.type),
+    'type.builtin': convertStyle(syntax['type.builtin']),
+    class: convertStyle(syntax.class),
+    interface: convertStyle(syntax.interface),
+    struct: convertStyle(syntax.struct),
+    enum: convertStyle(syntax.enum),
 
     // Constants and literals
-    constant: { fg: c(CatppuccinMocha.peach) },
-    'constant.builtin': { fg: c(CatppuccinMocha.peach) },
-    'constant.numeric': { fg: c(CatppuccinMocha.peach) },
-    number: { fg: c(CatppuccinMocha.peach) },
-    boolean: { fg: c(CatppuccinMocha.peach) },
-    float: { fg: c(CatppuccinMocha.peach) },
+    constant: convertStyle(syntax.constant),
+    'constant.builtin': convertStyle(syntax['constant.builtin']),
+    'constant.numeric': convertStyle(syntax['constant.numeric']),
+    number: convertStyle(syntax.number),
+    boolean: convertStyle(syntax.boolean),
+    float: convertStyle(syntax.float),
 
     // Strings
-    string: { fg: c(CatppuccinMocha.green) },
-    'string.special': { fg: c(CatppuccinMocha.teal) },
-    'string.escape': { fg: c(CatppuccinMocha.pink) },
-    'string.regex': { fg: c(CatppuccinMocha.pink) },
-    character: { fg: c(CatppuccinMocha.green) },
+    string: convertStyle(syntax.string),
+    'string.special': convertStyle(syntax['string.special']),
+    'string.escape': convertStyle(syntax['string.escape']),
+    'string.regex': convertStyle(syntax['string.regex']),
+    character: convertStyle(syntax.character),
 
     // Comments
-    comment: { fg: c(CatppuccinMocha.overlay0), italic: true },
-    'comment.documentation': { fg: c(CatppuccinMocha.overlay1), italic: true },
+    comment: convertStyle(syntax.comment),
+    'comment.documentation': convertStyle(syntax['comment.documentation']),
 
     // Operators and punctuation
-    operator: { fg: c(CatppuccinMocha.sky) },
-    punctuation: { fg: c(CatppuccinMocha.overlay2) },
-    'punctuation.bracket': { fg: c(CatppuccinMocha.overlay2) },
-    'punctuation.delimiter': { fg: c(CatppuccinMocha.overlay2) },
+    operator: convertStyle(syntax.operator),
+    punctuation: convertStyle(syntax.punctuation),
+    'punctuation.bracket': convertStyle(syntax['punctuation.bracket']),
+    'punctuation.delimiter': convertStyle(syntax['punctuation.delimiter']),
 
     // Tags (HTML/XML/JSX)
-    tag: { fg: c(CatppuccinMocha.mauve) },
-    'tag.attribute': { fg: c(CatppuccinMocha.yellow) },
-    'tag.delimiter': { fg: c(CatppuccinMocha.overlay2) },
+    tag: convertStyle(syntax.tag),
+    'tag.attribute': convertStyle(syntax['tag.attribute']),
+    'tag.delimiter': convertStyle(syntax['tag.delimiter']),
 
     // Attributes
-    attribute: { fg: c(CatppuccinMocha.yellow) },
+    attribute: convertStyle(syntax.attribute),
 
     // Namespace and modules
-    namespace: { fg: c(CatppuccinMocha.yellow) },
-    module: { fg: c(CatppuccinMocha.yellow) },
+    namespace: convertStyle(syntax.namespace),
+    module: convertStyle(syntax.module),
 
     // Labels
-    label: { fg: c(CatppuccinMocha.sapphire) },
+    label: convertStyle(syntax.label),
 
     // Macros and preprocessor
-    macro: { fg: c(CatppuccinMocha.mauve) },
-    'macro.builtin': { fg: c(CatppuccinMocha.red) },
+    macro: convertStyle(syntax.macro),
+    'macro.builtin': convertStyle(syntax['macro.builtin']),
 
     // Special constructs
-    constructor: { fg: c(CatppuccinMocha.sapphire) },
-    decorator: { fg: c(CatppuccinMocha.pink) },
-    annotation: { fg: c(CatppuccinMocha.pink) },
+    constructor: convertStyle(syntax.constructor),
+    decorator: convertStyle(syntax.decorator),
+    annotation: convertStyle(syntax.annotation),
 
     // Markup (Markdown, etc.)
-    'markup.heading': { fg: c(CatppuccinMocha.blue), bold: true },
-    'markup.bold': { bold: true },
-    'markup.italic': { italic: true },
-    'markup.link': { fg: c(CatppuccinMocha.blue), underline: true },
-    'markup.quote': { fg: c(CatppuccinMocha.overlay1), italic: true },
-    'markup.raw': { fg: c(CatppuccinMocha.green) },
-    'markup.list': { fg: c(CatppuccinMocha.mauve) },
+    'markup.heading': convertStyle(syntax['markup.heading']),
+    'markup.bold': convertStyle(syntax['markup.bold']),
+    'markup.italic': convertStyle(syntax['markup.italic']),
+    'markup.link': convertStyle(syntax['markup.link']),
+    'markup.quote': convertStyle(syntax['markup.quote']),
+    'markup.raw': convertStyle(syntax['markup.raw']),
+    'markup.list': convertStyle(syntax['markup.list']),
 
     // Embedded code
-    embedded: { fg: c(CatppuccinMocha.text) },
+    embedded: convertStyle(syntax.embedded),
 
     // Errors and warnings
-    error: { fg: c(CatppuccinMocha.red), bold: true },
-    warning: { fg: c(CatppuccinMocha.yellow), bold: true },
+    error: convertStyle(syntax.error),
+    warning: convertStyle(syntax.warning),
 
     // Special
-    text: { fg: c(CatppuccinMocha.text) },
-    emphasis: { italic: true },
-    strong: { bold: true },
-    underline: { underline: true },
+    text: convertStyle(syntax.text),
+    emphasis: convertStyle(syntax.emphasis),
+    strong: convertStyle(syntax.strong),
+    underline: convertStyle(syntax.underline),
 
     // Git diff
-    'diff.plus': { fg: c(CatppuccinMocha.green) },
-    'diff.minus': { fg: c(CatppuccinMocha.red) },
-    'diff.delta': { fg: c(CatppuccinMocha.blue) },
+    'diff.plus': convertStyle(syntax['diff.plus']),
+    'diff.minus': convertStyle(syntax['diff.minus']),
+    'diff.delta': convertStyle(syntax['diff.delta']),
   });
 }
 

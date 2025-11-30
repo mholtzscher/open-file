@@ -7,7 +7,7 @@
 
 import { Entry, EntryType } from '../types/entry.js';
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
-import { Theme, CatppuccinMocha } from './theme.js';
+import { Theme } from './theme.js';
 import { EditMode } from '../types/edit-mode.js';
 import { formatBytes } from '../utils/file-browser.js';
 import type { UsePendingOperationsReturn } from '../hooks/usePendingOperations.js';
@@ -103,7 +103,7 @@ function formatEntry(
 function getEntryColor(entry: Entry, isSelected: boolean, isMarkedForDeletion: boolean): string {
   // Deleted entries shown in red/muted color
   if (isMarkedForDeletion) {
-    return CatppuccinMocha.red;
+    return Theme.getErrorColor();
   }
 
   if (entry.type === EntryType.Directory || entry.type === EntryType.Bucket) {
@@ -212,9 +212,9 @@ export function BufferView({
         // Determine color based on state
         let color: string;
         if (isMarkedForDeletion) {
-          color = CatppuccinMocha.red;
+          color = Theme.getErrorColor();
         } else if (isCut) {
-          color = CatppuccinMocha.overlay0; // Dimmed for cut items
+          color = Theme.getDimColor(); // Dimmed for cut items
         } else {
           color = getEntryColor(entry, isSelected, false);
         }
@@ -223,7 +223,7 @@ export function BufferView({
           <text
             key={entry.id}
             fg={color}
-            bg={isInVisualSelection ? CatppuccinMocha.surface0 : undefined}
+            bg={isInVisualSelection ? Theme.getBgSurface() : undefined}
           >
             {content}
           </text>
@@ -231,7 +231,7 @@ export function BufferView({
       })}
       {/* Show insert mode input line */}
       {isInsertMode && (
-        <text fg={CatppuccinMocha.peach} bg={CatppuccinMocha.surface0}>
+        <text fg={Theme.getInsertModeColor()} bg={Theme.getBgSurface()}>
           {'> + 📄  '}
           {editBuffer}
           {'_'}
@@ -240,19 +240,17 @@ export function BufferView({
       {/* Show pending virtual entries (moves/copies to this directory) */}
       {virtualEntries.length > 0 && (
         <>
-          <text fg={CatppuccinMocha.overlay0}>{'── pending ──'}</text>
+          <text fg={Theme.getDimColor()}>{'── pending ──'}</text>
           {virtualEntries.slice(0, 4).map(entry => {
             const content = '  + ' + formatEntry(entry, showIcons, showSizes, showDates);
             return (
-              <text key={entry.id} fg={CatppuccinMocha.green}>
+              <text key={entry.id} fg={Theme.getSuccessColor()}>
                 {content}
               </text>
             );
           })}
           {virtualEntries.length > 4 && (
-            <text fg={CatppuccinMocha.overlay0}>
-              {`  ... and ${virtualEntries.length - 4} more`}
-            </text>
+            <text fg={Theme.getDimColor()}>{`  ... and ${virtualEntries.length - 4} more`}</text>
           )}
         </>
       )}

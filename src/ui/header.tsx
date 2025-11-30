@@ -7,7 +7,7 @@
  * Automatically hides container selector for providers that don't support containers.
  */
 
-import { CatppuccinMocha } from './theme.js';
+import { Theme } from './theme.js';
 import { ProviderIndicator } from './provider-indicator.js';
 import { useHasStorage } from '../contexts/StorageContext.js';
 import { useStorageState, useStorageCapabilities } from '../hooks/useStorage.js';
@@ -46,7 +46,7 @@ export function Header() {
     <box
       flexShrink={0}
       borderStyle="rounded"
-      borderColor={CatppuccinMocha.mauve}
+      borderColor={Theme.getVisualModeColor()}
       title="open-file"
       paddingLeft={1}
       paddingRight={1}
@@ -56,8 +56,8 @@ export function Header() {
     >
       <box flexDirection="row" alignItems="center">
         <box flexDirection="row" alignItems="center">
-          <text fg={CatppuccinMocha.mauve}>profile: </text>
-          <text fg={CatppuccinMocha.text}>{profileDisplay}</text>
+          <text fg={Theme.getVisualModeColor()}>profile: </text>
+          <text fg={Theme.getTextColor()}>{profileDisplay}</text>
           {profileName && providerId && <ProviderIndicator providerType={providerId} />}
         </box>
         <box paddingLeft={1}>{hasConnection && <ConnectionStatus showReconnect={true} />}</box>

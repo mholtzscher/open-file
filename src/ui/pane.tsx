@@ -7,7 +7,7 @@
 
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { BufferView } from './buffer-view.js';
-import { CatppuccinMocha } from './theme.js';
+import { Theme } from './theme.js';
 import type { UsePendingOperationsReturn } from '../hooks/usePendingOperations.js';
 
 export interface PaneProps {
@@ -49,7 +49,7 @@ export function BufferPane({
       flexBasis={flexBasis}
       flexDirection="column"
       borderStyle={'rounded'}
-      borderColor={CatppuccinMocha.blue}
+      borderColor={Theme.getInfoColor()}
       paddingLeft={1}
       paddingRight={1}
       overflow="hidden"
@@ -57,7 +57,7 @@ export function BufferPane({
       {/* Pane header */}
       {showHeader && title && (
         <box height={1} flexShrink={0}>
-          <text fg={CatppuccinMocha.blue} bg={CatppuccinMocha.surface0}>
+          <text fg={Theme.getInfoColor()} bg={Theme.getBgSurface()}>
             {title}
           </text>
         </box>

@@ -7,7 +7,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
-import { CatppuccinMocha } from '../theme.js';
+import { Theme } from '../theme.js';
 import { SortField, SortOrder, formatSortField, formatSortOrder } from '../../utils/sorting.js';
 import { BaseDialog } from './base.js';
 import { HelpBar } from '../help-bar.js';
@@ -116,9 +116,9 @@ export function SortMenu({
   useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   return (
-    <BaseDialog visible={visible} title="Sort Options" borderColor={CatppuccinMocha.blue}>
+    <BaseDialog visible={visible} title="Sort Options" borderColor={Theme.getInfoColor()}>
       {/* Section header */}
-      <text fg={CatppuccinMocha.blue}>SORT BY</text>
+      <text fg={Theme.getInfoColor()}>SORT BY</text>
 
       {/* Sort field options */}
       {sortFields.map((field, index) => {
@@ -127,8 +127,8 @@ export function SortMenu({
         return (
           <text
             key={field}
-            fg={isCurrentField ? CatppuccinMocha.green : CatppuccinMocha.text}
-            bg={isSelected ? CatppuccinMocha.surface0 : undefined}
+            fg={isCurrentField ? Theme.getSuccessColor() : Theme.getTextColor()}
+            bg={isSelected ? Theme.getBgSurface() : undefined}
           >
             {isCurrentField ? '▶ ' : '  '}
             {formatSortField(field)}
@@ -137,12 +137,12 @@ export function SortMenu({
       })}
 
       {/* Separator */}
-      <text fg={CatppuccinMocha.surface1}>{'─'.repeat(32)}</text>
+      <text fg={Theme.getBgHighlight()}>{'─'.repeat(32)}</text>
 
       {/* Sort order option */}
       <text
-        fg={CatppuccinMocha.text}
-        bg={selectedIndex === ORDER_INDEX ? CatppuccinMocha.surface0 : undefined}
+        fg={Theme.getTextColor()}
+        bg={selectedIndex === ORDER_INDEX ? Theme.getBgSurface() : undefined}
       >
         {selectedIndex === ORDER_INDEX ? '▶ ' : '  '}
         {formatSortOrder(currentOrder)}

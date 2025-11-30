@@ -5,7 +5,7 @@
  * Matches the opencode style: bright key + dim description
  */
 
-import { CatppuccinMocha } from './theme.js';
+import { Theme } from './theme.js';
 
 // ============================================================================
 // Types
@@ -46,9 +46,9 @@ export function HelpBar({ items }: HelpBarProps) {
     <box flexDirection="row">
       {items.map((item, index) => (
         <box key={index} flexDirection="row">
-          {index > 0 && <text fg={CatppuccinMocha.overlay0}>{'  '}</text>}
-          <text fg={CatppuccinMocha.text}>{item.key}</text>
-          <text fg={CatppuccinMocha.overlay0}> {item.description}</text>
+          {index > 0 && <text fg={Theme.getDimColor()}>{'  '}</text>}
+          <text fg={Theme.getTextColor()}>{item.key}</text>
+          <text fg={Theme.getDimColor()}> {item.description}</text>
         </box>
       ))}
     </box>

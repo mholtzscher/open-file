@@ -13,7 +13,7 @@
  */
 
 import { useStorageState } from '../hooks/useStorage.js';
-import { CatppuccinMocha } from './theme.js';
+import { Theme } from './theme.js';
 
 // ============================================================================
 // Types
@@ -56,7 +56,7 @@ export function ConnectionStatus({
   const isConnected = state.isConnected;
 
   // Determine colors based on connection state
-  const statusColor = isConnected ? CatppuccinMocha.green : CatppuccinMocha.red;
+  const statusColor = isConnected ? Theme.getSuccessColor() : Theme.getErrorColor();
   const statusLabel = isConnected ? connectedLabel : disconnectedLabel;
   const statusIcon = isConnected ? '●' : '○';
 
@@ -66,7 +66,7 @@ export function ConnectionStatus({
         {statusIcon} {statusLabel}
       </text>
       {!isConnected && showReconnect && (
-        <text fg={CatppuccinMocha.blue} marginLeft={1}>
+        <text fg={Theme.getInfoColor()} marginLeft={1}>
           {reconnectLabel}
         </text>
       )}

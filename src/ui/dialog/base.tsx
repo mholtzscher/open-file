@@ -8,7 +8,7 @@
  */
 
 import { ReactNode } from 'react';
-import { CatppuccinMocha } from '../theme.js';
+import { Theme } from '../theme.js';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 
 export interface BaseDialogProps {
@@ -41,7 +41,7 @@ export function BaseDialog({
   title,
   width = 70,
   height,
-  borderColor = CatppuccinMocha.blue,
+  borderColor = Theme.getInfoColor(),
   children,
 }: BaseDialogProps) {
   const terminalSize = useTerminalSize();
@@ -66,7 +66,7 @@ export function BaseDialog({
         height={height}
         borderStyle="rounded"
         borderColor={borderColor}
-        backgroundColor={CatppuccinMocha.base}
+        backgroundColor={Theme.getBgBase()}
         title={title}
         flexDirection="column"
         paddingLeft={2}

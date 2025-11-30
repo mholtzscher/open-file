@@ -6,7 +6,7 @@
 
 import { useCallback } from 'react';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
-import { CatppuccinMocha } from '../theme.js';
+import { Theme } from '../theme.js';
 import { BaseDialog } from './base.js';
 import { HelpBar } from '../help-bar.js';
 
@@ -105,18 +105,21 @@ export function ConfirmationDialog({
   useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   return (
-    <BaseDialog visible={visible} title={title} borderColor={CatppuccinMocha.yellow}>
+    <BaseDialog visible={visible} title={title} borderColor={Theme.getWarningColor()}>
       <box flexDirection="column">
-        <text fg={CatppuccinMocha.text}>The following operations will be performed:</text>
+        <text fg={Theme.getTextColor()}>The following operations will be performed:</text>
 
         {operations.slice(0, MAX_OPERATIONS_DISPLAY).map(op => (
-          <text key={op.id} fg={op.type === 'delete' ? CatppuccinMocha.red : CatppuccinMocha.green}>
+          <text
+            key={op.id}
+            fg={op.type === 'delete' ? Theme.getErrorColor() : Theme.getSuccessColor()}
+          >
             • {formatOperation(op, 60)}
           </text>
         ))}
 
         {operations.length > MAX_OPERATIONS_DISPLAY && (
-          <text fg={CatppuccinMocha.overlay0}>
+          <text fg={Theme.getDimColor()}>
             ... and {operations.length - MAX_OPERATIONS_DISPLAY} more
           </text>
         )}

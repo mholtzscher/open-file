@@ -5,7 +5,7 @@
  */
 
 import { EditMode } from '../types/edit-mode.js';
-import { CatppuccinMocha } from './theme.js';
+import { Theme } from './theme.js';
 import { HelpBar, type HelpItem } from './help-bar.js';
 
 interface StatusBarProps {
@@ -63,7 +63,7 @@ export function StatusBar({
   path,
   mode,
   message,
-  messageColor = CatppuccinMocha.overlay1,
+  messageColor = Theme.getMutedColor(),
   searchQuery = '',
   commandBuffer = '',
   bucket,
@@ -108,7 +108,7 @@ export function StatusBar({
       paddingLeft={2}
       paddingRight={2}
     >
-      <text fg={CatppuccinMocha.yellow}>{leftContent}</text>
+      <text fg={Theme.getWarningColor()}>{leftContent}</text>
       {message ? <text fg={messageColor}>{message}</text> : <HelpBar items={helpItems} />}
     </box>
   );

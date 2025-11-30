@@ -21,7 +21,7 @@ import { usePendingOperations } from '../hooks/usePendingOperations.js';
 import { providerNameToScheme } from '../utils/storage-uri.js';
 
 import { FileExplorerLayout, StatusBarState, PreviewState } from './file-explorer-layout.js';
-import { CatppuccinMocha } from './theme.js';
+import { Theme } from './theme.js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Capability } from '../providers/types/capabilities.js';
 
@@ -120,8 +120,8 @@ export function FileExplorer() {
     storage,
     setStatusMessage,
     setStatusMessageColor,
-    successColor: CatppuccinMocha.green,
-    errorColor: CatppuccinMocha.red,
+    successColor: Theme.getSuccessColor(),
+    errorColor: Theme.getErrorColor(),
   });
 
   // ============================================
@@ -136,11 +136,11 @@ export function FileExplorer() {
     setCurrentPath: bufferState.setCurrentPath,
     onSuccess: msg => {
       setStatusMessage(msg);
-      setStatusMessageColor(CatppuccinMocha.green);
+      setStatusMessageColor(Theme.getSuccessColor());
     },
     onError: msg => {
       setStatusMessage(msg);
-      setStatusMessageColor(CatppuccinMocha.red);
+      setStatusMessageColor(Theme.getErrorColor());
     },
   });
 

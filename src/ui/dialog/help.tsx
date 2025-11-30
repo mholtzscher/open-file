@@ -6,7 +6,7 @@
 
 import { useCallback } from 'react';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
-import { CatppuccinMocha } from '../theme.js';
+import { Theme } from '../theme.js';
 import { BaseDialog } from './base.js';
 import { HelpBar } from '../help-bar.js';
 
@@ -80,12 +80,12 @@ export function HelpDialog({ visible, onClose }: HelpDialogProps) {
   useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   return (
-    <BaseDialog visible={visible} title="Help" borderColor={CatppuccinMocha.yellow}>
+    <BaseDialog visible={visible} title="Help" borderColor={Theme.getWarningColor()}>
       <box flexDirection="column">
         {keybindings.map((item, idx) => {
           if ('section' in item) {
             return (
-              <text key={idx} fg={CatppuccinMocha.text}>
+              <text key={idx} fg={Theme.getTextColor()}>
                 {item.section}
               </text>
             );

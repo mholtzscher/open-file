@@ -13,7 +13,7 @@ import {
   listFiles,
   formatBytes,
 } from '../../utils/file-browser.js';
-import { CatppuccinMocha } from '../theme.js';
+import { Theme } from '../theme.js';
 import { BaseDialog, getContentWidth } from './base.js';
 import { HelpBar } from '../help-bar.js';
 import type { KeyboardKey } from '../../types/keyboard.js';
@@ -203,15 +203,15 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
       title="Upload Files"
       width={windowWidth}
       height={windowHeight}
-      borderColor={CatppuccinMocha.blue}
+      borderColor={Theme.getInfoColor()}
     >
       {/* Path display */}
-      <text fg={CatppuccinMocha.text}>📁 {state.currentPath}</text>
+      <text fg={Theme.getTextColor()}>📁 {state.currentPath}</text>
 
       {/* File list - grows to fill available space */}
       <box flexDirection="column" overflow="hidden" marginTop={1} marginBottom={1}>
         {state.entries.length === 0 ? (
-          <text fg={CatppuccinMocha.subtext0}>
+          <text fg={Theme.getMutedColor()}>
             {state.error ? `Error: ${state.error}` : 'No files'}
           </text>
         ) : (
@@ -232,12 +232,12 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
                   key={entry.path}
                   fg={
                     isSelected
-                      ? CatppuccinMocha.blue
+                      ? Theme.getInfoColor()
                       : isSelectedFile
-                        ? CatppuccinMocha.green
-                        : CatppuccinMocha.text
+                        ? Theme.getSuccessColor()
+                        : Theme.getTextColor()
                   }
-                  bg={isSelected ? CatppuccinMocha.surface0 : undefined}
+                  bg={isSelected ? Theme.getBgSurface() : undefined}
                   width={contentWidth}
                 >
                   {displayName}
@@ -249,7 +249,7 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
 
       {/* Selection summary */}
       {selectedCount > 0 && (
-        <text fg={CatppuccinMocha.green} width={contentWidth}>
+        <text fg={Theme.getSuccessColor()} width={contentWidth}>
           {`Selected: ${selectedCount} files - ${formatBytes(totalSize)}`}
         </text>
       )}

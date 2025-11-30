@@ -6,7 +6,7 @@
 
 import { useCallback } from 'react';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
-import { CatppuccinMocha } from '../theme.js';
+import { Theme } from '../theme.js';
 import { BaseDialog, getContentWidth } from './base.js';
 import { HelpBar } from '../help-bar.js';
 
@@ -38,8 +38,8 @@ export function ErrorDialog({ visible, message, onDismiss }: ErrorDialogProps) {
   useKeyboardHandler(handleKey, KeyboardPriority.High);
 
   return (
-    <BaseDialog visible={visible} title="Error" borderColor={CatppuccinMocha.red}>
-      <text fg={CatppuccinMocha.red} width={contentWidth}>
+    <BaseDialog visible={visible} title="Error" borderColor={Theme.getErrorColor()}>
+      <text fg={Theme.getErrorColor()} width={contentWidth}>
         {message}
       </text>
       <HelpBar items={[{ key: 'Esc', description: 'dismiss' }]} />
