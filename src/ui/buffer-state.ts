@@ -774,16 +774,6 @@ export class BufferState {
       return { handled: true, sequence: ['G'], action: 'moveToBottom' };
     }
 
-    // Check for g? sequence (help/actions menu)
-    if (
-      this.keySequence.length === 2 &&
-      this.keySequence[0] === 'g' &&
-      this.keySequence[1] === '?'
-    ) {
-      this.keySequence = [];
-      return { handled: true, sequence: ['g', '?'], action: 'help' };
-    }
-
     // Single g without second g - not handled yet
     if (this.keySequence.length === 1 && this.keySequence[0] === 'g') {
       return { handled: false, sequence: ['g'] };

@@ -90,8 +90,8 @@ export function ThemeSelectorDialog({ visible, onClose }: ThemeSelectorDialogPro
         return true;
       }
 
-      // Cancel and revert with Escape or q
-      if (key.name === 'escape' || key.name === 'q') {
+      // Cancel and revert with Escape
+      if (key.name === 'escape') {
         // Revert to original theme
         if (originalThemeId && ThemeRegistry.has(originalThemeId)) {
           ThemeRegistry.setActive(originalThemeId);

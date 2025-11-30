@@ -102,8 +102,8 @@ export function SortMenu({
         return true;
       }
 
-      // Close with escape or q
-      if (key.name === 'escape' || key.name === 'q') {
+      // Close with escape
+      if (key.name === 'escape') {
         onClose();
         return true;
       }
@@ -153,7 +153,8 @@ export function SortMenu({
         items={[
           { key: 'j/k', description: 'navigate' },
           { key: 'Space', description: 'toggle order' },
-          { key: 'Enter', description: 'close' },
+          { key: 'Enter', description: 'confirm' },
+          { key: 'Esc', description: 'close' },
         ]}
       />
     </BaseDialog>

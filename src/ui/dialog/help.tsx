@@ -55,8 +55,8 @@ const keybindings: HelpItem[] = [
   { section: '' },
   { section: 'OTHER' },
   { keys: 'o', description: 'Sort menu' },
-  { keys: '?/g?/q', description: 'Toggle/close help' },
-  { keys: 'q', description: 'Quit' },
+  { keys: '?', description: 'Toggle help' },
+  { keys: 'Esc', description: 'Close dialog' },
 ];
 
 /**
@@ -67,7 +67,7 @@ export function HelpDialog({ visible, onClose }: HelpDialogProps) {
     key => {
       if (!visible) return false;
 
-      if (key.name === '?' || key.name === 'escape' || key.name === 'q') {
+      if (key.name === 'escape') {
         onClose?.();
         return true;
       }

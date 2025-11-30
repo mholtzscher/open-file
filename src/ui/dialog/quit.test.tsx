@@ -124,7 +124,7 @@ describe('QuitDialog', () => {
 
       const frame = captureCharFrame();
       // Uses standardized HelpBar format
-      expect(frame).toContain('n/Esc');
+      expect(frame).toContain('Esc');
       expect(frame).toContain('cancel');
     });
   });

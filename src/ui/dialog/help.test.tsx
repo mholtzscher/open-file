@@ -154,20 +154,6 @@ describe('HelpDialog', () => {
       expect(frame).toContain('Search mode');
     });
 
-    it('displays quit keybinding', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={true} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
-      await renderOnce();
-
-      const frame = captureCharFrame();
-      expect(frame).toContain('Quit');
-    });
-
     it('displays visual selection keybinding', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
         <WrappedHelpDialog visible={true} />,

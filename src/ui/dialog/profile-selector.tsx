@@ -172,7 +172,6 @@ export function ProfileSelectorDialog({
           return true;
 
         case 'escape':
-        case 'q':
           onCancel();
           return true;
 

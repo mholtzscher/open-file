@@ -89,7 +89,7 @@ export function StatusBar({
     { key: 'dd', description: 'delete' },
     { key: 'p', description: 'paste' },
     { key: 'Ctrl+N/P', description: 'page' },
-    { key: 'g?', description: 'help' },
+    { key: '?', description: 'help' },
   ];
 
   const helpItems = mode === EditMode.Search ? searchHelpItems : normalHelpItems;

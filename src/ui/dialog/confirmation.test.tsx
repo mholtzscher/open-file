@@ -290,7 +290,7 @@ describe('ConfirmationDialog', () => {
       // Uses standardized HelpBar format: "key description"
       expect(frame).toContain('y');
       expect(frame).toContain('confirm');
-      expect(frame).toContain('n/Esc');
+      expect(frame).toContain('Esc');
       expect(frame).toContain('cancel');
     });
   });

@@ -5,7 +5,7 @@
  * useKeySequence hook without relying on a concrete
  * React rendering harness. The hook is responsible for:
  *
- * - Tracking multi-key sequences (e.g., gg, dd, yy, g?)
+ * - Tracking multi-key sequences (e.g., gg, dd, yy)
  * - Returning an action when a sequence completes
  * - Reporting when it is waiting for more input
  * - Handling G / Shift+g as a bottom-of-list action
@@ -29,7 +29,6 @@ describe('useKeySequence', () => {
       //   gg -> 'cursor:top'
       //   dd -> 'entry:delete'
       //   yy -> 'entry:copy'
-      //   g? -> 'dialog:help'
       expect(true).toBe(true);
     });
 
@@ -61,7 +60,6 @@ describe('useKeySequence', () => {
       //   gg -> { handled: true, action: 'cursor:top' }
       //   dd -> { handled: true, action: 'entry:delete' }
       //   yy -> { handled: true, action: 'entry:copy' }
-      //   g? -> { handled: true, action: 'dialog:help' }
       //   G  -> { handled: true, action: bottomAction }
       expect(true).toBe(true);
     });
@@ -103,7 +101,6 @@ describe('useKeySequence', () => {
       //     gg: 'cursor:top',
       //     dd: 'entry:delete',
       //     yy: 'entry:copy',
-      //     'g?': 'dialog:help',
       //   }
       // Flows:
       //   1) press 'g'  -> { handled: false, waitingForMore: true }
@@ -112,8 +109,6 @@ describe('useKeySequence', () => {
       //      press 'd'  -> { handled: true, action: 'entry:delete' }
       //   3) press 'y'  -> { handled: false, waitingForMore: true }
       //      press 'y'  -> { handled: true, action: 'entry:copy' }
-      //   4) press 'g'  -> { handled: false, waitingForMore: true }
-      //      press '?'  -> { handled: true, action: 'dialog:help' }
       // After each completed sequence, the internal buffer is cleared.
       expect(true).toBe(true);
     });

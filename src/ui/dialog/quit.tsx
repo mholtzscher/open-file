@@ -41,7 +41,7 @@ export function QuitDialog({
         return true;
       }
 
-      if (key.name === 'n' || key.name === 'escape') {
+      if (key.name === 'escape') {
         onCancel?.();
         return true;
       }
@@ -67,7 +67,7 @@ export function QuitDialog({
         items={[
           { key: 'q', description: 'quit without saving' },
           { key: 'w', description: 'save first' },
-          { key: 'n/Esc', description: 'cancel' },
+          { key: 'Esc', description: 'cancel' },
         ]}
       />
     </BaseDialog>

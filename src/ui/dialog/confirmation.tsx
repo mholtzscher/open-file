@@ -92,7 +92,7 @@ export function ConfirmationDialog({
         return true;
       }
 
-      if (key.name === 'n' || key.name === 'escape') {
+      if (key.name === 'escape') {
         onCancel?.();
         return true;
       }
@@ -127,7 +127,7 @@ export function ConfirmationDialog({
         <HelpBar
           items={[
             { key: 'y', description: 'confirm' },
-            { key: 'n/Esc', description: 'cancel' },
+            { key: 'Esc', description: 'cancel' },
           ]}
         />
       </box>

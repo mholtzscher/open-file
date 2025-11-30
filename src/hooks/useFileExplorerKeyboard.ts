@@ -4,7 +4,7 @@
  * Handles keyboard input for the FileExplorer component.
  * Implements mode-aware keybindings with support for:
  * - Text input modes (Search, Command, Insert, Edit)
- * - Multi-key sequences (gg, dd, yy, g?)
+ * - Multi-key sequences (gg, dd, yy)
  * - Mode-specific and global keybindings
  */
 
@@ -44,7 +44,6 @@ const KEY_SEQUENCE_CONFIG = {
     gg: 'cursor:top' as KeyAction,
     dd: 'entry:delete' as KeyAction,
     yy: 'entry:copy' as KeyAction,
-    'g?': 'dialog:help' as KeyAction,
   },
   bottomAction: 'cursor:bottom' as KeyAction,
 };
@@ -53,7 +52,7 @@ const KEY_SEQUENCE_CONFIG = {
  * Hook that manages keyboard input for the FileExplorer
  *
  * This hook:
- * 1. Sets up multi-key sequence handling (gg, dd, yy, g?)
+ * 1. Sets up multi-key sequence handling (gg, dd, yy)
  * 2. Creates a keyboard handler callback
  * 3. Registers the handler with the KeyboardContext
  *
@@ -71,7 +70,7 @@ export function useFileExplorerKeyboard({
   actionHandlers,
   isAnyDialogOpen,
 }: UseFileExplorerKeyboardProps): void {
-  // Multi-key sequence handling (gg, dd, yy, g?)
+  // Multi-key sequence handling (gg, dd, yy)
   const { handleSequence } = useKeySequence(KEY_SEQUENCE_CONFIG);
 
   // Main keyboard handler
@@ -118,7 +117,7 @@ export function useFileExplorerKeyboard({
         return false;
       }
 
-      // Normal mode: handle multi-key sequences (gg, dd, yy, g?)
+      // Normal mode: handle multi-key sequences (gg, dd, yy)
       if (mode === EditMode.Normal) {
         const seqResult = handleSequence(key);
         if (seqResult.handled && seqResult.action) {

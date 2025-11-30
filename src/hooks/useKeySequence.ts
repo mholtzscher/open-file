@@ -1,7 +1,7 @@
 /**
  * useKeySequence hook
  *
- * Encapsulates multi-key sequence handling (e.g., gg, dd, yy, g?).
+ * Encapsulates multi-key sequence handling (e.g., gg, dd, yy).
  * Returns a handler that tracks key sequences and reports when a
  * sequence has completed, is in progress, or was not recognized.
  */
