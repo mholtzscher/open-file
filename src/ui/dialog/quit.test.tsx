@@ -97,7 +97,9 @@ describe('QuitDialog', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      expect(frame).toContain('Quit without saving');
+      // Uses standardized HelpBar format
+      expect(frame).toContain('q');
+      expect(frame).toContain('quit without saving');
     });
 
     it('displays save option', async () => {
@@ -108,7 +110,9 @@ describe('QuitDialog', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      expect(frame).toContain('Save changes');
+      // Uses standardized HelpBar format
+      expect(frame).toContain('w');
+      expect(frame).toContain('save');
     });
 
     it('displays cancel option', async () => {
@@ -119,7 +123,9 @@ describe('QuitDialog', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      expect(frame).toContain('Cancel');
+      // Uses standardized HelpBar format
+      expect(frame).toContain('n/Esc');
+      expect(frame).toContain('cancel');
     });
   });
 

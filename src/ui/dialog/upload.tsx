@@ -15,6 +15,7 @@ import {
 } from '../../utils/file-browser.js';
 import { CatppuccinMocha } from '../theme.js';
 import { BaseDialog, getContentWidth } from './base.js';
+import { HelpBar } from '../help-bar.js';
 import type { KeyboardKey } from '../../types/keyboard.js';
 
 export interface UploadDialogProps {
@@ -253,10 +254,16 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
         </text>
       )}
 
-      {/* Help text - matches app-wide keybinding format */}
-      <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-        {`j/k:nav  space:select  enter:confirm  h:back  ESC:cancel`}
-      </text>
+      {/* Help text */}
+      <HelpBar
+        items={[
+          { key: 'j/k', description: 'nav' },
+          { key: 'Space', description: 'select' },
+          { key: 'Enter', description: 'confirm' },
+          { key: 'h', description: 'back' },
+          { key: 'Esc', description: 'cancel' },
+        ]}
+      />
     </BaseDialog>
   );
 }

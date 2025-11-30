@@ -297,9 +297,11 @@ describe('ProfileSelectorDialog', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      // Check for help text (may be truncated, so check partial)
+      // Uses standardized HelpBar format: "key description"
       expect(frame).toContain('Enter');
-      expect(frame).toContain('jk');
+      expect(frame).toContain('switch');
+      expect(frame).toContain('j/k');
+      expect(frame).toContain('select');
     });
 
     it('displays edit keybind in help text', async () => {
@@ -321,8 +323,9 @@ describe('ProfileSelectorDialog', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      // Check for edit keybind in help text
-      expect(frame).toContain('e: Edit');
+      // Uses standardized HelpBar format: "e edit"
+      expect(frame).toContain('e');
+      expect(frame).toContain('edit');
     });
   });
 

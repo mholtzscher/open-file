@@ -124,10 +124,15 @@ describe('UploadDialog', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      expect(frame).toContain('j/k:nav');
-      expect(frame).toContain('space:select');
-      expect(frame).toContain('enter:confirm');
-      expect(frame).toContain('ESC:cancel');
+      // Uses standardized HelpBar format: "key description" (space-separated)
+      expect(frame).toContain('j/k');
+      expect(frame).toContain('nav');
+      expect(frame).toContain('Space');
+      expect(frame).toContain('select');
+      expect(frame).toContain('Enter');
+      expect(frame).toContain('confirm');
+      expect(frame).toContain('Esc');
+      expect(frame).toContain('cancel');
     });
   });
 

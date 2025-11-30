@@ -7,6 +7,7 @@
 import { CatppuccinMocha } from './theme.js';
 import { useTerminalSize } from '../hooks/useTerminalSize.js';
 import { BaseDialog, getContentWidth } from './dialog/base.js';
+import { HelpBar } from './help-bar.js';
 
 export interface ProgressWindowProps {
   visible?: boolean;
@@ -80,9 +81,7 @@ export function ProgressWindow({
         {clampedProgress}% complete
       </text>
 
-      <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-        Press Ctrl+C to cancel
-      </text>
+      <HelpBar items={[{ key: 'Ctrl+C', description: 'cancel' }]} />
     </BaseDialog>
   );
 }

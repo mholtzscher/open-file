@@ -60,7 +60,9 @@ describe('ErrorDialog', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      expect(frame).toContain('Press Escape to dismiss');
+      // Uses standardized HelpBar format: "Esc dismiss"
+      expect(frame).toContain('Esc');
+      expect(frame).toContain('dismiss');
     });
 
     it('displays the Error title', async () => {
@@ -85,7 +87,9 @@ describe('ErrorDialog', () => {
 
       const frame = captureCharFrame();
       expect(frame).toContain('Error');
-      expect(frame).toContain('Press Escape to dismiss');
+      // Uses standardized HelpBar format: "Esc dismiss"
+      expect(frame).toContain('Esc');
+      expect(frame).toContain('dismiss');
     });
 
     it('handles long error messages', async () => {

@@ -8,6 +8,7 @@ import { useCallback } from 'react';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import { CatppuccinMocha } from '../theme.js';
 import { BaseDialog } from './base.js';
+import { HelpBar } from '../help-bar.js';
 
 interface KeybindingItem {
   keys: string;
@@ -37,7 +38,7 @@ const keybindings: HelpItem[] = [
   { keys: 'v', description: 'Visual selection mode' },
   { keys: 'i', description: 'Insert (create entry)' },
   { keys: 'a', description: 'Edit (rename entry)' },
-  { keys: 'ESC', description: 'Exit mode' },
+  { keys: 'Esc', description: 'Exit mode' },
   { section: '' },
   { section: 'OPERATIONS' },
   { keys: 'dd', description: 'Delete' },
@@ -89,12 +90,10 @@ export function HelpDialog({ visible, onClose }: HelpDialogProps) {
               </text>
             );
           }
-          const keyText = `  ${item.keys}`.padEnd(12);
-          const fullText = `${keyText}${item.description}`;
           return (
-            <text key={idx} fg={CatppuccinMocha.subtext0}>
-              {fullText}
-            </text>
+            <box key={idx} paddingLeft={2}>
+              <HelpBar items={[{ key: item.keys.padEnd(10), description: item.description }]} />
+            </box>
           );
         })}
       </box>

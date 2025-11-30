@@ -8,6 +8,7 @@ import { useCallback } from 'react';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import { CatppuccinMocha } from '../theme.js';
 import { BaseDialog, getContentWidth } from './base.js';
+import { HelpBar } from '../help-bar.js';
 
 interface ErrorDialogProps {
   visible: boolean;
@@ -41,9 +42,7 @@ export function ErrorDialog({ visible, message, onDismiss }: ErrorDialogProps) {
       <text fg={CatppuccinMocha.red} width={contentWidth}>
         {message}
       </text>
-      <text fg={CatppuccinMocha.overlay0} width={contentWidth}>
-        Press Escape to dismiss
-      </text>
+      <HelpBar items={[{ key: 'Esc', description: 'dismiss' }]} />
     </BaseDialog>
   );
 }

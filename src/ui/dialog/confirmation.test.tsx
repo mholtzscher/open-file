@@ -287,8 +287,11 @@ describe('ConfirmationDialog', () => {
       await renderOnce();
 
       const frame = captureCharFrame();
-      expect(frame).toContain('Press y to confirm');
-      expect(frame).toContain('n or Esc to cancel');
+      // Uses standardized HelpBar format: "key description"
+      expect(frame).toContain('y');
+      expect(frame).toContain('confirm');
+      expect(frame).toContain('n/Esc');
+      expect(frame).toContain('cancel');
     });
   });
 

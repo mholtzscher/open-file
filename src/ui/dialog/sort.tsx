@@ -10,6 +10,7 @@ import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardCon
 import { CatppuccinMocha } from '../theme.js';
 import { SortField, SortOrder, formatSortField, formatSortOrder } from '../../utils/sorting.js';
 import { BaseDialog } from './base.js';
+import { HelpBar } from '../help-bar.js';
 
 export interface SortMenuProps {
   visible: boolean;
@@ -148,7 +149,13 @@ export function SortMenu({
       </text>
 
       {/* Help text */}
-      <text fg={CatppuccinMocha.overlay0}>j/k=navigate Space=toggle order Enter=close</text>
+      <HelpBar
+        items={[
+          { key: 'j/k', description: 'navigate' },
+          { key: 'Space', description: 'toggle order' },
+          { key: 'Enter', description: 'close' },
+        ]}
+      />
     </BaseDialog>
   );
 }

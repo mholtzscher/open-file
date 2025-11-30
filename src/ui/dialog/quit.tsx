@@ -8,6 +8,7 @@ import { useCallback } from 'react';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import { CatppuccinMocha } from '../theme.js';
 import { BaseDialog } from './base.js';
+import { HelpBar } from '../help-bar.js';
 
 export interface QuitDialogProps {
   pendingChangesCount: number;
@@ -60,11 +61,13 @@ export function QuitDialog({
 
       <text fg={CatppuccinMocha.text}> </text>
 
-      <text fg={CatppuccinMocha.green}>{'q - Quit without saving'}</text>
-
-      <text fg={CatppuccinMocha.blue}>{'w - Save changes first'}</text>
-
-      <text fg={CatppuccinMocha.overlay0}>{'n/Esc - Cancel'}</text>
+      <HelpBar
+        items={[
+          { key: 'q', description: 'quit without saving' },
+          { key: 'w', description: 'save first' },
+          { key: 'n/Esc', description: 'cancel' },
+        ]}
+      />
     </BaseDialog>
   );
 }

@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { CatppuccinMocha } from '../theme.js';
 import { ProviderIndicator } from '../provider-indicator.js';
 import { BaseDialog } from './base.js';
+import { HelpBar } from '../help-bar.js';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import type { Profile } from '../../providers/types/profile.js';
 import type { ProfileManager } from '../../providers/services/profile-manager.js';
@@ -205,7 +206,12 @@ export function ProfileSelectorDialog({
       <BaseDialog visible={true} title="Select Profile" borderColor={CatppuccinMocha.red}>
         <text fg={CatppuccinMocha.red}>Error: {error}</text>
         <text fg={CatppuccinMocha.overlay0}> </text>
-        <text fg={CatppuccinMocha.overlay0}>Press Escape to close</text>
+        <HelpBar
+          items={[
+            { key: 'e', description: 'edit' },
+            { key: 'Esc', description: 'close' },
+          ]}
+        />
       </BaseDialog>
     );
   }
@@ -216,7 +222,12 @@ export function ProfileSelectorDialog({
       <BaseDialog visible={true} title="Select Profile" borderColor={CatppuccinMocha.overlay0}>
         <text fg={CatppuccinMocha.overlay0}>No profiles configured</text>
         <text fg={CatppuccinMocha.overlay0}> </text>
-        <text fg={CatppuccinMocha.subtext0}>Press Escape to close</text>
+        <HelpBar
+          items={[
+            { key: 'e', description: 'edit' },
+            { key: 'Esc', description: 'close' },
+          ]}
+        />
       </BaseDialog>
     );
   }
@@ -246,7 +257,14 @@ export function ProfileSelectorDialog({
 
       {/* Footer help text */}
       <text fg={CatppuccinMocha.overlay0}> </text>
-      <text fg={CatppuccinMocha.overlay0}>↑↓/jk: Select Enter: Switch e: Edit Esc: Cancel</text>
+      <HelpBar
+        items={[
+          { key: 'j/k', description: 'select' },
+          { key: 'Enter', description: 'switch' },
+          { key: 'e', description: 'edit' },
+          { key: 'Esc', description: 'cancel' },
+        ]}
+      />
     </BaseDialog>
   );
 }

@@ -8,6 +8,7 @@ import { useCallback } from 'react';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import { CatppuccinMocha } from '../theme.js';
 import { BaseDialog } from './base.js';
+import { HelpBar } from '../help-bar.js';
 
 export interface Operation {
   id: string;
@@ -120,7 +121,12 @@ export function ConfirmationDialog({
           </text>
         )}
 
-        <text fg={CatppuccinMocha.overlay0}>Press y to confirm, n or Esc to cancel</text>
+        <HelpBar
+          items={[
+            { key: 'y', description: 'confirm' },
+            { key: 'n/Esc', description: 'cancel' },
+          ]}
+        />
       </box>
     </BaseDialog>
   );

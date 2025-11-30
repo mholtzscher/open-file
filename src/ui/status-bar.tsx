@@ -6,6 +6,7 @@
 
 import { EditMode } from '../types/edit-mode.js';
 import { CatppuccinMocha } from './theme.js';
+import { HelpBar, type HelpItem } from './help-bar.js';
 
 interface StatusBarProps {
   path: string;
@@ -75,12 +76,28 @@ export function StatusBar({
   const commandText = mode === EditMode.Command ? ` ${commandBuffer}` : '';
   const leftContent = `${pathText} ${modeText}${searchText}${commandText}`;
 
-  // Right side: message or help text
-  const helpText =
-    mode === EditMode.Search
-      ? 'n:next  N:prev  Ctrl+C:toggle-case  Ctrl+R:regex  ESC:exit'
-      : 'q:quit  j/k:nav  v:select  i:insert  dd:delete  w:save  p:paste  Ctrl+N/P:page  g?:help';
-  const rightContent = message || helpText;
+  // Right side: message or help bar
+  const searchHelpItems: HelpItem[] = [
+    { key: 'n', description: 'next' },
+    { key: 'N', description: 'prev' },
+    { key: 'Ctrl+C', description: 'toggle-case' },
+    { key: 'Ctrl+R', description: 'regex' },
+    { key: 'Esc', description: 'exit' },
+  ];
+
+  const normalHelpItems: HelpItem[] = [
+    { key: 'q', description: 'quit' },
+    { key: 'j/k', description: 'nav' },
+    { key: 'v', description: 'select' },
+    { key: 'i', description: 'insert' },
+    { key: 'dd', description: 'delete' },
+    { key: 'w', description: 'save' },
+    { key: 'p', description: 'paste' },
+    { key: 'Ctrl+N/P', description: 'page' },
+    { key: 'g?', description: 'help' },
+  ];
+
+  const helpItems = mode === EditMode.Search ? searchHelpItems : normalHelpItems;
 
   // Render as a flex row status bar
   return (
@@ -92,7 +109,7 @@ export function StatusBar({
       paddingRight={2}
     >
       <text fg={CatppuccinMocha.yellow}>{leftContent}</text>
-      <text fg={message ? messageColor : CatppuccinMocha.overlay0}>{rightContent}</text>
+      {message ? <text fg={messageColor}>{message}</text> : <HelpBar items={helpItems} />}
     </box>
   );
 }
