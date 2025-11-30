@@ -76,12 +76,6 @@ export class BufferState {
   /** Whether search mode is active */
   isSearching = false;
 
-  /** Whether search is case-sensitive */
-  searchCaseSensitive = false;
-
-  /** Whether to use regex matching */
-  searchUseRegex = false;
-
   /** Key sequence state for multi-key commands */
   private keySequence: string[] = [];
   private keySequenceTimeout?: ReturnType<typeof setTimeout>;
@@ -618,13 +612,23 @@ export class BufferState {
   }
 
   /**
-   * Exit search mode
+   * Exit search mode and clear the filter
    */
   exitSearchMode(): void {
     this.isSearching = false;
     this.searchQuery = '';
     this.scrollOffset = 0;
     this.selection.cursorIndex = 0;
+  }
+
+  /**
+   * Exit search mode but keep the filter active
+   */
+  confirmSearchMode(): void {
+    this.isSearching = false;
+    // Keep searchQuery to maintain the filter
+    this.scrollOffset = 0;
+    // Cursor stays at current filtered position
   }
 
   /**
@@ -653,7 +657,7 @@ export class BufferState {
 
   /**
    * Get filtered entries based on search query AND hidden files setting
-   * Supports case-sensitive and regex matching
+   * Uses case-insensitive substring matching
    */
   getFilteredEntries(): Entry[] {
     let filtered = this.entries;
@@ -663,33 +667,16 @@ export class BufferState {
       filtered = filtered.filter(entry => !this.isHiddenEntry(entry));
     }
 
-    // Then apply search filter
+    // Then apply search filter (case-insensitive)
     if (!this.searchQuery) {
       return filtered;
     }
 
-    try {
-      if (this.searchUseRegex) {
-        // Use regex matching
-        const flags = this.searchCaseSensitive ? 'g' : 'gi';
-        const regex = new RegExp(this.searchQuery, flags);
-        return filtered.filter(entry => regex.test(entry.name));
-      } else {
-        // Use substring matching
-        const query = this.searchCaseSensitive ? this.searchQuery : this.searchQuery.toLowerCase();
-        return filtered.filter(entry => {
-          const name = this.searchCaseSensitive ? entry.name : entry.name.toLowerCase();
-          return name.includes(query);
-        });
-      }
-    } catch (e) {
-      // If regex is invalid, fall back to substring matching
-      const query = this.searchCaseSensitive ? this.searchQuery : this.searchQuery.toLowerCase();
-      return filtered.filter(entry => {
-        const name = this.searchCaseSensitive ? entry.name : entry.name.toLowerCase();
-        return name.includes(query);
-      });
-    }
+    const query = this.searchQuery.toLowerCase();
+    return filtered.filter(entry => {
+      const name = entry.name.toLowerCase();
+      return name.includes(query);
+    });
   }
 
   /**
@@ -723,64 +710,6 @@ export class BufferState {
 
     const query = this.searchQuery.toLowerCase();
     return entry.name.toLowerCase().includes(query);
-  }
-
-  /**
-   * Toggle case-sensitive search
-   */
-  toggleCaseSensitive(): void {
-    this.searchCaseSensitive = !this.searchCaseSensitive;
-    // Re-apply filter with new setting
-    this.updateSearchQuery(this.searchQuery);
-  }
-
-  /**
-   * Toggle regex matching
-   */
-  toggleRegexMode(): void {
-    this.searchUseRegex = !this.searchUseRegex;
-  }
-
-  /**
-   * Find next match in search results
-   */
-  findNextMatch(): void {
-    const filtered = this.getFilteredEntries();
-    if (filtered.length === 0) {
-      return;
-    }
-
-    // Find the index of the current cursor entry in the filtered results
-    const currentEntry = this.entries[this.selection.cursorIndex];
-    const currentIndex = filtered.findIndex(e => e.id === currentEntry?.id);
-
-    // Move to next match, wrapping around if needed
-    const nextIndex = currentIndex < filtered.length - 1 ? currentIndex + 1 : 0;
-    const nextEntry = filtered[nextIndex];
-
-    // Update cursor to point to the next match
-    this.selection.cursorIndex = this.entries.findIndex(e => e.id === nextEntry.id);
-  }
-
-  /**
-   * Find previous match in search results
-   */
-  findPreviousMatch(): void {
-    const filtered = this.getFilteredEntries();
-    if (filtered.length === 0) {
-      return;
-    }
-
-    // Find the index of the current cursor entry in the filtered results
-    const currentEntry = this.entries[this.selection.cursorIndex];
-    const currentIndex = filtered.findIndex(e => e.id === currentEntry?.id);
-
-    // Move to previous match, wrapping around if needed
-    const prevIndex = currentIndex > 0 ? currentIndex - 1 : filtered.length - 1;
-    const prevEntry = filtered[prevIndex];
-
-    // Update cursor to point to the previous match
-    this.selection.cursorIndex = this.entries.findIndex(e => e.id === prevEntry.id);
   }
 
   /**
@@ -881,13 +810,10 @@ export class BufferState {
   }
 
   /**
-   * Get search filter status string
+   * Get search filter status string (no longer used)
    */
   getSearchStatus(): string {
-    const flags: string[] = [];
-    if (this.searchCaseSensitive) flags.push('Aa');
-    if (this.searchUseRegex) flags.push('.*');
-    return flags.length > 0 ? `[${flags.join(' ')}]` : '';
+    return '';
   }
 
   /**

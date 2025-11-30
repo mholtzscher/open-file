@@ -66,6 +66,7 @@ export type BufferAction =
   | { type: 'EXTEND_VISUAL_SELECTION'; direction: 'up' | 'down' }
   | { type: 'EXIT_VISUAL_SELECTION' }
   | { type: 'SET_MODE'; mode: EditMode }
+  | { type: 'CONFIRM_SEARCH_MODE' }
   | { type: 'SET_SORT_CONFIG'; config: SortConfig }
   | { type: 'UPDATE_SEARCH_QUERY'; query: string }
   | { type: 'TOGGLE_HIDDEN_FILES' }
@@ -297,6 +298,16 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
           action.mode === EditMode.Normal && state.mode === EditMode.Search
             ? ''
             : state.searchQuery,
+      };
+
+    case 'CONFIRM_SEARCH_MODE':
+      // Keep search query when confirming search mode
+      return {
+        ...state,
+        mode: EditMode.Normal,
+        editBuffer: '',
+        // searchQuery is preserved
+        scrollOffset: 0,
       };
 
     case 'SET_SORT_CONFIG': {

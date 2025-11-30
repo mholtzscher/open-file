@@ -340,7 +340,7 @@ export function useS3Actions({
 
         'mode:search': () => {
           getActiveBuffer().enterSearchMode();
-          setStatusMessage('Search mode: type pattern, n/N to navigate, ESC to clear');
+          setStatusMessage('Search: type to filter, Enter to confirm, Esc to clear');
           setStatusMessageColor(Theme.getInfoColor());
         },
 
@@ -619,7 +619,17 @@ export function useS3Actions({
 
         'input:confirm': () => {
           const buf = getActiveBuffer();
-          if (buf.mode === EditMode.Command) {
+          if (buf.mode === EditMode.Search) {
+            // Confirm search: keep filter, exit to normal mode
+            buf.confirmSearchMode();
+            const filterCount = buf.getFilteredEntries().length;
+            setStatusMessage(
+              buf.searchQuery
+                ? `Filter active: ${filterCount} ${filterCount === 1 ? 'entry' : 'entries'}`
+                : ''
+            );
+            setStatusMessageColor(Theme.getInfoColor());
+          } else if (buf.mode === EditMode.Command) {
             const command = buf.getEditBuffer().trim();
             if (command === ':w') {
               actionHandlers['buffer:save']?.();

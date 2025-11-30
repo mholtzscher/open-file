@@ -54,6 +54,7 @@ export interface UseBufferStateReturn {
   exitEditMode: () => void;
   enterSearchMode: () => void;
   exitSearchMode: () => void;
+  confirmSearchMode: () => void;
   enterCommandMode: () => void;
   exitCommandMode: () => void;
 
@@ -189,6 +190,10 @@ export function useBufferState(
     dispatch({ type: 'SET_MODE', mode: EditMode.Normal });
   }, []);
 
+  const confirmSearchMode = useCallback(() => {
+    dispatch({ type: 'CONFIRM_SEARCH_MODE' });
+  }, []);
+
   const enterCommandMode = useCallback(() => {
     dispatch({ type: 'SET_MODE', mode: EditMode.Command });
   }, []);
@@ -307,6 +312,7 @@ export function useBufferState(
     exitEditMode,
     enterSearchMode,
     exitSearchMode,
+    confirmSearchMode,
     enterCommandMode,
     exitCommandMode,
     setSortConfig,

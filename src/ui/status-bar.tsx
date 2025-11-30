@@ -78,20 +78,15 @@ export function StatusBar({
 
   // Right side: message or help bar
   const searchHelpItems: HelpItem[] = [
-    { key: 'n', description: 'next' },
-    { key: 'N', description: 'prev' },
-    { key: 'Ctrl+C', description: 'toggle-case' },
-    { key: 'Ctrl+R', description: 'regex' },
-    { key: 'Esc', description: 'exit' },
+    { key: 'Enter', description: 'confirm' },
+    { key: 'Esc', description: 'clear' },
   ];
 
   const normalHelpItems: HelpItem[] = [
-    { key: 'q', description: 'quit' },
     { key: 'j/k', description: 'nav' },
     { key: 'v', description: 'select' },
     { key: 'i', description: 'insert' },
     { key: 'dd', description: 'delete' },
-    { key: 'w', description: 'save' },
     { key: 'p', description: 'paste' },
     { key: 'Ctrl+N/P', description: 'page' },
     { key: 'g?', description: 'help' },
@@ -109,7 +104,10 @@ export function StatusBar({
       paddingRight={2}
     >
       <text fg={Theme.getWarningColor()}>{leftContent}</text>
-      {message ? <text fg={messageColor}>{message}</text> : <HelpBar items={helpItems} />}
+      <box flexDirection="row" gap={2}>
+        {message && <text fg={messageColor}>{message}</text>}
+        <HelpBar items={helpItems} />
+      </box>
     </box>
   );
 }

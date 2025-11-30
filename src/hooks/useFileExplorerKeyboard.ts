@@ -115,15 +115,6 @@ export function useFileExplorerKeyboard({
         if (key.char && key.char.length === 1) {
           return executeAction('input:char', key);
         }
-        // Search mode: n/N for next/prev match
-        if (mode === EditMode.Search) {
-          if (key.name === 'n') {
-            return executeAction('cursor:down', key);
-          }
-          if (key.name === 'N' || (key.shift && key.name === 'n')) {
-            return executeAction('cursor:up', key);
-          }
-        }
         return false;
       }
 
