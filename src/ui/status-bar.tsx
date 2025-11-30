@@ -73,13 +73,19 @@ export function StatusBar({
   const pathText = `📂 ${breadcrumb}`;
   const modeText = `[${getModeString(mode)}]`;
   const searchText = mode === EditMode.Search ? ` /${searchQuery}` : '';
+  const editText = mode === EditMode.Edit ? ` ${commandBuffer}` : '';
   const commandText = mode === EditMode.Command ? ` ${commandBuffer}` : '';
-  const leftContent = `${pathText} ${modeText}${searchText}${commandText}`;
+  const leftContent = `${pathText} ${modeText}${searchText}${editText}${commandText}`;
 
   // Right side: message or help bar
   const searchHelpItems: HelpItem[] = [
     { key: 'Enter', description: 'confirm' },
     { key: 'Esc', description: 'clear' },
+  ];
+
+  const editHelpItems: HelpItem[] = [
+    { key: 'Enter', description: 'confirm' },
+    { key: 'Esc', description: 'cancel' },
   ];
 
   const normalHelpItems: HelpItem[] = [
@@ -92,7 +98,15 @@ export function StatusBar({
     { key: '?', description: 'help' },
   ];
 
-  const helpItems = mode === EditMode.Search ? searchHelpItems : normalHelpItems;
+  // Determine which help items to show based on mode
+  let helpItems: HelpItem[];
+  if (mode === EditMode.Search) {
+    helpItems = searchHelpItems;
+  } else if (mode === EditMode.Edit) {
+    helpItems = editHelpItems;
+  } else {
+    helpItems = normalHelpItems;
+  }
 
   // Render as a flex row status bar
   return (

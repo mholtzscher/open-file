@@ -327,21 +327,13 @@ export function useS3Actions({
         },
 
         'mode:edit': () => {
-          if (!storage.hasCapability(Capability.Move)) {
-            setStatusMessage('Rename not supported by this storage provider');
-            setStatusMessageColor(Theme.getErrorColor());
-            return;
-          }
-
           getActiveBuffer().enterEditMode();
-          setStatusMessage('-- EDIT -- (type to rename, Enter to confirm, Esc to cancel)');
-          setStatusMessageColor(Theme.getInfoColor());
+          setStatusMessage('');
         },
 
         'mode:search': () => {
           getActiveBuffer().enterSearchMode();
-          setStatusMessage('Search: type to filter, Enter to confirm, Esc to clear');
-          setStatusMessageColor(Theme.getInfoColor());
+          setStatusMessage('');
         },
 
         'mode:command': () => {
