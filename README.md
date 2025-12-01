@@ -218,6 +218,42 @@ After making changes (creates, deletes, moves), you must save them:
 
 ## Configuration
 
+### Profiles Configuration File
+
+open-file uses a profiles configuration file for managing storage provider connections. The file is located at:
+
+- **macOS/Linux**: `~/.config/open-file/profiles.jsonc`
+- **Windows**: `%APPDATA%/open-file/profiles.jsonc`
+
+The configuration file includes a JSON schema reference for editor autocomplete and validation:
+
+```jsonc
+{
+  "$schema": "https://github.com/mikea/open-file/profiles.schema.json",
+  "profiles": [
+    {
+      "id": "my-s3-bucket",
+      "displayName": "My S3 Bucket",
+      "provider": "s3",
+      "themeId": "catppuccin-mocha",
+      "config": {
+        "region": "us-east-1",
+        "profile": "default",
+      },
+    },
+  ],
+}
+```
+
+**Benefits of the JSON Schema**:
+
+- Autocomplete in VS Code, IntelliJ, and other editors
+- Validation of profile configurations
+- Documentation for all configuration options
+- Type checking for provider-specific settings
+
+The schema file is included in the repository at `profiles.schema.json` and defines all supported provider types and their configuration options.
+
 ### Command Line Options
 
 open-file is configured primarily through command-line arguments:

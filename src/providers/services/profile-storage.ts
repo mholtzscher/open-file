@@ -38,6 +38,7 @@ const PROFILES_TEMPLATE = `// Open-File Profiles Configuration
 //
 // Documentation: https://github.com/mikea/open-file#profiles
 {
+  "$schema": "https://github.com/mholtzscher/open-file/profiles.schema.json",
   "profiles": [
     // ============================================================
     // AWS S3 Example

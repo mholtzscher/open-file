@@ -1,0 +1,472 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/mikea/open-file/profiles.schema.json",
+  "title": "Open-File Profiles Configuration",
+  "description": "Configuration file for storage provider profiles in open-file",
+  "type": "object",
+  "required": ["profiles"],
+  "properties": {
+    "profiles": {
+      "type": "array",
+      "description": "Array of storage provider profiles",
+      "items": {
+        "$ref": "#/definitions/Profile"
+      }
+    }
+  },
+  "definitions": {
+    "Profile": {
+      "oneOf": [
+        { "$ref": "#/definitions/S3Profile" },
+        { "$ref": "#/definitions/GCSProfile" },
+        { "$ref": "#/definitions/SFTPProfile" },
+        { "$ref": "#/definitions/FTPProfile" },
+        { "$ref": "#/definitions/NFSProfile" },
+        { "$ref": "#/definitions/SMBProfile" },
+        { "$ref": "#/definitions/GoogleDriveProfile" },
+        { "$ref": "#/definitions/LocalProfile" }
+      ]
+    },
+    "BaseProfile": {
+      "type": "object",
+      "required": ["id", "displayName", "provider"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for this profile",
+          "minLength": 1
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Human-readable name for UI display"
+        },
+        "themeId": {
+          "type": "string",
+          "description": "Theme ID preference (optional, defaults to system default)",
+          "enum": [
+            "catppuccin-mocha",
+            "catppuccin-latte",
+            "catppuccin-frappe",
+            "catppuccin-macchiato",
+            "tokyo-night"
+          ]
+        }
+      }
+    },
+    "S3Profile": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseProfile" },
+        {
+          "properties": {
+            "provider": {
+              "const": "s3"
+            },
+            "config": {
+              "$ref": "#/definitions/S3ProfileConfig"
+            }
+          },
+          "required": ["config"]
+        }
+      ]
+    },
+    "S3ProfileConfig": {
+      "type": "object",
+      "description": "S3 configuration. Must provide either 'profile' (AWS CLI profile name) OR 'accessKeyId' + 'secretAccessKey'",
+      "properties": {
+        "region": {
+          "type": "string",
+          "description": "AWS region",
+          "examples": ["us-east-1", "us-west-2", "eu-west-1"]
+        },
+        "profile": {
+          "type": "string",
+          "description": "AWS CLI profile name for credential lookup"
+        },
+        "accessKeyId": {
+          "type": "string",
+          "description": "Direct AWS access key ID (alternative to profile)"
+        },
+        "secretAccessKey": {
+          "type": "string",
+          "description": "Direct AWS secret access key (alternative to profile)"
+        },
+        "sessionToken": {
+          "type": "string",
+          "description": "AWS session token for temporary credentials"
+        },
+        "endpoint": {
+          "type": "string",
+          "description": "Custom endpoint for MinIO, LocalStack, etc.",
+          "examples": ["http://localhost:9000", "https://minio.example.com"]
+        },
+        "forcePathStyle": {
+          "type": "boolean",
+          "description": "Use path-style addressing instead of virtual-hosted-style",
+          "default": false
+        }
+      }
+    },
+    "GCSProfile": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseProfile" },
+        {
+          "properties": {
+            "provider": {
+              "const": "gcs"
+            },
+            "config": {
+              "$ref": "#/definitions/GCSProfileConfig"
+            }
+          },
+          "required": ["config"]
+        }
+      ]
+    },
+    "GCSProfileConfig": {
+      "type": "object",
+      "properties": {
+        "projectId": {
+          "type": "string",
+          "description": "Google Cloud project ID"
+        },
+        "keyFilePath": {
+          "type": "string",
+          "description": "Path to service account JSON key file"
+        },
+        "useApplicationDefault": {
+          "type": "boolean",
+          "description": "Use Application Default Credentials",
+          "default": false
+        },
+        "apiEndpoint": {
+          "type": "string",
+          "description": "Custom API endpoint for emulators (e.g., fake-gcs-server)"
+        }
+      }
+    },
+    "SFTPProfile": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseProfile" },
+        {
+          "properties": {
+            "provider": {
+              "const": "sftp"
+            },
+            "config": {
+              "$ref": "#/definitions/SFTPProfileConfig"
+            }
+          },
+          "required": ["config"]
+        }
+      ]
+    },
+    "SFTPProfileConfig": {
+      "type": "object",
+      "required": ["host", "username", "authMethod"],
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "SSH server hostname"
+        },
+        "port": {
+          "type": "integer",
+          "description": "SSH port",
+          "default": 22,
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "username": {
+          "type": "string",
+          "description": "SSH username"
+        },
+        "authMethod": {
+          "type": "string",
+          "enum": ["password", "key", "agent"],
+          "description": "Authentication method"
+        },
+        "password": {
+          "type": "string",
+          "description": "Password for password auth"
+        },
+        "privateKeyPath": {
+          "type": "string",
+          "description": "Path to private key file"
+        },
+        "passphrase": {
+          "type": "string",
+          "description": "Passphrase for encrypted private key"
+        },
+        "basePath": {
+          "type": "string",
+          "description": "Starting directory on remote"
+        }
+      }
+    },
+    "FTPProfile": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseProfile" },
+        {
+          "properties": {
+            "provider": {
+              "const": "ftp"
+            },
+            "config": {
+              "$ref": "#/definitions/FTPProfileConfig"
+            }
+          },
+          "required": ["config"]
+        }
+      ]
+    },
+    "FTPProfileConfig": {
+      "type": "object",
+      "required": ["host"],
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "FTP server hostname"
+        },
+        "port": {
+          "type": "integer",
+          "description": "FTP port",
+          "default": 21,
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "username": {
+          "type": "string",
+          "description": "Username (optional for anonymous)"
+        },
+        "password": {
+          "type": "string",
+          "description": "Password"
+        },
+        "secure": {
+          "oneOf": [{ "type": "boolean" }, { "type": "string", "enum": ["implicit"] }],
+          "description": "FTPS mode: false = plain, true = explicit, 'implicit' = implicit",
+          "default": false
+        },
+        "basePath": {
+          "type": "string",
+          "description": "Starting directory"
+        }
+      }
+    },
+    "NFSProfile": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseProfile" },
+        {
+          "properties": {
+            "provider": {
+              "const": "nfs"
+            },
+            "config": {
+              "$ref": "#/definitions/NFSProfileConfig"
+            }
+          },
+          "required": ["config"]
+        }
+      ]
+    },
+    "NFSProfileConfig": {
+      "type": "object",
+      "required": ["host", "exportPath"],
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "NFS server hostname"
+        },
+        "exportPath": {
+          "type": "string",
+          "description": "Server export path (e.g., /exports/data)"
+        },
+        "version": {
+          "type": "number",
+          "enum": [3, 4, 4.1, 4.2],
+          "description": "NFS version (default: auto-negotiate)"
+        },
+        "port": {
+          "type": "integer",
+          "description": "NFS port",
+          "default": 2049,
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "uid": {
+          "type": "integer",
+          "description": "Override local UID",
+          "minimum": 0
+        },
+        "gid": {
+          "type": "integer",
+          "description": "Override local GID",
+          "minimum": 0
+        },
+        "authMethod": {
+          "type": "string",
+          "enum": ["sys", "krb5", "krb5i", "krb5p"],
+          "description": "Authentication method"
+        },
+        "mountOptions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Additional mount options"
+        },
+        "mountPoint": {
+          "type": "string",
+          "description": "Local mount point (required for OS mount approach)"
+        }
+      }
+    },
+    "SMBProfile": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseProfile" },
+        {
+          "properties": {
+            "provider": {
+              "const": "smb"
+            },
+            "config": {
+              "$ref": "#/definitions/SMBProfileConfig"
+            }
+          },
+          "required": ["config"]
+        }
+      ]
+    },
+    "SMBProfileConfig": {
+      "type": "object",
+      "required": ["host", "share"],
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "SMB server hostname"
+        },
+        "share": {
+          "type": "string",
+          "description": "Share name (e.g., 'documents')"
+        },
+        "port": {
+          "type": "integer",
+          "description": "SMB port",
+          "default": 445,
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "domain": {
+          "type": "string",
+          "description": "AD domain or WORKGROUP"
+        },
+        "username": {
+          "type": "string",
+          "description": "Username"
+        },
+        "password": {
+          "type": "string",
+          "description": "Password"
+        },
+        "version": {
+          "type": "string",
+          "enum": ["2.0", "2.1", "3.0", "3.1.1"],
+          "description": "SMB protocol version"
+        },
+        "encryption": {
+          "type": "boolean",
+          "description": "Enable SMB 3.0+ encryption",
+          "default": false
+        }
+      }
+    },
+    "GoogleDriveProfile": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseProfile" },
+        {
+          "properties": {
+            "provider": {
+              "const": "gdrive"
+            },
+            "config": {
+              "$ref": "#/definitions/GoogleDriveProfileConfig"
+            }
+          },
+          "required": ["config"]
+        }
+      ]
+    },
+    "GoogleDriveProfileConfig": {
+      "type": "object",
+      "required": ["clientId", "clientSecret"],
+      "properties": {
+        "clientId": {
+          "type": "string",
+          "description": "OAuth client ID"
+        },
+        "clientSecret": {
+          "type": "string",
+          "description": "OAuth client secret"
+        },
+        "refreshToken": {
+          "type": "string",
+          "description": "Refresh token (obtained after OAuth flow)"
+        },
+        "keyFilePath": {
+          "type": "string",
+          "description": "Path to service account JSON key file"
+        },
+        "impersonateEmail": {
+          "type": "string",
+          "description": "Email to impersonate (for service accounts)"
+        },
+        "rootFolderId": {
+          "type": "string",
+          "description": "Starting folder ID",
+          "default": "root"
+        },
+        "includeSharedDrives": {
+          "type": "boolean",
+          "description": "Include shared drives as containers",
+          "default": false
+        },
+        "exportFormat": {
+          "type": "string",
+          "enum": ["pdf", "docx", "txt"],
+          "description": "Export format for Google Workspace docs"
+        },
+        "cacheTtlMs": {
+          "type": "integer",
+          "description": "Path cache TTL in milliseconds",
+          "default": 60000,
+          "minimum": 0
+        }
+      }
+    },
+    "LocalProfile": {
+      "allOf": [
+        { "$ref": "#/definitions/BaseProfile" },
+        {
+          "properties": {
+            "provider": {
+              "const": "local"
+            },
+            "config": {
+              "$ref": "#/definitions/LocalProfileConfig"
+            }
+          },
+          "required": ["config"]
+        }
+      ]
+    },
+    "LocalProfileConfig": {
+      "type": "object",
+      "required": ["basePath"],
+      "properties": {
+        "basePath": {
+          "type": "string",
+          "description": "Base path on local filesystem"
+        }
+      }
+    }
+  }
+}
