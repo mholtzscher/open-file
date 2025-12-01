@@ -5,7 +5,7 @@ A Terminal User Interface (TUI) for exploring and managing AWS S3 buckets, inspi
 ## Features
 
 - 🗂️ **Browse S3 buckets** - Navigate through S3 buckets like a file system
-- ✏️ **Edit as buffer** - Edit bucket contents like a text buffer (create, delete, rename, move)
+- ✏️ **Edit as buffer** - Manage bucket contents like a text buffer (create, delete, rename, copy/paste)
 - 🎨 **Beautiful UI** - Color-coded entries, vim-style keybindings
 - 🔄 **Provider system** - Extensible storage provider architecture for S3 and future backends
 - ⚡ **Fast** - Built with Bun runtime for superior performance
@@ -130,16 +130,16 @@ To create a new file or directory:
 4. Press `Enter` to create the entry
 5. Or press `Escape` to cancel
 
-The new entry will be created when you save with `w`.
+The new entry will be created immediately.
 
 ### Editing Entries
 
-To modify an entry (rename or move it):
+To rename an entry:
 
 1. Navigate to the entry
 2. Press `a` to enter edit mode
-3. Modify the entry name or path
-4. Press `w` to save changes
+3. Modify the entry name
+4. Press `Enter` to confirm - rename executes immediately
 5. Or press `Escape` to cancel
 
 ### Deleting Entries
@@ -148,17 +148,9 @@ To delete one or more entries:
 
 1. **Single delete** - Navigate to the entry and press `dd`
 2. **Multiple delete** - Press `v` to enter visual mode, move to select entries with `j`/`k`, then press `d`
-
-Deleted entries will be shown with a `~` prefix and can be undone with `u` before you save.
-
-### Saving Changes
-
-After making changes (creates, deletes, moves), you must save them:
-
-1. Press `w` to save
-2. Review the confirmation dialog showing what will be created/deleted/moved
-3. Press `Enter` to confirm or `Escape` to cancel
-4. Changes will be applied to your bucket
+3. A confirmation dialog will appear
+4. Press `Enter` to confirm or `Escape` to cancel
+5. Deletion executes immediately upon confirmation
 
 ## Keybinding Reference
 
@@ -177,24 +169,22 @@ After making changes (creates, deletes, moves), you must save them:
 | `~`               | Go to bucket root (from within bucket) |
 | `i`               | **Create new entry**                   |
 | `a`               | Edit mode                              |
-| `dd`              | **Delete entry at cursor**             |
+| `dd`              | **Delete entry (with confirmation)**   |
 | `v`               | Start visual selection                 |
-| `c`               | Copy selected entry to clipboard       |
-| `P`               | Paste after cursor                     |
-| `w`               | Save changes (confirm operations)      |
+| `yy`              | Copy entry to clipboard                |
+| `p`               | Paste from clipboard                   |
 | `/`               | Enter search mode                      |
-| `u`               | Undo last change                       |
-| `Ctrl+r`          | Redo last change                       |
+| `r`               | Refresh listing                        |
 | `q`               | Quit application                       |
 
 ### Visual Mode
 
-| Key      | Action                  |
-| -------- | ----------------------- |
-| `j`      | Extend selection down   |
-| `k`      | Extend selection up     |
-| `d`      | Delete selected entries |
-| `Escape` | Exit visual mode        |
+| Key      | Action                                      |
+| -------- | ------------------------------------------- |
+| `j`      | Extend selection down                       |
+| `k`      | Extend selection up                         |
+| `d`      | Delete selected entries (with confirmation) |
+| `Escape` | Exit visual mode                            |
 
 ### Insert Mode (Creating Entries)
 
@@ -302,8 +292,7 @@ open-file --access-key KEY --secret-key SECRET --region us-east-1 my-bucket
     "moveToBottom": "G",
     "openItem": "Enter",
     "createEntry": "i",
-    "deleteEntry": "dd",
-    "save": "w"
+    "deleteEntry": "dd"
   },
   "colors": {
     "cursor": "#FFFF00",
@@ -363,10 +352,7 @@ open-file --access-key KEY --secret-key SECRET --region us-east-1 my-bucket
     "moveToBottom": "G",
     "openItem": "l",
     "createEntry": "i",
-    "deleteEntry": "dd",
-    "save": "w",
-    "undo": "u",
-    "redo": "C-r"
+    "deleteEntry": "dd"
   }
 }
 ```
@@ -631,9 +617,10 @@ The application uses React with OpenTUI for terminal UI rendering. Key architect
 Following oil.nvim's approach, the file/directory listing is treated as an editable buffer:
 
 - Entries are displayed as text lines
-- Deleting lines removes files
-- Editing names renames files
-- Changes are tracked and committed with confirmation
+- `dd` deletes files (with confirmation dialog)
+- `a` enters edit mode to rename files (immediate on Enter)
+- `yy` copies entries to clipboard, `p` pastes them
+- `i` creates new files/directories (immediate on Enter)
 
 ### Entry ID System
 
@@ -643,22 +630,16 @@ Each entry has a unique ID that persists during buffer edits. This allows:
 - Detecting moves vs creates
 - Proper change detection algorithm
 
-### Change Detection
+### Immediate Execution Model
 
-The application compares original and edited states to detect:
+All operations execute immediately with appropriate feedback:
 
-- **Creates** - New entries added to buffer
-- **Deletes** - Entries removed from buffer
-- **Moves** - Entries with changed paths (renames/relocations)
-- **Reorders** - Entries in different positions
+- **Delete** - Shows confirmation dialog, then executes immediately
+- **Rename** - Executes immediately when you press Enter in edit mode
+- **Create** - Executes immediately when you press Enter in insert mode
+- **Paste** - Executes immediately, with progress dialog for large operations
 
-### Operation Planning
-
-Detected changes are converted to an executable operation plan:
-
-1. Creates (new files/directories)
-2. Moves (renames, relocations)
-3. Deletes (always last to avoid dependencies)
+Progress dialogs appear for operations involving 5+ files or any file larger than 10MB.
 
 ## AWS Credentials
 
@@ -736,16 +717,16 @@ The S3 adapter uses AWS SDK v3 and supports multiple credential methods:
    curl -v http://localhost:4566
    ```
 
-#### Changes Not Saving
+#### Operations Not Working
 
-**Problem**: You made changes but they didn't apply to S3
+**Problem**: File operations (delete, rename, paste) are failing
 
 **Solutions**:
 
-1. Make sure to press `w` to save - changes are not automatic
-2. Review the confirmation dialog before confirming
-3. Check the status bar for error messages
-4. Look for permission issues with the IAM user
+1. Check the status bar for error messages
+2. Look for permission issues with the IAM user
+3. Ensure you have proper S3 permissions for the operation
+4. For large operations, wait for the progress dialog to complete
 
 #### Cursor Jumping or Display Issues
 

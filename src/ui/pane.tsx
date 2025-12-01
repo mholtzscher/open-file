@@ -8,7 +8,6 @@
 import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { BufferView } from './buffer-view.js';
 import { Theme } from './theme.js';
-import type { UsePendingOperationsReturn } from '../hooks/usePendingOperations.js';
 
 export interface PaneProps {
   bufferState: UseBufferStateReturn;
@@ -20,8 +19,6 @@ export interface PaneProps {
   flexGrow?: number;
   flexShrink?: number;
   flexBasis?: number;
-  /** Pending operations hook for global state management */
-  pendingOps: UsePendingOperationsReturn;
 }
 
 /**
@@ -40,7 +37,6 @@ export function BufferPane({
   flexGrow = 1,
   flexShrink = 1,
   flexBasis = 0,
-  pendingOps,
 }: PaneProps) {
   return (
     <box
@@ -70,7 +66,6 @@ export function BufferPane({
           showIcons={showIcons}
           showSizes={showSizes}
           showDates={showDates}
-          pendingOps={pendingOps}
         />
       </box>
     </box>

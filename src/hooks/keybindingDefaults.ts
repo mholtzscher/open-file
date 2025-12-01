@@ -32,8 +32,7 @@ function createDefaultKeybindings(): KeybindingMap {
   const global: ModeKeybindings = new Map([
     ['ctrl+n', 'cursor:pageDown'],
     ['ctrl+p', 'cursor:pageUp'],
-    ['ctrl+s', 'buffer:save'],
-    ['ctrl+r', 'buffer:redo'],
+    // Note: ctrl+s and ctrl+r removed - operations execute immediately now
   ]);
   map.set('global' as EditMode, global);
 
@@ -58,7 +57,7 @@ function createDefaultKeybindings(): KeybindingMap {
     // ['d', 'entry:delete'], // Part of dd sequence
     // ['y', 'entry:copy'], // Part of yy sequence
     ['p', 'entry:paste'],
-    ['x', 'entry:cut'],
+    // Note: x (cut) removed - use copy then delete instead
     ['shift+d', 'entry:download'],
     ['D', 'entry:download'],
     ['shift+u', 'entry:upload'],
@@ -77,9 +76,9 @@ function createDefaultKeybindings(): KeybindingMap {
     ['shift+p', 'dialog:profileSelector'],
     ['P', 'dialog:profileSelector'],
 
-    // Buffer operations (saving is now primarily via commands like :w)
+    // Buffer operations
     ['r', 'buffer:refresh'],
-    ['u', 'buffer:undo'],
+    // Note: u (undo) removed - operations execute immediately now
 
     // Connection operations (for connection-oriented providers)
     ['shift+r', 'connection:reconnect'],
@@ -104,7 +103,7 @@ function createDefaultKeybindings(): KeybindingMap {
     ['k', 'select:extend:up'],
     // Note: d in visual mode deletes selection (handled as single key, not dd)
     ['d', 'entry:delete'],
-    ['x', 'entry:cut'],
+    // Note: x (cut) removed - use copy then delete instead
     ['y', 'entry:copy'],
   ]);
   map.set(EditMode.Visual, visual);
@@ -172,7 +171,6 @@ export const keybindingDescriptions: Partial<Record<KeyAction, string>> = {
   'entry:back': 'Go to parent directory',
   'entry:delete': 'Delete entry (dd)',
   'entry:rename': 'Rename entry',
-  'entry:cut': 'Cut entry (x)',
   'entry:copy': 'Copy entry (yy)',
   'entry:paste': 'Paste entry',
   'entry:download': 'Download to local',
@@ -193,10 +191,7 @@ export const keybindingDescriptions: Partial<Record<KeyAction, string>> = {
   'dialog:profileSelector': 'Profile selector',
 
   // Buffer operations
-  'buffer:save': 'Save changes',
   'buffer:refresh': 'Refresh listing',
-  'buffer:undo': 'Undo',
-  'buffer:redo': 'Redo',
 
   // Application
   'app:quit': 'Quit',

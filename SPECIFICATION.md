@@ -20,7 +20,7 @@ Open-File is a terminal-based file explorer and manager for cloud storage and re
 ### Key Value Proposition
 
 1. **Unified Access**: Single interface across disparate storage systems (cloud object stores, SSH servers, FTP, local filesystem)
-2. **Deferred Operations**: Changes are staged and reviewed before execution, preventing accidental data loss
+2. **Immediate Operations with Confirmation**: Destructive operations (delete) show a confirmation dialog, then execute immediately
 3. **Keyboard-Driven**: Full operation possible without mouse input, using vim-inspired modal editing
 4. **Preview Capabilities**: View file contents with syntax highlighting without downloading
 
@@ -29,10 +29,10 @@ Open-File is a terminal-based file explorer and manager for cloud storage and re
 The application adopts a **"buffer-as-editor"** paradigm inspired by oil.nvim:
 
 - Directory listings are treated as editable text buffers
-- Deleting a line marks a file for deletion
-- Editing a filename marks it for rename
-- Adding a line creates a new file
-- Changes accumulate until explicitly committed with a save command
+- Pressing `dd` on an entry initiates deletion (with confirmation)
+- Editing a filename (`a`) and pressing Enter renames immediately
+- Adding a line (`i`) creates a new file/directory immediately
+- Operations execute immediately after user action (no staging/save step)
 
 ---
 
@@ -59,8 +59,8 @@ The application adopts a **"buffer-as-editor"** paradigm inspired by oil.nvim:
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        Application Layer                             │
 │  ┌──────────────┐  ┌───────────────┐  ┌────────────────────────┐   │
-│  │ Buffer State │  │ Pending Ops   │  │ Profile Management     │   │
-│  │ Management   │  │ Store         │  │                        │   │
+│  │ Buffer State │  │ Clipboard     │  │ Profile Management     │   │
+│  │ Management   │  │ State         │  │                        │   │
 │  └──────────────┘  └───────────────┘  └────────────────────────┘   │
 │                               │                                      │
 │                               ▼                                      │
@@ -88,7 +88,7 @@ The application adopts a **"buffer-as-editor"** paradigm inspired by oil.nvim:
 | **Presentation**        | Render UI, capture input                 | Application Layer           |
 | **Event Handling**      | Route input to appropriate handlers      | Mode state, Action handlers |
 | **Buffer State**        | Track view state, selection, edit buffer | None (pure state)           |
-| **Pending Ops Store**   | Track uncommitted file operations        | None (pure state)           |
+| **Clipboard State**     | Track copied entries for paste           | None (pure state)           |
 | **Profile Management**  | Manage connection configurations         | Credential storage          |
 | **Storage Abstraction** | Unified API over providers               | Provider implementations    |
 | **Providers**           | Backend-specific protocol handling       | External services           |
@@ -102,18 +102,19 @@ User Input → Keyboard Dispatch → Navigation Handler → Storage Abstraction
 → Provider List Operation → Entry List → Buffer State Update → UI Render
 ```
 
-#### Edit Flow (Deferred Operations)
+#### Operation Flow (Immediate Execution)
 
 ```
-User Input → Mode Handler → Buffer Mutation → Change Detection
-→ Pending Operation Created → Visual State Update → UI Render
+User Input → Mode Handler → Confirmation Dialog (if destructive)
+→ User Confirms → Provider Operation → Progress Updates (if needed)
+→ Buffer Refresh → UI Render
 ```
 
-#### Commit Flow
+#### Copy/Paste Flow
 
 ```
-Save Command → Pending Ops Retrieved → Confirmation Dialog
-→ User Confirms → Sequential Execution → Progress Updates
+Copy Command → Entries Stored in Clipboard → Navigate to Destination
+→ Paste Command → Provider Copy Operation → Progress Updates
 → Buffer Refresh → UI Render
 ```
 
@@ -123,7 +124,7 @@ Save Command → Pending Ops Retrieved → Confirmation Dialog
 | ---------------------------------- | ------------------------------------------------------------------------------ |
 | **Strategy Pattern**               | Storage providers implement common interface with backend-specific logic       |
 | **Capability-Based Introspection** | Providers declare supported operations; UI adapts dynamically                  |
-| **Command Pattern**                | File operations represented as data structures, staged then executed           |
+| **Immediate Execution**            | File operations execute immediately with confirmation for destructive actions  |
 | **State Machine**                  | Edit modes (Normal, Visual, Insert, etc.) with defined transitions             |
 | **Observer Pattern**               | Components subscribe to state changes for reactive updates                     |
 | **Chain of Responsibility**        | Keyboard handlers processed in priority order                                  |
@@ -169,30 +170,16 @@ Named configuration for connecting to a storage backend.
 | `themeId`           | Optional theme preference for this profile                        |
 | _provider-specific_ | Configuration varies by provider type (see External Integrations) |
 
-#### Pending Operation
+#### Clipboard State
 
-A staged file operation awaiting execution.
+Temporary storage for copy/paste operations.
 
-| Type       | Attributes                                  |
-| ---------- | ------------------------------------------- |
-| **Delete** | Target URI, entry snapshot                  |
-| **Move**   | Source URI, destination URI, entry snapshot |
-| **Copy**   | Source URI, destination URI, entry snapshot |
-| **Rename** | URI, original entry, new name               |
-| **Create** | Parent URI, entry type, name                |
+| Attribute | Description                            |
+| --------- | -------------------------------------- |
+| `entries` | List of entries that have been copied  |
+| `isEmpty` | Whether clipboard contains any entries |
 
-Common attributes: unique ID, operation type, creation timestamp
-
-#### Operation Plan
-
-Ordered collection of operations ready for execution.
-
-| Attribute    | Description                                      |
-| ------------ | ------------------------------------------------ |
-| `operations` | Ordered list of operations                       |
-| `summary`    | Counts by type (creates, deletes, moves, copies) |
-
-**Execution Order**: Creates → Copies → Moves → Deletes (to avoid dependency issues)
+Clipboard is cleared after successful paste operation.
 
 ### State Structures
 
@@ -200,25 +187,20 @@ Ordered collection of operations ready for execution.
 
 Current view and editing state.
 
-| Attribute            | Description                                  |
-| -------------------- | -------------------------------------------- |
-| `entries`            | Currently displayed entries                  |
-| `originalEntries`    | Snapshot before edits (for change detection) |
-| `currentPath`        | Path being viewed                            |
-| `mode`               | Current edit mode                            |
-| `cursorIndex`        | Selected entry position                      |
-| `selectionRange`     | Start/end for visual selection               |
-| `scrollOffset`       | Viewport scroll position                     |
-| `editBuffer`         | Text being typed in edit modes               |
-| `editBufferCursor`   | Cursor position within edit buffer           |
-| `searchQuery`        | Active filter query                          |
-| `sortConfig`         | Sort field and direction                     |
-| `showHiddenFiles`    | Whether dot-prefixed entries are visible     |
-| `clipboardEntries`   | Copied/cut entries                           |
-| `clipboardOperation` | Whether clipboard is "copy" or "cut"         |
-| `undoHistory`        | State snapshots for undo                     |
-| `redoHistory`        | State snapshots for redo                     |
-| `isDirty`            | Whether there are uncommitted changes        |
+| Attribute          | Description                                  |
+| ------------------ | -------------------------------------------- |
+| `entries`          | Currently displayed entries                  |
+| `originalEntries`  | Snapshot before edits (for change detection) |
+| `currentPath`      | Path being viewed                            |
+| `mode`             | Current edit mode                            |
+| `cursorIndex`      | Selected entry position                      |
+| `selectionRange`   | Start/end for visual selection               |
+| `scrollOffset`     | Viewport scroll position                     |
+| `editBuffer`       | Text being typed in edit modes               |
+| `editBufferCursor` | Cursor position within edit buffer           |
+| `searchQuery`      | Active filter query                          |
+| `sortConfig`       | Sort field and direction                     |
+| `showHiddenFiles`  | Whether dot-prefixed entries are visible     |
 
 #### Storage State
 
@@ -258,16 +240,10 @@ Profile ──configures──▶ Provider ──provides──▶ Entry[]
    └──has themeId──────▶ Theme
 
 Buffer State ──displays──▶ Entry[] (filtered, sorted)
-   │
-   ├──tracks──▶ deleted entry IDs
-   ├──tracks──▶ clipboard entries
-   └──maintains──▶ undo/redo history
 
-Pending Operations Store ──stages──▶ Pending Operation[]
-   │                                      │
-   └──maintains──▶ undo/redo stacks       └──references──▶ Entry snapshot
+Clipboard State ──stores──▶ Entry[] (for paste)
 
-Operation Plan ──executes via──▶ Provider ──returns──▶ Operation Result
+User Action ──executes via──▶ Provider ──returns──▶ Operation Result
 ```
 
 ---
@@ -304,54 +280,51 @@ Operation Plan ──executes via──▶ Provider ──returns──▶ Opera
 - Permission denied shows error without crashing
 - Network errors offer retry option
 
-### 4.2 File Operations (Deferred Execution)
+### 4.2 File Operations (Immediate Execution)
 
 **Functional Requirements**:
 
-- Mark entries for deletion
-- Mark entries for rename
+- Delete entries (with confirmation dialog)
+- Rename entries (immediate on submit)
 - Copy entries to clipboard
-- Cut entries (copy with delete source on paste)
 - Paste clipboard contents to current directory
 - Create new files and directories
-- All operations are staged until explicit save
 
 **User Workflows**:
 
 _Delete Workflow_:
 
-1. Position cursor on entry
-2. Press delete key
-3. Entry visually marked (strikethrough, indicator)
-4. Can be unmarked by pressing delete again (toggle)
-5. Save command shows confirmation dialog
-6. Confirm to execute deletion
+1. Position cursor on entry (or select multiple in visual mode)
+2. Press delete key (`dd`)
+3. Confirmation dialog appears showing entries to be deleted
+4. Confirm to execute deletion immediately
+5. Entry removed from listing
 
 _Rename Workflow_:
 
 1. Position cursor on entry
-2. Enter edit mode
+2. Enter edit mode (`a`)
 3. Modify entry name in inline editor
-4. Confirm or cancel
-5. Entry shows pending rename indicator
-6. Save command executes rename
+4. Press Enter to confirm
+5. Rename executes immediately
+6. Entry name updated in listing
 
 _Copy/Paste Workflow_:
 
 1. Position cursor on entry (or select multiple in visual mode)
-2. Copy or cut command
+2. Copy command (`yy`)
 3. Navigate to destination directory
-4. Paste command
-5. Pending copy/move indicators appear
-6. Save command executes transfer
+4. Paste command (`p`)
+5. Copy executes immediately (progress shown for large operations)
+6. New entries appear in listing
 
 _Create Workflow_:
 
-1. Enter insert mode
-2. Type new entry name
-3. Confirm creation
-4. Entry appears with pending create indicator
-5. Save command creates file/directory
+1. Enter insert mode (`i`)
+2. Type new entry name (trailing `/` for directory)
+3. Press Enter to confirm
+4. File/directory created immediately
+5. New entry appears in listing
 
 **Validation Rules**:
 
@@ -365,7 +338,8 @@ _Create Workflow_:
 
 - Pasting into same directory creates copy with modified name
 - Circular move detection (moving directory into itself)
-- Large file operations show progress
+- Large file operations show progress (5+ files OR any file > 10MB)
+- On error: error dialog shown, entry remains visible
 
 ### 4.3 Visual Selection Mode
 
@@ -496,19 +470,6 @@ _Upload_:
 - Credential format validation
 - Connection test before save (optional)
 
-### 4.8 Undo/Redo
-
-**Functional Requirements**:
-
-- Undo pending operations (before save)
-- Redo undone operations
-- Separate undo stacks for buffer state and pending operations
-
-**Validation Rules**:
-
-- Cannot undo executed operations (only pending)
-- Undo history limited to prevent memory issues
-
 ---
 
 ## 5. External Integrations
@@ -615,9 +576,8 @@ _Upload_:
 │                                                              │
 │  > selected-entry/                                          │
 │    another-entry.txt                                        │
-│    ✗ deleted-entry.txt                                      │
-│    ✎ renamed-entry.txt → new-name.txt                       │
-│    + pending-create.txt                                      │
+│    documents/                                                │
+│    image.png                                                 │
 │                                                              │
 ├──────────────────────────────────────────────────────────────┤
 │ Status: path/to/current  [NORMAL]     j/k nav  ? help       │
@@ -645,17 +605,17 @@ _Upload_:
 
 ### Modal Dialogs
 
-| Dialog               | Purpose                       | Content                       |
-| -------------------- | ----------------------------- | ----------------------------- |
-| **Help**             | Display all keybindings       | Categorized list of shortcuts |
-| **Confirmation**     | Confirm pending operations    | Operation summary, Yes/No     |
-| **Sort**             | Change sort options           | Field selector, order toggle  |
-| **Upload**           | Browse local files for upload | File browser, selection       |
-| **Quit**             | Warn about unsaved changes    | Save/Quit/Cancel options      |
-| **Profile Selector** | Choose connection profile     | Profile list, create/edit     |
-| **Theme Selector**   | Change color theme            | Theme list with preview       |
-| **Progress**         | Show operation progress       | Progress bar, cancel button   |
-| **Error**            | Display error details         | Message, dismiss button       |
+| Dialog               | Purpose                        | Content                       |
+| -------------------- | ------------------------------ | ----------------------------- |
+| **Help**             | Display all keybindings        | Categorized list of shortcuts |
+| **Confirmation**     | Confirm destructive operations | Operation summary, Yes/No     |
+| **Sort**             | Change sort options            | Field selector, order toggle  |
+| **Upload**           | Browse local files for upload  | File browser, selection       |
+| **Quit**             | Confirm quit                   | Quit/Cancel options           |
+| **Profile Selector** | Choose connection profile      | Profile list, create/edit     |
+| **Theme Selector**   | Change color theme             | Theme list with preview       |
+| **Progress**         | Show operation progress        | Progress bar, cancel button   |
+| **Error**            | Display error details          | Message, dismiss button       |
 
 ### Navigation Model
 
@@ -705,12 +665,9 @@ _Upload_:
 **Operations (Normal Mode)**:
 | Key | Action |
 |-----|--------|
-| `d` then `d` | Mark for deletion |
+| `d` then `d` | Delete (with confirmation) |
 | `y` then `y` | Copy to clipboard |
-| `x` | Cut (copy + mark source for delete) |
-| `p` | Paste after cursor |
-| `u` | Undo |
-| `Ctrl+R` | Redo |
+| `p` | Paste from clipboard |
 | `r` | Refresh listing |
 
 **Mode Changes**:
@@ -736,10 +693,7 @@ _Upload_:
 **Commands** (Command Mode):
 | Command | Action |
 |---------|--------|
-| `:w` | Save (execute pending operations) |
 | `:q` | Quit |
-| `:wq` | Save and quit |
-| `:q!` | Quit without saving |
 
 **Text Input Modes** (Insert, Edit, Search, Command):
 | Key | Action |
@@ -767,18 +721,12 @@ When a handler processes a key, it stops propagation to lower priorities.
 
 ### Visual State Indicators
 
-| State                   | Visual Treatment                       |
-| ----------------------- | -------------------------------------- |
-| Cursor position         | `>` prefix, highlighted background     |
-| Visual selection        | Highlighted background on range        |
-| Marked for deletion     | `✗` prefix, strikethrough, error color |
-| Cut (pending move away) | Dimmed text                            |
-| Pending move here       | Indicator, appears in listing          |
-| Pending copy here       | Indicator, appears in listing          |
-| Pending rename          | `✎` prefix, shows old → new name       |
-| Pending create          | `+` prefix, success color              |
-| Directory               | Trailing `/`, distinct color           |
-| Symlink                 | `→` with target, distinct color        |
+| State            | Visual Treatment                   |
+| ---------------- | ---------------------------------- |
+| Cursor position  | `>` prefix, highlighted background |
+| Visual selection | Highlighted background on range    |
+| Directory        | Trailing `/`, distinct color       |
+| Symlink          | `→` with target, distinct color    |
 
 ### Theming System
 
@@ -949,13 +897,13 @@ URIs are used internally for:
 
 ## Appendix C: Glossary
 
-| Term                  | Definition                                                          |
-| --------------------- | ------------------------------------------------------------------- |
-| **Buffer**            | In-memory representation of directory contents, treated as editable |
-| **Container**         | Top-level organizational unit (S3 bucket, GCS bucket)               |
-| **Entry**             | Any file system object (file, directory, container, symlink)        |
-| **Pending Operation** | A staged change that hasn't been executed yet                       |
-| **Profile**           | Named configuration for connecting to a storage backend             |
-| **Provider**          | Implementation of storage backend protocol                          |
-| **URI**               | Uniform Resource Identifier for cross-backend entry addressing      |
-| **Visual Mode**       | Multi-selection state for batch operations                          |
+| Term            | Definition                                                          |
+| --------------- | ------------------------------------------------------------------- |
+| **Buffer**      | In-memory representation of directory contents, treated as editable |
+| **Clipboard**   | Temporary storage for copied entries awaiting paste                 |
+| **Container**   | Top-level organizational unit (S3 bucket, GCS bucket)               |
+| **Entry**       | Any file system object (file, directory, container, symlink)        |
+| **Profile**     | Named configuration for connecting to a storage backend             |
+| **Provider**    | Implementation of storage backend protocol                          |
+| **URI**         | Uniform Resource Identifier for cross-backend entry addressing      |
+| **Visual Mode** | Multi-selection state for batch operations                          |

@@ -1,17 +1,25 @@
+/**
+ * useS3Actions Hook
+ *
+ * Action handlers for file explorer operations.
+ * Uses immediate execution model - operations execute right away with confirmation
+ * dialogs for destructive actions.
+ */
+
 import { useMemo, useRef } from 'react';
 import { Theme } from '../ui/theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { calculateParentPath } from '../utils/path-utils.js';
 import { Capability } from '../providers/types/capabilities.js';
-import { Entry, EntryType } from '../types/entry.js';
+import { Entry } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
 import { KeyAction, KeyboardKey } from '../types/keyboard.js';
 import type { PendingOperation } from '../types/dialog.js';
 import type { UseBufferStateReturn } from './useBufferState.js';
 import type { UseNavigationHandlersReturn as NavigationHandlers } from './useNavigationHandlers.js';
 import type { StorageContextValue } from '../contexts/StorageContext.js';
-import type { UsePendingOperationsReturn } from './usePendingOperations.js';
-import { setOnNextSaveComplete } from './useDialogHandlers.js';
+import type { UseClipboardReturn } from './useClipboard.js';
+import type { UseImmediateExecutionReturn } from './useImmediateExecution.js';
 
 interface UseS3ActionsProps {
   storage: StorageContextValue;
@@ -25,14 +33,18 @@ interface UseS3ActionsProps {
   navigationHandlers: NavigationHandlers;
   showConfirm: (ops: PendingOperation[]) => void;
   showUpload: () => void;
-  showQuit: (pendingChanges: number) => void;
+  showQuit: () => void;
   showProfileSelector: () => void;
   showThemeSelector: () => void;
   toggleHelp: () => void;
   toggleSort: () => void;
   closeDialog: () => void;
-  /** Pending operations hook for global state management */
-  pendingOps: UsePendingOperationsReturn;
+  /** Clipboard hook for copy/paste operations */
+  clipboard: UseClipboardReturn;
+  /** Immediate execution hook for operations */
+  immediateExecution: UseImmediateExecutionReturn;
+  /** Refresh the current directory listing */
+  refreshListing: () => Promise<void>;
 }
 
 export function useS3Actions({
@@ -53,18 +65,28 @@ export function useS3Actions({
   toggleHelp,
   toggleSort,
   closeDialog,
-  pendingOps,
+  clipboard,
+  immediateExecution,
+  refreshListing,
 }: UseS3ActionsProps) {
-  // Use ref to always access the latest pendingOps without requiring re-memoization
-  // This ensures handlers always use the current pendingOps even if called before
-  // React's effect cleanup/setup cycle completes after a state change
-  const pendingOpsRef = useRef(pendingOps);
-  pendingOpsRef.current = pendingOps;
+  // Use refs to always access latest values without requiring re-memoization
+  const clipboardRef = useRef(clipboard);
+  clipboardRef.current = clipboard;
+
+  const immediateExecutionRef = useRef(immediateExecution);
+  immediateExecutionRef.current = immediateExecution;
 
   return useMemo(() => {
     const getActiveBuffer = () => bufferState;
-    // Access pendingOps through ref to always get the latest value
-    const getPendingOps = () => pendingOpsRef.current;
+    const getClipboard = () => clipboardRef.current;
+    const getExecution = () => immediateExecutionRef.current;
+
+    /**
+     * Generate a unique operation ID
+     */
+    const generateOpId = (): string => {
+      return `op-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    };
 
     const actionHandlers: Partial<Record<KeyAction, (key?: KeyboardKey) => void | Promise<void>>> =
       {
@@ -111,7 +133,6 @@ export function useS3Actions({
         'entry:back': async () => {
           if (previewMode) {
             setPreviewMode(false);
-            // Preview content will be cleared automatically by the hook when previewMode is false
             setStatusMessage('Preview closed');
             setStatusMessageColor(Theme.getTextColor());
             return;
@@ -121,18 +142,14 @@ export function useS3Actions({
           const currentPath = currentBufferState.currentPath;
           const { parentPath, atContainerRoot } = calculateParentPath(currentPath);
 
-          // For container-based providers (S3, GCS), bucket must be set to navigate
-          // For non-container providers (Local, SFTP), we navigate directly
           const hasContainers = storage.hasCapability(Capability.Containers);
 
           if (atContainerRoot) {
             if (hasContainers) {
-              // Container-based provider at container root - go back to container listing
               setBucket(undefined);
               setStatusMessage('Back to bucket listing');
               setStatusMessageColor(Theme.getInfoColor());
             } else {
-              // Non-container provider at root - can't go further up
               setStatusMessage('Already at root');
               setStatusMessageColor(Theme.getTextColor());
             }
@@ -152,38 +169,6 @@ export function useS3Actions({
 
           const currentBufferState = getActiveBuffer();
           const selected = currentBufferState.getSelectedEntries();
-          if (selected.length > 0) {
-            for (const entry of selected) {
-              getPendingOps().toggleDeletion(entry);
-            }
-
-            if (currentBufferState.selection.isActive) {
-              currentBufferState.exitVisualSelection();
-            }
-
-            // getMarkedForDeletion reads directly from store, so it returns immediate state
-            const markedCount = getPendingOps().getMarkedForDeletion().length;
-            if (markedCount > 0) {
-              setStatusMessage(
-                `${markedCount} item(s) marked for deletion. Use :w to save or 'u' to undo.`
-              );
-              setStatusMessageColor(Theme.getWarningColor());
-            } else {
-              setStatusMessage('No items marked for deletion');
-              setStatusMessageColor(Theme.getTextColor());
-            }
-          }
-        },
-
-        'entry:cut': () => {
-          if (!storage.hasCapability(Capability.Move)) {
-            setStatusMessage('Move not supported by this storage provider');
-            setStatusMessageColor(Theme.getErrorColor());
-            return;
-          }
-
-          const currentBufferState = getActiveBuffer();
-          const selected = currentBufferState.getSelectedEntries();
 
           if (selected.length === 0) {
             setStatusMessage('No entries selected');
@@ -191,17 +176,22 @@ export function useS3Actions({
             return;
           }
 
-          if (pendingOps) {
-            getPendingOps().cut(selected);
-            // Always exit visual mode and return to normal after cut
+          // Exit visual mode if active
+          if (currentBufferState.selection.isActive) {
             currentBufferState.exitVisualSelection();
-            currentBufferState.setMode(EditMode.Normal);
-            setStatusMessage(`Cut ${selected.length} item(s) - navigate and press 'p' to move`);
-            setStatusMessageColor(Theme.getInfoColor());
-          } else {
-            setStatusMessage('Cut not available (pending ops not initialized)');
-            setStatusMessageColor(Theme.getWarningColor());
           }
+
+          // Build operations for confirmation dialog
+          const operations: PendingOperation[] = selected.map(entry => ({
+            id: generateOpId(),
+            type: 'delete' as const,
+            path: entry.path,
+            entry,
+            recursive: entry.type === 'directory',
+          }));
+
+          // Show confirmation dialog
+          showConfirm(operations);
         },
 
         'entry:copy': () => {
@@ -220,54 +210,56 @@ export function useS3Actions({
             return;
           }
 
-          if (pendingOps) {
-            getPendingOps().copy(selected);
-            // Always exit visual mode and return to normal after copy
-            currentBufferState.exitVisualSelection();
-            currentBufferState.setMode(EditMode.Normal);
-            setStatusMessage(`Copied ${selected.length} item(s) - navigate and press 'p' to paste`);
-            setStatusMessageColor(Theme.getInfoColor());
-          } else {
-            // Fallback to old behavior
-            currentBufferState.copySelection();
-            // Also exit visual mode in fallback
-            currentBufferState.exitVisualSelection();
-            currentBufferState.setMode(EditMode.Normal);
-            setStatusMessage('Copied');
-            setStatusMessageColor(Theme.getSuccessColor());
-          }
+          // Copy to clipboard
+          getClipboard().copy(selected);
+
+          // Exit visual mode and return to normal
+          currentBufferState.exitVisualSelection();
+          currentBufferState.setMode(EditMode.Normal);
+
+          setStatusMessage(`Copied ${selected.length} item(s) - navigate and press 'p' to paste`);
+          setStatusMessageColor(Theme.getInfoColor());
         },
 
-        'entry:paste': () => {
+        'entry:paste': async () => {
           const currentBufferState = getActiveBuffer();
+          const clipboardState = getClipboard();
 
-          if (pendingOps) {
-            if (!getPendingOps().hasClipboardContent) {
-              setStatusMessage('Nothing to paste - cut or copy first');
-              setStatusMessageColor(Theme.getWarningColor());
-              return;
-            }
-
-            const isCut = getPendingOps().isClipboardCut;
-            if (isCut && !storage.hasCapability(Capability.Move)) {
-              setStatusMessage('Move not supported by this storage provider');
-              setStatusMessageColor(Theme.getErrorColor());
-              return;
-            }
-            if (!isCut && !storage.hasCapability(Capability.Copy)) {
-              setStatusMessage('Copy not supported by this storage provider');
-              setStatusMessageColor(Theme.getErrorColor());
-              return;
-            }
-
-            getPendingOps().paste(currentBufferState.currentPath);
-            const opType = isCut ? 'move' : 'copy';
-            setStatusMessage(`Pending ${opType} operation(s) added. Use :w to save.`);
+          if (!clipboardState.hasContent || !clipboardState.clipboard) {
+            setStatusMessage('Nothing to paste - copy first with yy');
             setStatusMessageColor(Theme.getWarningColor());
-          } else {
-            setStatusMessage('Paste not yet implemented');
-            setStatusMessageColor(Theme.getWarningColor());
+            return;
           }
+
+          if (!storage.hasCapability(Capability.Copy)) {
+            setStatusMessage('Copy not supported by this storage provider');
+            setStatusMessageColor(Theme.getErrorColor());
+            return;
+          }
+
+          const { entries, sourcePaths } = clipboardState.clipboard;
+          const destinationPath = currentBufferState.currentPath;
+
+          setStatusMessage('Copying...');
+          setStatusMessageColor(Theme.getInfoColor());
+
+          await getExecution().executeCopies(entries, sourcePaths, destinationPath, {
+            onSuccess: msg => {
+              setStatusMessage(msg);
+              setStatusMessageColor(Theme.getSuccessColor());
+              refreshListing();
+            },
+            onError: msg => {
+              setStatusMessage(msg);
+              setStatusMessageColor(Theme.getErrorColor());
+              refreshListing(); // Still refresh to show actual state
+            },
+            onCancelled: msg => {
+              setStatusMessage(msg);
+              setStatusMessageColor(Theme.getWarningColor());
+              refreshListing();
+            },
+          });
         },
 
         'entry:download': () => {
@@ -292,7 +284,7 @@ export function useS3Actions({
           const localPath = currentEntry.name;
 
           const operation: PendingOperation = {
-            id: Math.random().toString(36),
+            id: generateOpId(),
             type: 'download',
             source: s3Path,
             destination: localPath,
@@ -330,11 +322,7 @@ export function useS3Actions({
           const buf = getActiveBuffer();
           const currentEntry = buf.getSelectedEntry();
           if (currentEntry) {
-            // Check if there's a pending rename and use that name instead
-            const entryState = getPendingOps().getEntryState(currentEntry);
-            const nameToEdit =
-              entryState.isRenamed && entryState.newName ? entryState.newName : currentEntry.name;
-            buf.enterEditMode(nameToEdit);
+            buf.enterEditMode(currentEntry.name);
           } else {
             buf.enterEditMode('');
           }
@@ -392,69 +380,6 @@ export function useS3Actions({
         },
 
         // Buffer operations
-        'buffer:save': () => {
-          if (!getPendingOps().hasPendingChanges) {
-            setStatusMessage('No changes to save');
-            setStatusMessageColor(Theme.getTextColor());
-            return;
-          }
-
-          // Convert store operations to dialog PendingOperation format
-          const storeOps = getPendingOps().operations;
-          const dialogOps: PendingOperation[] = storeOps.map(op => {
-            switch (op.type) {
-              case 'delete':
-                return {
-                  id: op.id,
-                  type: 'delete' as const,
-                  path: op.entry.path,
-                  entry: op.entry,
-                };
-              case 'move':
-                return {
-                  id: op.id,
-                  type: 'move' as const,
-                  source: op.entry.path,
-                  destination: op.destUri.split('/').slice(3).join('/'), // Extract path from URI
-                  entry: op.entry,
-                  recursive: op.entry.type === EntryType.Directory,
-                };
-              case 'copy':
-                return {
-                  id: op.id,
-                  type: 'copy' as const,
-                  source: op.entry.path,
-                  destination: op.destUri.split('/').slice(3).join('/'), // Extract path from URI
-                  entry: op.entry,
-                  recursive: op.entry.type === EntryType.Directory,
-                };
-              case 'rename':
-                return {
-                  id: op.id,
-                  type: 'rename' as const,
-                  path: op.entry.path,
-                  newName: op.newName,
-                  entry: op.entry,
-                };
-              case 'create':
-                return {
-                  id: op.id,
-                  type: 'create' as const,
-                  path: op.uri.split('/').slice(3).join('/'), // Extract path from URI
-                  entryType: op.entryType === EntryType.Directory ? 'directory' : 'file',
-                  entry: {
-                    id: op.id,
-                    name: op.name,
-                    type: op.entryType,
-                    path: op.uri.split('/').slice(3).join('/'),
-                  },
-                };
-            }
-          });
-
-          showConfirm(dialogOps);
-        },
-
         'buffer:refresh': () => {
           const currentBufferState = getActiveBuffer();
 
@@ -473,7 +398,6 @@ export function useS3Actions({
                   setStatusMessageColor(Theme.getErrorColor());
                 });
             } else {
-              // Non-container providers - refresh root directory
               const currentPath = currentBufferState.currentPath;
               storage
                 .list(currentPath)
@@ -494,7 +418,6 @@ export function useS3Actions({
               .list(currentPath)
               .then(entries => {
                 currentBufferState.setEntries([...entries]);
-                // setOriginalEntries removed from here
                 setStatusMessage('Refreshed');
                 setStatusMessageColor(Theme.getSuccessColor());
               })
@@ -506,39 +429,13 @@ export function useS3Actions({
           }
         },
 
-        'buffer:undo': () => {
-          if (getPendingOps().undo()) {
-            setStatusMessage('Undo');
-            setStatusMessageColor(Theme.getSuccessColor());
-          } else {
-            setStatusMessage('Nothing to undo');
-            setStatusMessageColor(Theme.getWarningColor());
-          }
-        },
-
-        'buffer:redo': () => {
-          if (getPendingOps().redo()) {
-            setStatusMessage('Redo');
-            setStatusMessageColor(Theme.getSuccessColor());
-          } else {
-            setStatusMessage('Nothing to redo');
-            setStatusMessageColor(Theme.getWarningColor());
-          }
-        },
-
         // Selection (visual mode)
         'select:extend:up': () => getActiveBuffer().extendVisualSelection('up'),
         'select:extend:down': () => getActiveBuffer().extendVisualSelection('down'),
 
         // Application
         'app:quit': () => {
-          if (getPendingOps().pendingCount > 0) {
-            // Show quit confirmation dialog
-            showQuit(getPendingOps().pendingCount);
-            return;
-          }
-
-          // No pending changes - quit immediately
+          // No pending operations to check - just quit
           process.exit(0);
         },
 
@@ -552,7 +449,6 @@ export function useS3Actions({
 
         // Connection operations
         'connection:reconnect': async () => {
-          // Only for connection-oriented providers
           if (!storage.hasCapability(Capability.Connection)) {
             setStatusMessage('Reconnect not supported for this storage provider');
             setStatusMessageColor(Theme.getWarningColor());
@@ -567,17 +463,14 @@ export function useS3Actions({
             setStatusMessage('Reconnected successfully');
             setStatusMessageColor(Theme.getSuccessColor());
 
-            // Refresh the current view after reconnecting
             const currentBufferState = getActiveBuffer();
             if (bucket) {
               const entries = await storage.list(currentBufferState.currentPath);
               currentBufferState.setEntries([...entries]);
-              // setOriginalEntries removed from here
             } else if (storage.hasCapability(Capability.Containers)) {
               const entries = await storage.listContainers();
               currentBufferState.setEntries([...entries]);
             } else {
-              // Non-container providers - list root directory
               const entries = await storage.list(currentBufferState.currentPath);
               currentBufferState.setEntries([...entries]);
             }
@@ -646,8 +539,9 @@ export function useS3Actions({
           buf.moveEditCursorToEnd();
         },
 
-        'input:confirm': () => {
+        'input:confirm': async () => {
           const buf = getActiveBuffer();
+
           if (buf.mode === EditMode.Search) {
             // Confirm search: keep filter, exit to normal mode
             buf.confirmSearchMode();
@@ -660,25 +554,16 @@ export function useS3Actions({
             setStatusMessageColor(Theme.getInfoColor());
           } else if (buf.mode === EditMode.Command) {
             const command = buf.getEditBuffer().trim();
+
             if (command === ':w') {
-              actionHandlers['buffer:save']?.();
+              // No-op in immediate execution model
+              setStatusMessage('No pending changes (operations execute immediately)');
+              setStatusMessageColor(Theme.getTextColor());
             } else if (command === ':q') {
-              actionHandlers['app:quit']?.();
+              process.exit(0);
             } else if (command === ':wq') {
-              const opsStore = getPendingOps();
-              if (opsStore.hasPendingChanges) {
-                setOnNextSaveComplete(() => {
-                  process.exit(0);
-                });
-                actionHandlers['buffer:save']?.();
-              } else {
-                actionHandlers['app:quit']?.();
-              }
+              process.exit(0);
             } else if (command === ':q!') {
-              const opsStore = getPendingOps();
-              if (opsStore.hasPendingChanges) {
-                opsStore.discard();
-              }
               process.exit(0);
             } else if (command === ':buckets') {
               if (!bucket) {
@@ -715,110 +600,72 @@ export function useS3Actions({
             }
             buf.exitCommandMode();
           } else if (buf.mode === EditMode.Insert) {
+            // Create new file/directory immediately
             const entryName = buf.getEditBuffer().trim();
             if (entryName) {
               const currentPath = buf.currentPath;
               const isDirectory = entryName.endsWith('/');
               const cleanName = entryName.replace(/\/$/, '');
+              const fullPath = currentPath ? `${currentPath}${cleanName}` : cleanName;
 
-              if (pendingOps) {
-                // Add to pending operations store
-                getPendingOps().create(
-                  currentPath,
-                  cleanName,
-                  isDirectory ? EntryType.Directory : EntryType.File
-                );
-                buf.clearEditBuffer();
-                buf.exitInsertMode();
-                setStatusMessage(`Pending create: ${cleanName}. Use :w to save.`);
-                setStatusMessageColor(Theme.getWarningColor());
-              } else {
-                // Fallback: add to buffer directly (won't persist)
-                buf.saveSnapshot();
-                const entryPath = currentPath ? `${currentPath}${entryName}` : entryName;
+              buf.clearEditBuffer();
+              buf.exitInsertMode();
 
-                const newEntry = {
-                  id: Math.random().toString(36),
-                  name: cleanName,
-                  type: isDirectory ? EntryType.Directory : EntryType.File,
-                  path: entryPath,
-                  modified: new Date(),
-                };
+              setStatusMessage(`Creating ${isDirectory ? 'directory' : 'file'}...`);
+              setStatusMessageColor(Theme.getInfoColor());
 
-                const insertIndex = buf.selection.cursorIndex + 1;
-                const currentEntries = [...buf.entries];
-                currentEntries.splice(insertIndex, 0, newEntry);
-                buf.setEntries(currentEntries);
-
-                buf.clearEditBuffer();
-                buf.exitInsertMode();
-                setStatusMessage(
-                  `Created ${isDirectory ? 'directory' : 'file'}: ${entryName} (local only)`
-                );
-                setStatusMessageColor(Theme.getSuccessColor());
-              }
+              await getExecution().executeCreate(fullPath, isDirectory, {
+                onSuccess: msg => {
+                  setStatusMessage(msg);
+                  setStatusMessageColor(Theme.getSuccessColor());
+                  refreshListing();
+                },
+                onError: msg => {
+                  setStatusMessage(msg);
+                  setStatusMessageColor(Theme.getErrorColor());
+                },
+              });
+            } else {
+              buf.clearEditBuffer();
+              buf.exitInsertMode();
             }
           } else if (buf.mode === EditMode.Edit) {
+            // Rename immediately
             const newName = buf.getEditBuffer().trim();
-            if (newName && newName.length > 0) {
-              const currentEntry = buf.getSelectedEntry();
-              if (currentEntry) {
-                const cleanName = newName.replace(/\/$/, '');
-                const ops = getPendingOps();
-                const entryState = ops.getEntryState(currentEntry);
+            const currentEntry = buf.getSelectedEntry();
 
-                // If name is back to original, remove pending rename
-                if (cleanName === currentEntry.name) {
-                  if (entryState.isRenamed) {
-                    // Find and remove the pending rename operation
-                    const renameOp = ops.operations.find(
-                      op => op.type === 'rename' && op.entry.id === currentEntry.id
-                    );
-                    if (renameOp) {
-                      ops.removeOperation(renameOp.id);
-                      setStatusMessage('Rename cancelled');
-                      setStatusMessageColor(Theme.getInfoColor());
-                    }
-                  }
-                  buf.clearEditBuffer();
-                  buf.exitEditMode();
-                  return;
-                }
+            if (newName && newName.length > 0 && currentEntry) {
+              const cleanName = newName.replace(/\/$/, '');
 
-                if (pendingOps) {
-                  // Add rename to pending operations store
-                  ops.rename(currentEntry, cleanName);
-                  buf.clearEditBuffer();
-                  buf.exitEditMode();
-                  setStatusMessage(
-                    `Pending rename: ${currentEntry.name} -> ${cleanName}. Use :w to save.`
-                  );
-                  setStatusMessageColor(Theme.getWarningColor());
-                } else {
-                  // Fallback: modify buffer directly (won't persist)
-                  const currentEntries = buf.entries;
-                  const isDirectory = newName.endsWith('/');
-                  const currentPath = buf.currentPath;
-                  const newPath = currentPath ? `${currentPath}${cleanName}` : cleanName;
-
-                  const updatedEntries = currentEntries.map(entry => {
-                    if (entry.id === currentEntry.id) {
-                      return {
-                        ...entry,
-                        name: cleanName,
-                        path: newPath,
-                        type: isDirectory ? EntryType.Directory : EntryType.File,
-                      };
-                    }
-                    return entry;
-                  });
-                  buf.setEntries(updatedEntries);
-                  buf.clearEditBuffer();
-                  buf.exitEditMode();
-                  setStatusMessage(`Renamed to: ${newName} (local only)`);
-                  setStatusMessageColor(Theme.getSuccessColor());
-                }
+              // If name unchanged, just exit
+              if (cleanName === currentEntry.name) {
+                buf.clearEditBuffer();
+                buf.exitEditMode();
+                return;
               }
+
+              const currentPath = buf.currentPath;
+              const oldPath = currentEntry.path;
+              const newPath = currentPath ? `${currentPath}${cleanName}` : cleanName;
+
+              buf.clearEditBuffer();
+              buf.exitEditMode();
+
+              setStatusMessage('Renaming...');
+              setStatusMessageColor(Theme.getInfoColor());
+
+              await getExecution().executeRename(oldPath, newPath, {
+                onSuccess: () => {
+                  setStatusMessage(`Renamed to: ${cleanName}`);
+                  setStatusMessageColor(Theme.getSuccessColor());
+                  refreshListing();
+                },
+                onError: msg => {
+                  setStatusMessage(msg);
+                  setStatusMessageColor(Theme.getErrorColor());
+                  refreshListing(); // Refresh to show actual state
+                },
+              });
             } else {
               buf.clearEditBuffer();
               buf.exitEditMode();
@@ -861,9 +708,6 @@ export function useS3Actions({
       };
 
     return actionHandlers;
-    // Note: pendingOps is accessed via pendingOpsRef, so it's not in the dependency array.
-    // This ensures handlers always use the latest pendingOps value without needing to
-    // re-create the entire actionHandlers object when pendingOps changes.
   }, [
     storage,
     bufferState,
@@ -878,8 +722,10 @@ export function useS3Actions({
     showUpload,
     showQuit,
     showProfileSelector,
+    showThemeSelector,
     toggleHelp,
     toggleSort,
     closeDialog,
+    refreshListing,
   ]);
 }

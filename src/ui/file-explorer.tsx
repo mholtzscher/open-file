@@ -5,7 +5,7 @@
  * Declarative React component that uses hooks for state management and rendering.
  */
 
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useBufferState } from '../hooks/useBufferState.js';
 import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
 import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
@@ -17,14 +17,15 @@ import { useOperationExecutor } from '../hooks/useOperationExecutor.js';
 import { useS3Actions } from '../hooks/useS3Actions.js';
 import { useDialogHandlers } from '../hooks/useDialogHandlers.js';
 import { useFileExplorerKeyboard } from '../hooks/useFileExplorerKeyboard.js';
-import { usePendingOperations } from '../hooks/usePendingOperations.js';
-import { providerNameToScheme } from '../utils/storage-uri.js';
+import { useClipboard } from '../hooks/useClipboard.js';
+import { useImmediateExecution } from '../hooks/useImmediateExecution.js';
 
 import { FileExplorerLayout, StatusBarState, PreviewState } from './file-explorer-layout.js';
 import { Theme } from './theme.js';
 import { useTheme } from '../contexts/ThemeContext.js';
 import { useStorage } from '../contexts/StorageContextProvider.js';
 import { Capability } from '../providers/types/capabilities.js';
+import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 
 /**
  * Main FileExplorer component - declarative React implementation
@@ -44,14 +45,9 @@ export function FileExplorer() {
   const [bucket, setBucket] = useState<string>();
 
   // ============================================
-  // Pending Operations Store (global state for file operations)
+  // Clipboard (simple state for copy/paste)
   // ============================================
-  // Derive the storage scheme from the provider ID
-  const scheme = providerNameToScheme(storage.state.providerId || 'mock');
-  // Note: We don't pass a provider here yet - operations will be executed
-  // through the existing executeOperationsWithProgress flow for now.
-  // Full integration with the provider will come in Phase 4.
-  const pendingOps = usePendingOperations(scheme, bucket);
+  const clipboard = useClipboard();
 
   // ============================================
   // Status Bar State
@@ -103,6 +99,11 @@ export function FileExplorer() {
   } = useOperationExecutor();
 
   // ============================================
+  // Immediate Execution Hook
+  // ============================================
+  const immediateExecution = useImmediateExecution();
+
+  // ============================================
   // Hooks
   // ============================================
   const terminalSize = useTerminalSize();
@@ -111,12 +112,6 @@ export function FileExplorer() {
   // Initialize buffer state
   const initialPath = '';
   const bufferState = useBufferState([], initialPath);
-  const bufferStateRef = useRef(bufferState);
-
-  // Update ref when bufferState changes
-  useEffect(() => {
-    bufferStateRef.current = bufferState;
-  }, [bufferState]);
 
   // Update viewport height when layout changes
   useEffect(() => {
@@ -182,6 +177,33 @@ export function FileExplorer() {
     showThemeSelectorDialog;
 
   // ============================================
+  // Refresh Listing Helper
+  // ============================================
+  const refreshListing = useCallback(async () => {
+    try {
+      if (!bucket && storage.hasCapability(Capability.Containers)) {
+        const entries = await storage.listContainers();
+        bufferState.setEntries([...entries]);
+      } else {
+        const entries = await storage.list(bufferState.currentPath);
+        bufferState.setEntries([...entries]);
+      }
+    } catch (err) {
+      const parsedError = parseAwsError(err, 'Refresh failed');
+      setStatusMessage(formatErrorForDisplay(parsedError, 70));
+      setStatusMessageColor(Theme.getErrorColor());
+    }
+  }, [bucket, storage, bufferState, setStatusMessage, setStatusMessageColor]);
+
+  // ============================================
+  // Show Quit Handler (simplified - no pending changes)
+  // ============================================
+  const handleShowQuit = useCallback(() => {
+    // No pending operations to track, but keep the dialog for consistency
+    showQuit(0);
+  }, [showQuit]);
+
+  // ============================================
   // Action Handlers (via Custom Hook)
   // ============================================
   const actionHandlers = useS3Actions({
@@ -196,13 +218,15 @@ export function FileExplorer() {
     navigationHandlers,
     showConfirm,
     showUpload,
-    showQuit,
+    showQuit: handleShowQuit,
     showProfileSelector,
     showThemeSelector,
     toggleHelp,
     toggleSort,
     closeDialog,
-    pendingOps,
+    clipboard,
+    immediateExecution,
+    refreshListing,
   });
 
   // ============================================
@@ -222,7 +246,6 @@ export function FileExplorer() {
   // ============================================
   const dialogsState = useDialogHandlers({
     bufferState,
-    bufferStateRef,
     storage,
     dialogState,
     pendingOperations,
@@ -244,7 +267,7 @@ export function FileExplorer() {
     setBucket,
     executeOperationsWithProgress,
     handleCancelOperation,
-    pendingOps,
+    refreshListing,
   });
 
   // ============================================
@@ -283,7 +306,6 @@ export function FileExplorer() {
       preview={previewState}
       dialogs={dialogsState}
       showErrorDialog={showErrorDialog}
-      pendingOps={pendingOps}
     />
   );
 }

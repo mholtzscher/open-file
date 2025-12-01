@@ -10,15 +10,12 @@ import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { Theme } from './theme.js';
 import { EditMode } from '../types/edit-mode.js';
 import { formatBytes } from '../utils/file-browser.js';
-import type { UsePendingOperationsReturn } from '../hooks/usePendingOperations.js';
 
 export interface BufferViewProps {
   bufferState: UseBufferStateReturn;
   showIcons?: boolean;
   showSizes?: boolean;
   showDates?: boolean;
-  /** Pending operations hook for global state management */
-  pendingOps: UsePendingOperationsReturn;
 }
 
 /**
@@ -98,30 +95,14 @@ function formatEntry(
 }
 
 /**
- * Get entry color
+ * Get entry color based on type and selection state
  */
-function getEntryColor(entry: Entry, isSelected: boolean, isMarkedForDeletion: boolean): string {
-  // Deleted entries shown in red/muted color
-  if (isMarkedForDeletion) {
-    return Theme.getErrorColor();
-  }
-
+function getEntryColor(entry: Entry, isSelected: boolean): string {
   if (entry.type === EntryType.Directory || entry.type === EntryType.Bucket) {
     return Theme.getDirectoryColor(isSelected);
   }
 
   return Theme.getFileColor(isSelected);
-}
-
-/**
- * Apply strikethrough effect to text (using Unicode combining characters)
- */
-function applyStrikethrough(text: string): string {
-  // Unicode strikethrough combining character
-  return text
-    .split('')
-    .map(char => char + '\u0336')
-    .join('');
 }
 
 /**
@@ -132,7 +113,6 @@ export function BufferView({
   showIcons = true,
   showSizes = true,
   showDates = false,
-  pendingOps,
 }: BufferViewProps) {
   // Use filtered entries when searching
   const filteredEntries = bufferState.getFilteredEntries();
@@ -141,20 +121,13 @@ export function BufferView({
       ? filteredEntries
       : bufferState.entries;
 
-  // Get virtual entries (pending moves/copies to this directory)
-  // These are displayed separately and are not navigable
-  const virtualEntries = pendingOps?.getVirtualEntries(bufferState.currentPath) ?? [];
-
   const cursorIndex = bufferState.selection.cursorIndex;
 
   // Get visible entries (with scroll offset)
   const viewportHeight = bufferState.viewportHeight;
-  // Reserve space for virtual entries if any
-  const virtualSpace = virtualEntries.length > 0 ? Math.min(virtualEntries.length + 1, 5) : 0;
-  const adjustedViewportHeight = viewportHeight - virtualSpace;
   const visibleEntries = entries.slice(
     bufferState.scrollOffset,
-    bufferState.scrollOffset + adjustedViewportHeight
+    bufferState.scrollOffset + viewportHeight
   );
 
   // Check if in insert mode
@@ -189,44 +162,9 @@ export function BufferView({
               bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
             );
 
-        // Check entry visual state from pending operations store
-        const entryState = pendingOps.getEntryState(entry);
-        const isMarkedForDeletion = entryState.isDeleted;
-        const isCut = entryState.isMovedAway;
-        const isRenamed = entryState.isRenamed;
-        const newName = entryState.newName;
-
         const cursor = isSelected ? '> ' : '  ';
-        // Add marker prefix based on state
-        let marker = '';
-        if (isMarkedForDeletion) {
-          marker = '✗ ';
-        } else if (isCut) {
-          marker = '✂ ';
-        } else if (isRenamed) {
-          marker = '✎ ';
-        }
-
-        // For renamed entries, display with the new name
-        const displayEntry = isRenamed && newName ? { ...entry, name: newName } : entry;
-        let content = cursor + marker + formatEntry(displayEntry, showIcons, showSizes, showDates);
-
-        // Apply strikethrough to deleted entries
-        if (isMarkedForDeletion) {
-          content = applyStrikethrough(content);
-        }
-
-        // Determine color based on state
-        let color: string;
-        if (isMarkedForDeletion) {
-          color = Theme.getErrorColor();
-        } else if (isCut) {
-          color = Theme.getDimColor(); // Dimmed for cut items
-        } else if (isRenamed) {
-          color = Theme.getWarningColor(); // Orange for pending rename
-        } else {
-          color = getEntryColor(entry, isSelected, false);
-        }
+        const content = cursor + formatEntry(entry, showIcons, showSizes, showDates);
+        const color = getEntryColor(entry, isSelected);
 
         return (
           <text
@@ -245,23 +183,6 @@ export function BufferView({
           {editBuffer}
           {'_'}
         </text>
-      )}
-      {/* Show pending virtual entries (moves/copies to this directory) */}
-      {virtualEntries.length > 0 && (
-        <>
-          <text fg={Theme.getDimColor()}>{'── pending ──'}</text>
-          {virtualEntries.slice(0, 4).map(entry => {
-            const content = '  + ' + formatEntry(entry, showIcons, showSizes, showDates);
-            return (
-              <text key={entry.id} fg={Theme.getSuccessColor()}>
-                {content}
-              </text>
-            );
-          })}
-          {virtualEntries.length > 4 && (
-            <text fg={Theme.getDimColor()}>{`  ... and ${virtualEntries.length - 4} more`}</text>
-          )}
-        </>
       )}
     </box>
   );

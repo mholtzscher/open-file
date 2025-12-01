@@ -13,7 +13,12 @@
  */
 
 import { Entry } from '../types/entry.js';
-import { StorageUri } from '../types/pending-operations.js';
+
+/**
+ * A storage URI string that uniquely identifies an entry across backends.
+ * Format: scheme://authority/path
+ */
+export type StorageUri = string;
 
 /**
  * Supported storage scheme types
@@ -86,7 +91,7 @@ export function buildUri(
       return `mock://${bucket || 'default'}/${normalizedPath}`;
 
     default:
-      throw new Error('Unknown scheme');
+      throw new Error(`Unknown scheme: ${scheme}`);
   }
 }
 

@@ -5,7 +5,7 @@
  * Extracts dialog handler logic from FileExplorer to reduce component size.
  */
 
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { DialogsState } from '../ui/file-explorer-dialogs.js';
 import { Theme } from '../ui/theme.js';
 import { Entry, EntryType } from '../types/entry.js';
@@ -13,7 +13,6 @@ import { SortField, SortOrder } from '../utils/sorting.js';
 import type { PendingOperation, DialogState } from '../types/dialog.js';
 import type { UseBufferStateReturn } from './useBufferState.js';
 import type { StorageContextValue } from '../contexts/StorageContext.js';
-import type { UsePendingOperationsReturn } from './usePendingOperations.js';
 
 /**
  * Progress state from useOperationExecutor
@@ -35,7 +34,6 @@ export interface ProgressState {
 export interface UseDialogHandlersProps {
   // State
   bufferState: UseBufferStateReturn;
-  bufferStateRef: React.RefObject<UseBufferStateReturn>;
   storage: StorageContextValue;
   dialogState: DialogState;
   pendingOperations: PendingOperation[];
@@ -76,14 +74,8 @@ export interface UseDialogHandlersProps {
   ) => Promise<unknown>;
   handleCancelOperation: () => void;
 
-  /** Pending operations hook for global state management */
-  pendingOps: UsePendingOperationsReturn;
-}
-
-let onNextSaveComplete: (() => void) | null = null;
-
-export function setOnNextSaveComplete(callback: (() => void) | null) {
-  onNextSaveComplete = callback;
+  /** Refresh the current listing after operations complete */
+  refreshListing: () => Promise<void>;
 }
 
 /**
@@ -91,7 +83,6 @@ export function setOnNextSaveComplete(callback: (() => void) | null) {
  */
 export function useDialogHandlers({
   bufferState,
-  bufferStateRef,
   storage,
   dialogState,
   pendingOperations,
@@ -113,56 +104,35 @@ export function useDialogHandlers({
   setBucket,
   executeOperationsWithProgress,
   handleCancelOperation,
-  pendingOps,
+  refreshListing,
 }: UseDialogHandlersProps): DialogsState {
-  // Ref to track if we should quit after saving
-  const quitAfterSaveRef = useRef(false);
-
   // ============================================
   // Confirm Handler
   // ============================================
   const createConfirmHandler = useCallback(async () => {
     await executeOperationsWithProgress(pendingOperations, {
-      onSuccess: (_result, message) => {
-        // Handle success asynchronously but don't block
-        (async () => {
-          try {
-            const currentBufferState = bufferStateRef.current;
-
-            const entries = await storage.list(currentBufferState.currentPath);
-            currentBufferState.setEntries([...entries]);
-
-            // Clear pending operations after successful save
-            pendingOps.discard();
-
-            setStatusMessage(message);
-            setStatusMessageColor(Theme.getSuccessColor());
-
-            if (quitAfterSaveRef.current) {
-              quitAfterSaveRef.current = false;
-              process.exit(0);
-            }
-
-            if (onNextSaveComplete) {
-              const callback = onNextSaveComplete;
-              onNextSaveComplete = null;
-              callback();
-            }
-          } catch {
-            setStatusMessage('Operations completed but failed to reload buffer');
-            setStatusMessageColor(Theme.getWarningColor());
-          }
-        })();
+      onSuccess: async (_result, message) => {
+        try {
+          // Refresh the listing after successful operations
+          await refreshListing();
+          setStatusMessage(message);
+          setStatusMessageColor(Theme.getSuccessColor());
+        } catch {
+          setStatusMessage('Operations completed but failed to reload buffer');
+          setStatusMessageColor(Theme.getWarningColor());
+        }
       },
       onError: message => {
         setStatusMessage(message);
         setStatusMessageColor(Theme.getErrorColor());
-        onNextSaveComplete = null;
+        // Still try to refresh to show actual state
+        refreshListing().catch(() => {});
       },
       onCancelled: message => {
         setStatusMessage(message);
         setStatusMessageColor(Theme.getWarningColor());
-        onNextSaveComplete = null;
+        // Refresh to show actual state after cancellation
+        refreshListing().catch(() => {});
       },
       onComplete: () => {
         closeAndClearOperations();
@@ -170,13 +140,11 @@ export function useDialogHandlers({
     });
   }, [
     pendingOperations,
-    storage,
-    bufferStateRef,
     closeAndClearOperations,
     executeOperationsWithProgress,
     setStatusMessage,
     setStatusMessageColor,
-    pendingOps,
+    refreshListing,
   ]);
 
   // ============================================
@@ -283,72 +251,11 @@ export function useDialogHandlers({
       visible: showQuitDialog,
       pendingChanges: dialogState.quitPendingChanges,
       onQuitWithoutSave: () => {
-        pendingOps.discard();
         process.exit(0);
       },
       onSaveAndQuit: () => {
-        // Get all pending operations
-        const storeOps = pendingOps.operations;
-
-        if (storeOps.length > 0) {
-          // Convert store operations to dialog PendingOperation format
-          const dialogOps: PendingOperation[] = storeOps.map(op => {
-            switch (op.type) {
-              case 'delete':
-                return {
-                  id: op.id,
-                  type: 'delete' as const,
-                  path: op.entry.path,
-                  entry: op.entry,
-                };
-              case 'move':
-                return {
-                  id: op.id,
-                  type: 'move' as const,
-                  source: op.entry.path,
-                  destination: op.destUri.split('/').slice(3).join('/'),
-                  entry: op.entry,
-                  recursive: op.entry.type === EntryType.Directory,
-                };
-              case 'copy':
-                return {
-                  id: op.id,
-                  type: 'copy' as const,
-                  source: op.entry.path,
-                  destination: op.destUri.split('/').slice(3).join('/'),
-                  entry: op.entry,
-                  recursive: op.entry.type === EntryType.Directory,
-                };
-              case 'rename':
-                return {
-                  id: op.id,
-                  type: 'rename' as const,
-                  path: op.entry.path,
-                  newName: op.newName,
-                  entry: op.entry,
-                };
-              case 'create':
-                return {
-                  id: op.id,
-                  type: 'create' as const,
-                  path: op.uri.split('/').slice(3).join('/'),
-                  entryType: op.entryType === EntryType.Directory ? 'directory' : 'file',
-                  entry: {
-                    id: op.id,
-                    name: op.name,
-                    type: op.entryType,
-                    path: op.uri.split('/').slice(3).join('/'),
-                  },
-                };
-            }
-          });
-
-          quitAfterSaveRef.current = true;
-          closeDialog();
-          showConfirm(dialogOps);
-        } else {
-          process.exit(0);
-        }
+        // No pending operations in immediate execution model
+        process.exit(0);
       },
       onCancel: () => {
         closeDialog();
