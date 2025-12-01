@@ -1,5 +1,5 @@
 /**
- * useS3Actions Hook
+ * useExplorerActions Hook
  *
  * Action handlers for file explorer operations.
  * Uses immediate execution model - operations execute right away with confirmation
@@ -21,7 +21,7 @@ import type { StorageContextValue } from '../contexts/StorageContext.js';
 import type { UseClipboardReturn } from './useClipboard.js';
 import type { UseImmediateExecutionReturn } from './useImmediateExecution.js';
 
-interface UseS3ActionsProps {
+export interface UseExplorerActionsProps {
   storage: StorageContextValue;
   bufferState: UseBufferStateReturn;
   bucket: string | undefined;
@@ -33,7 +33,6 @@ interface UseS3ActionsProps {
   navigationHandlers: NavigationHandlers;
   showConfirm: (ops: PendingOperation[]) => void;
   showUpload: () => void;
-  showQuit: () => void;
   showProfileSelector: () => void;
   showThemeSelector: () => void;
   toggleHelp: () => void;
@@ -47,7 +46,7 @@ interface UseS3ActionsProps {
   refreshListing: () => Promise<void>;
 }
 
-export function useS3Actions({
+export function useExplorerActions({
   storage,
   bufferState,
   bucket,
@@ -59,7 +58,6 @@ export function useS3Actions({
   navigationHandlers,
   showConfirm,
   showUpload,
-  showQuit,
   showProfileSelector,
   showThemeSelector,
   toggleHelp,
@@ -68,7 +66,7 @@ export function useS3Actions({
   clipboard,
   immediateExecution,
   refreshListing,
-}: UseS3ActionsProps) {
+}: UseExplorerActionsProps) {
   // Use refs to always access latest values without requiring re-memoization
   const clipboardRef = useRef(clipboard);
   clipboardRef.current = clipboard;
@@ -720,7 +718,6 @@ export function useS3Actions({
     navigationHandlers,
     showConfirm,
     showUpload,
-    showQuit,
     showProfileSelector,
     showThemeSelector,
     toggleHelp,

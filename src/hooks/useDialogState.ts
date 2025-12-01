@@ -15,7 +15,6 @@ import { DialogState, DialogAction, PendingOperation } from '../types/dialog.js'
 export const initialDialogState: DialogState = {
   activeDialog: null,
   pendingOperations: [],
-  quitPendingChanges: 0,
 };
 
 /**
@@ -47,13 +46,6 @@ export function dialogReducer(state: DialogState, action: DialogAction): DialogS
       return {
         ...state,
         activeDialog: 'upload',
-      };
-
-    case 'SHOW_QUIT':
-      return {
-        ...state,
-        activeDialog: 'quit',
-        quitPendingChanges: action.payload.pendingChanges,
       };
 
     case 'SHOW_PROFILE_SELECTOR':
@@ -101,8 +93,6 @@ export interface UseDialogStateReturn {
   isSortOpen: boolean;
   /** Whether the upload dialog is open */
   isUploadOpen: boolean;
-  /** Whether the quit confirmation dialog is open */
-  isQuitOpen: boolean;
   /** Whether the profile selector dialog is open */
   isProfileSelectorOpen: boolean;
   /** Whether the theme selector dialog is open */
@@ -119,8 +109,6 @@ export interface UseDialogStateReturn {
   toggleSort: () => void;
   /** Show the upload dialog */
   showUpload: () => void;
-  /** Show the quit confirmation dialog */
-  showQuit: (pendingChanges: number) => void;
   /** Show the profile selector dialog */
   showProfileSelector: () => void;
   /** Show the theme selector dialog */
@@ -193,10 +181,6 @@ export function useDialogState(): UseDialogStateReturn {
     dispatch({ type: 'SHOW_UPLOAD' });
   }, []);
 
-  const showQuit = useCallback((pendingChanges: number) => {
-    dispatch({ type: 'SHOW_QUIT', payload: { pendingChanges } });
-  }, []);
-
   const showProfileSelector = useCallback(() => {
     dispatch({ type: 'SHOW_PROFILE_SELECTOR' });
   }, []);
@@ -220,7 +204,6 @@ export function useDialogState(): UseDialogStateReturn {
   const isHelpOpen = state.activeDialog === 'help';
   const isSortOpen = state.activeDialog === 'sort';
   const isUploadOpen = state.activeDialog === 'upload';
-  const isQuitOpen = state.activeDialog === 'quit';
   const isProfileSelectorOpen = state.activeDialog === 'profileSelector';
   const isThemeSelectorOpen = state.activeDialog === 'themeSelector';
 
@@ -231,7 +214,6 @@ export function useDialogState(): UseDialogStateReturn {
     isHelpOpen,
     isSortOpen,
     isUploadOpen,
-    isQuitOpen,
     isProfileSelectorOpen,
     isThemeSelectorOpen,
     showConfirm,
@@ -240,7 +222,6 @@ export function useDialogState(): UseDialogStateReturn {
     showSort,
     toggleSort,
     showUpload,
-    showQuit,
     showProfileSelector,
     showThemeSelector,
     closeDialog,

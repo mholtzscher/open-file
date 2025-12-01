@@ -11,7 +11,6 @@ import { ErrorDialog } from './dialog/error.js';
 import { UploadDialog } from './dialog/upload.js';
 import { SortMenu } from './dialog/sort.js';
 import { ProgressWindow } from './progress-window.js';
-import { QuitDialog } from './dialog/quit.js';
 import { ProfileSelectorDialog } from './dialog/profile-selector.js';
 import { ThemeSelectorDialog } from './dialog/theme-selector.js';
 import { SortField, SortOrder } from '../utils/sorting.js';
@@ -68,14 +67,6 @@ export interface ProgressWindowState {
   onCancel: () => void;
 }
 
-export interface QuitDialogState {
-  visible: boolean;
-  pendingChanges: number;
-  onQuitWithoutSave: () => void;
-  onSaveAndQuit: () => void;
-  onCancel: () => void;
-}
-
 export interface ProfileSelectorDialogState {
   visible: boolean;
   profileManager?: ProfileManager;
@@ -99,7 +90,6 @@ export interface DialogsState {
   upload: UploadDialogState;
   sortMenu: SortMenuState;
   progress: ProgressWindowState;
-  quit: QuitDialogState;
   profileSelector: ProfileSelectorDialogState;
   themeSelector: ThemeSelectorDialogState;
 }
@@ -115,7 +105,7 @@ interface FileExplorerDialogsProps {
  * Dialogs are rendered in a specific order to ensure proper z-index stacking.
  */
 export function FileExplorerDialogs({ dialogs }: FileExplorerDialogsProps) {
-  const { confirm, error, help, upload, sortMenu, progress, quit, profileSelector, themeSelector } =
+  const { confirm, error, help, upload, sortMenu, progress, profileSelector, themeSelector } =
     dialogs;
 
   return (
@@ -164,15 +154,6 @@ export function FileExplorerDialogs({ dialogs }: FileExplorerDialogsProps) {
         totalFiles={progress.totalFiles}
         onCancel={progress.onCancel}
         canCancel={progress.canCancel}
-      />
-
-      {/* Quit Confirmation Dialog */}
-      <QuitDialog
-        visible={quit.visible}
-        pendingChangesCount={quit.pendingChanges}
-        onQuitWithoutSave={quit.onQuitWithoutSave}
-        onSaveAndQuit={quit.onSaveAndQuit}
-        onCancel={quit.onCancel}
       />
 
       {/* Profile Selector Dialog */}

@@ -6,8 +6,11 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import type { ExecutorCallbacks, UseOperationExecutorReturn } from './useOperationExecutor';
-import type { OperationResult } from './useAsyncOperations';
+import type {
+  ExecutorCallbacks,
+  UseOperationExecutorReturn,
+  OperationResult,
+} from './useOperationExecutor';
 import type { PendingOperation } from '../types/dialog';
 
 describe('useOperationExecutor types', () => {

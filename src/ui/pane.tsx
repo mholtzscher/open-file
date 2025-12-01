@@ -3,14 +3,13 @@
  *
  * Encapsulates a single pane in a multi-pane layout.
  * Renders a buffer view with optional header and visual indicators.
+ * Uses BufferContext to access buffer state.
  */
 
-import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { BufferView } from './buffer-view.js';
 import { Theme } from './theme.js';
 
 export interface PaneProps {
-  bufferState: UseBufferStateReturn;
   title?: string;
   showHeader?: boolean;
   showIcons?: boolean;
@@ -28,7 +27,6 @@ export interface PaneProps {
  * and visual indicators for active state using flexbox layout.
  */
 export function BufferPane({
-  bufferState,
   title,
   showHeader = true,
   showIcons = true,
@@ -61,12 +59,7 @@ export function BufferPane({
 
       {/* Buffer View */}
       <box flexGrow={1} overflow="hidden">
-        <BufferView
-          bufferState={bufferState}
-          showIcons={showIcons}
-          showSizes={showSizes}
-          showDates={showDates}
-        />
+        <BufferView showIcons={showIcons} showSizes={showSizes} showDates={showDates} />
       </box>
     </box>
   );

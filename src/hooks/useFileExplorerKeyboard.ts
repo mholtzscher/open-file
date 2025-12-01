@@ -16,7 +16,7 @@ import { defaultKeybindings } from './keybindingDefaults.js';
 import { useKeySequence } from './useKeySequence.js';
 
 /**
- * Action handlers map type (from useS3Actions)
+ * Action handlers map type (from useExplorerActions)
  */
 export type ActionHandlers = Partial<
   Record<KeyAction, (key?: KeyboardKey) => void | Promise<void>>
@@ -28,7 +28,7 @@ export type ActionHandlers = Partial<
 export interface UseFileExplorerKeyboardProps {
   /** Current edit mode from buffer state */
   mode: EditMode;
-  /** Action handlers from useS3Actions */
+  /** Action handlers from useExplorerActions */
   actionHandlers: ActionHandlers;
   /** Whether any dialog is currently open */
   isAnyDialogOpen: boolean;

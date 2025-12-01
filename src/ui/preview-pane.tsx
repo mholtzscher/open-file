@@ -1,12 +1,10 @@
 /**
  * PreviewPane React component
  *
- * Displays a preview of the currently selected file using Tree-sitter syntax highlighting
+ * Displays a preview of the currently selected file
  */
 
-import { useMemo } from 'react';
 import { Theme } from './theme.js';
-import { createTreeSitterStyle, detectTreeSitterFiletype } from '../utils/treesitter-theme.js';
 
 export interface PreviewPaneProps {
   content?: string;
@@ -22,20 +20,12 @@ export interface PreviewPaneProps {
  */
 export function PreviewPane({
   content = '',
-  filename = '',
+  filename: _filename = '',
   visible = true,
   flexGrow = 1,
   flexShrink = 1,
   flexBasis = 0,
 }: PreviewPaneProps) {
-  // Create syntax style once (memoized to avoid recreating on every render)
-  const syntaxStyle = useMemo(() => createTreeSitterStyle(), []);
-
-  // Detect filetype from filename
-  const filetype = useMemo(() => {
-    return filename ? detectTreeSitterFiletype(filename) : undefined;
-  }, [filename]);
-
   if (!visible) return null;
 
   // If no content, show empty indicator
@@ -73,15 +63,7 @@ export function PreviewPane({
       paddingRight={1}
       overflow="hidden"
     >
-      <code
-        content={content}
-        filetype={filetype}
-        syntaxStyle={syntaxStyle}
-        flexGrow={1}
-        selectable={true}
-        wrapMode="none"
-        fg={Theme.getTextColor()}
-      />
+      <text fg={Theme.getTextColor()}>{content}</text>
     </box>
   );
 }

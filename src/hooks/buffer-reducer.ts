@@ -13,13 +13,8 @@ export interface SelectionState {
   isActive: boolean;
 }
 
-export type BufferSnapshot = {
-  entries: Entry[];
-};
-
 export interface BufferState {
   entries: Entry[];
-  originalEntries: Entry[];
   currentPath: string;
   mode: EditMode;
   selection: SelectionState;
@@ -27,17 +22,13 @@ export interface BufferState {
   showHiddenFiles: boolean;
   searchQuery: string;
   scrollOffset: number;
-  copyRegister: Entry[];
   viewportHeight: number;
   editBuffer: string;
   editBufferCursor: number;
-  undoHistory: BufferSnapshot[];
-  redoHistory: BufferSnapshot[];
 }
 
 export const INITIAL_BUFFER_STATE: BufferState = {
   entries: [],
-  originalEntries: [],
   currentPath: '',
   mode: EditMode.Normal,
   selection: { cursorIndex: 0, isActive: false },
@@ -45,12 +36,9 @@ export const INITIAL_BUFFER_STATE: BufferState = {
   showHiddenFiles: false,
   searchQuery: '',
   scrollOffset: 0,
-  copyRegister: [],
   viewportHeight: 20,
   editBuffer: '',
   editBufferCursor: 0,
-  undoHistory: [],
-  redoHistory: [],
 };
 
 // ============================================================================
@@ -72,8 +60,6 @@ export type BufferAction =
   | { type: 'SET_SORT_CONFIG'; config: SortConfig }
   | { type: 'UPDATE_SEARCH_QUERY'; query: string }
   | { type: 'TOGGLE_HIDDEN_FILES' }
-  | { type: 'COPY_SELECTION' }
-  | { type: 'PASTE_AFTER_CURSOR' }
   | { type: 'SET_EDIT_BUFFER'; text: string }
   | { type: 'INSERT_AT_EDIT_CURSOR'; char: string }
   | { type: 'BACKSPACE_EDIT_BUFFER' }
@@ -81,10 +67,7 @@ export type BufferAction =
   | { type: 'CLEAR_EDIT_BUFFER' }
   | { type: 'MOVE_EDIT_CURSOR'; direction: 'left' | 'right' }
   | { type: 'MOVE_EDIT_CURSOR_TO_START' }
-  | { type: 'MOVE_EDIT_CURSOR_TO_END' }
-  | { type: 'SAVE_SNAPSHOT' }
-  | { type: 'UNDO' }
-  | { type: 'REDO' };
+  | { type: 'MOVE_EDIT_CURSOR_TO_END' };
 
 // ============================================================================
 // Helpers
@@ -110,23 +93,6 @@ function calculateScrollOffset(
   }
   // Cursor is visible, no scroll needed
   return currentOffset;
-}
-
-function getSelectedEntries(state: BufferState): Entry[] {
-  if (!state.selection.isActive || state.selection.selectionStart === undefined) {
-    const entry = state.entries[state.selection.cursorIndex];
-    return entry ? [entry] : [];
-  }
-
-  const start = Math.min(
-    state.selection.selectionStart,
-    state.selection.selectionEnd ?? state.selection.selectionStart
-  );
-  const end = Math.max(
-    state.selection.selectionStart,
-    state.selection.selectionEnd ?? state.selection.selectionStart
-  );
-  return state.entries.slice(start, end + 1);
 }
 
 // ============================================================================
@@ -191,14 +157,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
         selection: {
           ...state.selection,
           cursorIndex: newIndex,
-          // Update selection end if in visual mode?
-          // The original code uses a separate `extendVisualSelection` method.
-          // But `moveCursor` updates `cursorIndex` which might affect visualization.
-          // In original code `moveCursor` just updates cursorIndex and calls `setSelection`.
-          // Wait, `moveCursorDown` in original code:
-          // setSelection(prev => { ... cursorIndex: newIndex })
-          // It implies visual selection end is NOT automatically updated by simple move,
-          // unless we are "extending".
         },
         scrollOffset: newScrollOffset,
       };
@@ -278,9 +236,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
           selectionStart: undefined,
           selectionEnd: undefined,
         },
-        // Don't necessarily change mode here, the caller usually does SET_MODE(Normal)
-        // But original code `exitVisualSelection` didn't change mode, the caller `mode:normal` handler did.
-        // Actually `exitVisualSelection` just reset selection state.
       };
 
     case 'SET_MODE': {
@@ -343,31 +298,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
         ...state,
         showHiddenFiles: !state.showHiddenFiles,
       };
-
-    case 'COPY_SELECTION': {
-      const selected = getSelectedEntries(state);
-      // Clone entries to copy register
-      const toCopy = structuredClone(selected);
-      return {
-        ...state,
-        copyRegister: toCopy,
-      };
-    }
-
-    case 'PASTE_AFTER_CURSOR': {
-      if (state.copyRegister.length === 0) return state;
-
-      const insertIndex = state.selection.cursorIndex + 1;
-      const newEntries = [...state.entries];
-      // We need deep clones of registered entries to avoid reference issues
-      const entriesToPaste = structuredClone(state.copyRegister);
-      newEntries.splice(insertIndex, 0, ...entriesToPaste);
-
-      return {
-        ...state,
-        entries: newEntries,
-      };
-    }
 
     case 'SET_EDIT_BUFFER':
       return {
@@ -438,55 +368,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
         ...state,
         editBufferCursor: state.editBuffer.length,
       };
-
-    case 'SAVE_SNAPSHOT': {
-      const snapshot: BufferSnapshot = {
-        entries: structuredClone(state.entries),
-      };
-      return {
-        ...state,
-        undoHistory: [...state.undoHistory, snapshot],
-        redoHistory: [], // Clear redo history on new action
-      };
-    }
-
-    case 'UNDO': {
-      if (state.undoHistory.length === 0) return state;
-
-      // Save current state to redo
-      const currentSnapshot: BufferSnapshot = {
-        entries: structuredClone(state.entries),
-      };
-
-      // Get previous state
-      const previousSnapshot = state.undoHistory[state.undoHistory.length - 1];
-
-      return {
-        ...state,
-        entries: previousSnapshot.entries,
-        undoHistory: state.undoHistory.slice(0, -1),
-        redoHistory: [...state.redoHistory, currentSnapshot],
-      };
-    }
-
-    case 'REDO': {
-      if (state.redoHistory.length === 0) return state;
-
-      // Save current state to undo
-      const currentSnapshot: BufferSnapshot = {
-        entries: structuredClone(state.entries),
-      };
-
-      // Get next state
-      const nextSnapshot = state.redoHistory[state.redoHistory.length - 1];
-
-      return {
-        ...state,
-        entries: nextSnapshot.entries,
-        redoHistory: state.redoHistory.slice(0, -1),
-        undoHistory: [...state.undoHistory, currentSnapshot],
-      };
-    }
 
     default:
       return state;

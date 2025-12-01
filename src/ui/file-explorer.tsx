@@ -14,11 +14,12 @@ import { useStatusMessage } from '../hooks/useStatusMessage.js';
 import { usePreview } from '../hooks/usePreview.js';
 import { useDataLoader } from '../hooks/useDataLoader.js';
 import { useOperationExecutor } from '../hooks/useOperationExecutor.js';
-import { useS3Actions } from '../hooks/useS3Actions.js';
+import { useExplorerActions } from '../hooks/useExplorerActions.js';
 import { useDialogHandlers } from '../hooks/useDialogHandlers.js';
 import { useFileExplorerKeyboard } from '../hooks/useFileExplorerKeyboard.js';
 import { useClipboard } from '../hooks/useClipboard.js';
 import { useImmediateExecution } from '../hooks/useImmediateExecution.js';
+import { BufferProvider } from '../contexts/BufferContext.js';
 
 import { FileExplorerLayout, StatusBarState, PreviewState } from './file-explorer-layout.js';
 import { Theme } from './theme.js';
@@ -69,14 +70,12 @@ export function FileExplorer() {
     isHelpOpen: showHelpDialog,
     isSortOpen: showSortMenu,
     isUploadOpen: showUploadDialog,
-    isQuitOpen: showQuitDialog,
     isProfileSelectorOpen: showProfileSelectorDialog,
     isThemeSelectorOpen: showThemeSelectorDialog,
     showConfirm,
     toggleHelp,
     toggleSort,
     showUpload,
-    showQuit,
     showProfileSelector,
     showThemeSelector,
     closeDialog,
@@ -172,7 +171,6 @@ export function FileExplorer() {
     showHelpDialog ||
     showSortMenu ||
     showUploadDialog ||
-    showQuitDialog ||
     showProfileSelectorDialog ||
     showThemeSelectorDialog;
 
@@ -196,17 +194,9 @@ export function FileExplorer() {
   }, [bucket, storage, bufferState, setStatusMessage, setStatusMessageColor]);
 
   // ============================================
-  // Show Quit Handler (simplified - no pending changes)
-  // ============================================
-  const handleShowQuit = useCallback(() => {
-    // No pending operations to track, but keep the dialog for consistency
-    showQuit(0);
-  }, [showQuit]);
-
-  // ============================================
   // Action Handlers (via Custom Hook)
   // ============================================
-  const actionHandlers = useS3Actions({
+  const actionHandlers = useExplorerActions({
     storage,
     bufferState,
     bucket,
@@ -218,7 +208,6 @@ export function FileExplorer() {
     navigationHandlers,
     showConfirm,
     showUpload,
-    showQuit: handleShowQuit,
     showProfileSelector,
     showThemeSelector,
     toggleHelp,
@@ -254,7 +243,6 @@ export function FileExplorer() {
     showHelpDialog,
     showSortMenu,
     showUploadDialog,
-    showQuitDialog,
     showProfileSelectorDialog,
     showThemeSelectorDialog,
     showErrorDialog,
@@ -296,16 +284,17 @@ export function FileExplorer() {
   // Render
   // ============================================
   return (
-    <FileExplorerLayout
-      bucket={bucket}
-      isInitialized={isInitialized}
-      bufferState={bufferState}
-      terminalSize={terminalSize}
-      layout={layout}
-      statusBar={statusBarState}
-      preview={previewState}
-      dialogs={dialogsState}
-      showErrorDialog={showErrorDialog}
-    />
+    <BufferProvider value={bufferState}>
+      <FileExplorerLayout
+        bucket={bucket}
+        isInitialized={isInitialized}
+        terminalSize={terminalSize}
+        layout={layout}
+        statusBar={statusBarState}
+        preview={previewState}
+        dialogs={dialogsState}
+        showErrorDialog={showErrorDialog}
+      />
+    </BufferProvider>
   );
 }

@@ -276,7 +276,7 @@ export function useStorageCapabilities() {
   const storage = useStorageContext();
 
   const hasCapability = useCallback(
-    (capability: Capability | string) => {
+    (capability: Capability) => {
       return storage.hasCapability(capability);
     },
     [storage]

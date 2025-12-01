@@ -129,17 +129,17 @@ describe('CapabilityGate', () => {
       expect(frame).toContain('File Operations');
     });
 
-    it('renders children when string capability is available', async () => {
+    it('renders children when capability enum is available', async () => {
       const { captureCharFrame } = await renderCapabilityGate(
         {
-          requires: 'custom-feature',
-          children: <text>Custom Feature</text>,
+          requires: Capability.Versioning,
+          children: <text>Version Feature</text>,
         },
-        new Set(['custom-feature'])
+        new Set([Capability.Versioning])
       );
 
       const frame = captureCharFrame();
-      expect(frame).toContain('Custom Feature');
+      expect(frame).toContain('Version Feature');
     });
   });
 
@@ -283,12 +283,12 @@ describe('CapabilityGate types', () => {
     expect(Array.isArray(props.requires)).toBe(true);
   });
 
-  it('CapabilityGateProps accepts string capability', () => {
+  it('CapabilityGateProps accepts Capability enum', () => {
     const props: CapabilityGateProps = {
-      requires: 'custom-capability',
+      requires: Capability.Versioning,
       children: null,
     };
-    expect(props.requires).toBe('custom-capability');
+    expect(props.requires).toBe(Capability.Versioning);
   });
 
   it('CapabilityGateProps accepts behavior option', () => {

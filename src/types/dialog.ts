@@ -14,7 +14,6 @@ export type DialogType =
   | 'help'
   | 'sort'
   | 'upload'
-  | 'quit'
   | 'profileSelector'
   | 'themeSelector'
   | null;
@@ -27,8 +26,6 @@ export interface DialogState {
   activeDialog: DialogType;
   /** Pending operations for the confirm dialog */
   pendingOperations: PendingOperation[];
-  /** Number of pending changes for quit dialog */
-  quitPendingChanges: number;
 }
 
 /**
@@ -56,13 +53,6 @@ export interface ShowConfirmOptions {
 }
 
 /**
- * Options for showing a quit confirmation dialog
- */
-export interface ShowQuitOptions {
-  pendingChanges: number;
-}
-
-/**
  * Actions that can be dispatched to the dialog reducer
  */
 export type DialogAction =
@@ -70,7 +60,6 @@ export type DialogAction =
   | { type: 'SHOW_HELP' }
   | { type: 'SHOW_SORT' }
   | { type: 'SHOW_UPLOAD' }
-  | { type: 'SHOW_QUIT'; payload: ShowQuitOptions }
   | { type: 'SHOW_PROFILE_SELECTOR' }
   | { type: 'SHOW_THEME_SELECTOR' }
   | { type: 'CLOSE' }

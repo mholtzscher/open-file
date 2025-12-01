@@ -44,7 +44,6 @@ export interface UseDialogHandlersProps {
   showHelpDialog: boolean;
   showSortMenu: boolean;
   showUploadDialog: boolean;
-  showQuitDialog: boolean;
   showProfileSelectorDialog: boolean;
   showThemeSelectorDialog: boolean;
   showErrorDialog: boolean;
@@ -84,14 +83,13 @@ export interface UseDialogHandlersProps {
 export function useDialogHandlers({
   bufferState,
   storage,
-  dialogState,
+  dialogState: _dialogState,
   pendingOperations,
   progressState,
   showConfirmDialog,
   showHelpDialog,
   showSortMenu,
   showUploadDialog,
-  showQuitDialog,
   showProfileSelectorDialog,
   showThemeSelectorDialog,
   showErrorDialog,
@@ -246,22 +244,6 @@ export function useDialogHandlers({
       totalFiles: progressState.totalNum,
       canCancel: progressState.cancellable,
       onCancel: handleCancelOperation,
-    },
-    quit: {
-      visible: showQuitDialog,
-      pendingChanges: dialogState.quitPendingChanges,
-      onQuitWithoutSave: () => {
-        process.exit(0);
-      },
-      onSaveAndQuit: () => {
-        // No pending operations in immediate execution model
-        process.exit(0);
-      },
-      onCancel: () => {
-        closeDialog();
-        setStatusMessage('Quit cancelled');
-        setStatusMessageColor(Theme.getTextColor());
-      },
     },
     profileSelector: {
       visible: showProfileSelectorDialog,

@@ -3,16 +3,16 @@
  *
  * Renders the entry list as a buffer that can be edited.
  * Similar to oil.nvim's approach - the buffer itself is the interface.
+ * Uses BufferContext to access buffer state.
  */
 
 import { Entry, EntryType } from '../types/entry.js';
-import { UseBufferStateReturn } from '../hooks/useBufferState.js';
+import { useBuffer } from '../contexts/BufferContext.js';
 import { Theme } from './theme.js';
 import { EditMode } from '../types/edit-mode.js';
 import { formatBytes } from '../utils/file-browser.js';
 
 export interface BufferViewProps {
-  bufferState: UseBufferStateReturn;
   showIcons?: boolean;
   showSizes?: boolean;
   showDates?: boolean;
@@ -109,11 +109,12 @@ function getEntryColor(entry: Entry, isSelected: boolean): string {
  * BufferView React component
  */
 export function BufferView({
-  bufferState,
   showIcons = true,
   showSizes = true,
   showDates = false,
 }: BufferViewProps) {
+  // Get buffer state from context
+  const bufferState = useBuffer();
   // Use filtered entries when searching
   const filteredEntries = bufferState.getFilteredEntries();
   const entries =

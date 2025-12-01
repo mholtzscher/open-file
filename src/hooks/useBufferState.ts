@@ -13,7 +13,6 @@ import { bufferReducer, INITIAL_BUFFER_STATE, SelectionState } from './buffer-re
 
 export interface UseBufferStateReturn {
   entries: Entry[];
-  originalEntries: Entry[];
   mode: EditMode;
   selection: SelectionState;
   currentPath: string;
@@ -21,9 +20,9 @@ export interface UseBufferStateReturn {
   showHiddenFiles: boolean;
   searchQuery: string;
   scrollOffset: number;
-  copyRegister: Entry[];
   viewportHeight: number;
-  editBuffer: string; // Buffer for edit/insert mode
+  editBuffer: string;
+  editBufferCursor: number;
 
   // Buffer data operations
   setEntries: (entries: Entry[]) => void;
@@ -72,22 +71,10 @@ export interface UseBufferStateReturn {
   // Display options
   toggleHiddenFiles: () => void;
 
-  // Copy/paste
-  copySelection: () => void;
-  hasClipboardContent: () => boolean;
-  pasteAfterCursor: () => Entry[];
-
   // Getting data
   getSelectedEntry: () => Entry | undefined;
   getSelectedEntries: () => Entry[];
   getFilteredEntries: () => Entry[];
-
-  // Undo/redo (for buffer entries only - pending operations have their own undo stack)
-  undo: () => boolean;
-  redo: () => boolean;
-  canUndo: () => boolean;
-  canRedo: () => boolean;
-  saveSnapshot: () => void;
 }
 
 /**
@@ -97,11 +84,9 @@ export function useBufferState(
   initialEntries: Entry[] = [],
   initialPath: string = ''
 ): UseBufferStateReturn {
-  // Use structuredClone for deep copy of initial entries
   const [state, dispatch] = useReducer(bufferReducer, {
     ...INITIAL_BUFFER_STATE,
     entries: initialEntries,
-    originalEntries: structuredClone(initialEntries),
     currentPath: initialPath,
   });
 
@@ -239,21 +224,6 @@ export function useBufferState(
     dispatch({ type: 'TOGGLE_HIDDEN_FILES' });
   }, []);
 
-  // Copy/paste
-  const copySelection = useCallback(() => {
-    dispatch({ type: 'COPY_SELECTION' });
-  }, []);
-
-  const hasClipboardContent = useCallback(() => {
-    return state.copyRegister.length > 0;
-  }, [state.copyRegister.length]);
-
-  const pasteAfterCursor = useCallback(() => {
-    if (state.copyRegister.length === 0) return [];
-    dispatch({ type: 'PASTE_AFTER_CURSOR' });
-    return state.copyRegister;
-  }, [state.copyRegister]);
-
   // Getting data
   const getSelectedEntry = useCallback((): Entry | undefined => {
     return state.entries[state.selection.cursorIndex];
@@ -284,31 +254,6 @@ export function useBufferState(
     const query = state.searchQuery.toLowerCase();
     return state.entries.filter(entry => entry.name.toLowerCase().includes(query));
   }, [state.entries, state.searchQuery]);
-
-  // Undo/redo (for buffer entries only - pending operations have their own undo stack)
-  const canUndo = useCallback((): boolean => {
-    return state.undoHistory.length > 0;
-  }, [state.undoHistory.length]);
-
-  const canRedo = useCallback((): boolean => {
-    return state.redoHistory.length > 0;
-  }, [state.redoHistory.length]);
-
-  const undo = useCallback((): boolean => {
-    if (!canUndo()) return false;
-    dispatch({ type: 'UNDO' });
-    return true;
-  }, [canUndo]);
-
-  const redo = useCallback((): boolean => {
-    if (!canRedo()) return false;
-    dispatch({ type: 'REDO' });
-    return true;
-  }, [canRedo]);
-
-  const saveSnapshot = useCallback((): void => {
-    dispatch({ type: 'SAVE_SNAPSHOT' });
-  }, []);
 
   return {
     ...state,
@@ -345,16 +290,8 @@ export function useBufferState(
     setSortConfig,
     updateSearchQuery,
     toggleHiddenFiles,
-    copySelection,
-    hasClipboardContent,
-    pasteAfterCursor,
     getSelectedEntry,
     getSelectedEntries,
     getFilteredEntries,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    saveSnapshot,
   };
 }

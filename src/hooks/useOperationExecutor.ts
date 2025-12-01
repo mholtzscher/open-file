@@ -1,9 +1,8 @@
 /**
  * useOperationExecutor Hook
  *
- * High-level hook for executing operations with integrated progress tracking.
- * Combines useAsyncOperations with useProgressState and provides a unified
- * interface for operation execution, progress updates, and result handling.
+ * Unified hook for executing operations with integrated progress tracking.
+ * Handles batch operations with progress, cancellation, and error handling.
  *
  * Features:
  * - execute(operations) method with automatic progress tracking
@@ -14,24 +13,53 @@
  */
 
 import { useCallback, useRef, useState } from 'react';
-import { useAsyncOperations, OperationResult } from './useAsyncOperations.js';
+import { useStorage } from '../contexts/StorageContextProvider.js';
 import { useProgressState } from './useProgressState.js';
 import type { PendingOperation } from '../types/dialog.js';
+import type { StorageContextValue } from '../contexts/StorageContext.js';
 
 // ============================================================================
 // Types
 // ============================================================================
 
+/** Progress event from storage operations */
+interface ProgressEvent {
+  operation: string;
+  bytesTransferred: number;
+  totalBytes?: number;
+  percentage: number;
+  currentFile?: string;
+}
+
+/** Result of operation execution */
+export interface OperationResult {
+  /** Number of successful operations */
+  successCount: number;
+  /** Number of failed operations */
+  failureCount: number;
+  /** Whether execution was cancelled */
+  cancelled: boolean;
+  /** Error message if any */
+  error?: string;
+}
+
+/** Progress callback data */
+interface OperationProgress {
+  currentIndex: number;
+  totalCount: number;
+  overallProgress: number;
+  operationType: string;
+  currentFile?: string;
+  description: string;
+}
+
 export interface ExecutorCallbacks {
   /** Called when an operation succeeds */
   onSuccess?: (result: OperationResult, message: string) => void;
-
   /** Called when an operation fails */
   onError?: (message: string) => void;
-
   /** Called when operations are cancelled */
   onCancelled?: (message: string) => void;
-
   /** Called when operations complete (success or failure) */
   onComplete?: () => void;
 }
@@ -72,6 +100,152 @@ export interface UseOperationExecutorReturn {
 }
 
 // ============================================================================
+// Operation Execution Logic
+// ============================================================================
+
+/**
+ * Execute a single operation using the storage provider
+ */
+async function executeOperation(
+  op: PendingOperation,
+  storage: StorageContextValue,
+  onProgress: (event: ProgressEvent) => void
+): Promise<void> {
+  switch (op.type) {
+    case 'create':
+      if (op.path) {
+        if (op.entryType === 'directory') {
+          await storage.mkdir(op.path);
+        } else {
+          // Create empty file
+          await storage.write(op.path, '', { onProgress });
+        }
+      }
+      break;
+
+    case 'delete':
+      if (op.path) {
+        await storage.delete(op.path, { recursive: op.recursive, onProgress });
+      }
+      break;
+
+    case 'move':
+      if (op.source && op.destination) {
+        await storage.move(op.source, op.destination, { onProgress });
+      }
+      break;
+
+    case 'copy':
+      if (op.source && op.destination) {
+        await storage.copy(op.source, op.destination, { onProgress });
+      }
+      break;
+
+    case 'upload':
+      if (op.source && op.destination) {
+        await storage.upload(op.source, op.destination, { onProgress });
+      }
+      break;
+
+    case 'download':
+      if (op.source && op.destination) {
+        await storage.download(op.source, op.destination, { onProgress });
+      }
+      break;
+
+    default:
+      throw new Error(`Unknown operation type: ${(op as PendingOperation).type}`);
+  }
+}
+
+/**
+ * Execute a batch of operations with progress tracking
+ */
+async function executeOperationBatch(
+  operations: PendingOperation[],
+  storage: StorageContextValue,
+  options: {
+    onProgress?: (progress: OperationProgress) => void;
+    onOperationError?: (operation: PendingOperation, error: Error) => void;
+    signal?: AbortSignal;
+  }
+): Promise<OperationResult> {
+  const { onProgress, onOperationError, signal } = options;
+
+  let successCount = 0;
+  let failureCount = 0;
+  let cancelled = false;
+
+  for (let opIndex = 0; opIndex < operations.length; opIndex++) {
+    const op = operations[opIndex];
+
+    // Check for cancellation
+    if (signal?.aborted) {
+      cancelled = true;
+      break;
+    }
+
+    try {
+      // Calculate progress
+      const baseProgress = (opIndex / operations.length) * 100;
+      const totalProgress = Math.round(baseProgress);
+
+      // Create progress callback for this operation
+      const operationProgressCallback = (event: ProgressEvent) => {
+        const opProgress = event.percentage / operations.length;
+        const combinedProgress = Math.round(baseProgress + opProgress);
+
+        onProgress?.({
+          currentIndex: opIndex,
+          totalCount: operations.length,
+          overallProgress: combinedProgress,
+          operationType: op.type,
+          currentFile: event.currentFile || op.path || op.source || '',
+          description: event.operation || `${op.type}: ${op.path || op.source || 'processing'}`,
+        });
+      };
+
+      // Report start of operation
+      onProgress?.({
+        currentIndex: opIndex,
+        totalCount: operations.length,
+        overallProgress: totalProgress,
+        operationType: op.type,
+        currentFile: op.path || op.source || '',
+        description: `${op.type}: ${op.path || op.source || 'processing'}`,
+      });
+
+      // Execute operation
+      await executeOperation(op, storage, operationProgressCallback);
+
+      successCount++;
+    } catch (error) {
+      failureCount++;
+      onOperationError?.(op, error as Error);
+      // Continue with remaining operations
+    }
+  }
+
+  // Report completion
+  if (!cancelled) {
+    onProgress?.({
+      currentIndex: operations.length,
+      totalCount: operations.length,
+      overallProgress: 100,
+      operationType: 'complete',
+      description: `Completed: ${successCount} succeeded, ${failureCount} failed`,
+    });
+  }
+
+  return {
+    successCount,
+    failureCount,
+    cancelled,
+    error: failureCount > 0 ? `${failureCount} operation(s) failed` : undefined,
+  };
+}
+
+// ============================================================================
 // Hook
 // ============================================================================
 
@@ -97,7 +271,7 @@ export interface UseOperationExecutorReturn {
  * ```
  */
 export function useOperationExecutor(): UseOperationExecutorReturn {
-  const { executeOperations, cancelOperations } = useAsyncOperations();
+  const storage = useStorage();
   const {
     progress,
     showProgress,
@@ -134,7 +308,7 @@ export function useOperationExecutor(): UseOperationExecutorReturn {
 
       try {
         // Execute operations with progress tracking
-        const result = await executeOperations(operations, {
+        const result = await executeOperationBatch(operations, storage, {
           onProgress: progressEvent => {
             updateProgress(progressEvent.overallProgress);
             updateProgressDescription(progressEvent.description);
@@ -194,7 +368,7 @@ export function useOperationExecutor(): UseOperationExecutorReturn {
       }
     },
     [
-      executeOperations,
+      storage,
       showProgress,
       hideProgress,
       updateProgress,
@@ -208,8 +382,7 @@ export function useOperationExecutor(): UseOperationExecutorReturn {
       abortControllerRef.current.abort();
       dispatchProgress({ type: 'UPDATE', payload: { cancellable: false } });
     }
-    cancelOperations();
-  }, [cancelOperations, dispatchProgress]);
+  }, [dispatchProgress]);
 
   return {
     isRunning,

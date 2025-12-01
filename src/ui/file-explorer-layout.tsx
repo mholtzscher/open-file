@@ -2,11 +2,11 @@
  * FileExplorerLayout - Presentational layout component
  *
  * Renders the main layout structure with header, panes, status bar, and dialogs.
- * This is a pure presentational component that receives all state via props.
+ * Uses BufferContext to access buffer state without prop drilling.
  */
 
-import { UseBufferStateReturn } from '../hooks/useBufferState.js';
 import { UseTerminalSizeReturn, LayoutDimensions } from '../hooks/useTerminalSize.js';
+import { useBuffer } from '../contexts/BufferContext.js';
 
 import { BufferPane } from './pane.js';
 import { StatusBar } from './status-bar.js';
@@ -43,9 +43,6 @@ export interface FileExplorerLayoutProps {
   /** Whether the component is initialized */
   isInitialized: boolean;
 
-  /** Main buffer state */
-  bufferState: UseBufferStateReturn;
-
   /** Terminal size information */
   terminalSize: UseTerminalSizeReturn;
 
@@ -78,7 +75,6 @@ export interface FileExplorerLayoutProps {
 export function FileExplorerLayout({
   bucket,
   isInitialized,
-  bufferState,
   terminalSize,
   layout,
   statusBar,
@@ -86,6 +82,9 @@ export function FileExplorerLayout({
   dialogs,
   showErrorDialog,
 }: FileExplorerLayoutProps) {
+  // Get buffer state from context
+  const bufferState = useBuffer();
+
   const showPreview = isInitialized && preview.content !== null;
 
   const title = bucket
@@ -113,7 +112,6 @@ export function FileExplorerLayout({
 
         {isInitialized && (
           <BufferPane
-            bufferState={bufferState}
             title={title}
             showHeader={false}
             showIcons={!terminalSize.isSmall}

@@ -25,7 +25,7 @@ export type GateBehavior = 'hide' | 'disable';
 
 export interface CapabilityGateProps {
   /** Required capability to show/enable this element */
-  requires: Capability | Capability[] | string | string[];
+  requires: Capability | Capability[];
 
   /** Child elements to conditionally render */
   children: ReactNode;
