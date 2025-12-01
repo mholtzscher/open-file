@@ -10,6 +10,10 @@ default:
     @echo "  just s3 my-bucket      - Connect to specific S3 bucket"
     @echo "  just s3 my-bucket us-west-2  - Specify region"
     @echo ""
+    @echo "Installation:"
+    @echo "  just install-global    - Build and install binary to ~/.local/bin"
+    @echo "  just uninstall-global  - Remove installed binary"
+    @echo ""
     @echo "All available commands:"
     @just --list
 
@@ -20,6 +24,25 @@ install:
 # Build TypeScript to JavaScript (optional with Bun - can run .ts directly)
 build:
     bun build src/index.tsx --outdir dist --target bun
+
+# Build and install standalone binary to ~/.local/bin
+install-global:
+    @echo "Building standalone executable..."
+    bun build src/index.tsx --compile --outfile=open-file
+    @echo "Installing to ~/.local/bin..."
+    mv open-file ~/.local/bin/
+    chmod +x ~/.local/bin/open-file
+    @echo ""
+    @echo "✓ open-file installed successfully!"
+    @echo "Location: $(which open-file)"
+    @echo ""
+    @echo "Try it with: open-file --help"
+
+# Uninstall global binary
+uninstall-global:
+    @echo "Removing open-file from ~/.local/bin..."
+    rm -f ~/.local/bin/open-file
+    @echo "✓ open-file uninstalled"
 
 # Run in watch mode for development
 dev:
