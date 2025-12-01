@@ -92,7 +92,7 @@ test-watch:
 # Run linting (matches CI lint job)
 lint:
     bunx tsc --noEmit --skipLibCheck
-    bunx biome check --write src/ || echo "Biome checks skipped"
+    bun run lint
 
 # Test React components specifically
 test-react:

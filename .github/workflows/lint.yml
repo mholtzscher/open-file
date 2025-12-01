@@ -24,5 +24,8 @@ jobs:
       - name: Type check
         run: bunx tsc --noEmit --skipLibCheck
 
+      - name: Run ESLint
+        run: bun run lint
+
       - name: Check formatting
-        run: bunx biome check --write src/ || echo "Formatting checks skipped"
+        run: bun run format:check

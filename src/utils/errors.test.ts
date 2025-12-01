@@ -258,7 +258,7 @@ describe('formatErrorForDisplay', () => {
     expect(result).toContain('\n');
     const lines = result.split('\n');
     expect(lines[0]).toMatch(/^❌ /);
-    expect(lines[1]).toMatch(/^   /);
+    expect(lines[1]).toMatch(/^ {3}/);
   });
 
   it('should not wrap short error messages', () => {

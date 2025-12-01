@@ -203,7 +203,7 @@ export class ProviderStorageAdapter implements StorageContextValue {
       if (isSuccess(result)) {
         this.setState({
           currentPath: path,
-          entries: result.data!.entries,
+          entries: result.data.entries,
           isLoading: false,
         });
       } else {
@@ -272,11 +272,11 @@ export class ProviderStorageAdapter implements StorageContextValue {
       if (isSuccess(result)) {
         // Update state if listing current path
         if (targetPath === this.internalState.currentPath) {
-          this.setState({ entries: result.data!.entries, isLoading: false });
+          this.setState({ entries: result.data.entries, isLoading: false });
         } else {
           this.setState({ isLoading: false });
         }
-        return result.data!.entries;
+        return result.data.entries;
       }
 
       // Handle error
@@ -631,7 +631,7 @@ export class ProviderStorageAdapter implements StorageContextValue {
           const containersResult = await newProvider.listContainers();
           if (isSuccess(containersResult)) {
             this.setState({
-              entries: containersResult.data!,
+              entries: containersResult.data,
               currentPath: '',
               isLoading: false,
             });

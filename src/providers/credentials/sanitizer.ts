@@ -273,10 +273,10 @@ export function sanitizeForLogging(obj: unknown, maxStringLength = 100): unknown
     }
 
     // Handle circular references
-    if (seen.has(value as object)) {
+    if (seen.has(value)) {
       return '[Circular]';
     }
-    seen.add(value as object);
+    seen.add(value);
 
     // Handle arrays
     if (Array.isArray(value)) {

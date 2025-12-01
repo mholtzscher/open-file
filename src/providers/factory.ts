@@ -44,22 +44,22 @@ export async function createProvider(profile: Profile): Promise<StorageProvider>
   switch (profile.provider) {
     case 's3': {
       const { S3Provider } = await import('./s3/s3-provider.js');
-      return new S3Provider(profile as S3Profile);
+      return new S3Provider(profile);
     }
 
     case 'gcs': {
       const { GCSProvider } = await import('./gcs/gcs-provider.js');
-      return new GCSProvider(profile as GCSProfile);
+      return new GCSProvider(profile);
     }
 
     case 'sftp': {
       const { SFTPProvider } = await import('./sftp/sftp-provider.js');
-      return new SFTPProvider(profile as SFTPProfile);
+      return new SFTPProvider(profile);
     }
 
     case 'ftp': {
       const { FTPProvider } = await import('./ftp/ftp-provider.js');
-      return new FTPProvider(profile as FTPProfile);
+      return new FTPProvider(profile);
     }
 
     case 'nfs':
@@ -82,7 +82,7 @@ export async function createProvider(profile: Profile): Promise<StorageProvider>
 
     case 'local': {
       const { LocalProvider } = await import('./local/local-provider.js');
-      return new LocalProvider(profile as LocalProfile);
+      return new LocalProvider(profile);
     }
 
     default:

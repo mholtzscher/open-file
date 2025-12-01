@@ -90,7 +90,7 @@ describe('S3 Credential Resolvers', () => {
       expect(result.success).toBe(true);
       if (result.success) {
         expect(result.credentials.type).toBe('s3');
-        expect((result.credentials as S3Credentials).accessKeyId).toBe('AKIAIOSFODNN7EXAMPLE');
+        expect(result.credentials.accessKeyId).toBe('AKIAIOSFODNN7EXAMPLE');
       }
     });
 
@@ -130,7 +130,7 @@ describe('S3 Credential Resolvers', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect((result.credentials as S3Credentials).accessKeyId).toBe('AKIAEXAMPLE');
+        expect(result.credentials.accessKeyId).toBe('AKIAEXAMPLE');
       }
     });
 
@@ -362,7 +362,7 @@ describe('FTP Credential Resolvers', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect((result.credentials as FTPCredentials).username).toBe('ftpuser');
+        expect(result.credentials.username).toBe('ftpuser');
       }
     });
   });
@@ -385,7 +385,7 @@ describe('FTP Credential Resolvers', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect((result.credentials as FTPCredentials).username).toBe('anonymous');
+        expect(result.credentials.username).toBe('anonymous');
       }
     });
   });
@@ -427,7 +427,7 @@ describe('SMB Credential Resolvers', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect((result.credentials as SMBCredentials).domain).toBe('WORKGROUP');
+        expect(result.credentials.domain).toBe('WORKGROUP');
       }
     });
   });
@@ -439,7 +439,7 @@ describe('SMB Credential Resolvers', () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect((result.credentials as SMBCredentials).username).toBe('guest');
+        expect(result.credentials.username).toBe('guest');
       }
     });
   });

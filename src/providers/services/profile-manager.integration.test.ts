@@ -177,7 +177,7 @@ class TestableProfileManager {
 
     // Provider-specific validation
     if (profile.provider === 's3') {
-      const s3Profile = profile as S3Profile;
+      const s3Profile = profile;
       if (s3Profile.config?.accessKeyId && !s3Profile.config?.secretAccessKey) {
         errors.push({
           field: 'config.secretAccessKey',
@@ -195,7 +195,7 @@ class TestableProfileManager {
     }
 
     if (profile.provider === 'sftp') {
-      const sftpProfile = profile as SFTPProfile;
+      const sftpProfile = profile;
       if (!sftpProfile.config?.host) {
         errors.push({ field: 'config.host', message: 'config.host is required', code: 'required' });
       }
@@ -230,7 +230,7 @@ class TestableProfileManager {
     }
 
     if (profile.provider === 'local') {
-      const localProfile = profile as LocalProfile;
+      const localProfile = profile;
       if (!localProfile.config?.basePath) {
         errors.push({
           field: 'config.basePath',

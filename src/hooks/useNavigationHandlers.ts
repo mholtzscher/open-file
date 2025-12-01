@@ -106,8 +106,8 @@ export function useNavigationHandlers(
   // Determine if we received dependencies or config
   const isDependencies = 'storage' in configOrDeps;
   const config: NavigationConfig = isDependencies
-    ? buildConfigFromDependencies(bufferState, configOrDeps as NavigationDependencies)
-    : (configOrDeps as NavigationConfig);
+    ? buildConfigFromDependencies(bufferState, configOrDeps)
+    : configOrDeps;
   // Navigate into selected directory or bucket
   const navigateInto = useCallback(async () => {
     const selected = bufferState.getSelectedEntry();
