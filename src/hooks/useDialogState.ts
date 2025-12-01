@@ -7,14 +7,7 @@
  */
 
 import { useReducer, useCallback } from 'react';
-import {
-  DialogState,
-  DialogAction,
-  DialogType,
-  PendingOperation,
-  ShowConfirmOptions,
-  ShowQuitOptions,
-} from '../types/dialog.js';
+import { DialogState, DialogAction, PendingOperation } from '../types/dialog.js';
 
 /**
  * Initial state for dialog management

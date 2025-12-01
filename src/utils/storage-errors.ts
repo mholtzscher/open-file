@@ -12,13 +12,7 @@
  * - Consistent error display across UI
  */
 
-import {
-  OperationResult,
-  OperationStatus,
-  OperationError,
-  isError,
-  isUnimplemented,
-} from '../providers/types/result.js';
+import { OperationResult, OperationStatus, isUnimplemented } from '../providers/types/result.js';
 
 // ============================================================================
 // Types

@@ -1,7 +1,7 @@
 /**
  * Edit mode enumeration
  *
- * Defines the different editing modes for the S3 explorer UI
+ * Defines the different editing modes for the file explorer UI
  */
 
 export enum EditMode {
