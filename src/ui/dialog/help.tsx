@@ -52,6 +52,8 @@ const keybindings: HelpItem[] = [
   { keys: '/', description: 'Search mode' },
   { keys: 'n/N', description: 'Next/prev match' },
   { keys: ':', description: 'Command mode' },
+  { keys: ':profiles', description: 'Open profile selector' },
+  { keys: ':theme', description: 'Open theme selector' },
   { section: '' },
   { section: 'OTHER' },
   { keys: 'o', description: 'Sort menu' },

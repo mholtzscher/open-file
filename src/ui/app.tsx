@@ -30,6 +30,8 @@ export interface AppProps {
   onExitWithoutProvider?: () => void;
   /** Optional handler to edit profiles in external editor (called from profile selector) */
   onEditProfiles?: () => Promise<void>;
+  /** Incremented each time profiles are reloaded externally */
+  profilesReloadKey?: number;
 }
 
 // ============================================================================
@@ -42,12 +44,14 @@ export interface AppProps {
 interface AppContentProps {
   /** Handler to edit profiles in external editor */
   onEditProfiles?: () => Promise<void>;
+  /** Incremented each time profiles are reloaded externally */
+  profilesReloadKey?: number;
 }
 
 /**
  * AppContent - Renders profile selector or main content based on profile state
  */
-function AppContent({ onEditProfiles }: AppContentProps) {
+function AppContent({ onEditProfiles, profilesReloadKey }: AppContentProps) {
   const {
     provider,
     profileId,
@@ -68,6 +72,7 @@ function AppContent({ onEditProfiles }: AppContentProps) {
         onProfileSelect={selectProfile}
         onCancel={closeProfileSelector}
         onEditProfiles={onEditProfiles}
+        profilesReloadKey={profilesReloadKey}
       />
     );
   }
@@ -99,6 +104,7 @@ export function App({
   onDispatchReady,
   onExitWithoutProvider,
   onEditProfiles,
+  profilesReloadKey,
 }: AppProps) {
   return (
     <ThemeProvider>
@@ -107,7 +113,7 @@ export function App({
           profileManager={profileManager}
           onExitWithoutProvider={onExitWithoutProvider}
         >
-          <AppContent onEditProfiles={onEditProfiles} />
+          <AppContent onEditProfiles={onEditProfiles} profilesReloadKey={profilesReloadKey} />
         </ProfileProvider>
       </KeyboardProvider>
     </ThemeProvider>

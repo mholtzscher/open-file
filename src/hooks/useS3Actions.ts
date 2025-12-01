@@ -701,6 +701,14 @@ export function useS3Actions({
               }
             } else if (command === ':theme') {
               showThemeSelector();
+            } else if (command === ':profiles') {
+              const profileManager = storage.getProfileManager();
+              if (profileManager) {
+                showProfileSelector();
+              } else {
+                setStatusMessage('Profiles not available');
+                setStatusMessageColor(Theme.getWarningColor());
+              }
             } else {
               setStatusMessage(`Unknown command: ${command}`);
               setStatusMessageColor(Theme.getErrorColor());

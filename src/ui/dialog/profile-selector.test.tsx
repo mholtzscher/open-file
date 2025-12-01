@@ -336,4 +336,78 @@ describe('ProfileSelectorDialog', () => {
       expect(typeof module.ProfileSelectorDialog).toBe('function');
     });
   });
+
+  describe('profile reload', () => {
+    it('reloads profiles when profilesReloadKey changes', async () => {
+      const updatedProfiles: Profile[] = [
+        {
+          id: 'new-profile',
+          displayName: 'New Profile',
+          provider: 'local',
+          config: { basePath: '/tmp' },
+        },
+      ];
+
+      let callCount = 0;
+      const profileManager: ProfileManager = {
+        listProfiles: mock(() => {
+          callCount++;
+          if (callCount === 1) {
+            return Promise.resolve(mockProfiles);
+          }
+          return Promise.resolve(updatedProfiles);
+        }),
+        getProfile: mock(() => Promise.resolve(undefined)),
+        saveProfile: mock(() => Promise.resolve({ valid: true, errors: [] })),
+        deleteProfile: mock(() => Promise.resolve(true)),
+        validateProfile: mock(() => Promise.resolve({ valid: true, errors: [] })),
+        createProviderFromProfile: mock(() => Promise.resolve({} as any)),
+        reload: mock(() => Promise.resolve()),
+      };
+
+      const onProfileSelect = mock(() => {});
+      const onCancel = mock(() => {});
+
+      // First render with reload key = 1
+      const { renderOnce: renderOnce1, captureCharFrame: captureCharFrame1 } = await testRender(
+        <WrappedProfileSelectorDialog
+          visible={true}
+          profileManager={profileManager}
+          onProfileSelect={onProfileSelect}
+          onCancel={onCancel}
+          profilesReloadKey={1}
+        />,
+        { width: 80, height: 30 }
+      );
+
+      // Wait for initial load
+      await new Promise(resolve => setTimeout(resolve, 50));
+      await renderOnce1();
+
+      const frame1 = captureCharFrame1();
+      expect(frame1).toContain('Production S3');
+
+      // Second render with reload key = 2 (simulates profile reload)
+      const { renderOnce: renderOnce2, captureCharFrame: captureCharFrame2 } = await testRender(
+        <WrappedProfileSelectorDialog
+          visible={true}
+          profileManager={profileManager}
+          onProfileSelect={onProfileSelect}
+          onCancel={onCancel}
+          profilesReloadKey={2}
+        />,
+        { width: 80, height: 30 }
+      );
+
+      // Wait for profiles to reload
+      await new Promise(resolve => setTimeout(resolve, 50));
+      await renderOnce2();
+
+      const frame2 = captureCharFrame2();
+      expect(frame2).toContain('New Profile');
+
+      // Verify listProfiles was called twice
+      expect(callCount).toBe(2);
+    });
+  });
 });

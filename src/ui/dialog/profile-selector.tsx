@@ -37,6 +37,9 @@ export interface ProfileSelectorDialogProps {
 
   /** Callback to edit profiles in external editor (optional) */
   onEditProfiles?: () => Promise<void>;
+
+  /** Incremented each time profiles are reloaded externally (used to trigger refresh) */
+  profilesReloadKey?: number;
 }
 
 // ============================================================================
@@ -64,6 +67,7 @@ export function ProfileSelectorDialog({
   onProfileSelect,
   onCancel,
   onEditProfiles,
+  profilesReloadKey,
 }: ProfileSelectorDialogProps) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -93,7 +97,7 @@ export function ProfileSelectorDialog({
     }
   }, [visible, currentProfileId, profiles]);
 
-  // Load profiles when dialog becomes visible
+  // Load profiles when dialog becomes visible or when profiles are reloaded
   useEffect(() => {
     if (!visible) return;
 
@@ -120,7 +124,7 @@ export function ProfileSelectorDialog({
     };
 
     loadProfiles();
-  }, [visible, profileManager]);
+  }, [visible, profileManager, profilesReloadKey]);
 
   // Keyboard handler for KeyboardContext (KeyboardKey-based)
   const handleKeyboard = useCallback(

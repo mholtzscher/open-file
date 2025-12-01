@@ -20,6 +20,10 @@ import type { KeyboardKey, KeyboardDispatcher } from './types/keyboard.js';
 // Global keyboard event dispatcher - bridges external renderer to React context
 let globalKeyboardDispatcher: KeyboardDispatcher | null = null;
 
+// Global state for tracking profile reloads
+let profilesReloadCounter = 0;
+let appRootRender: ((reloadKey: number) => void) | null = null;
+
 /**
  * Main entry point for open-file application
  */
@@ -141,6 +145,12 @@ async function main() {
         try {
           await profileManager.reload();
           logger.info('Profiles reloaded after editor close');
+
+          // Increment reload counter and trigger re-render
+          profilesReloadCounter++;
+          if (appRootRender) {
+            appRootRender(profilesReloadCounter);
+          }
         } catch (reloadError) {
           logger.error('Failed to reload profiles', reloadError);
         }
@@ -150,19 +160,30 @@ async function main() {
     // Render app
     try {
       const root = createRoot(renderer);
-      root.render(
-        <App
-          profileManager={profileManager}
-          onDispatchReady={dispatch => {
-            globalKeyboardDispatcher = dispatch;
-          }}
-          onExitWithoutProvider={() => {
-            // No profile selected and selector closed; terminate the CLI
-            process.exit(0);
-          }}
-          onEditProfiles={handleEditProfiles}
-        />
-      );
+
+      // Function to render with current reload key
+      const renderApp = (reloadKey: number) => {
+        root.render(
+          <App
+            profileManager={profileManager}
+            onDispatchReady={dispatch => {
+              globalKeyboardDispatcher = dispatch;
+            }}
+            onExitWithoutProvider={() => {
+              // No profile selected and selector closed; terminate the CLI
+              process.exit(0);
+            }}
+            onEditProfiles={handleEditProfiles}
+            profilesReloadKey={reloadKey}
+          />
+        );
+      };
+
+      // Store render function for reload triggering
+      appRootRender = renderApp;
+
+      // Initial render
+      renderApp(profilesReloadCounter);
     } catch (renderError) {
       logger.error('Failed to render app', renderError);
       throw renderError;
