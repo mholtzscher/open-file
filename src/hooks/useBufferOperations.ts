@@ -71,12 +71,9 @@ export function useBufferOperations(bufferState: UseBufferStateReturn): UseBuffe
     [deleteEntry]
   );
 
-  const undeleteEntry = useCallback(
-    (index: number) => {
-      // Undo with 'u' keybinding handles this
-    },
-    [bufferState]
-  );
+  const undeleteEntry = useCallback((_index: number) => {
+    // Undo with 'u' keybinding handles this
+  }, []);
 
   // Clipboard status queries
   const getClipboardCount = useCallback((): number => {

@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
 import { ProviderStorageAdapter } from './ProviderStorageAdapter.js';
 import type { StorageProvider } from '../providers/provider.js';
-import type { ProfileManager } from '../providers/services/profile-manager.js';
+import type { ProfileManager, ValidationResult } from '../providers/services/profile-manager.js';
 import type { Profile } from '../providers/types/profile.js';
 import { Capability } from '../providers/types/capabilities.js';
 import { Result } from '../providers/types/result.js';
@@ -39,63 +39,68 @@ class MockProvider implements StorageProvider {
   async connect() {
     this.connectCalled = true;
     this.isConnectedFlag = true;
-    return Result.success(undefined);
+    return await Promise.resolve(Result.success(undefined));
   }
 
   async disconnect() {
     this.disconnectCalled = true;
     this.isConnectedFlag = false;
+    return await Promise.resolve();
   }
 
   async list() {
-    return Result.success({ entries: [], continuationToken: undefined, hasMore: false });
+    return await Promise.resolve(
+      Result.success({ entries: [], continuationToken: undefined, hasMore: false })
+    );
   }
 
   async read() {
-    return Result.success(Buffer.from('test'));
+    return await Promise.resolve(Result.success(Buffer.from('test')));
   }
 
   async write() {
-    return Result.success(undefined);
+    return await Promise.resolve(Result.success(undefined));
   }
 
   async delete() {
-    return Result.success(undefined);
+    return await Promise.resolve(Result.success(undefined));
   }
 
   async exists() {
-    return Result.success(true);
+    return await Promise.resolve(Result.success(true));
   }
 
   async getMetadata() {
-    return Result.success({
-      id: 'test',
-      name: 'test.txt',
-      type: EntryType.File,
-      path: '/test.txt',
-      size: 100,
-      modified: new Date(),
-    });
+    return await Promise.resolve(
+      Result.success({
+        id: 'test',
+        name: 'test.txt',
+        type: EntryType.File,
+        path: '/test.txt',
+        size: 100,
+        modified: new Date(),
+      })
+    );
   }
 
   async mkdir() {
-    return Result.success(undefined);
+    return await Promise.resolve(Result.success(undefined));
   }
 
   async move() {
-    return Result.success(undefined);
+    return await Promise.resolve(Result.success(undefined));
   }
 
   async copy() {
-    return Result.success(undefined);
+    return await Promise.resolve(Result.success(undefined));
   }
 
   async downloadToLocal() {
-    return Result.success(undefined);
+    return await Promise.resolve(Result.success(undefined));
   }
 
   async uploadFromLocal() {
-    return Result.success(undefined);
+    return await Promise.resolve(Result.success(undefined));
   }
 }
 
@@ -136,23 +141,23 @@ class MockProfileManager implements ProfileManager {
   }
 
   async listProfiles(): Promise<Profile[]> {
-    return Array.from(this.profiles.values());
+    return await Promise.resolve(Array.from(this.profiles.values()));
   }
 
   async getProfile(id: string): Promise<Profile | undefined> {
-    return this.profiles.get(id);
+    return await Promise.resolve(this.profiles.get(id));
   }
 
-  async saveProfile(): Promise<any> {
-    return { valid: true, errors: [] };
+  async saveProfile(): Promise<ValidationResult> {
+    return await Promise.resolve({ valid: true, errors: [] });
   }
 
   async deleteProfile(): Promise<boolean> {
-    return true;
+    return await Promise.resolve(true);
   }
 
-  async validateProfile(): Promise<any> {
-    return { valid: true, errors: [] };
+  async validateProfile(): Promise<ValidationResult> {
+    return await Promise.resolve({ valid: true, errors: [] });
   }
 
   async createProviderFromProfile(profileId: string): Promise<StorageProvider> {
@@ -160,11 +165,11 @@ class MockProfileManager implements ProfileManager {
     if (!provider) {
       throw new Error(`Profile not found: ${profileId}`);
     }
-    return provider;
+    return await Promise.resolve(provider);
   }
 
   async reload(): Promise<void> {
-    // No-op for mock
+    return await Promise.resolve();
   }
 }
 
@@ -246,16 +251,16 @@ describe('ProviderStorageAdapter - switchProfile', () => {
     const failingProvider = new MockProvider();
     failingProvider.name = 'failing-provider';
     failingProvider.connect = async () => {
-      throw new Error('Connection failed');
+      throw await Promise.reject(new Error('Connection failed'));
     };
 
     // Override the profile manager to return the failing provider
     const originalCreate = profileManager.createProviderFromProfile.bind(profileManager);
     profileManager.createProviderFromProfile = async (id: string) => {
       if (id === 'profile-1') {
-        return failingProvider;
+        return await Promise.resolve(failingProvider);
       }
-      return originalCreate(id);
+      return await originalCreate(id);
     };
 
     const originalProviderId = adapter.state.providerId;

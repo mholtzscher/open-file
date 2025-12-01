@@ -7,10 +7,10 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { CatppuccinMocha } from '../ui/theme';
+import { CatppuccinMocha } from '../ui/theme.js';
 
 // Import types to verify they compile correctly
-import type { StatusType, StatusMessageState } from './useStatusMessage';
+import type { StatusType, StatusMessageState } from './useStatusMessage.js';
 
 describe('useStatusMessage types', () => {
   describe('StatusType', () => {

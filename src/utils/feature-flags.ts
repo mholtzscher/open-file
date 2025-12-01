@@ -72,7 +72,7 @@ const LEGACY_ESCAPE_HATCH = 'OPEN_FILE_USE_LEGACY';
 /**
  * Config file keys for feature flags
  */
-const CONFIG_KEY_MAP: Record<FeatureFlag, string> = {
+const _CONFIG_KEY_MAP: Record<FeatureFlag, string> = {
   [FeatureFlag.USE_NEW_PROVIDER_SYSTEM]: 'useProviders',
   [FeatureFlag.MULTI_PROVIDER]: 'multiProvider',
   [FeatureFlag.EXPERIMENTAL]: 'experimental',

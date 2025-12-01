@@ -4,9 +4,8 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
 import { Logger, LogLevel, getLogger, shutdownLogger } from './logger.js';
-import { existsSync, rmSync } from 'fs';
+import { existsSync } from 'fs';
 import { homedir } from 'os';
-import { join } from 'path';
 
 describe('Logger', () => {
   let logger: Logger;

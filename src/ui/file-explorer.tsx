@@ -112,12 +112,16 @@ export function FileExplorer() {
   const initialPath = '';
   const bufferState = useBufferState([], initialPath);
   const bufferStateRef = useRef(bufferState);
-  bufferStateRef.current = bufferState;
+
+  // Update ref when bufferState changes
+  useEffect(() => {
+    bufferStateRef.current = bufferState;
+  }, [bufferState]);
 
   // Update viewport height when layout changes
   useEffect(() => {
     bufferState.setViewportHeight(layout.contentHeight);
-  }, [layout.contentHeight, bufferState.setViewportHeight]);
+  }, [layout.contentHeight, bufferState]);
 
   // ============================================
   // Navigation Handlers

@@ -16,7 +16,7 @@ import {
   summarizeResults,
   getMostSevereError,
 } from './storage-errors.js';
-import { Result, OperationStatus } from '../providers/types/result.js';
+import { Result } from '../providers/types/result.js';
 
 // ============================================================================
 // toUserError Tests

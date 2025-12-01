@@ -39,7 +39,7 @@ export interface DetectedChanges {
 export function detectChanges(
   original: Entry[],
   edited: Entry[],
-  idMap: EntryIdMap
+  _idMap: EntryIdMap
 ): DetectedChanges {
   const creates: Entry[] = [];
   const deletes: Entry[] = [];
@@ -129,7 +129,7 @@ export function detectChanges(
  */
 export function buildOperationPlan(
   changes: DetectedChanges,
-  idGenerator: () => string = generateEntryId
+  _idGenerator: () => string = generateEntryId
 ): OperationPlan {
   const operations: AdapterOperation[] = [];
   let opId = 0;

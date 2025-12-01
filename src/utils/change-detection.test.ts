@@ -285,7 +285,6 @@ describe('Change Detection', () => {
 
     it('should generate correct summaries', () => {
       const id1 = generateEntryId();
-      const id2 = generateEntryId();
 
       const original: Entry[] = [
         {

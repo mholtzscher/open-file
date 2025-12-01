@@ -80,6 +80,7 @@ describe('useDataLoader types', () => {
         isLoading: false,
         reload: async () => {
           reloadCalled = true;
+          return Promise.resolve();
         },
       };
 

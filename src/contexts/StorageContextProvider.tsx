@@ -111,7 +111,7 @@ export function StorageContextProvider({
       }
     };
 
-    initialize();
+    void initialize();
 
     // Cleanup on unmount
     return () => {

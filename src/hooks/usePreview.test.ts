@@ -379,7 +379,6 @@ describe('usePreview - size limit logic', () => {
 
   it('should handle undefined file size', () => {
     const fileWithoutSize = createTextFileEntry('unknown.txt', undefined);
-    const maxSize = 100 * 1024;
 
     // Files without size should be allowed (size check only applies if size is known)
     expect(fileWithoutSize.size === undefined).toBe(true);
@@ -397,7 +396,7 @@ describe('usePreview - path construction', () => {
   });
 
   it('should handle root path correctly', () => {
-    const currentPath = '';
+    const currentPath: string = '';
     const filename = 'test.txt';
     const expected = 'test.txt';
 

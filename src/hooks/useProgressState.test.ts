@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { progressReducer, initialProgressState } from './useProgressState';
-import type { ProgressState, ProgressAction } from '../types/progress';
+import { progressReducer, initialProgressState } from './useProgressState.js';
+import type { ProgressState, ProgressAction } from '../types/progress.js';
 
 describe('progressReducer', () => {
   describe('SHOW action', () => {

@@ -86,7 +86,7 @@ export function buildUri(
       return `mock://${bucket || 'default'}/${normalizedPath}`;
 
     default:
-      throw new Error(`Unknown scheme`);
+      throw new Error('Unknown scheme');
   }
 }
 

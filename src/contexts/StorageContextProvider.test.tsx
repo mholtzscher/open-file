@@ -26,45 +26,50 @@ class TestProvider extends BaseStorageProvider {
   }
 
   async list(_path: string, _options?: ListOptions): Promise<OperationResult<ListResult>> {
-    return Result.success({
-      entries: [
-        {
-          id: 'test',
-          name: 'test.txt',
-          type: EntryType.File,
-          path: 'test.txt',
-          modified: new Date(),
-        },
-      ],
-      hasMore: false,
-    });
+    return await Promise.resolve(
+      Result.success({
+        entries: [
+          {
+            id: 'test',
+            name: 'test.txt',
+            type: EntryType.File,
+            path: 'test.txt',
+            modified: new Date(),
+          },
+        ],
+        hasMore: false,
+      })
+    );
   }
 
   async getMetadata(_path: string): Promise<OperationResult<Entry>> {
-    return Result.success({
-      id: 'test',
-      name: 'test.txt',
-      type: EntryType.File,
-      path: 'test.txt',
-      modified: new Date(),
-    });
+    return await Promise.resolve(
+      Result.success({
+        id: 'test',
+        name: 'test.txt',
+        type: EntryType.File,
+        path: 'test.txt',
+        modified: new Date(),
+      })
+    );
   }
 
   async exists(_path: string): Promise<OperationResult<boolean>> {
-    return Result.success(true);
+    return await Promise.resolve(Result.success(true));
   }
 
   async read(_path: string): Promise<OperationResult<Buffer>> {
-    return Result.success(Buffer.from('test content'));
+    return await Promise.resolve(Result.success(Buffer.from('test content')));
   }
 
   async disconnect(): Promise<void> {
     this.disconnectCalled = true;
+    return await Promise.resolve();
   }
 
   async connect(): Promise<OperationResult> {
     this.connectCalled = true;
-    return Result.success();
+    return await Promise.resolve(Result.success());
   }
 }
 
@@ -72,9 +77,9 @@ describe('StorageContextProvider', () => {
   describe('Validation', () => {
     it('should throw error if provider not provided', () => {
       expect(() => {
-        // Testing with invalid props
-        const props: any = { useProviderSystem: true, children: null };
-        StorageContextProvider(props);
+        // Testing with invalid props - should throw error
+        const props = { useProviderSystem: true, children: null };
+        void StorageContextProvider(props as never);
       }).toThrow();
     });
   });

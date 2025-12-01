@@ -474,7 +474,7 @@ export class InlineCredentialProvider implements CredentialProvider {
           success: false,
           error: {
             code: 'unsupported',
-            message: `Inline credentials not supported for ${context.providerType}`,
+            message: `Inline credentials not supported for ${context.providerType as string}`,
           },
         };
     }

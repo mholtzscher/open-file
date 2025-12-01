@@ -536,19 +536,14 @@ export class ProviderStorageAdapter implements StorageContextValue {
   /**
    * Check if a capability is supported
    */
-  hasCapability(capability: Capability | string): boolean {
-    if (typeof capability === 'string') {
-      // Try to convert string to Capability enum
-      const cap = capability as Capability;
-      return this.provider.hasCapability(cap);
-    }
+  hasCapability(capability: Capability): boolean {
     return this.provider.hasCapability(capability);
   }
 
   /**
    * Get all capabilities
    */
-  getCapabilities(): Set<Capability | string> {
+  getCapabilities(): Set<Capability> {
     return this.provider.getCapabilities();
   }
 
@@ -561,8 +556,8 @@ export class ProviderStorageAdapter implements StorageContextValue {
    * Not supported - use switchProfile instead
    */
   async switchProvider(_providerId: string): Promise<void> {
-    throw new Error(
-      'Provider switching requires multi-provider context. Use switchProfile() instead.'
+    throw await Promise.reject(
+      new Error('Provider switching requires multi-provider context. Use switchProfile() instead.')
     );
   }
 

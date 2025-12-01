@@ -312,13 +312,13 @@ export interface StorageContextValue {
    * @param capability - The capability to check
    * @returns true if the capability is supported
    */
-  hasCapability(capability: Capability | string): boolean;
+  hasCapability(capability: Capability): boolean;
 
   /**
    * Get all capabilities supported by the current provider
    * @returns Set of supported capabilities
    */
-  getCapabilities(): Set<Capability | string>;
+  getCapabilities(): Set<Capability>;
 
   // ==========================================================================
   // Provider Management

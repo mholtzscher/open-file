@@ -31,14 +31,14 @@ export interface HeaderProps {}
  */
 export function Header() {
   const hasStorage = useHasStorage();
-  const state = hasStorage ? useStorageState() : null;
-  const capabilities = hasStorage ? useStorageCapabilities() : null;
+  const state = useStorageState();
+  const capabilities = useStorageCapabilities();
 
-  // Determine what to display
-  const hasConnection = capabilities?.hasCapability(Capability.Connection) ?? false;
-  const providerName = state?.providerDisplayName;
-  const profileName = state?.profileName;
-  const providerId = state?.providerId;
+  // Determine what to display - use hasStorage to conditionally access state
+  const hasConnection = hasStorage && capabilities?.hasCapability(Capability.Connection);
+  const providerName = hasStorage ? state?.providerDisplayName : undefined;
+  const profileName = hasStorage ? state?.profileName : undefined;
+  const providerId = hasStorage ? state?.providerId : undefined;
 
   const profileDisplay = profileName ? `${profileName} ` : providerName || 'none';
 

@@ -71,9 +71,6 @@ export function ThemeProvider({ children, initialThemeId }: ThemeProviderProps) 
       setThemeState(newTheme);
     });
 
-    // Update available themes (in case they changed externally)
-    setAvailableThemes(ThemeRegistry.list());
-
     return unsubscribe;
   }, []);
 

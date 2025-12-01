@@ -16,7 +16,7 @@ import {
 } from './feature-flags.js';
 
 describe('FeatureFlagManager', () => {
-  let originalEnv: NodeJS.ProcessEnv;
+  let originalEnv: Record<string, string | undefined>;
 
   beforeEach(() => {
     // Save original environment
@@ -235,7 +235,7 @@ describe('FeatureFlagManager', () => {
 });
 
 describe('Global convenience functions', () => {
-  let originalEnv: NodeJS.ProcessEnv;
+  let originalEnv: Record<string, string | undefined>;
 
   beforeEach(() => {
     originalEnv = { ...process.env };

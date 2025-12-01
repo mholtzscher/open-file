@@ -73,6 +73,37 @@ export default [
       'react/jsx-uses-react': 'off',
       'react/prop-types': 'off', // Using TypeScript for prop validation
       'react/jsx-filename-extension': ['error', { extensions: ['.tsx'] }],
+      'react/no-unknown-property': [
+        'error',
+        {
+          ignore: [
+            // OpenTUI custom properties
+            'flexDirection',
+            'flexGrow',
+            'flexShrink',
+            'flexBasis',
+            'justifyContent',
+            'alignItems',
+            'gap',
+            'borderStyle',
+            'borderColor',
+            'paddingLeft',
+            'paddingRight',
+            'paddingTop',
+            'paddingBottom',
+            'marginTop',
+            'marginBottom',
+            'marginLeft',
+            'marginRight',
+            'fg',
+            'bg',
+            'filetype',
+            'syntaxStyle',
+            'selectable',
+            'wrapMode',
+          ],
+        },
+      ],
 
       // React Hooks rules
       ...reactHooksPlugin.configs.recommended.rules,

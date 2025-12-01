@@ -179,7 +179,7 @@ export async function listFiles(options: FileBrowserOptions = {}): Promise<FileB
         if (!matchesSearchPattern(localEntry.name, searchPattern)) continue;
 
         files.push(localEntry);
-      } catch (err) {
+      } catch (_err) {
         // Skip files we can't stat
         continue;
       }

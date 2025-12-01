@@ -3,9 +3,9 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { dialogReducer, initialDialogState } from './useDialogState';
-import type { DialogState, DialogAction, PendingOperation } from '../types/dialog';
-import { EntryType } from '../types/entry';
+import { dialogReducer, initialDialogState } from './useDialogState.js';
+import type { DialogState, DialogAction, PendingOperation } from '../types/dialog.js';
+import { EntryType } from '../types/entry.js';
 
 const createTestOperation = (
   id: string,

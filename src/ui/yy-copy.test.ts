@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { BufferState, EditMode } from './buffer-state.js';
+import { BufferState } from './buffer-state.js';
 import { Entry, EntryType } from '../types/entry.js';
 
 describe('yy Copy Motion', () => {

@@ -76,10 +76,12 @@ class MockProvider extends BaseStorageProvider {
 
   async list(path: string, _options?: ListOptions): Promise<OperationResult<ListResult>> {
     const entries = this.entries.get(path) || [];
-    return Result.success({
-      entries,
-      hasMore: false,
-    });
+    return await Promise.resolve(
+      Result.success({
+        entries,
+        hasMore: false,
+      })
+    );
   }
 
   async getMetadata(path: string): Promise<OperationResult<Entry>> {
@@ -87,53 +89,57 @@ class MockProvider extends BaseStorageProvider {
     for (const entries of this.entries.values()) {
       const entry = entries.find(e => e.path === path);
       if (entry) {
-        return Result.success(entry);
+        return await Promise.resolve(Result.success(entry));
       }
     }
-    const notFoundResult: OperationResult<Entry> = Result.notFound(path) as any;
-    return notFoundResult;
+    const notFoundResult: OperationResult<Entry> = Result.notFound(
+      path
+    ) as unknown as OperationResult<Entry>;
+    return await Promise.resolve(notFoundResult);
   }
 
   async exists(path: string): Promise<OperationResult<boolean>> {
     // Check if it's a file
     if (this.files.has(path)) {
-      return Result.success(true);
+      return await Promise.resolve(Result.success(true));
     }
 
     // Check if it's a directory
     if (this.entries.has(path)) {
-      return Result.success(true);
+      return await Promise.resolve(Result.success(true));
     }
 
     // Check if it's in entries
     const metadata = await this.getMetadata(path);
-    return Result.success(metadata.status === 'success');
+    return await Promise.resolve(Result.success(metadata.status === 'success'));
   }
 
   async read(path: string): Promise<OperationResult<Buffer>> {
     const content = this.files.get(path);
     if (content) {
-      return Result.success(content);
+      return await Promise.resolve(Result.success(content));
     }
-    const notFoundResult: OperationResult<Buffer> = Result.notFound(path) as any;
-    return notFoundResult;
+    const notFoundResult: OperationResult<Buffer> = Result.notFound(
+      path
+    ) as unknown as OperationResult<Buffer>;
+    return await Promise.resolve(notFoundResult);
   }
 
   async write(path: string, content: Buffer | string): Promise<OperationResult> {
     const buffer = typeof content === 'string' ? Buffer.from(content) : content;
     this.files.set(path, buffer);
-    return Result.success();
+    return await Promise.resolve(Result.success());
   }
 
   async mkdir(path: string): Promise<OperationResult> {
     this.entries.set(path, []);
-    return Result.success();
+    return await Promise.resolve(Result.success());
   }
 
   async delete(path: string): Promise<OperationResult> {
     this.files.delete(path);
     this.entries.delete(path);
-    return Result.success();
+    return await Promise.resolve(Result.success());
   }
 
   async move(source: string, dest: string): Promise<OperationResult> {
@@ -142,7 +148,7 @@ class MockProvider extends BaseStorageProvider {
       this.files.set(dest, content);
       this.files.delete(source);
     }
-    return Result.success();
+    return await Promise.resolve(Result.success());
   }
 
   async copy(source: string, dest: string): Promise<OperationResult> {
@@ -150,7 +156,7 @@ class MockProvider extends BaseStorageProvider {
     if (content) {
       this.files.set(dest, content);
     }
-    return Result.success();
+    return await Promise.resolve(Result.success());
   }
 
   isConnected(): boolean {
@@ -159,11 +165,12 @@ class MockProvider extends BaseStorageProvider {
 
   async disconnect(): Promise<void> {
     this.connected = false;
+    return await Promise.resolve();
   }
 
   async connect(): Promise<OperationResult> {
     this.connected = true;
-    return Result.success();
+    return await Promise.resolve(Result.success());
   }
 }
 
@@ -302,6 +309,7 @@ describe('ProviderStorageAdapter', () => {
     it('should throw on read error', async () => {
       expect(async () => {
         await storageAdapter.read('nonexistent.txt');
+        return await Promise.resolve();
       }).toThrow();
     });
   });
@@ -414,6 +422,7 @@ describe('ProviderStorageAdapter', () => {
     it('should throw error for switchProvider', async () => {
       expect(async () => {
         await storageAdapter.switchProvider('s3');
+        return await Promise.resolve();
       }).toThrow();
     });
 
@@ -483,12 +492,14 @@ describe('ProviderStorageAdapter', () => {
     it('should throw error for download if not supported', async () => {
       expect(async () => {
         await storageAdapter.download('remote.txt', '/local.txt');
+        return await Promise.resolve();
       }).toThrow();
     });
 
     it('should throw error for upload if not supported', async () => {
       expect(async () => {
         await storageAdapter.upload('/local.txt', 'remote.txt');
+        return await Promise.resolve();
       }).toThrow();
     });
   });
@@ -497,12 +508,14 @@ describe('ProviderStorageAdapter', () => {
     it('should throw error for listContainers if not supported', async () => {
       expect(async () => {
         await storageAdapter.listContainers();
+        return await Promise.resolve();
       }).toThrow();
     });
 
     it('should throw error for setContainer if not supported', async () => {
       expect(async () => {
         await storageAdapter.setContainer('my-container');
+        return await Promise.resolve();
       }).toThrow();
     });
 
