@@ -7,7 +7,7 @@
  */
 
 import { createSignal, createEffect, For, Show } from 'solid-js';
-import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
+import { useKeyboard } from '@opentui/solid';
 import { ThemeRegistry } from '../theme-registry.js';
 import { Theme } from '../theme.js';
 import { BaseDialog } from './base.js';
@@ -72,44 +72,39 @@ export function ThemeSelectorDialog(props: ThemeSelectorDialogProps) {
     }
   });
 
-  const handleKey = (key: Parameters<Parameters<typeof useKeyboardHandler>[0]>[0]) => {
-    if (!props.visible) return false;
+  useKeyboard(evt => {
+    if (!props.visible) return;
 
     const themeList = themes();
 
     // Navigation
-    if (key.name === 'j' || key.name === 'down') {
+    if (evt.name === 'j' || evt.name === 'down') {
       setSelectedIndex(prev => (prev + 1) % themeList.length);
-      return true;
+      return;
     }
 
-    if (key.name === 'k' || key.name === 'up') {
+    if (evt.name === 'k' || evt.name === 'up') {
       setSelectedIndex(prev => (prev - 1 + themeList.length) % themeList.length);
-      return true;
+      return;
     }
 
     // Confirm selection with Enter
-    if (key.name === 'return') {
+    if (evt.name === 'return') {
       // Theme is already applied, just close
       props.onClose();
-      return true;
+      return;
     }
 
     // Cancel and revert with Escape
-    if (key.name === 'escape') {
+    if (evt.name === 'escape') {
       // Revert to original theme
       const origId = originalThemeId();
       if (origId && ThemeRegistry.has(origId)) {
         ThemeRegistry.setActive(origId);
       }
       props.onClose();
-      return true;
     }
-
-    return true; // Block all other keys when dialog is open
-  };
-
-  useKeyboardHandler(handleKey, KeyboardPriority.High);
+  });
 
   return (
     <Show

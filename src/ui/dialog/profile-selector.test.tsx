@@ -5,16 +5,8 @@
 import { describe, it, expect, mock } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
 import { ProfileSelectorDialog } from './profile-selector.js';
-import { KeyboardProvider } from '../../contexts/KeyboardContext.js';
 import type { Profile } from '../../providers/types/profile.js';
 import type { ProfileManager } from '../../providers/services/profile-manager.js';
-
-// Wrapper component that provides KeyboardContext
-const WrappedProfileSelectorDialog = (props: any) => (
-  <KeyboardProvider>
-    <ProfileSelectorDialog {...props} />
-  </KeyboardProvider>
-);
 
 // Mock profiles for testing
 const mockProfiles: Profile[] = [
@@ -59,7 +51,7 @@ describe('ProfileSelectorDialog', () => {
       const onCancel = mock(() => {});
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedProfileSelectorDialog
+        <ProfileSelectorDialog
           visible={false}
           profileManager={profileManager}
           onProfileSelect={onProfileSelect}
@@ -79,7 +71,7 @@ describe('ProfileSelectorDialog', () => {
       const onCancel = mock(() => {});
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedProfileSelectorDialog
+        <ProfileSelectorDialog
           visible={true}
           profileManager={profileManager}
           onProfileSelect={onProfileSelect}
@@ -110,7 +102,7 @@ describe('ProfileSelectorDialog', () => {
       const onCancel = mock(() => {});
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedProfileSelectorDialog
+        <ProfileSelectorDialog
           visible={true}
           profileManager={profileManager}
           onProfileSelect={onProfileSelect}
@@ -132,7 +124,7 @@ describe('ProfileSelectorDialog', () => {
       const onCancel = mock(() => {});
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedProfileSelectorDialog
+        <ProfileSelectorDialog
           visible={true}
           profileManager={profileManager}
           onProfileSelect={onProfileSelect}
@@ -157,7 +149,7 @@ describe('ProfileSelectorDialog', () => {
       const onCancel = mock(() => {});
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedProfileSelectorDialog
+        <ProfileSelectorDialog
           visible={true}
           profileManager={profileManager}
           onProfileSelect={onProfileSelect}
@@ -181,7 +173,7 @@ describe('ProfileSelectorDialog', () => {
       const onCancel = mock(() => {});
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedProfileSelectorDialog
+        <ProfileSelectorDialog
           visible={true}
           profileManager={profileManager}
           currentProfileId="profile-2"
@@ -206,7 +198,7 @@ describe('ProfileSelectorDialog', () => {
 
       // Render with profile-2 as current - it should be pre-selected
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedProfileSelectorDialog
+        <ProfileSelectorDialog
           visible={true}
           profileManager={profileManager}
           currentProfileId="profile-2"
@@ -232,7 +224,7 @@ describe('ProfileSelectorDialog', () => {
       const onCancel = mock(() => {});
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedProfileSelectorDialog
+        <ProfileSelectorDialog
           visible={true}
           profileManager={profileManager}
           onProfileSelect={onProfileSelect}
@@ -259,7 +251,7 @@ describe('ProfileSelectorDialog', () => {
       const onCancel = mock(() => {});
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedProfileSelectorDialog
+        <ProfileSelectorDialog
           visible={true}
           profileManager={profileManager}
           onProfileSelect={onProfileSelect}
@@ -284,7 +276,7 @@ describe('ProfileSelectorDialog', () => {
       const onCancel = mock(() => {});
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedProfileSelectorDialog
+        <ProfileSelectorDialog
           visible={true}
           profileManager={profileManager}
           onProfileSelect={onProfileSelect}
@@ -310,7 +302,7 @@ describe('ProfileSelectorDialog', () => {
       const onCancel = mock(() => {});
 
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedProfileSelectorDialog
+        <ProfileSelectorDialog
           visible={true}
           profileManager={profileManager}
           onProfileSelect={onProfileSelect}

@@ -4,7 +4,6 @@
 
 import { describe, it, expect } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { KeyboardProvider } from '../../contexts/KeyboardContext.js';
 import { SortMenu } from './sort.js';
 import { SortField, SortOrder } from '../../utils/sorting.js';
 
@@ -19,16 +18,14 @@ const WrappedSortMenu = (props: {
   onOrderToggle?: () => void;
   onClose?: () => void;
 }) => (
-  <KeyboardProvider>
-    <SortMenu
-      visible={props.visible}
-      currentField={props.currentField ?? SortField.Name}
-      currentOrder={props.currentOrder ?? SortOrder.Ascending}
-      onFieldSelect={props.onFieldSelect ?? (() => {})}
-      onOrderToggle={props.onOrderToggle ?? (() => {})}
-      onClose={props.onClose ?? (() => {})}
-    />
-  </KeyboardProvider>
+  <SortMenu
+    visible={props.visible}
+    currentField={props.currentField ?? SortField.Name}
+    currentOrder={props.currentOrder ?? SortOrder.Ascending}
+    onFieldSelect={props.onFieldSelect ?? (() => {})}
+    onOrderToggle={props.onOrderToggle ?? (() => {})}
+    onClose={props.onClose ?? (() => {})}
+  />
 );
 
 describe('SortMenu', () => {

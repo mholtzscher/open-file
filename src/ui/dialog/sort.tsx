@@ -6,7 +6,7 @@
  */
 
 import { createSignal, createEffect, For } from 'solid-js';
-import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
+import { useKeyboard } from '@opentui/solid';
 import { Theme } from '../theme.js';
 import { SortField, SortOrder, formatSortField, formatSortOrder } from '../../utils/sorting.js';
 import { BaseDialog } from './base.js';
@@ -46,38 +46,38 @@ export function SortMenu(props: SortMenuProps) {
     }
   });
 
-  const handleKey = (key: Parameters<Parameters<typeof useKeyboardHandler>[0]>[0]) => {
-    if (!props.visible) return false;
+  useKeyboard(evt => {
+    if (!props.visible) return;
 
     // Navigation
-    if (key.name === 'j' || key.name === 'down') {
+    if (evt.name === 'j' || evt.name === 'down') {
       setSelectedIndex(prev => (prev + 1) % TOTAL_ITEMS);
       // Apply field selection after state update
       const nextIndex = (selectedIndex() + 1) % TOTAL_ITEMS;
       if (nextIndex < ORDER_INDEX) {
         props.onFieldSelect(sortFields[nextIndex]);
       }
-      return true;
+      return;
     }
 
-    if (key.name === 'k' || key.name === 'up') {
+    if (evt.name === 'k' || evt.name === 'up') {
       setSelectedIndex(prev => (prev - 1 + TOTAL_ITEMS) % TOTAL_ITEMS);
       // Apply field selection after state update
       const nextIndex = (selectedIndex() - 1 + TOTAL_ITEMS) % TOTAL_ITEMS;
       if (nextIndex < ORDER_INDEX) {
         props.onFieldSelect(sortFields[nextIndex]);
       }
-      return true;
+      return;
     }
 
     // Toggle order when on the order option, or with space anywhere
-    if (key.name === 'space') {
+    if (evt.name === 'space') {
       props.onOrderToggle();
-      return true;
+      return;
     }
 
     // Select current item with Enter
-    if (key.name === 'return') {
+    if (evt.name === 'return') {
       if (selectedIndex() < ORDER_INDEX) {
         // Field is already applied, just close
         props.onClose();
@@ -86,19 +86,14 @@ export function SortMenu(props: SortMenuProps) {
         props.onOrderToggle();
         props.onClose();
       }
-      return true;
+      return;
     }
 
     // Close with escape
-    if (key.name === 'escape') {
+    if (evt.name === 'escape') {
       props.onClose();
-      return true;
     }
-
-    return true; // Block all other keys when dialog is open
-  };
-
-  useKeyboardHandler(handleKey, KeyboardPriority.High);
+  });
 
   return (
     <BaseDialog visible={props.visible} title="Sort Options" borderColor={Theme.getInfoColor()}>

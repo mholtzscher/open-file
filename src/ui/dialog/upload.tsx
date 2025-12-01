@@ -5,8 +5,8 @@
  */
 
 import { createSignal, createEffect, For, Show } from 'solid-js';
+import { useKeyboard } from '@opentui/solid';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
-import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import {
   LocalFileEntry,
   FileTypeFilter,
@@ -16,7 +16,6 @@ import {
 import { Theme } from '../theme.js';
 import { BaseDialog, getContentWidth } from './base.js';
 import { HelpBar } from '../help-bar.js';
-import type { KeyboardKey } from '../../types/keyboard.js';
 
 export interface UploadDialogProps {
   visible?: boolean;
@@ -90,13 +89,13 @@ export function UploadDialog(props: UploadDialogProps) {
     loadDirectory();
   });
 
-  const handleKey = (key: KeyboardKey) => {
-    if (!visible()) return false;
+  useKeyboard(evt => {
+    if (!visible()) return;
 
     // Estimate visible list height (rough, will work for dynamic sizing)
     const estimatedListHeight = Math.max(3, windowHeight() - 7);
 
-    switch (key.name) {
+    switch (evt.name) {
       case 'j': {
         // Move down with scrolling
         setState(prev => {
@@ -110,7 +109,7 @@ export function UploadDialog(props: UploadDialogProps) {
           }
           return { ...prev, selectedIndex: newIndex, scrollOffset: Math.max(0, newOffset) };
         });
-        return true;
+        return;
       }
 
       case 'k': {
@@ -123,7 +122,7 @@ export function UploadDialog(props: UploadDialogProps) {
           }
           return { ...prev, selectedIndex: newIndex, scrollOffset: newOffset };
         });
-        return true;
+        return;
       }
 
       case 'space': {
@@ -141,7 +140,7 @@ export function UploadDialog(props: UploadDialogProps) {
             return { ...prev, selectedFiles: newSelected };
           });
         }
-        return true;
+        return;
       }
 
       case 'l':
@@ -164,7 +163,7 @@ export function UploadDialog(props: UploadDialogProps) {
             props.onConfirm?.(Array.from(filesToUpload));
           }
         }
-        return true;
+        return;
       }
 
       case 'h':
@@ -178,20 +177,15 @@ export function UploadDialog(props: UploadDialogProps) {
             currentPath: parentPath || '/',
           }));
         }
-        return true;
+        return;
       }
 
       case 'escape': {
         props.onCancel?.();
-        return true;
+        return;
       }
-
-      default:
-        return true; // Block all other keys when upload dialog is open
     }
-  };
-
-  useKeyboardHandler(handleKey, KeyboardPriority.High);
+  });
 
   const selectedCount = () => state().selectedFiles.size;
   const totalSize = () =>

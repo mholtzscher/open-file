@@ -2,61 +2,31 @@
  * ProfileSelectorDialog SolidJS component
  *
  * Interactive dialog for selecting and switching between storage provider profiles.
- * Only shown when the new provider system is enabled.
  */
 
-import { createSignal, createEffect, For } from 'solid-js';
+import { createSignal, createEffect, For, Switch, Match } from 'solid-js';
+import { useKeyboard } from '@opentui/solid';
 import { Theme } from '../theme.js';
 import { ProviderIndicator } from '../provider-indicator.js';
 import { BaseDialog } from './base.js';
 import { HelpBar } from '../help-bar.js';
-import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import type { Profile } from '../../providers/types/profile.js';
 import type { ProfileManager } from '../../providers/services/profile-manager.js';
-import type { KeyboardKey } from '../../types/keyboard.js';
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export interface ProfileSelectorDialogProps {
-  /** Whether the dialog is visible */
   visible: boolean;
-
-  /** ProfileManager instance to use for listing profiles */
   profileManager: ProfileManager | undefined;
-
-  /** Current active profile ID */
   currentProfileId?: string;
-
-  /** Callback when a profile is selected */
-  onProfileSelect: (profile: Profile) => void;
-
-  /** Callback when dialog is cancelled/closed */
+  onProfileSelect: (profile: Profile) => Promise<void> | void;
   onCancel: () => void;
-
-  /** Callback to edit profiles in external editor (optional) */
   onEditProfiles?: () => Promise<void>;
 }
 
-// ============================================================================
-// Component
-// ============================================================================
-
-/**
- * ProfileSelectorDialog - Interactive profile selector with keyboard navigation
- *
- * Features:
- * - Lists all available profiles from ProfileManager
- * - Shows provider type badges
- * - Highlights current active profile
- * - Keyboard navigation (j/k or arrow keys)
- * - Enter to select, Escape to cancel
- */
 export function ProfileSelectorDialog(props: ProfileSelectorDialogProps) {
   const [profiles, setProfiles] = createSignal<Profile[]>([]);
   const [selectedIndex, setSelectedIndex] = createSignal(0);
   const [isLoading, setIsLoading] = createSignal(true);
+  const [isSwitching, setIsSwitching] = createSignal(false);
   const [error, setError] = createSignal<string | undefined>();
   let prevVisible = false;
   let hasSetInitialSelection = false;
@@ -66,13 +36,11 @@ export function ProfileSelectorDialog(props: ProfileSelectorDialogProps) {
     const wasHidden = !prevVisible;
     prevVisible = props.visible;
 
-    // Reset the initial selection flag when dialog closes
     if (!props.visible) {
       hasSetInitialSelection = false;
       return;
     }
 
-    // Set selection when: dialog just opened OR profiles just loaded for first time
     if (props.visible && profiles().length > 0 && props.currentProfileId) {
       if (wasHidden || !hasSetInitialSelection) {
         const index = profiles().findIndex(p => p.id === props.currentProfileId);
@@ -86,7 +54,6 @@ export function ProfileSelectorDialog(props: ProfileSelectorDialogProps) {
   createEffect(() => {
     if (!props.visible) return;
 
-    // If no profile manager is available, show an error state
     if (!props.profileManager) {
       setIsLoading(false);
       setProfiles([]);
@@ -94,11 +61,13 @@ export function ProfileSelectorDialog(props: ProfileSelectorDialogProps) {
       return;
     }
 
+    const profileManager = props.profileManager;
+
     const loadProfiles = async () => {
       try {
         setIsLoading(true);
         setError(undefined);
-        const profileList = await props.profileManager!.listProfiles();
+        const profileList = await profileManager.listProfiles();
         setProfiles(profileList);
       } catch (err) {
         console.error('Failed to load profiles:', err);
@@ -111,147 +80,179 @@ export function ProfileSelectorDialog(props: ProfileSelectorDialogProps) {
     loadProfiles();
   });
 
-  // Keyboard handler for KeyboardContext (KeyboardKey-based)
-  const handleKeyboard = (key: KeyboardKey): boolean => {
-    if (!props.visible) return false;
+  // Keyboard handling using OpenTUI's useKeyboard directly
+  useKeyboard(evt => {
+    if (!props.visible || isSwitching()) return;
 
-    const keyName = key.name;
+    const keyName = evt.name;
 
+    // Only allow escape in error/loading/empty states
     if (isLoading() || error() || profiles().length === 0) {
-      // Only allow escape in error/loading/empty states
       if (keyName === 'escape') {
         props.onCancel();
-        return true;
       }
-      return true; // Block other keys while dialog visible
+      return;
     }
 
     switch (keyName) {
       case 'j':
       case 'down':
         setSelectedIndex(prev => Math.min(prev + 1, profiles().length - 1));
-        return true;
+        break;
 
       case 'k':
       case 'up':
         setSelectedIndex(prev => Math.max(prev - 1, 0));
-        return true;
+        break;
 
       case 'g':
         setSelectedIndex(0);
-        return true;
+        break;
 
       case 'G':
         setSelectedIndex(profiles().length - 1);
-        return true;
+        break;
 
       case 'return':
       case 'enter':
         if (selectedIndex() >= 0 && selectedIndex() < profiles().length) {
-          props.onProfileSelect(profiles()[selectedIndex()]);
+          const selectedProfile = profiles()[selectedIndex()];
+          setIsSwitching(true);
+
+          // Add timeout to detect hangs
+          const timeoutId = setTimeout(() => {
+            process.stderr.write(
+              '[PROFILE-SELECTOR] WARNING: Profile switch taking longer than 10 seconds\n'
+            );
+          }, 10000);
+
+          const result = props.onProfileSelect(selectedProfile);
+          // Handle both sync and async onProfileSelect
+          if (result && typeof result.then === 'function') {
+            result
+              .then(() => {
+                clearTimeout(timeoutId);
+                process.stderr.write('[PROFILE-SELECTOR] onProfileSelect resolved successfully\n');
+                // Close dialog on success
+                props.onCancel();
+              })
+              .catch(err => {
+                clearTimeout(timeoutId);
+                process.stderr.write(
+                  `[PROFILE-SELECTOR] onProfileSelect rejected with error: ${err}\n`
+                );
+                // Also close dialog on error (error message is shown in status bar)
+                props.onCancel();
+              })
+              .finally(() => {
+                process.stderr.write('[PROFILE-SELECTOR] Setting isSwitching to false\n');
+                setIsSwitching(false);
+              });
+          } else {
+            clearTimeout(timeoutId);
+            setIsSwitching(false);
+            // Close dialog immediately for sync operations
+            props.onCancel();
+          }
         }
-        return true;
+        break;
 
       case 'e':
-        // Open profiles.json in external editor
         if (props.onEditProfiles) {
           props.onEditProfiles();
         }
-        return true;
+        break;
 
       case 'escape':
         props.onCancel();
-        return true;
-
-      default:
-        return true; // Block all other keys when profile selector is open
+        break;
     }
+  });
+
+  // Derive dialog state for Switch/Match
+  type DialogState = 'hidden' | 'loading' | 'switching' | 'error' | 'empty' | 'ready';
+  const dialogState = (): DialogState => {
+    if (!props.visible) return 'hidden';
+    if (isSwitching()) return 'switching';
+    if (isLoading()) return 'loading';
+    if (error()) return 'error';
+    if (profiles().length === 0) return 'empty';
+    return 'ready';
   };
 
-  // Register keyboard handler with KeyboardContext (high priority for dialogs)
-  useKeyboardHandler(handleKeyboard, KeyboardPriority.High);
-
-  // Don't render if not visible
-  if (!props.visible) {
-    return null;
-  }
-
-  // Loading state
-  if (isLoading()) {
-    return (
-      <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getInfoColor()}>
-        <text fg={Theme.getDimColor()}>Loading profiles...</text>
-      </BaseDialog>
-    );
-  }
-
-  // Error state
-  if (error()) {
-    return (
-      <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getErrorColor()}>
-        <text fg={Theme.getErrorColor()}>Error: {error()}</text>
-        <text fg={Theme.getDimColor()}> </text>
-        <HelpBar
-          items={[
-            { key: 'e', description: 'edit' },
-            { key: 'Esc', description: 'close' },
-          ]}
-        />
-      </BaseDialog>
-    );
-  }
-
-  // Empty state
-  if (profiles().length === 0) {
-    return (
-      <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getDimColor()}>
-        <text fg={Theme.getDimColor()}>No profiles configured</text>
-        <text fg={Theme.getDimColor()}> </text>
-        <HelpBar
-          items={[
-            { key: 'e', description: 'edit' },
-            { key: 'Esc', description: 'close' },
-          ]}
-        />
-      </BaseDialog>
-    );
-  }
-
-  // Profile list
   return (
-    <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getInfoColor()}>
-      <For each={profiles()}>
-        {(profile, index) => {
-          const isSelected = () => index() === selectedIndex();
-          const isCurrent = () => profile.id === props.currentProfileId;
+    <Switch>
+      <Match when={dialogState() === 'hidden'}>{null}</Match>
 
-          // Build the line text
-          const selectionChar = () => (isSelected() ? '>' : ' ');
-          const currentChar = () => (isCurrent() ? '●' : '○');
-          const prefix = () => `${selectionChar()} ${currentChar()} ${profile.displayName} `;
+      <Match when={dialogState() === 'loading'}>
+        <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getInfoColor()}>
+          <text fg={Theme.getDimColor()}>Loading profiles...</text>
+        </BaseDialog>
+      </Match>
 
-          // Use provider-specific color for the badge via ProviderIndicator
-          const textColor = () => (isCurrent() ? Theme.getTextColor() : Theme.getMutedColor());
+      <Match when={dialogState() === 'switching'}>
+        <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getInfoColor()}>
+          <text fg={Theme.getInfoColor()}>Switching profile...</text>
+        </BaseDialog>
+      </Match>
 
-          return (
-            <box flexDirection="row">
-              <text fg={textColor()}>{prefix()}</text>
-              <ProviderIndicator providerType={profile.provider} />
-            </box>
-          );
-        }}
-      </For>
+      <Match when={dialogState() === 'error'}>
+        <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getErrorColor()}>
+          <text fg={Theme.getErrorColor()}>Error: {error()}</text>
+          <text fg={Theme.getDimColor()}> </text>
+          <HelpBar
+            items={[
+              { key: 'e', description: 'edit' },
+              { key: 'Esc', description: 'close' },
+            ]}
+          />
+        </BaseDialog>
+      </Match>
 
-      {/* Footer help text */}
-      <text fg={Theme.getDimColor()}> </text>
-      <HelpBar
-        items={[
-          { key: 'j/k', description: 'select' },
-          { key: 'Enter', description: 'switch' },
-          { key: 'e', description: 'edit' },
-          { key: 'Esc', description: 'cancel' },
-        ]}
-      />
-    </BaseDialog>
+      <Match when={dialogState() === 'empty'}>
+        <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getDimColor()}>
+          <text fg={Theme.getDimColor()}>No profiles configured</text>
+          <text fg={Theme.getDimColor()}> </text>
+          <HelpBar
+            items={[
+              { key: 'e', description: 'edit' },
+              { key: 'Esc', description: 'close' },
+            ]}
+          />
+        </BaseDialog>
+      </Match>
+
+      <Match when={dialogState() === 'ready'}>
+        <BaseDialog visible={true} title="Select Profile" borderColor={Theme.getInfoColor()}>
+          <For each={profiles()}>
+            {(profile, index) => {
+              const isSelected = () => index() === selectedIndex();
+              const isCurrent = () => profile.id === props.currentProfileId;
+              const selectionChar = () => (isSelected() ? '>' : ' ');
+              const currentChar = () => (isCurrent() ? '●' : '○');
+              const prefix = () => `${selectionChar()} ${currentChar()} ${profile.displayName} `;
+              const textColor = () => (isCurrent() ? Theme.getTextColor() : Theme.getMutedColor());
+
+              return (
+                <box flexDirection="row">
+                  <text fg={textColor()}>{prefix()}</text>
+                  <ProviderIndicator providerType={profile.provider} />
+                </box>
+              );
+            }}
+          </For>
+
+          <text fg={Theme.getDimColor()}> </text>
+          <HelpBar
+            items={[
+              { key: 'j/k', description: 'select' },
+              { key: 'Enter', description: 'switch' },
+              { key: 'e', description: 'edit' },
+              { key: 'Esc', description: 'cancel' },
+            ]}
+          />
+        </BaseDialog>
+      </Match>
+    </Switch>
   );
 }

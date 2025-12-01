@@ -4,15 +4,8 @@
 
 import { describe, it, expect, beforeEach } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { KeyboardProvider } from '../../contexts/KeyboardContext.js';
 import { UploadDialog } from './upload.js';
 import type { LocalFileEntry } from '../../utils/file-browser.js';
-
-const WrappedUploadDialog = (props: any) => (
-  <KeyboardProvider>
-    <UploadDialog {...props} />
-  </KeyboardProvider>
-);
 
 // Create mock entries for testing
 function createMockEntries(count: number = 5): LocalFileEntry[] {
@@ -52,13 +45,10 @@ describe('UploadDialog', () => {
 
   describe('visibility', () => {
     it('renders when visible is true', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedUploadDialog visible={true} />,
-        {
-          width: 80,
-          height: 24,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog visible={true} />, {
+        width: 80,
+        height: 24,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -66,7 +56,7 @@ describe('UploadDialog', () => {
     });
 
     it('renders by default (visible defaults to true)', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(<WrappedUploadDialog />, {
+      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog />, {
         width: 80,
         height: 24,
       });
@@ -77,13 +67,10 @@ describe('UploadDialog', () => {
     });
 
     it('renders nothing when visible is false', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedUploadDialog visible={false} />,
-        {
-          width: 80,
-          height: 24,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog visible={false} />, {
+        width: 80,
+        height: 24,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -93,13 +80,10 @@ describe('UploadDialog', () => {
 
   describe('current path display', () => {
     it('displays the current working directory path', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedUploadDialog visible={true} />,
-        {
-          width: 80,
-          height: 24,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog visible={true} />, {
+        width: 80,
+        height: 24,
+      });
 
       await new Promise(resolve => setTimeout(resolve, 50));
       await renderOnce();
@@ -112,13 +96,10 @@ describe('UploadDialog', () => {
 
   describe('help text', () => {
     it('displays keyboard navigation help', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedUploadDialog visible={true} />,
-        {
-          width: 120,
-          height: 800,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<UploadDialog visible={true} />, {
+        width: 120,
+        height: 800,
+      });
 
       await new Promise(resolve => setTimeout(resolve, 50));
       await renderOnce();

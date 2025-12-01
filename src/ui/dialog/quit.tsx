@@ -4,8 +4,7 @@
  * Displays a modal dialog warning about unsaved changes when quitting
  */
 
-import { useCallback } from 'react';
-import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
+import { useKeyboard } from '@opentui/solid';
 import { Theme } from '../theme.js';
 import { BaseDialog } from './base.js';
 import { HelpBar } from '../help-bar.js';
@@ -27,31 +26,23 @@ export function QuitDialog({
   onSaveAndQuit,
   onCancel,
 }: QuitDialogProps) {
-  const handleKey = useCallback<Parameters<typeof useKeyboardHandler>[0]>(
-    key => {
-      if (!visible) return false;
+  useKeyboard(evt => {
+    if (!visible) return;
 
-      if (key.name === 'q') {
-        onQuitWithoutSave?.();
-        return true;
-      }
+    if (evt.name === 'q') {
+      onQuitWithoutSave?.();
+      return;
+    }
 
-      if (key.name === 'w') {
-        onSaveAndQuit?.();
-        return true;
-      }
+    if (evt.name === 'w') {
+      onSaveAndQuit?.();
+      return;
+    }
 
-      if (key.name === 'escape') {
-        onCancel?.();
-        return true;
-      }
-
-      return true; // Block all other keys when quit dialog is open
-    },
-    [visible, onQuitWithoutSave, onSaveAndQuit, onCancel]
-  );
-
-  useKeyboardHandler(handleKey, KeyboardPriority.High);
+    if (evt.name === 'escape') {
+      onCancel?.();
+    }
+  });
 
   const changeText = pendingChanges === 1 ? 'change' : 'changes';
 

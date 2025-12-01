@@ -5,7 +5,7 @@
  */
 
 import { For, Show } from 'solid-js';
-import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
+import { useKeyboard } from '@opentui/solid';
 import { Theme } from '../theme.js';
 import { BaseDialog } from './base.js';
 import { HelpBar } from '../help-bar.js';
@@ -67,16 +67,13 @@ function isSection(item: HelpItem): item is SectionItem {
  * HelpDialog component - displays all keybindings with absolute positioning
  */
 export function HelpDialog(props: HelpDialogProps) {
-  useKeyboardHandler(key => {
-    if (!props.visible) return false;
+  useKeyboard(evt => {
+    if (!props.visible) return;
 
-    if (key.name === 'escape') {
+    if (evt.name === 'escape') {
       props.onClose?.();
-      return true;
     }
-
-    return true; // Block all other keys when help dialog is open
-  }, KeyboardPriority.High);
+  });
 
   return (
     <BaseDialog visible={props.visible} title="Help" borderColor={Theme.getWarningColor()}>

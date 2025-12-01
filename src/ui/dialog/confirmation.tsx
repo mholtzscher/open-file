@@ -5,7 +5,7 @@
  */
 
 import { For, Show } from 'solid-js';
-import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
+import { useKeyboard } from '@opentui/solid';
 import { Theme } from '../theme.js';
 import { BaseDialog } from './base.js';
 import { HelpBar } from '../help-bar.js';
@@ -81,23 +81,18 @@ export function ConfirmationDialog(props: ConfirmationDialogProps) {
   const operations = () => props.operations ?? [];
   const visible = () => props.visible ?? true;
 
-  const handleKey = (key: Parameters<Parameters<typeof useKeyboardHandler>[0]>[0]) => {
-    if (!visible()) return false;
+  useKeyboard(evt => {
+    if (!visible()) return;
 
-    if (key.name === 'y') {
+    if (evt.name === 'y') {
       props.onConfirm?.();
-      return true;
+      return;
     }
 
-    if (key.name === 'escape') {
+    if (evt.name === 'escape') {
       props.onCancel?.();
-      return true;
     }
-
-    return true; // Block all other keys when dialog is open
-  };
-
-  useKeyboardHandler(handleKey, KeyboardPriority.High);
+  });
 
   return (
     <BaseDialog visible={visible()} title={title()} borderColor={Theme.getWarningColor()}>

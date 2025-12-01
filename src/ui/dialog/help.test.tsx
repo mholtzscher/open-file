@@ -4,29 +4,19 @@
 
 import { describe, it, expect } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { KeyboardProvider } from '../../contexts/KeyboardContext.js';
 import { HelpDialog } from './help.js';
 
 // HelpDialog has many keybindings, so we need a tall terminal
 const TERMINAL_WIDTH = 80;
 const TERMINAL_HEIGHT = 50;
 
-const WrappedHelpDialog = (props: any) => (
-  <KeyboardProvider>
-    <HelpDialog {...props} />
-  </KeyboardProvider>
-);
-
 describe('HelpDialog', () => {
   describe('visibility', () => {
     it('renders when visible is true', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={true} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<HelpDialog visible={true} />, {
+        width: TERMINAL_WIDTH,
+        height: TERMINAL_HEIGHT,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -35,13 +25,10 @@ describe('HelpDialog', () => {
     });
 
     it('renders nothing when visible is false', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={false} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<HelpDialog visible={false} />, {
+        width: TERMINAL_WIDTH,
+        height: TERMINAL_HEIGHT,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -52,13 +39,10 @@ describe('HelpDialog', () => {
 
   describe('sections', () => {
     it('displays SELECTION & EDIT section', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={true} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<HelpDialog visible={true} />, {
+        width: TERMINAL_WIDTH,
+        height: TERMINAL_HEIGHT,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -66,13 +50,10 @@ describe('HelpDialog', () => {
     });
 
     it('displays OPERATIONS section', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={true} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<HelpDialog visible={true} />, {
+        width: TERMINAL_WIDTH,
+        height: TERMINAL_HEIGHT,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -80,13 +61,10 @@ describe('HelpDialog', () => {
     });
 
     it('displays OTHER section', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={true} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<HelpDialog visible={true} />, {
+        width: TERMINAL_WIDTH,
+        height: TERMINAL_HEIGHT,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -94,13 +72,10 @@ describe('HelpDialog', () => {
     });
 
     it('displays SEARCH & COMMANDS section', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={true} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<HelpDialog visible={true} />, {
+        width: TERMINAL_WIDTH,
+        height: TERMINAL_HEIGHT,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -110,13 +85,10 @@ describe('HelpDialog', () => {
 
   describe('keybindings', () => {
     it('displays operation keybindings', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={true} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<HelpDialog visible={true} />, {
+        width: TERMINAL_WIDTH,
+        height: TERMINAL_HEIGHT,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -125,13 +97,10 @@ describe('HelpDialog', () => {
     });
 
     it('displays copy/paste keybindings', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={true} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<HelpDialog visible={true} />, {
+        width: TERMINAL_WIDTH,
+        height: TERMINAL_HEIGHT,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -141,13 +110,10 @@ describe('HelpDialog', () => {
     });
 
     it('displays search keybinding', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={true} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<HelpDialog visible={true} />, {
+        width: TERMINAL_WIDTH,
+        height: TERMINAL_HEIGHT,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -155,13 +121,10 @@ describe('HelpDialog', () => {
     });
 
     it('displays visual selection keybinding', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={true} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<HelpDialog visible={true} />, {
+        width: TERMINAL_WIDTH,
+        height: TERMINAL_HEIGHT,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();
@@ -169,13 +132,10 @@ describe('HelpDialog', () => {
     });
 
     it('displays download/upload keybindings', async () => {
-      const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedHelpDialog visible={true} />,
-        {
-          width: TERMINAL_WIDTH,
-          height: TERMINAL_HEIGHT,
-        }
-      );
+      const { renderOnce, captureCharFrame } = await testRender(<HelpDialog visible={true} />, {
+        width: TERMINAL_WIDTH,
+        height: TERMINAL_HEIGHT,
+      });
       await renderOnce();
 
       const frame = captureCharFrame();

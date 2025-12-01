@@ -4,20 +4,13 @@
 
 import { describe, it, expect } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
-import { KeyboardProvider } from '../../contexts/KeyboardContext.js';
 import { ErrorDialog } from './error.js';
-
-const WrappedErrorDialog = (props: any) => (
-  <KeyboardProvider>
-    <ErrorDialog {...props} />
-  </KeyboardProvider>
-);
 
 describe('ErrorDialog', () => {
   describe('visibility', () => {
     it('renders when visible is true', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedErrorDialog visible={true} message="Something went wrong" />,
+        <ErrorDialog visible={true} message="Something went wrong" />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -29,7 +22,7 @@ describe('ErrorDialog', () => {
 
     it('renders nothing when visible is false', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedErrorDialog visible={false} message="Hidden error" />,
+        <ErrorDialog visible={false} message="Hidden error" />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -43,7 +36,7 @@ describe('ErrorDialog', () => {
   describe('content', () => {
     it('displays the error message', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedErrorDialog visible={true} message="Connection failed" />,
+        <ErrorDialog visible={true} message="Connection failed" />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -54,7 +47,7 @@ describe('ErrorDialog', () => {
 
     it('displays dismiss instructions', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedErrorDialog visible={true} message="Test error" />,
+        <ErrorDialog visible={true} message="Test error" />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -67,7 +60,7 @@ describe('ErrorDialog', () => {
 
     it('displays the Error title', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedErrorDialog visible={true} message="Test error" />,
+        <ErrorDialog visible={true} message="Test error" />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -80,7 +73,7 @@ describe('ErrorDialog', () => {
   describe('message handling', () => {
     it('handles empty message', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedErrorDialog visible={true} message="" />,
+        <ErrorDialog visible={true} message="" />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -96,7 +89,7 @@ describe('ErrorDialog', () => {
       const longMessage =
         'This is a very long error message that might need to wrap across multiple lines in the dialog';
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedErrorDialog visible={true} message={longMessage} />,
+        <ErrorDialog visible={true} message={longMessage} />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -108,7 +101,7 @@ describe('ErrorDialog', () => {
 
     it('handles messages with special characters', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedErrorDialog visible={true} message="Error code: 404" />,
+        <ErrorDialog visible={true} message="Error code: 404" />,
         { width: 80, height: 24 }
       );
       await renderOnce();
@@ -121,7 +114,7 @@ describe('ErrorDialog', () => {
   describe('centering', () => {
     it('renders centered in the terminal', async () => {
       const { renderOnce, captureCharFrame } = await testRender(
-        <WrappedErrorDialog visible={true} message="Centered error" />,
+        <ErrorDialog visible={true} message="Centered error" />,
         { width: 80, height: 24 }
       );
       await renderOnce();

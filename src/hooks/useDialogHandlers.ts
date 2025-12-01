@@ -364,7 +364,7 @@ export function useDialogHandlers({
         try {
           setStatusMessage(`Switching to profile: ${profile.displayName}...`);
           setStatusMessageColor(Theme.getInfoColor());
-          closeDialog();
+          // Keep dialog open until operations complete
 
           await storage.switchProfile(profile.id);
 
@@ -379,9 +379,14 @@ export function useDialogHandlers({
           bufferState.setEntries([...newState.entries]);
           bufferState.setCurrentPath(newState.currentPath);
 
+          // Close dialog after all operations complete
+          closeDialog();
+
           setStatusMessage(`Switched to profile: ${profile.displayName}`);
           setStatusMessageColor(Theme.getSuccessColor());
         } catch (err) {
+          // Close dialog on error too
+          closeDialog();
           setStatusMessage(
             `Failed to switch profile: ${err instanceof Error ? err.message : 'Unknown error'}`
           );
