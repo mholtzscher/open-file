@@ -162,6 +162,18 @@ upload_object "backups" "applications/app1/data-export-2024-01-16.json" "[App da
 upload_object "backups" "applications/app2/full-backup-2024-01.zip" "[App data export]" "application/zip"
 
 # ============================================================================
+# Bucket: test-bucket - Large folder for scroll testing (150 files)
+# ============================================================================
+
+echo "Creating large folder for scroll testing..."
+
+for i in $(seq -w 1 150); do
+  upload_object "test-bucket" "scroll-test/file-${i}.txt" "Content of file $i"
+done
+
+echo "Created 150 files in test-bucket/scroll-test/"
+
+# ============================================================================
 # Bucket: logs (application and system logs)
 # ============================================================================
 

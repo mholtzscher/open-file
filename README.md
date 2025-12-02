@@ -1,796 +1,126 @@
 # open-file
 
-A Terminal User Interface (TUI) for exploring and managing AWS S3 buckets, inspired by oil.nvim's buffer-as-editor approach.
+A terminal file explorer for cloud storage and remote filesystems. Navigate S3, GCS, SFTP, FTP, and local files with vim-style keybindings.
 
 ## Features
 
-- 🗂️ **Browse S3 buckets** - Navigate through S3 buckets like a file system
-- ✏️ **Edit as buffer** - Manage bucket contents like a text buffer (create, delete, rename, copy/paste)
-- 🎨 **Beautiful UI** - Color-coded entries, vim-style keybindings
-- 🔄 **Provider system** - Extensible storage provider architecture for S3 and future backends
-- ⚡ **Fast** - Built with Bun runtime for superior performance
-- 🧪 **Well-tested** - Comprehensive test suite for reliability
+- **Multi-provider support** - S3, Google Cloud Storage, SFTP, FTP, and local filesystem
+- **Vim-style navigation** - `j`/`k` movement, `dd` delete, `yy` copy, visual mode selection
+- **Buffer-as-editor** - Edit filenames inline, create entries by typing
+- **Profiles** - Save and switch between connection configurations
+- **Themeable** - Multiple color themes with per-profile overrides
 
 ## Installation
 
-### Prerequisites
-
-- **Bun >= 1.0.0** - The runtime environment
-- **Node.js 18+** (optional) - For npm compatibility
-- **AWS Account** - With S3 bucket access and credentials
-- **Terminal** - Any modern terminal emulator (iTerm2, Alacritty, GNOME Terminal, etc.)
-
-### Installation Methods
-
-#### Method 1: From Source (Recommended for Development)
-
 ```bash
-# Clone the repository
+# Clone and install
 git clone https://github.com/yourusername/open-file.git
 cd open-file
-
-# Install Bun (if not already installed)
-curl -fsSL https://bun.sh/install | bash
-
-# Install dependencies
 bun install
 
-# Run the application
-bun run src/index.ts
+# Run
+bun run src/index.tsx
 ```
 
-#### Method 2: Using npm (if Bun is not available)
+Requires [Bun](https://bun.sh/) >= 1.0.0.
+
+## Quick Start
 
 ```bash
-# Clone and setup
-git clone https://github.com/yourusername/open-file.git
-cd open-file
-npm install
+# Start the application
+bun run src/index.tsx
 
-# Run (requires Bun runtime)
-bun run src/index.ts
+# Enable debug logging
+bun run src/index.tsx --debug
 ```
 
-### First Time Setup
+Use `P` to open the profile selector and switch between configured connections.
 
-After installing open-file, follow these steps to get started:
+## Keybindings
 
-1. **Set up AWS credentials** (choose one method):
+### Navigation
 
-   Option A - Environment variables:
+| Key                     | Action                 |
+| ----------------------- | ---------------------- |
+| `j` / `k`               | Move down / up         |
+| `Enter` / `l`           | Open directory or file |
+| `-` / `h` / `Backspace` | Go to parent           |
+| `gg` / `G`              | Jump to top / bottom   |
+| `Ctrl+n` / `Ctrl+p`     | Page down / up         |
 
-   ```bash
-   export AWS_ACCESS_KEY_ID=your-access-key
-   export AWS_SECRET_ACCESS_KEY=your-secret-key
-   export AWS_REGION=us-east-1
-   ```
+### Operations
 
-   Option B - Use AWS CLI configuration:
+| Key  | Action                     |
+| ---- | -------------------------- |
+| `i`  | Create new entry           |
+| `a`  | Rename entry               |
+| `dd` | Delete (with confirmation) |
+| `yy` | Copy to clipboard          |
+| `p`  | Paste                      |
+| `v`  | Visual selection mode      |
+| `/`  | Search/filter              |
+| `r`  | Refresh                    |
 
-   ```bash
-   aws configure
-   ```
+### Dialogs
 
-   Option C - Pass credentials via command line:
+| Key | Action           |
+| --- | ---------------- |
+| `?` | Help             |
+| `P` | Profile selector |
+| `o` | Sort options     |
+| `q` | Quit             |
 
-   ```bash
-   bun run src/index.ts --access-key your-key --secret-key your-secret --region us-east-1
-   ```
+### Commands
 
-2. **Verify credentials work**:
-
-   ```bash
-   # List your buckets to test credentials
-   aws s3 ls
-   ```
-
-3. **Start open-file**:
-
-   ```bash
-   bun run src/index.ts
-   ```
-
-4. **Navigate with vim keybindings**:
-   - Use `j`/`k` to move up and down
-   - Press `Enter` to open directories
-   - Press `q` to quit
-
-## Quick Start Tutorial
-
-### Bucket Root View
-
-When you start open-file without specifying a bucket, you'll see a list of all S3 buckets in your AWS account. This is the root view where you can:
-
-1. **Browse buckets** - Use `j` and `k` to move cursor down and up
-2. **Enter a bucket** - Press `Enter` or `l` to open a bucket and view its contents
-3. **See bucket metadata** - Each bucket shows:
-   - **Name** - The bucket identifier
-   - **Region** - Where the bucket is located
-   - **Creation Date** - When the bucket was created
-   - **Size** - Total size of objects in the bucket (if enabled)
-
-### Navigating Within a Bucket
-
-Once you've entered a bucket, you'll see a list of entries (files and directories). Here's how to navigate:
-
-1. **Move around** - Use `j` and `k` to move cursor down and up
-2. **Enter a directory** - Press `Enter` or `l` to open a directory
-3. **Go back** - Press `h` or `Backspace` to go to the parent directory
-4. **Return to bucket root** - Press `~` to go back to the bucket listing
-5. **Jump to top** - Press `gg` (press 'g' twice) to jump to the top
-6. **Jump to bottom** - Press `G` (capital G) to jump to the bottom
-
-### Creating Entries
-
-To create a new file or directory:
-
-1. Press `i` to enter insert mode
-2. Type the name of the new entry (e.g., `myfile.txt` or `mydir/`)
-3. Press `Tab` to see auto-completion suggestions (based on existing files)
-4. Press `Enter` to create the entry
-5. Or press `Escape` to cancel
-
-The new entry will be created immediately.
-
-### Editing Entries
-
-To rename an entry:
-
-1. Navigate to the entry
-2. Press `a` to enter edit mode
-3. Modify the entry name
-4. Press `Enter` to confirm - rename executes immediately
-5. Or press `Escape` to cancel
-
-### Deleting Entries
-
-To delete one or more entries:
-
-1. **Single delete** - Navigate to the entry and press `dd`
-2. **Multiple delete** - Press `v` to enter visual mode, move to select entries with `j`/`k`, then press `d`
-3. A confirmation dialog will appear
-4. Press `Enter` to confirm or `Escape` to cancel
-5. Deletion executes immediately upon confirmation
-
-## Keybinding Reference
-
-### Normal Mode
-
-| Key               | Action                                 |
-| ----------------- | -------------------------------------- |
-| `j`               | Move cursor down                       |
-| `k`               | Move cursor up                         |
-| `gg`              | Move to top                            |
-| `G`               | Move to bottom                         |
-| `n`               | Page down (next page)                  |
-| `p`               | Page up (previous page)                |
-| `Enter` / `l`     | Open file/directory or select bucket   |
-| `h` / `Backspace` | Go to parent directory                 |
-| `~`               | Go to bucket root (from within bucket) |
-| `i`               | **Create new entry**                   |
-| `a`               | Edit mode                              |
-| `dd`              | **Delete entry (with confirmation)**   |
-| `v`               | Start visual selection                 |
-| `yy`              | Copy entry to clipboard                |
-| `p`               | Paste from clipboard                   |
-| `/`               | Enter search mode                      |
-| `r`               | Refresh listing                        |
-| `q`               | Quit application                       |
-
-### Visual Mode
-
-| Key      | Action                                      |
-| -------- | ------------------------------------------- |
-| `j`      | Extend selection down                       |
-| `k`      | Extend selection up                         |
-| `d`      | Delete selected entries (with confirmation) |
-| `Escape` | Exit visual mode                            |
-
-### Insert Mode (Creating Entries)
-
-| Key           | Action                                 |
-| ------------- | -------------------------------------- |
-| Any character | Type entry name                        |
-| `Backspace`   | Delete last character                  |
-| `Tab`         | Apply first auto-completion suggestion |
-| `Enter`       | Confirm entry creation                 |
-| `Escape`      | Cancel entry creation                  |
-
-### Search Mode
-
-| Key           | Action                       |
-| ------------- | ---------------------------- |
-| Any character | Add to search query          |
-| `Backspace`   | Delete last character        |
-| `Ctrl+c`      | Toggle case-sensitive search |
-| `Ctrl+r`      | Toggle regex matching        |
-| `Escape`      | Exit search mode             |
+| Command     | Action                     |
+| ----------- | -------------------------- |
+| `:q`        | Quit                       |
+| `:w`        | Save                       |
+| `:profiles` | Open profile selector      |
+| `:theme`    | Open theme selector        |
+| `:log`      | Copy log path to clipboard |
 
 ## Configuration
 
-### Profiles Configuration File
-
-open-file uses a profiles configuration file for managing storage provider connections. The file is located at:
-
-- **macOS/Linux**: `~/.config/open-file/profiles.jsonc`
-- **Windows**: `%APPDATA%/open-file/profiles.jsonc`
-
-The configuration file includes a JSON schema reference for editor autocomplete and validation:
+Profiles are stored in `~/.config/open-file/profiles.jsonc`:
 
 ```jsonc
 {
-  "$schema": "https://github.com/mikea/open-file/profiles.schema.json",
+  "$schema": "https://raw.githubusercontent.com/mholtzscher/open-file/refs/heads/main/profiles.schema.json",
   "profiles": [
     {
-      "id": "my-s3-bucket",
-      "displayName": "My S3 Bucket",
+      "id": "my-s3",
+      "displayName": "Production S3",
       "provider": "s3",
       "themeId": "catppuccin-mocha",
       "config": {
         "region": "us-east-1",
-        "profile": "default",
+        "profile": "production",
+      },
+    },
+    {
+      "id": "my-sftp",
+      "displayName": "Dev Server",
+      "provider": "sftp",
+      "config": {
+        "host": "dev.example.com",
+        "username": "deploy",
+        "privateKeyPath": "~/.ssh/id_rsa",
       },
     },
   ],
 }
 ```
 
-**Benefits of the JSON Schema**:
-
-- Autocomplete in VS Code, IntelliJ, and other editors
-- Validation of profile configurations
-- Documentation for all configuration options
-- Type checking for provider-specific settings
-
-The schema file is included in the repository at `profiles.schema.json` and defines all supported provider types and their configuration options.
-
-### Command Line Options
-
-open-file is configured primarily through command-line arguments:
-
-```bash
-open-file [OPTIONS] [BUCKET]
-
-OPTIONS:
-  -b, --bucket NAME       S3 bucket name
-  -p, --profile NAME      AWS profile name (default: active profile or 'default')
-  -r, --region REGION     AWS region (default: from profile, then us-east-1)
-  --endpoint URL          Custom S3 endpoint (for LocalStack, etc.)
-  --access-key KEY        AWS access key
-  --secret-key KEY        AWS secret key
-  --debug                 Enable debug logging to file
-  -h, --help              Show help message
-  -v, --version           Show version
-```
-
-### Configuration Options
-
-All configuration is done through CLI arguments and environment variables:
-
-```bash
-# Use specific AWS profile
-open-file --profile production my-bucket
-
-# Override region
-open-file --region us-west-2 my-bucket
-
-# Use custom endpoint (LocalStack)
-open-file --endpoint http://localhost:4566 test-bucket
-
-# Specify credentials explicitly
-open-file --access-key KEY --secret-key SECRET --region us-east-1 my-bucket
-```
-
-### Customization
-
-```json
-{
-  "keybindings": {
-    "moveDown": "j",
-    "moveUp": "k",
-    "moveToTop": "gg",
-    "moveToBottom": "G",
-    "openItem": "Enter",
-    "createEntry": "i",
-    "deleteEntry": "dd"
-  },
-  "colors": {
-    "cursor": "#FFFF00",
-    "selection": "#00FF00",
-    "directory": "#0080FF",
-    "file": "#FFFFFF",
-    "error": "#FF0000",
-    "text": "#CCCCCC"
-  }
-}
-```
-
-**Note:** The `bucket` field is now optional. If omitted, open-file will start at the bucket root view, allowing you to browse and select from all available buckets in your AWS account.
-
-### Configuration Examples
-
-#### Bucket Root View (Start with Bucket Selection)
-
-```json
-{
-  "s3": {
-    "region": "us-east-1"
-  }
-}
-```
-
-#### Minimal Configuration with Specific Bucket
-
-```json
-{
-  "s3": {
-    "region": "us-east-1",
-    "bucket": "my-bucket"
-  }
-}
-```
-
-#### Full Configuration with Custom Keybindings
-
-```json
-{
-  "s3": {
-    "region": "eu-west-1",
-    "bucket": "production-bucket",
-    "endpoint": "https://s3.eu-west-1.amazonaws.com"
-  },
-  "display": {
-    "showIcons": true,
-    "showSizes": true,
-    "showDates": true,
-    "defaultSort": "modified"
-  },
-  "keybindings": {
-    "moveDown": "j",
-    "moveUp": "k",
-    "moveToTop": "gg",
-    "moveToBottom": "G",
-    "openItem": "l",
-    "createEntry": "i",
-    "deleteEntry": "dd"
-  }
-}
-```
-
-#### S3 with Custom Endpoint (LocalStack, Minio, etc.)
-
-```json
-{
-  "s3": {
-    "region": "us-east-1",
-    "bucket": "test-bucket",
-    "endpoint": "http://localhost:4566",
-    "accessKeyId": "test",
-    "secretAccessKey": "test",
-    "forcePathStyle": true
-  }
-}
-```
-
-### Credential Resolution Order
-
-open-file looks for AWS credentials in this order:
-
-1. Command-line arguments (`--access-key`, `--secret-key`, `--region`)
-2. Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`)
-3. AWS CLI profile (`~/.aws/credentials` and `~/.aws/config`)
-4. AWS profile specified with `--profile` flag
-
-## Architecture
-
-The application follows a clean, modular architecture with a React-based UI. As of November 2025, open-file uses a provider-based architecture that supports multiple storage backends with better error handling, capability-based UI, and connection status tracking.
-
-### Providers (`src/providers/`)
-
-- **StorageProvider Interface** - Unified interface for storage backends
-- **S3Provider** - AWS S3 implementation using SDK v3
-- **MockStorageProvider** - In-memory provider for testing
-- **Profile Management** - Credential and configuration management
-- **Provider Factory** - Provider creation and registration
-
-### React Components (`src/ui/`)
-
-- **S3Explorer** - Main React component with declarative rendering
-- **BufferView** - React component for rendering entries as editable buffer
-- **StatusBar** - React component for status bar display
-- **ConfirmationDialog** - React component for operation confirmations
-- **theme.ts** - Catppuccin color theme definitions
-
-### React Hooks (`src/hooks/`)
-
-- **useBufferState** - State management for buffer entries, cursor, selection, mode
-- **useKeyboardEvents** - Keyboard event handling with vim-style bindings
-- **useNavigationHandlers** - Directory navigation logic
-- **useBufferOperations** - Buffer operations (copy, paste, delete)
-- **useTerminalSize** - Terminal dimension tracking for responsive layout
-
-### Utilities (`src/utils/`)
-
-- **Change Detection** - Detects creates, deletes, moves, renames
-- **Entry ID Management** - Tracks entries across buffer edits
-- **Configuration** - Manages user preferences
-- **Path Utilities** - Path manipulation helpers
-
-### Types (`src/types/`)
-
-- **Entry** - Represents files/directories
-- **Operations** - Create, Delete, Move, Copy operations
-- **EditMode** - Editor modes (Normal, Visual, Insert, Edit, Search)
-
-## Development
-
-### Local Testing Infrastructure
-
-The project includes a Docker Compose setup for local integration testing with multiple storage backends:
-
-```bash
-# Start all services (S3, GCS, SFTP)
-docker-compose up -d
-
-# Or start specific services
-docker-compose up -d localstack    # LocalStack S3
-docker-compose up -d fake-gcs      # Fake GCS Server
-docker-compose up -d sftp          # SFTP Server
-```
-
-#### LocalStack (S3)
-
-- **Endpoint**: `http://localhost:4566`
-- **Region**: `us-east-1`
-- **Access Key**: `test` (or any value)
-- **Secret Key**: `test` (or any value)
-
-```bash
-# Test with AWS CLI
-aws --endpoint-url=http://localhost:4566 s3 ls
-
-# Run open-file with LocalStack
-bun run src/index.ts --endpoint http://localhost:4566
-```
-
-#### Fake GCS Server
-
-- **Endpoint**: `http://localhost:4443`
-- **No authentication required**
-
-#### SFTP Server
-
-- **Host**: `localhost`
-- **Port**: `2222`
-- **Username**: `testuser`
-- **Password**: `testpass`
-- **Base Path**: `/home/testuser/data`
-
-Authentication methods supported:
-
-1. **Password authentication**:
-
-   ```bash
-   sftp -P 2222 testuser@localhost
-   # Password: testpass
-   ```
-
-2. **SSH Key authentication**:
-   ```bash
-   sftp -P 2222 -i scripts/sftp-ssh-keys/test_key testuser@localhost
-   ```
-
-The SFTP server includes sample test data:
-
-- `documents/` - Reports and contracts
-- `images/` - Image file placeholders
-- `backups/` - Database and system backups
-- `logs/` - Application and access logs
-
-### Run in Watch Mode
-
-```bash
-bun run --watch src/index.ts
-```
-
-Or using Just:
-
-```bash
-just dev
-```
-
-### Run Tests
-
-```bash
-bun test
-```
-
-All tests must pass. The project currently has **1469 tests** across 65 test files covering providers, hooks, UI components, and utilities.
-
-### Build for Production
-
-```bash
-bun build src/index.ts --outdir dist --target bun
-```
-
-Or using Just:
-
-```bash
-just build
-```
-
-## Project Structure
-
-```
-open-file/
-├── src/
-│   ├── providers/         # Storage provider system
-│   │   ├── provider.ts   # StorageProvider interface
-│   │   ├── base-provider.ts
-│   │   ├── factory.ts
-│   │   ├── s3/           # S3 provider implementation
-│   │   │   ├── s3-provider.ts
-│   │   │   └── utils/    # S3-specific utilities
-│   │   ├── services/     # Profile management
-│   │   ├── credentials/  # Credential management
-│   │   └── types/        # Provider-specific types
-│   ├── hooks/            # React hooks for state & effects
-│   │   ├── useBufferState.ts
-│   │   ├── useKeyboardEvents.ts
-│   │   ├── useNavigationHandlers.ts
-│   │   ├── useBufferOperations.ts
-│   │   └── useTerminalSize.ts
-│   ├── ui/               # React components & UI utilities
-│   │   ├── s3-explorer.tsx         # Main React component
-│   │   ├── buffer-view-react.tsx   # Buffer rendering
-│   │   ├── status-bar-react.tsx    # Status bar
-│   │   ├── confirmation-dialog-react.tsx  # Dialog component
-│   │   ├── buffer-state.ts         # Editor state management
-│   │   ├── theme.ts                # Color theme definitions
-│   │   └── keybindings.ts          # Keybinding utilities
-│   ├── types/            # Common type definitions
-│   │   ├── entry.ts      # Entry, EntryType, EntryMetadata
-│   │   ├── progress.ts   # Progress tracking types
-│   │   ├── list.ts       # List operation types
-│   │   ├── operations.ts
-│   │   └── edit-mode.ts
-│   ├── utils/            # Utilities
-│   │   ├── change-detection.ts
-│   │   ├── entry-id.ts
-│   │   ├── config.ts
-│   │   ├── path-utils.ts
-│   │   ├── errors.ts
-│   │   ├── sorting.ts
-│   │   └── cli.ts
-│   ├── contexts/         # React contexts
-│   │   └── StorageContext.tsx
-│   ├── components/       # Reusable React components
-│   └── index.tsx         # Main application & keyboard dispatcher
-├── justfile              # Development commands
-├── package.json          # Dependencies
-├── tsconfig.json         # TypeScript configuration
-└── README.md             # This file
-```
-
-## React Architecture
-
-The application uses React with OpenTUI for terminal UI rendering. Key architectural decisions:
-
-### Component Structure
-
-- **S3Explorer** - Main React component that orchestrates the entire application
-- Renders declaratively using JSX with OpenTUI primitives (`<text>`, `<box>`)
-- Uses hooks for all state management and side effects
-
-### State Management via Hooks
-
-- **useBufferState** - Manages entries, cursor position, selection state, and edit modes
-- **useKeyboardEvents** - Handles all keyboard input with vim-style keybindings
-- **useNavigationHandlers** - Manages directory navigation logic
-- **useTerminalSize** - Tracks terminal dimensions for responsive layout
-
-### Event Handling
-
-- Keyboard events are captured at the top level (index.tsx)
-- Dispatched to React components via a global dispatcher
-- Components handle events through callback props and hooks
-- Vim-style key sequences (gg, dd, yy) are handled by useKeyboardEvents
-
-### Responsive Layout
-
-- Terminal size changes are detected via SIGWINCH signals
-- useTerminalSize hook provides reactive width/height values
-- Layout dimensions automatically recalculate on resize
-- UI hides/shows columns based on available space
-
-### No Imperative State Mutation
-
-- All state changes go through React hooks
-- BufferState and related logic are now hook-based
-- No manual DOM manipulation or rendering
-- Declarative JSX for all UI elements
-
-## Key Concepts
-
-### Buffer-as-Editor Pattern
-
-Following oil.nvim's approach, the file/directory listing is treated as an editable buffer:
-
-- Entries are displayed as text lines
-- `dd` deletes files (with confirmation dialog)
-- `a` enters edit mode to rename files (immediate on Enter)
-- `yy` copies entries to clipboard, `p` pastes them
-- `i` creates new files/directories (immediate on Enter)
-
-### Entry ID System
-
-Each entry has a unique ID that persists during buffer edits. This allows:
-
-- Tracking which file is which when you rename it
-- Detecting moves vs creates
-- Proper change detection algorithm
-
-### Immediate Execution Model
-
-All operations execute immediately with appropriate feedback:
-
-- **Delete** - Shows confirmation dialog, then executes immediately
-- **Rename** - Executes immediately when you press Enter in edit mode
-- **Create** - Executes immediately when you press Enter in insert mode
-- **Paste** - Executes immediately, with progress dialog for large operations
-
-Progress dialogs appear for operations involving 5+ files or any file larger than 10MB.
-
-## AWS Credentials
-
-The S3 adapter uses AWS SDK v3 and supports multiple credential methods:
-
-1. **Environment Variables**
-
-   ```bash
-   export AWS_ACCESS_KEY_ID=your-key
-   export AWS_SECRET_ACCESS_KEY=your-secret
-   export AWS_REGION=us-east-1
-   ```
-
-2. **AWS Credentials File** (`~/.aws/credentials`)
-   - Standard AWS credentials file
-
-3. **Command Line Arguments**
-
-   ```bash
-   open-file --access-key your-key --secret-key your-secret --region us-east-1
-   ```
-
-## Troubleshooting
-
-### Common Issues and Solutions
-
-#### "Access Denied" or "Invalid Credentials"
-
-**Problem**: Getting authentication errors when trying to list buckets
-
-**Solutions**:
-
-1. Check your AWS credentials are properly set:
-
-   ```bash
-   # Check environment variables
-   echo $AWS_ACCESS_KEY_ID
-   echo $AWS_SECRET_ACCESS_KEY
-   ```
-
-2. Ensure your IAM user has S3 permissions:
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Effect": "Allow",
-         "Action": ["s3:*"],
-         "Resource": "*"
-       }
-     ]
-   }
-   ```
-
-#### "Bucket not found" or Cannot Connect
-
-**Problem**: Error message about bucket not being found or connection failure
-
-**Solutions**:
-
-1. Verify bucket name in config:
-
-   ```bash
-   aws s3 ls | grep your-bucket-name
-   ```
-
-2. Check region is correct - bucket may be in different region:
-
-   ```bash
-   aws s3api get-bucket-location --bucket your-bucket-name
-   ```
-
-3. If using custom endpoint (LocalStack, Minio), verify it's running:
-   ```bash
-   curl -v http://localhost:4566
-   ```
-
-#### Operations Not Working
-
-**Problem**: File operations (delete, rename, paste) are failing
-
-**Solutions**:
-
-1. Check the status bar for error messages
-2. Look for permission issues with the IAM user
-3. Ensure you have proper S3 permissions for the operation
-4. For large operations, wait for the progress dialog to complete
-
-#### Cursor Jumping or Display Issues
-
-**Problem**: Cursor behavior is erratic or display is glitchy
-
-**Solutions**:
-
-1. Try resizing your terminal window
-2. Update your terminal emulator to the latest version
-3. Try disabling icons or dates in the config:
-   ```json
-   {
-     "display": {
-       "showIcons": false,
-       "showDates": false
-     }
-   }
-   ```
-
-#### Performance Issues with Large Buckets
-
-**Problem**: open-file is slow when working with buckets containing many entries
-
-**Solutions**:
-
-1. Use pagination (the app supports page-up/page-down with `p` and `n`)
-2. Use search mode (`/`) to filter entries
-3. Consider using a smaller bucket or prefix for operations
-4. Check your AWS region and network connectivity
-
-### Getting Help
-
-If you encounter an issue not listed here:
-
-1. Check the [GitHub Issues](https://github.com/yourusername/open-file/issues)
-2. Enable verbose logging (if available)
-3. Report with details about your environment:
-   - Bun version (`bun --version`)
-   - Terminal emulator and version
-   - AWS region and bucket size
-   - Configuration file (remove sensitive data)
-
-## Roadmap
-
-- [ ] Visual file preview pane
-- [ ] Recursive directory operations
-- [ ] Copy/paste operations (already have clipboard, expand with move)
-- [ ] Multi-file rename/move
-- [ ] Advanced search and filter (regex support added, more filters)
-- [ ] Configuration GUI
-- [ ] Integration tests with LocalStack
-- [ ] Performance optimizations for large buckets
-- [ ] S3 versioning support
-- [ ] Tagging interface
-
-## Contributing
-
-Contributions are welcome! Please:
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Run `bun test` to ensure all tests pass
-5. Submit a pull request
+## Supported Providers
+
+| Provider  | Capabilities                                       |
+| --------- | -------------------------------------------------- |
+| **S3**    | List, read, write, delete, copy, move, buckets     |
+| **GCS**   | List, read, write, delete, copy, move, buckets     |
+| **SFTP**  | List, read, write, delete, move, permissions       |
+| **FTP**   | List, read, write, delete, move                    |
+| **Local** | List, read, write, delete, copy, move, permissions |
 
 ## License
 
@@ -799,5 +129,4 @@ MIT
 ## Acknowledgments
 
 - Inspired by [oil.nvim](https://github.com/stevearc/oil.nvim)
-- Built with [Bun](https://bun.sh/) and [OpenTUI](https://github.com/opentui/opentui)
-- Uses [AWS SDK for JavaScript v3](https://github.com/aws/aws-sdk-js-v3)
+- Built with [Bun](https://bun.sh/) and [OpenTUI](https://github.com/sst/opentui)

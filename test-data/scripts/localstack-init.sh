@@ -116,6 +116,18 @@ echo "[App data export]" | awslocal s3 cp - s3://backups/applications/app1/data-
 echo "[App data export]" | awslocal s3 cp - s3://backups/applications/app2/full-backup-2024-01.zip
 
 # ============================================================================
+# Bucket: test-bucket - Large folder for scroll testing (150 files)
+# ============================================================================
+
+echo "Creating large folder for scroll testing..."
+
+for i in $(seq -w 1 150); do
+  echo "Content of file $i" | awslocal s3 cp - "s3://test-bucket/scroll-test/file-${i}.txt"
+done
+
+echo "Created 150 files in test-bucket/scroll-test/"
+
+# ============================================================================
 # Bucket: logs (application and system logs)
 # ============================================================================
 
