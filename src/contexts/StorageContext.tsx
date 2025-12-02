@@ -295,7 +295,7 @@ export interface StorageContextValue {
    * Only available if provider has Containers capability
    * @param name - Container name to set
    */
-  setContainer(name: string, region?: string): Promise<void>;
+  setContainer(name: string): Promise<void>;
 
   /**
    * Get the current container context

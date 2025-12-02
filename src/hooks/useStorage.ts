@@ -354,8 +354,8 @@ export function useStorageContainer() {
   }, [storage, hasContainers]);
 
   const setContainer = useCallback(
-    async (name: string, region?: string) => {
-      await storage.setContainer(name, region);
+    async (name: string) => {
+      await storage.setContainer(name);
     },
     [storage]
   );

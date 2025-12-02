@@ -44,7 +44,7 @@ interface NavigationConfig {
   onLoadBuffer?: (path: string) => Promise<void>;
   onErrorOccurred?: (error: string) => void;
   onNavigationComplete?: () => void;
-  onBucketSelected?: (bucketName: string, region?: string) => void;
+  onBucketSelected?: (bucketName: string) => void;
 }
 
 /**
@@ -57,7 +57,7 @@ export interface NavigationDependencies {
   setStatusMessageColor: (color: string) => void;
   successColor: string;
   errorColor: string;
-  onBucketSelected?: (bucketName: string, region?: string) => void;
+  onBucketSelected?: (bucketName: string) => void;
   onNavigationComplete?: () => void;
 }
 
@@ -122,8 +122,7 @@ export function useNavigationHandlers(
     // Handle bucket entry selection
     if (selected.type === EntryType.Bucket) {
       if (config.onBucketSelected) {
-        const bucketRegion = selected.metadata?.region;
-        config.onBucketSelected(selected.name, bucketRegion);
+        config.onBucketSelected(selected.name);
       }
       if (config.onNavigationComplete) {
         config.onNavigationComplete();

@@ -499,7 +499,7 @@ export class ProviderStorageAdapter implements StorageContextValue {
   /**
    * Set the current container
    */
-  async setContainer(name: string, _region?: string): Promise<void> {
+  async setContainer(name: string): Promise<void> {
     if (!this.hasCapability(Capability.Containers)) {
       throw new Error('Container operations not supported by this provider');
     }

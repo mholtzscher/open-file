@@ -100,9 +100,9 @@ describe('useNavigationHandlers', () => {
     });
 
     it('supports onBucketSelected callback', () => {
-      // onBucketSelected?: (bucketName: string, region?: string) => void
+      // onBucketSelected?: (bucketName: string) => void
       // - Called when selecting a bucket entry
-      // - Receives bucket name and optional region from metadata
+      // - Receives bucket name
       // - Used to configure adapter for bucket access
       expect(true).toBe(true);
     });
@@ -120,16 +120,9 @@ describe('useNavigationHandlers', () => {
     it('handles bucket entry selection', () => {
       // Given: Selected entry has type === EntryType.Bucket
       // When: navigateInto() is called
-      // Then: onBucketSelected(entry.name, entry.metadata?.region) is called
+      // Then: onBucketSelected(entry.name) is called
       // And: onNavigationComplete() is called
       // And: onLoadBuffer is NOT called
-      expect(true).toBe(true);
-    });
-
-    it('extracts region from bucket metadata', () => {
-      // Given: Bucket entry with metadata.region = 'us-west-2'
-      // When: navigateInto() is called
-      // Then: onBucketSelected receives region as second parameter
       expect(true).toBe(true);
     });
 

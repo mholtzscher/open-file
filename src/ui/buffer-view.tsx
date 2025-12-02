@@ -72,12 +72,8 @@ function formatEntry(
       : nameWithSuffix;
   parts.push(truncatedName.padEnd(NAME_COLUMN_WIDTH));
 
-  // For bucket entries, show region instead of size
-  if (entry.type === EntryType.Bucket) {
-    const region = entry.metadata?.region || '-';
-    parts.push(region.padEnd(META_COLUMN_WIDTH));
-  } else if (showSizes) {
-    // Size for regular entries
+  // Size column (skip for buckets - they don't have a size)
+  if (entry.type !== EntryType.Bucket && showSizes) {
     parts.push(formatBytes(entry.size).padEnd(META_COLUMN_WIDTH));
   }
 

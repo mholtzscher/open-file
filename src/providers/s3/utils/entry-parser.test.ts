@@ -178,7 +178,6 @@ describe('parseBucketToEntry', () => {
     const bucket: BucketInfo = {
       name: 'my-bucket',
       creationDate: new Date('2024-01-01'),
-      region: 'us-east-1',
     };
 
     const entry = parseBucketToEntry(bucket);
@@ -187,7 +186,6 @@ describe('parseBucketToEntry', () => {
     expect(entry.type).toBe(EntryType.Bucket);
     expect(entry.path).toBe('my-bucket');
     expect(entry.modified).toEqual(new Date('2024-01-01'));
-    expect(entry.metadata?.region).toBe('us-east-1');
     expect(entry.metadata?.createdAt).toEqual(new Date('2024-01-01'));
   });
 
@@ -201,7 +199,6 @@ describe('parseBucketToEntry', () => {
     expect(entry.name).toBe('simple-bucket');
     expect(entry.type).toBe(EntryType.Bucket);
     expect(entry.modified).toBeUndefined();
-    expect(entry.metadata?.region).toBeUndefined();
   });
 
   it('generates unique IDs', () => {

@@ -10,7 +10,6 @@ import {
   ListObjectsV2Command,
   ListObjectsV2CommandInput,
   ListBucketsCommand,
-  GetBucketLocationCommand,
 } from '@aws-sdk/client-s3';
 import { Entry, EntryType } from '../../../types/entry.js';
 import { retryWithBackoff, getS3RetryConfig } from '../../../utils/retry.js';
@@ -180,10 +179,10 @@ export async function listObjects(options: ListObjectsOptions): Promise<ListObje
 }
 
 /**
- * List all S3 buckets in the account with metadata
+ * List all S3 buckets in the account
  *
- * Fetches all buckets and their regions. Region lookup may fail for some
- * buckets due to permissions, in which case region will be undefined.
+ * Note: Region is not fetched to avoid N+1 API calls (one GetBucketLocation
+ * per bucket). Region will always be undefined in the returned BucketInfo.
  *
  * @param options - List options including client and logger
  * @returns Array of bucket info sorted by creation date (newest first)
@@ -192,7 +191,7 @@ export async function listObjects(options: ListObjectsOptions): Promise<ListObje
  * ```typescript
  * const buckets = await listBuckets({ client: s3Client });
  * for (const bucket of buckets) {
- *   console.log(`${bucket.name} (${bucket.region})`);
+ *   console.log(bucket.name);
  * }
  * ```
  */
@@ -210,37 +209,12 @@ export async function listBuckets(options: ListBucketsOptions): Promise<BucketIn
     bucketCount: response.Buckets?.length || 0,
   });
 
-  const buckets: BucketInfo[] = [];
-
-  // Process each bucket
-  if (response.Buckets) {
-    for (const bucket of response.Buckets) {
-      if (bucket.Name) {
-        // Get bucket region
-        let region: string | undefined;
-        try {
-          const locationResponse = await retryWithBackoff(() => {
-            const command = new GetBucketLocationCommand({ Bucket: bucket.Name });
-            return client.send(command);
-          }, getS3RetryConfig());
-          // LocationConstraint is undefined for us-east-1, otherwise it's the region
-          region = locationResponse.LocationConstraint || 'us-east-1';
-        } catch (error) {
-          logger.debug('Failed to get bucket location', {
-            bucket: bucket.Name,
-            error: (error as any)?.message,
-          });
-          // Region might not be accessible, continue anyway
-        }
-
-        buckets.push({
-          name: bucket.Name,
-          creationDate: bucket.CreationDate,
-          region,
-        });
-      }
-    }
-  }
+  const buckets: BucketInfo[] = (response.Buckets || [])
+    .filter(bucket => bucket.Name)
+    .map(bucket => ({
+      name: bucket.Name!,
+      creationDate: bucket.CreationDate,
+    }));
 
   // Sort by creation date (newest first)
   buckets.sort((a, b) => {

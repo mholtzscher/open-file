@@ -106,11 +106,10 @@ export function useExplorerActions({
           // Check if we're navigating into a bucket from root view
           if (!bucket && currentEntry.type === 'bucket') {
             const bucketName = currentEntry.name;
-            const bucketRegion = currentEntry.metadata?.region || 'us-east-1';
             // Use path for providers that need full path (SFTP), name for others (S3)
             const containerIdentifier = currentEntry.path || bucketName;
 
-            await storage.setContainer(containerIdentifier, bucketRegion);
+            await storage.setContainer(containerIdentifier);
             setBucket(bucketName);
             return;
           }

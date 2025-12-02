@@ -18,8 +18,6 @@ export interface BucketInfo {
   name: string;
   /** Creation date */
   creationDate?: Date;
-  /** Bucket region */
-  region?: string;
   /** Total size in bytes */
   totalSize?: number;
   /** Number of objects */
@@ -116,7 +114,6 @@ export function parseBucketToEntry(bucket: BucketInfo): Entry {
     path: bucket.name,
     modified: bucket.creationDate,
     metadata: {
-      region: bucket.region,
       createdAt: bucket.creationDate,
     },
   };

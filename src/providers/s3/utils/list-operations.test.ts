@@ -255,7 +255,6 @@ describe('listBuckets', () => {
       const creationDate = new Date('2024-01-15');
       const client = createMockClient([
         { Buckets: [{ Name: 'my-bucket', CreationDate: creationDate }] },
-        { LocationConstraint: 'us-west-2' }, // GetBucketLocation response
       ]);
 
       const result = await listBuckets({ client });
@@ -263,19 +262,6 @@ describe('listBuckets', () => {
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('my-bucket');
       expect(result[0].creationDate).toEqual(creationDate);
-      expect(result[0].region).toBe('us-west-2');
-    });
-
-    it('handles us-east-1 (no LocationConstraint)', async () => {
-      const client = createMockClient([
-        { Buckets: [{ Name: 'east-bucket', CreationDate: new Date() }] },
-        { LocationConstraint: undefined }, // us-east-1 returns undefined
-      ]);
-
-      const result = await listBuckets({ client });
-
-      expect(result).toHaveLength(1);
-      expect(result[0].region).toBe('us-east-1');
     });
   });
 
@@ -289,9 +275,6 @@ describe('listBuckets', () => {
             { Name: 'mid-bucket', CreationDate: new Date('2024-01-01') },
           ],
         },
-        { LocationConstraint: 'us-west-2' },
-        { LocationConstraint: 'us-west-2' },
-        { LocationConstraint: 'us-west-2' },
       ]);
 
       const result = await listBuckets({ client });
@@ -300,28 +283,6 @@ describe('listBuckets', () => {
       expect(result[0].name).toBe('new-bucket');
       expect(result[1].name).toBe('mid-bucket');
       expect(result[2].name).toBe('old-bucket');
-    });
-  });
-
-  describe('error handling', () => {
-    it('continues when GetBucketLocation fails', async () => {
-      let callCount = 0;
-      const client = {
-        send: mock(async () => {
-          callCount++;
-          if (callCount === 1) {
-            return { Buckets: [{ Name: 'test-bucket', CreationDate: new Date() }] };
-          }
-          // GetBucketLocation fails
-          throw new Error('Access Denied');
-        }),
-      } as any;
-
-      const result = await listBuckets({ client });
-
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('test-bucket');
-      expect(result[0].region).toBeUndefined();
     });
   });
 
@@ -335,7 +296,6 @@ describe('listBuckets', () => {
             { Name: '', CreationDate: new Date() }, // Empty name
           ],
         },
-        { LocationConstraint: 'us-west-2' },
       ]);
 
       const result = await listBuckets({ client });
@@ -356,33 +316,6 @@ describe('listBuckets', () => {
       await listBuckets({ client, logger });
 
       expect(logger.debug).toHaveBeenCalled();
-    });
-
-    it('logs location fetch failures', async () => {
-      let callCount = 0;
-      const client = {
-        send: mock(async () => {
-          callCount++;
-          if (callCount === 1) {
-            return { Buckets: [{ Name: 'test-bucket', CreationDate: new Date() }] };
-          }
-          throw new Error('Access Denied');
-        }),
-      } as any;
-
-      const logger: ListOperationsLogger = {
-        debug: mock(() => {}),
-        error: mock(() => {}),
-      };
-
-      await listBuckets({ client, logger });
-
-      // Should log the failure but not error
-      const debugCalls = (logger.debug as any).mock.calls;
-      const failureLog = debugCalls.find(
-        (call: any[]) => call[0] === 'Failed to get bucket location'
-      );
-      expect(failureLog).toBeDefined();
     });
   });
 });
