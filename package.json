@@ -8,6 +8,7 @@
     "open-file": "./src/index.tsx"
   },
   "scripts": {
+    "postinstall": "bun2nix -o bun.nix",
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
     "build": "bun build src/index.tsx --outdir dist --target bun",
@@ -27,6 +28,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/bun": "latest",
+    "bun2nix": "^2.0.4",
     "@types/ssh2-sftp-client": "^9.0.6",
     "@typescript-eslint/eslint-plugin": "^8.48.0",
     "@typescript-eslint/parser": "^8.48.0",
