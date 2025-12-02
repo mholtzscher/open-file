@@ -20,7 +20,6 @@ import {
   readlinkSync,
 } from 'fs';
 import { join, basename, dirname } from 'path';
-import { homedir } from 'os';
 import { randomUUID } from 'crypto';
 
 import { Entry, EntryType } from '../../types/entry.js';
@@ -67,8 +66,8 @@ export class LocalProvider extends BaseStorageProvider {
   constructor(profile: LocalProfile, deps?: LocalProviderDependencies) {
     super();
 
-    // Set base path from profile config, defaulting to home directory
-    this.basePath = profile.config.basePath || homedir();
+    // Set base path from profile config, defaulting to current working directory
+    this.basePath = profile.config.basePath || process.cwd();
     this.logger = deps?.logger;
 
     // Register capabilities - local filesystem supports most operations

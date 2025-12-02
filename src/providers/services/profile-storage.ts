@@ -133,7 +133,7 @@ export const DEFAULT_LOCAL_PROFILE: LocalProfile = {
   displayName: 'Local Filesystem',
   provider: 'local',
   config: {
-    basePath: homedir(),
+    basePath: process.cwd(),
   },
 };
 
