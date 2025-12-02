@@ -6,12 +6,13 @@
  *
  * Features:
  * - Semantic methods: showSuccess(), showError(), showWarning(), showInfo(), clear()
+ * - Auto-clear: Messages automatically clear after 5 seconds
  * - Computed isError property for error dialog detection
  * - Centralized color management using CatppuccinMocha theme
  * - Type-safe message state
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Theme } from '../ui/theme.js';
 
 // ============================================================================
@@ -77,6 +78,9 @@ const STATUS_COLORS: Record<StatusType, string> = {
   normal: Theme.getTextColor(),
 };
 
+/** How long status messages are displayed before auto-clearing (in milliseconds) */
+const STATUS_MESSAGE_TIMEOUT_MS = 3000;
+
 // ============================================================================
 // Hook
 // ============================================================================
@@ -112,6 +116,36 @@ export function useStatusMessage(): UseStatusMessageReturn {
     color: Theme.getTextColor(),
     type: 'normal',
   });
+
+  // Ref to track the auto-clear timeout
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-clear messages after timeout
+  useEffect(() => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    // Only set timeout if there's a message to clear
+    if (state.message) {
+      timeoutRef.current = setTimeout(() => {
+        setState({
+          message: '',
+          color: STATUS_COLORS.normal,
+          type: 'normal',
+        });
+      }, STATUS_MESSAGE_TIMEOUT_MS);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [state.message]);
 
   const showSuccess = useCallback((message: string) => {
     setState({
