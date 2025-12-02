@@ -15,6 +15,8 @@ export interface PaneProps {
   showIcons?: boolean;
   showSizes?: boolean;
   showDates?: boolean;
+  /** Terminal width for dynamic column sizing */
+  terminalWidth?: number;
   flexGrow?: number;
   flexShrink?: number;
   flexBasis?: number;
@@ -32,6 +34,7 @@ export function BufferPane({
   showIcons = true,
   showSizes = true,
   showDates = false,
+  terminalWidth,
   flexGrow = 1,
   flexShrink = 1,
   flexBasis = 0,
@@ -59,7 +62,12 @@ export function BufferPane({
 
       {/* Buffer View */}
       <box flexGrow={1} overflow="hidden">
-        <BufferView showIcons={showIcons} showSizes={showSizes} showDates={showDates} />
+        <BufferView
+          showIcons={showIcons}
+          showSizes={showSizes}
+          showDates={showDates}
+          terminalWidth={terminalWidth}
+        />
       </box>
     </box>
   );

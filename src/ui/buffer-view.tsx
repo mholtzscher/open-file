@@ -16,13 +16,29 @@ export interface BufferViewProps {
   showIcons?: boolean;
   showSizes?: boolean;
   showDates?: boolean;
+  /** Terminal width for dynamic column sizing */
+  terminalWidth?: number;
 }
 
 /**
  * Column widths for buffer display
  */
-const NAME_COLUMN_WIDTH = 30;
+const DEFAULT_NAME_COLUMN_WIDTH = 30;
+const MIN_NAME_COLUMN_WIDTH = 20;
+const MAX_NAME_COLUMN_WIDTH = 80;
 const META_COLUMN_WIDTH = 12;
+
+/**
+ * Calculate dynamic name column width based on terminal width
+ * Targets roughly 30% of terminal width, clamped to reasonable bounds
+ */
+function calculateNameColumnWidth(terminalWidth: number | undefined): number {
+  if (!terminalWidth) {
+    return DEFAULT_NAME_COLUMN_WIDTH;
+  }
+  const dynamicWidth = Math.floor(terminalWidth * 0.3);
+  return Math.max(MIN_NAME_COLUMN_WIDTH, Math.min(dynamicWidth, MAX_NAME_COLUMN_WIDTH));
+}
 
 /**
  * Format date for display
@@ -40,7 +56,12 @@ function formatDate(date: Date | string | number | undefined): string {
 /**
  * Format the header row
  */
-function formatHeader(showIcons: boolean, showSizes: boolean, showDates: boolean): string {
+function formatHeader(
+  showIcons: boolean,
+  showSizes: boolean,
+  showDates: boolean,
+  nameColumnWidth: number
+): string {
   const parts: string[] = [];
 
   // Icon placeholder
@@ -49,7 +70,7 @@ function formatHeader(showIcons: boolean, showSizes: boolean, showDates: boolean
   }
 
   // Name column
-  parts.push('Name'.padEnd(NAME_COLUMN_WIDTH));
+  parts.push('Name'.padEnd(nameColumnWidth));
 
   // Size column
   if (showSizes) {
@@ -71,7 +92,8 @@ function formatEntry(
   entry: Entry,
   showIcons: boolean,
   showSizes: boolean,
-  showDates: boolean
+  showDates: boolean,
+  nameColumnWidth: number
 ): string {
   const parts: string[] = [];
 
@@ -94,10 +116,10 @@ function formatEntry(
   const nameWithSuffix = entry.name + suffix;
   // Truncate if too long, then pad to fixed width
   const truncatedName =
-    nameWithSuffix.length > NAME_COLUMN_WIDTH
-      ? nameWithSuffix.slice(0, NAME_COLUMN_WIDTH - 3) + '...'
+    nameWithSuffix.length > nameColumnWidth
+      ? nameWithSuffix.slice(0, nameColumnWidth - 3) + '...'
       : nameWithSuffix;
-  parts.push(truncatedName.padEnd(NAME_COLUMN_WIDTH));
+  parts.push(truncatedName.padEnd(nameColumnWidth));
 
   // Size column
   if (showSizes) {
@@ -130,9 +152,13 @@ export function BufferView({
   showIcons = true,
   showSizes = true,
   showDates = false,
+  terminalWidth,
 }: BufferViewProps) {
   // Get buffer state from context
   const bufferState = useBuffer();
+
+  // Calculate dynamic name column width based on terminal size
+  const nameColumnWidth = calculateNameColumnWidth(terminalWidth);
   // Use filtered entries when searching
   const filteredEntries = bufferState.getFilteredEntries();
   const entries =
@@ -164,7 +190,9 @@ export function BufferView({
 
   return (
     <box flexDirection="column" width="100%" height="100%">
-      <text fg={Theme.getMutedColor()}>{formatHeader(showIcons, showSizes, showDates)}</text>
+      <text fg={Theme.getMutedColor()}>
+        {formatHeader(showIcons, showSizes, showDates, nameColumnWidth)}
+      </text>
       {visibleEntries.map((entry, idx) => {
         const realIndex = bufferState.scrollOffset + idx;
         const isSelected = realIndex === cursorIndex;
@@ -183,7 +211,8 @@ export function BufferView({
             );
 
         const cursor = isSelected ? '> ' : '  ';
-        const content = cursor + formatEntry(entry, showIcons, showSizes, showDates);
+        const content =
+          cursor + formatEntry(entry, showIcons, showSizes, showDates, nameColumnWidth);
         const color = getEntryColor(entry, isSelected);
 
         return (

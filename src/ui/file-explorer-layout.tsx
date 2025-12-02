@@ -117,6 +117,7 @@ export function FileExplorerLayout({
             showIcons={!terminalSize.isSmall}
             showSizes={!terminalSize.isSmall}
             showDates={!terminalSize.isMedium}
+            terminalWidth={terminalSize.width}
             flexGrow={showPreview ? 3 : 1}
             flexShrink={1}
             flexBasis={0}
