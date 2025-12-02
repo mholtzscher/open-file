@@ -38,6 +38,33 @@ function formatDate(date: Date | string | number | undefined): string {
 }
 
 /**
+ * Format the header row
+ */
+function formatHeader(showIcons: boolean, showSizes: boolean, showDates: boolean): string {
+  const parts: string[] = [];
+
+  // Icon placeholder
+  if (showIcons) {
+    parts.push('    '); // Same width as icon
+  }
+
+  // Name column
+  parts.push('Name'.padEnd(NAME_COLUMN_WIDTH));
+
+  // Size column
+  if (showSizes) {
+    parts.push('Size'.padEnd(META_COLUMN_WIDTH));
+  }
+
+  // Date column
+  if (showDates) {
+    parts.push('Modified'.padEnd(META_COLUMN_WIDTH));
+  }
+
+  return '  ' + parts.join(''); // '  ' aligns with cursor space
+}
+
+/**
  * Format an entry for display
  */
 function formatEntry(
@@ -72,19 +99,14 @@ function formatEntry(
       : nameWithSuffix;
   parts.push(truncatedName.padEnd(NAME_COLUMN_WIDTH));
 
-  // Size column (skip for buckets - they don't have a size)
-  if (entry.type !== EntryType.Bucket && showSizes) {
+  // Size column
+  if (showSizes) {
     parts.push(formatBytes(entry.size).padEnd(META_COLUMN_WIDTH));
   }
 
-  // Date
+  // Date column
   if (showDates) {
-    if (entry.type === EntryType.Bucket) {
-      // For buckets, show creation date
-      parts.push(formatDate(entry.metadata?.createdAt || entry.modified).padEnd(META_COLUMN_WIDTH));
-    } else {
-      parts.push(formatDate(entry.modified).padEnd(META_COLUMN_WIDTH));
-    }
+    parts.push(formatDate(entry.modified).padEnd(META_COLUMN_WIDTH));
   }
 
   return parts.join('');
@@ -142,6 +164,7 @@ export function BufferView({
 
   return (
     <box flexDirection="column" width="100%" height="100%">
+      <text fg={Theme.getMutedColor()}>{formatHeader(showIcons, showSizes, showDates)}</text>
       {visibleEntries.map((entry, idx) => {
         const realIndex = bufferState.scrollOffset + idx;
         const isSelected = realIndex === cursorIndex;
