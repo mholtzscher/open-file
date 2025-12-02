@@ -7,9 +7,12 @@
  */
 
 import { useMemo, useRef } from 'react';
+import { spawnSync } from 'child_process';
+import { platform } from 'os';
 import { Theme } from '../ui/theme.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { calculateParentPath } from '../utils/path-utils.js';
+import { getLogger } from '../utils/logger.js';
 import { Capability } from '../providers/types/capabilities.js';
 import { Entry } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
@@ -20,6 +23,34 @@ import type { UseNavigationHandlersReturn as NavigationHandlers } from './useNav
 import type { StorageContextValue } from '../contexts/StorageContext.js';
 import type { UseClipboardReturn } from './useClipboard.js';
 import type { UseImmediateExecutionReturn } from './useImmediateExecution.js';
+
+/**
+ * Copy text to system clipboard
+ */
+function copyToSystemClipboard(text: string): boolean {
+  try {
+    const os = platform();
+    let result;
+
+    if (os === 'darwin') {
+      result = spawnSync('pbcopy', [], { input: text });
+    } else if (os === 'linux') {
+      // Try xclip first, fall back to xsel
+      result = spawnSync('xclip', ['-selection', 'clipboard'], { input: text });
+      if (result.status !== 0) {
+        result = spawnSync('xsel', ['--clipboard', '--input'], { input: text });
+      }
+    } else if (os === 'win32') {
+      result = spawnSync('clip', [], { input: text, shell: true });
+    } else {
+      return false;
+    }
+
+    return result.status === 0;
+  } catch {
+    return false;
+  }
+}
 
 export interface UseExplorerActionsProps {
   storage: StorageContextValue;
@@ -590,6 +621,15 @@ export function useExplorerActions({
               } else {
                 setStatusMessage('Profiles not available');
                 setStatusMessageColor(Theme.getWarningColor());
+              }
+            } else if (command === ':log') {
+              const logPath = getLogger().getLogFilePath();
+              if (copyToSystemClipboard(logPath)) {
+                setStatusMessage(`Log path copied: ${logPath}`);
+                setStatusMessageColor(Theme.getSuccessColor());
+              } else {
+                setStatusMessage(`Log path: ${logPath}`);
+                setStatusMessageColor(Theme.getInfoColor());
               }
             } else {
               setStatusMessage(`Unknown command: ${command}`);

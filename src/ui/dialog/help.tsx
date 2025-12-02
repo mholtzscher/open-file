@@ -53,6 +53,7 @@ const keybindings: HelpItem[] = [
   { keys: '/', description: 'Search mode' },
   { keys: ':', description: 'Command mode' },
   { keys: ':q', description: 'Quit' },
+  { keys: ':log', description: 'Copy log path to clipboard' },
   { keys: ':profiles', description: 'Open profile selector' },
   { keys: ':theme', description: 'Open theme selector' },
   { section: '' },
