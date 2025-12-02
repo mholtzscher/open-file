@@ -5,7 +5,7 @@
  * This hook manages entries, cursor, selection, and edit modes.
  */
 
-import { useReducer, useCallback } from 'react';
+import { useReducer, useCallback, useMemo } from 'react';
 import { Entry } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
 import { SortConfig } from '../utils/sorting.js';

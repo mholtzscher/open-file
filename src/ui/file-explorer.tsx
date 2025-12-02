@@ -115,7 +115,7 @@ export function FileExplorer() {
   // Update viewport height when layout changes
   useEffect(() => {
     bufferState.setViewportHeight(layout.contentHeight);
-  }, [layout.contentHeight, bufferState]);
+  }, [layout.contentHeight, bufferState.setViewportHeight]);
 
   // ============================================
   // Navigation Handlers

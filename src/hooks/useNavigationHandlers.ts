@@ -10,7 +10,7 @@
  * - Path tracking and updates
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Entry, EntryType } from '../types/entry.js';
 import { UseBufferStateReturn } from './useBufferState.js';
 import type { StorageContextValue } from '../contexts/StorageContext.js';
@@ -62,38 +62,6 @@ export interface NavigationDependencies {
 }
 
 /**
- * Build NavigationConfig from NavigationDependencies
- */
-function buildConfigFromDependencies(
-  bufferState: UseBufferStateReturn,
-  deps: NavigationDependencies
-): NavigationConfig {
-  return {
-    onLoadBuffer: async (path: string) => {
-      try {
-        const entries = await deps.storage.list(path);
-        bufferState.setEntries([...entries]);
-        bufferState.setCurrentPath(path);
-        bufferState.cursorToTop();
-        deps.setStatusMessage(`Navigated to ${path}`);
-        deps.setStatusMessageColor(deps.successColor);
-      } catch (err) {
-        deps.setStatusMessage(
-          `Navigation failed: ${err instanceof Error ? err.message : String(err)}`
-        );
-        deps.setStatusMessageColor(deps.errorColor);
-      }
-    },
-    onErrorOccurred: (error: string) => {
-      deps.setStatusMessage(error);
-      deps.setStatusMessageColor(deps.errorColor);
-    },
-    onNavigationComplete: deps.onNavigationComplete,
-    onBucketSelected: deps.onBucketSelected,
-  };
-}
-
-/**
  * Custom hook for navigation handling
  *
  * @overload With NavigationDependencies (preferred) - provides storage and status directly
@@ -105,9 +73,43 @@ export function useNavigationHandlers(
 ): UseNavigationHandlersReturn {
   // Determine if we received dependencies or config
   const isDependencies = 'storage' in configOrDeps;
-  const config: NavigationConfig = isDependencies
-    ? buildConfigFromDependencies(bufferState, configOrDeps)
-    : configOrDeps;
+
+  // Memoize config to prevent infinite re-renders
+  const config: NavigationConfig = useMemo(() => {
+    if (!isDependencies) {
+      return configOrDeps as NavigationConfig;
+    }
+    const deps = configOrDeps as NavigationDependencies;
+    return {
+      onLoadBuffer: async (path: string) => {
+        try {
+          const entries = await deps.storage.list(path);
+          bufferState.setEntries([...entries]);
+          bufferState.setCurrentPath(path);
+          bufferState.cursorToTop();
+          deps.setStatusMessage(`Navigated to ${path}`);
+          deps.setStatusMessageColor(deps.successColor);
+        } catch (err) {
+          deps.setStatusMessage(
+            `Navigation failed: ${err instanceof Error ? err.message : String(err)}`
+          );
+          deps.setStatusMessageColor(deps.errorColor);
+        }
+      },
+      onErrorOccurred: (error: string) => {
+        deps.setStatusMessage(error);
+        deps.setStatusMessageColor(deps.errorColor);
+      },
+      onNavigationComplete: deps.onNavigationComplete,
+      onBucketSelected: deps.onBucketSelected,
+    };
+  }, [
+    isDependencies,
+    configOrDeps,
+    bufferState.setEntries,
+    bufferState.setCurrentPath,
+    bufferState.cursorToTop,
+  ]);
   // Navigate into selected directory or bucket
   const navigateInto = useCallback(async () => {
     const selected = bufferState.getSelectedEntry();
@@ -153,7 +155,7 @@ export function useNavigationHandlers(
         config.onErrorOccurred(`Failed to navigate: ${message}`);
       }
     }
-  }, [bufferState, config]);
+  }, [bufferState.getSelectedEntry, config]);
 
   // Navigate to parent directory
   const navigateUp = useCallback(() => {
@@ -201,7 +203,7 @@ export function useNavigationHandlers(
   // Get selected entry
   const getSelectedEntry = useCallback((): Entry | undefined => {
     return bufferState.getSelectedEntry();
-  }, [bufferState]);
+  }, [bufferState.getSelectedEntry]);
 
   // Check if can navigate up
   const canNavigateUp = useCallback((): boolean => {
