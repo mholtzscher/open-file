@@ -8,14 +8,6 @@ import type { ProviderType } from '../../types/profile.js';
 import type { CredentialProvider } from '../types.js';
 import { CredentialChain } from '../credential-chain.js';
 
-// S3 resolvers
-export {
-  S3EnvironmentCredentialProvider,
-  S3ProfileCredentialProvider,
-  S3InlineCredentialProvider,
-  createS3CredentialProviders,
-} from './s3-credential-resolver.js';
-
 // GCS resolvers
 export {
   GCSAdcCredentialProvider,
@@ -68,7 +60,6 @@ export {
  * @returns Array of credential providers in priority order
  */
 export function createCredentialProvidersForType(providerType: ProviderType): CredentialProvider[] {
-  const { createS3CredentialProviders } = require('./s3-credential-resolver.js');
   const { createGCSCredentialProviders } = require('./gcs-credential-resolver.js');
   const { createSFTPCredentialProviders } = require('./sftp-credential-resolver.js');
   const { createFTPCredentialProviders } = require('./ftp-credential-resolver.js');
@@ -77,7 +68,7 @@ export function createCredentialProvidersForType(providerType: ProviderType): Cr
 
   switch (providerType) {
     case 's3':
-      return createS3CredentialProviders();
+      return [];
     case 'gcs':
       return createGCSCredentialProviders();
     case 'sftp':
@@ -124,7 +115,7 @@ export function createCredentialChainForType(providerType: ProviderType): Creden
  */
 export function createUniversalCredentialChain(): CredentialChain {
   const chain = new CredentialChain();
-  const providerTypes: ProviderType[] = ['s3', 'gcs', 'sftp', 'ftp', 'smb', 'gdrive'];
+  const providerTypes: ProviderType[] = ['gcs', 'sftp', 'ftp', 'smb', 'gdrive'];
 
   for (const type of providerTypes) {
     const providers = createCredentialProvidersForType(type);

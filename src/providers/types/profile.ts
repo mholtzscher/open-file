@@ -26,10 +26,6 @@ export interface BaseProfile {
 
 /**
  * S3-specific profile configuration
- *
- * Authentication must be provided via one of:
- * - AWS CLI profile name (`profile` field)
- * - Explicit credentials (`accessKeyId` + `secretAccessKey`)
  */
 export interface S3Profile extends BaseProfile {
   provider: 's3';
@@ -38,20 +34,12 @@ export interface S3Profile extends BaseProfile {
 
 /**
  * S3 configuration options
- *
- * Must provide either:
- * - `profile` (AWS CLI profile name for credential lookup), OR
- * - `accessKeyId` + `secretAccessKey` (explicit credentials)
  */
 export interface S3ProfileConfig {
   /** AWS region */
   region?: string;
   /** AWS CLI profile name for credential lookup */
   profile?: string;
-  /** Direct credentials (alternative to profile) */
-  accessKeyId?: string;
-  secretAccessKey?: string;
-  sessionToken?: string;
   /** Custom endpoint for MinIO, LocalStack, etc. */
   endpoint?: string;
   /** Use path-style addressing instead of virtual-hosted-style */
@@ -59,29 +47,17 @@ export interface S3ProfileConfig {
 }
 
 /**
- * Check if S3 config uses AWS CLI profile authentication
+ * Check if S3 config uses a named AWS CLI profile
  */
 export function isS3ProfileAuth(config: S3ProfileConfig): boolean {
   return typeof config.profile === 'string' && config.profile.length > 0;
 }
 
 /**
- * Check if S3 config uses explicit credentials
+ * Validate S3 config
  */
-export function isS3ExplicitAuth(config: S3ProfileConfig): boolean {
-  return (
-    typeof config.accessKeyId === 'string' &&
-    config.accessKeyId.length > 0 &&
-    typeof config.secretAccessKey === 'string' &&
-    config.secretAccessKey.length > 0
-  );
-}
-
-/**
- * Validate that S3 config has valid authentication
- */
-export function hasValidS3Auth(config: S3ProfileConfig): boolean {
-  return isS3ProfileAuth(config) || isS3ExplicitAuth(config);
+export function hasValidS3Auth(_config: S3ProfileConfig): boolean {
+  return true;
 }
 
 /**

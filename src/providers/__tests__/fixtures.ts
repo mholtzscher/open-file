@@ -150,8 +150,6 @@ export function createMockLocalStackProfile(overrides: Partial<S3Profile> = {}):
       region: 'us-east-1',
       endpoint: 'http://localhost:4566',
       forcePathStyle: true,
-      accessKeyId: 'test',
-      secretAccessKey: 'test',
     },
     ...overrides,
   };

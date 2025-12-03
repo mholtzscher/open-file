@@ -148,24 +148,9 @@ function validateS3Profile(profile: S3Profile): ValidationError[] {
     errors.push(invalidType('config.region', 'a string'));
   }
 
-  // profile: optional string
+  // profile: optional string (AWS CLI profile name)
   if (config.profile !== undefined && typeof config.profile !== 'string') {
     errors.push(invalidType('config.profile', 'a string'));
-  }
-
-  // accessKeyId: optional string
-  if (config.accessKeyId !== undefined && typeof config.accessKeyId !== 'string') {
-    errors.push(invalidType('config.accessKeyId', 'a string'));
-  }
-
-  // secretAccessKey: optional string
-  if (config.secretAccessKey !== undefined && typeof config.secretAccessKey !== 'string') {
-    errors.push(invalidType('config.secretAccessKey', 'a string'));
-  }
-
-  // sessionToken: optional string
-  if (config.sessionToken !== undefined && typeof config.sessionToken !== 'string') {
-    errors.push(invalidType('config.sessionToken', 'a string'));
   }
 
   // endpoint: optional string (URL)
@@ -176,42 +161,6 @@ function validateS3Profile(profile: S3Profile): ValidationError[] {
   // forcePathStyle: optional boolean
   if (config.forcePathStyle !== undefined && typeof config.forcePathStyle !== 'boolean') {
     errors.push(invalidType('config.forcePathStyle', 'a boolean'));
-  }
-
-  // Logical validation: must have either profile OR explicit credentials
-  const hasProfile = typeof config.profile === 'string' && config.profile.length > 0;
-  const hasAccessKey = typeof config.accessKeyId === 'string' && config.accessKeyId.length > 0;
-  const hasSecretKey =
-    typeof config.secretAccessKey === 'string' && config.secretAccessKey.length > 0;
-
-  if (!hasProfile && !hasAccessKey && !hasSecretKey) {
-    errors.push(
-      error(
-        'config',
-        'Authentication required: provide either "profile" (AWS CLI profile name) or "accessKeyId" + "secretAccessKey"',
-        'required'
-      )
-    );
-  } else if (!hasProfile) {
-    // Using explicit credentials - both accessKeyId and secretAccessKey required
-    if (hasAccessKey && !hasSecretKey) {
-      errors.push(
-        error(
-          'config.secretAccessKey',
-          'secretAccessKey is required when accessKeyId is provided',
-          'required'
-        )
-      );
-    }
-    if (hasSecretKey && !hasAccessKey) {
-      errors.push(
-        error(
-          'config.accessKeyId',
-          'accessKeyId is required when secretAccessKey is provided',
-          'required'
-        )
-      );
-    }
   }
 
   return errors;

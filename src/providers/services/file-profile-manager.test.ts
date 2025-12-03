@@ -230,18 +230,15 @@ describe('FileProfileManager - Validation Integration', () => {
     expect(result.errors.some(e => e.field === 'provider')).toBe(true);
   });
 
-  it('should validate S3 credential pairs', async () => {
+  it('should accept S3 profile with empty config', async () => {
     const manager = new FileProfileManager({ loadOnInit: false });
 
-    // accessKeyId without secretAccessKey
     const profile = createTestS3Profile('test', {
-      config: { accessKeyId: 'AKIAIOSFODNN7EXAMPLE' },
+      config: {},
     });
 
     const result = await manager.validateProfile(profile);
-
-    expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.field === 'config.secretAccessKey')).toBe(true);
+    expect(result.valid).toBe(true);
   });
 
   it('should validate GCS profile', async () => {

@@ -291,7 +291,13 @@ export class EnvironmentCredentialProvider implements CredentialProvider {
   async resolve(context: CredentialContext): Promise<CredentialResult> {
     switch (context.providerType) {
       case 's3':
-        return this.resolveS3();
+        return {
+          success: false,
+          error: {
+            code: 'not_found',
+            message: 'S3 credentials are resolved by AWS SDK credential chain',
+          },
+        };
       case 'gcs':
         return this.resolveGCS();
       case 'sftp':
@@ -307,32 +313,6 @@ export class EnvironmentCredentialProvider implements CredentialProvider {
           },
         };
     }
-  }
-
-  private resolveS3(): CredentialResult {
-    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-
-    if (!accessKeyId || !secretAccessKey) {
-      return {
-        success: false,
-        error: {
-          code: 'not_found',
-          message: 'AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY not set',
-        },
-      };
-    }
-
-    return {
-      success: true,
-      credentials: {
-        type: 's3',
-        source: 'environment',
-        accessKeyId,
-        secretAccessKey,
-        sessionToken: process.env.AWS_SESSION_TOKEN,
-      },
-    };
   }
 
   private resolveGCS(): CredentialResult {
@@ -448,7 +428,13 @@ export class InlineCredentialProvider implements CredentialProvider {
 
     switch (context.providerType) {
       case 's3':
-        return this.resolveS3(config);
+        return {
+          success: false,
+          error: {
+            code: 'not_found',
+            message: 'S3 credentials are resolved by AWS SDK credential chain',
+          },
+        };
       case 'sftp':
         return this.resolveSFTP(config);
       case 'ftp':
@@ -478,32 +464,6 @@ export class InlineCredentialProvider implements CredentialProvider {
           },
         };
     }
-  }
-
-  private resolveS3(config: Record<string, unknown>): CredentialResult {
-    const accessKeyId = config.accessKeyId as string | undefined;
-    const secretAccessKey = config.secretAccessKey as string | undefined;
-
-    if (!accessKeyId || !secretAccessKey) {
-      return {
-        success: false,
-        error: {
-          code: 'not_found',
-          message: 'accessKeyId or secretAccessKey not found in profile config',
-        },
-      };
-    }
-
-    return {
-      success: true,
-      credentials: {
-        type: 's3',
-        source: 'inline',
-        accessKeyId,
-        secretAccessKey,
-        sessionToken: config.sessionToken as string | undefined,
-      },
-    };
   }
 
   private resolveSFTP(config: Record<string, unknown>): CredentialResult {

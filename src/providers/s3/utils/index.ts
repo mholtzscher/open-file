@@ -83,10 +83,3 @@ export {
   type ListBucketsOptions,
   type ListOperationsLogger,
 } from './list-operations.js';
-
-export {
-  loadAwsProfile,
-  parseAwsConfigFile,
-  parseAwsCredentialsFile,
-  type AwsProfileConfig,
-} from './aws-profile.js';

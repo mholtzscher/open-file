@@ -8,11 +8,6 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 import {
-  // S3
-  S3EnvironmentCredentialProvider,
-  S3ProfileCredentialProvider,
-  S3InlineCredentialProvider,
-  createS3CredentialProviders,
   // GCS
   GCSAdcCredentialProvider,
   GCSKeyFileCredentialProvider,
@@ -41,7 +36,7 @@ import {
   createCredentialChainForType,
 } from './index.js';
 
-import type { S3Credentials, FTPCredentials, SMBCredentials } from '../types.js';
+import type { FTPCredentials, SMBCredentials } from '../types.js';
 
 // ============================================================================
 // Test Setup
@@ -60,105 +55,6 @@ afterEach(() => {
   } catch {
     // Ignore cleanup errors
   }
-});
-
-// ============================================================================
-// S3 Credential Resolver Tests
-// ============================================================================
-
-describe('S3 Credential Resolvers', () => {
-  const originalEnv = { ...process.env };
-
-  beforeEach(() => {
-    delete process.env.AWS_ACCESS_KEY_ID;
-    delete process.env.AWS_SECRET_ACCESS_KEY;
-    delete process.env.AWS_SESSION_TOKEN;
-  });
-
-  afterEach(() => {
-    process.env = { ...originalEnv };
-  });
-
-  describe('S3EnvironmentCredentialProvider', () => {
-    it('should resolve credentials from environment', async () => {
-      process.env.AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE';
-      process.env.AWS_SECRET_ACCESS_KEY = 'wJalrXUtnFEMI/K7MDENG';
-
-      const provider = new S3EnvironmentCredentialProvider();
-      const result = await provider.resolve({ providerType: 's3' });
-
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.credentials.type).toBe('s3');
-        expect(result.credentials.accessKeyId).toBe('AKIAIOSFODNN7EXAMPLE');
-      }
-    });
-
-    it('should fail when env vars not set', async () => {
-      const provider = new S3EnvironmentCredentialProvider();
-      const result = await provider.resolve({ providerType: 's3' });
-
-      expect(result.success).toBe(false);
-    });
-
-    it('should only handle s3 provider type', () => {
-      const provider = new S3EnvironmentCredentialProvider();
-
-      expect(provider.canHandle({ providerType: 's3' })).toBe(true);
-      expect(provider.canHandle({ providerType: 'gcs' })).toBe(false);
-    });
-  });
-
-  describe('S3ProfileCredentialProvider', () => {
-    it('should only handle s3 provider type', () => {
-      const provider = new S3ProfileCredentialProvider();
-
-      expect(provider.canHandle({ providerType: 's3' })).toBe(true);
-      expect(provider.canHandle({ providerType: 'sftp' })).toBe(false);
-    });
-  });
-
-  describe('S3InlineCredentialProvider', () => {
-    it('should resolve credentials from config', async () => {
-      const provider = new S3InlineCredentialProvider();
-      provider.setConfig({
-        accessKeyId: 'AKIAEXAMPLE',
-        secretAccessKey: 'secretkey123',
-      });
-
-      const result = await provider.resolve({ providerType: 's3' });
-
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.credentials.accessKeyId).toBe('AKIAEXAMPLE');
-      }
-    });
-
-    it('should fail when credentials not in config', async () => {
-      const provider = new S3InlineCredentialProvider();
-      provider.setConfig({ region: 'us-east-1' });
-
-      const result = await provider.resolve({ providerType: 's3' });
-
-      expect(result.success).toBe(false);
-    });
-
-    it('should not handle when config not set', () => {
-      const provider = new S3InlineCredentialProvider();
-
-      expect(provider.canHandle({ providerType: 's3' })).toBe(false);
-    });
-  });
-
-  describe('createS3CredentialProviders', () => {
-    it('should return providers in priority order', () => {
-      const providers = createS3CredentialProviders();
-
-      expect(providers.length).toBe(3);
-      expect(providers[0].priority).toBeLessThan(providers[1].priority);
-      expect(providers[1].priority).toBeLessThan(providers[2].priority);
-    });
-  });
 });
 
 // ============================================================================
@@ -519,10 +415,15 @@ describe('Google Drive Credential Resolvers', () => {
 
 describe('Factory Functions', () => {
   describe('createCredentialProvidersForType', () => {
-    it('should return S3 providers for s3 type', () => {
+    it('should return empty array for s3 type', () => {
       const providers = createCredentialProvidersForType('s3');
+      expect(providers).toHaveLength(0);
+    });
+
+    it('should return GCS providers for gcs type', () => {
+      const providers = createCredentialProvidersForType('gcs');
       expect(providers.length).toBe(3);
-      expect(providers.some(p => p.name.includes('s3'))).toBe(true);
+      expect(providers.some(p => p.name.includes('gcs'))).toBe(true);
     });
 
     it('should return empty array for local type', () => {
@@ -537,11 +438,18 @@ describe('Factory Functions', () => {
   });
 
   describe('createCredentialChainForType', () => {
-    it('should create a configured chain', () => {
-      const chain = createCredentialChainForType('s3');
+    it('should create a configured chain for gcs', () => {
+      const chain = createCredentialChainForType('gcs');
       const providers = chain.getProviders();
 
       expect(providers.length).toBe(3);
+    });
+
+    it('should create empty chain for s3', () => {
+      const chain = createCredentialChainForType('s3');
+      const providers = chain.getProviders();
+
+      expect(providers.length).toBe(0);
     });
   });
 });

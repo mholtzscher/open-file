@@ -204,15 +204,10 @@ export class S3Provider extends BaseStorageProvider {
       region: profile.config.region,
       profile: profile.config.profile,
       endpoint: profile.config.endpoint,
-      hasAccessKey: !!profile.config.accessKeyId,
     });
 
-    // Build client options from profile
     this.clientOptions = {
       region: profile.config.region,
-      accessKeyId: profile.config.accessKeyId,
-      secretAccessKey: profile.config.secretAccessKey,
-      sessionToken: profile.config.sessionToken,
       profile: profile.config.profile,
       endpoint: profile.config.endpoint,
       forcePathStyle: profile.config.forcePathStyle,

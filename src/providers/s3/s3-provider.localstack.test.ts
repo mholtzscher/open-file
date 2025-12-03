@@ -10,12 +10,20 @@
  * 2. Start LocalStack in a terminal:
  *    localstack start
  *
- * 3. Run the tests:
+ * 3. Set dummy AWS credentials (LocalStack accepts any values):
+ *    export AWS_ACCESS_KEY_ID=test
+ *    export AWS_SECRET_ACCESS_KEY=test
+ *
+ * 4. Run the tests:
  *    bun test src/providers/s3/s3-provider.localstack.test.ts
  *
  * The tests verify all provider operations work correctly with a real
  * S3-compatible endpoint using the OperationResult pattern.
  */
+
+// Set dummy AWS credentials for LocalStack (must be before imports that use them)
+process.env.AWS_ACCESS_KEY_ID = 'test';
+process.env.AWS_SECRET_ACCESS_KEY = 'test';
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'bun:test';
 import { S3Provider } from './s3-provider.js';
@@ -59,8 +67,6 @@ function createLocalStackProfile(): S3Profile {
       region: TEST_REGION,
       endpoint: LOCALSTACK_ENDPOINT,
       forcePathStyle: true,
-      accessKeyId: 'test',
-      secretAccessKey: 'test',
     },
   };
 }
@@ -107,14 +113,11 @@ describe.if(await isLocalStackAvailable())('S3Provider LocalStack Integration', 
   let s3Client: S3Client;
 
   beforeAll(async () => {
+    // AWS credentials are set via environment variables at the top of the file
     s3Client = new S3Client({
       region: TEST_REGION,
       endpoint: LOCALSTACK_ENDPOINT,
       forcePathStyle: true,
-      credentials: {
-        accessKeyId: 'test',
-        secretAccessKey: 'test',
-      },
     });
 
     await createTestBucket(s3Client, TEST_BUCKET);

@@ -74,20 +74,16 @@ describe('S3 Client Factory', () => {
       expect(isS3Client(result.client)).toBe(true);
     });
 
-    it('should create client with explicit credentials', () => {
-      const result = createS3Client({
-        accessKeyId: 'test-key',
-        secretAccessKey: 'test-secret',
-      });
+    it('should create client with default credential chain', () => {
+      const result = createS3Client({});
 
       expect(isS3Client(result.client)).toBe(true);
     });
 
-    it('should create client with session token for temporary credentials', () => {
+    it('should create client with named profile', () => {
+      // This uses the SDK's fromIni provider which handles SSO, assume-role, etc.
       const result = createS3Client({
-        accessKeyId: 'test-key',
-        secretAccessKey: 'test-secret',
-        sessionToken: 'test-session-token',
+        profile: 'default',
       });
 
       expect(isS3Client(result.client)).toBe(true);
@@ -113,17 +109,20 @@ describe('S3 Client Factory', () => {
     });
   });
 
-  describe('credential resolution order', () => {
-    it('should prefer explicit credentials over profile', () => {
-      // Set up profile env (though we can't easily test actual profile loading)
-      process.env.AWS_PROFILE = 'some-profile';
-
+  describe('credential resolution', () => {
+    it('should prefer named profile over default chain', () => {
+      // When a profile is specified, fromIni is used
       const result = createS3Client({
-        accessKeyId: 'explicit-key',
-        secretAccessKey: 'explicit-secret',
+        profile: 'some-profile',
       });
 
-      // Client should be created with explicit credentials
+      // Client should be created - actual credential resolution happens lazily
+      expect(isS3Client(result.client)).toBe(true);
+    });
+
+    it('should use default credential chain when no profile specified', () => {
+      const result = createS3Client({});
+
       expect(isS3Client(result.client)).toBe(true);
     });
   });

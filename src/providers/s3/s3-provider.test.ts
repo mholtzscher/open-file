@@ -104,8 +104,6 @@ function createTestProfile(overrides?: Partial<S3Profile>): S3Profile {
     provider: 's3',
     config: {
       region: 'us-east-1',
-      accessKeyId: 'test-access-key',
-      secretAccessKey: 'test-secret-key',
     },
     ...overrides,
   };

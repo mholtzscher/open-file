@@ -10,7 +10,7 @@ import {
   InlineCredentialProvider,
   createDefaultCredentialChain,
 } from './credential-chain.js';
-import type { CredentialProvider, CredentialResult, S3Credentials } from './types.js';
+import type { CredentialProvider, CredentialResult, GCSCredentials } from './types.js';
 
 // ============================================================================
 // Test Helpers
@@ -269,18 +269,17 @@ describe('CredentialChain', () => {
         createMockProvider('success', 100, {
           success: true,
           credentials: {
-            type: 's3',
+            type: 'gcs',
             source: 'environment',
-            accessKeyId: 'key',
-            secretAccessKey: 'secret',
+            keyFilePath: '/path/to/key.json',
           },
         })
       );
 
-      const credentials = await chain.resolveOrThrow<S3Credentials>({ providerType: 's3' });
+      const credentials = await chain.resolveOrThrow<GCSCredentials>({ providerType: 'gcs' });
 
-      expect(credentials.type).toBe('s3');
-      expect(credentials.accessKeyId).toBe('key');
+      expect(credentials.type).toBe('gcs');
+      expect(credentials.keyFilePath).toBe('/path/to/key.json');
     });
 
     it('should throw CredentialChainError on failure', async () => {
@@ -293,7 +292,7 @@ describe('CredentialChain', () => {
       );
 
       try {
-        await chain.resolveOrThrow({ providerType: 's3' });
+        await chain.resolveOrThrow({ providerType: 'gcs' });
         expect(true).toBe(false); // Should not reach here
       } catch (err) {
         expect(err).toBeInstanceOf(CredentialChainError);
@@ -328,44 +327,20 @@ describe('EnvironmentCredentialProvider', () => {
   });
 
   describe('S3 credentials', () => {
-    it('should resolve S3 credentials from environment', async () => {
+    // S3 credentials are now handled by the AWS SDK's built-in credential
+    // provider chain (fromIni, fromEnv, IMDS, etc.) in client-factory.ts,
+    // so the EnvironmentCredentialProvider defers to the SDK.
+    it('should defer S3 credentials to AWS SDK', async () => {
       process.env.AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE';
       process.env.AWS_SECRET_ACCESS_KEY = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY';
 
       const provider = new EnvironmentCredentialProvider();
       const result = await provider.resolve({ providerType: 's3' });
 
-      expect(result.success).toBe(true);
-      if (result.success) {
-        expect(result.credentials.type).toBe('s3');
-        const s3Creds = result.credentials as S3Credentials;
-        expect(s3Creds.accessKeyId).toBe('AKIAIOSFODNN7EXAMPLE');
-        expect(s3Creds.source).toBe('environment');
-      }
-    });
-
-    it('should include session token if present', async () => {
-      process.env.AWS_ACCESS_KEY_ID = 'AKIAIOSFODNN7EXAMPLE';
-      process.env.AWS_SECRET_ACCESS_KEY = 'secret';
-      process.env.AWS_SESSION_TOKEN = 'token123';
-
-      const provider = new EnvironmentCredentialProvider();
-      const result = await provider.resolve({ providerType: 's3' });
-
-      expect(result.success).toBe(true);
-      if (result.success) {
-        const s3Creds = result.credentials as S3Credentials;
-        expect(s3Creds.sessionToken).toBe('token123');
-      }
-    });
-
-    it('should fail if AWS credentials not set', async () => {
-      const provider = new EnvironmentCredentialProvider();
-      const result = await provider.resolve({ providerType: 's3' });
-
+      // S3 is handled by AWS SDK, not our credential chain
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.code).toBe('not_found');
+        expect(result.error.message).toContain('AWS SDK');
       }
     });
   });
@@ -413,7 +388,9 @@ describe('InlineCredentialProvider', () => {
     expect(provider.canHandle({ providerType: 's3' })).toBe(true);
   });
 
-  it('should resolve S3 credentials from config', async () => {
+  it('should defer S3 credentials to AWS SDK', async () => {
+    // S3 credentials are now handled by the AWS SDK's built-in credential
+    // provider chain in client-factory.ts
     const provider = new InlineCredentialProvider();
     provider.setProfileConfig({
       accessKeyId: 'AKIAEXAMPLE',
@@ -422,21 +399,11 @@ describe('InlineCredentialProvider', () => {
 
     const result = await provider.resolve({ providerType: 's3' });
 
-    expect(result.success).toBe(true);
-    if (result.success) {
-      const creds = result.credentials as S3Credentials;
-      expect(creds.accessKeyId).toBe('AKIAEXAMPLE');
-      expect(creds.source).toBe('inline');
-    }
-  });
-
-  it('should fail if S3 credentials not in config', async () => {
-    const provider = new InlineCredentialProvider();
-    provider.setProfileConfig({ region: 'us-east-1' }); // No credentials
-
-    const result = await provider.resolve({ providerType: 's3' });
-
+    // S3 is handled by AWS SDK, not our credential chain
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.message).toContain('AWS SDK');
+    }
   });
 
   it('should resolve local credentials (always succeeds)', async () => {

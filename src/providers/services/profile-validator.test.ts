@@ -235,23 +235,21 @@ describe('Profile Validator - S3', () => {
     },
   };
 
-  const validS3ProfileWithCredentials: S3Profile = {
-    id: 'test-s3',
-    displayName: 'Test S3',
-    provider: 's3',
-    config: {
-      accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
-      secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-    },
-  };
-
   it('should accept S3 profile with AWS CLI profile', () => {
     const result = validateProfile(validS3ProfileWithAwsProfile);
     expectValid(result);
   });
 
-  it('should accept S3 profile with explicit credentials', () => {
-    const result = validateProfile(validS3ProfileWithCredentials);
+  it('should accept S3 profile with no profile', () => {
+    const profile: S3Profile = {
+      id: 'test-s3',
+      displayName: 'Test S3',
+      provider: 's3',
+      config: {
+        region: 'us-east-1',
+      },
+    };
+    const result = validateProfile(profile);
     expectValid(result);
   });
 
@@ -261,9 +259,6 @@ describe('Profile Validator - S3', () => {
       config: {
         region: 'us-east-1',
         profile: 'default',
-        accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
-        secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-        sessionToken: 'token',
         endpoint: 'https://s3.amazonaws.com',
         forcePathStyle: true,
       },
@@ -272,7 +267,7 @@ describe('Profile Validator - S3', () => {
     expectValid(result);
   });
 
-  it('should reject S3 profile without authentication', () => {
+  it('should accept S3 profile with empty config', () => {
     const profile: S3Profile = {
       id: 'test-s3',
       displayName: 'Test S3',
@@ -280,8 +275,7 @@ describe('Profile Validator - S3', () => {
       config: {},
     };
     const result = validateProfile(profile);
-    expectInvalid(result);
-    expectErrorOnField(result, 'config');
+    expectValid(result);
   });
 
   it('should reject missing config', () => {
@@ -292,26 +286,6 @@ describe('Profile Validator - S3', () => {
     });
     expectInvalid(result);
     expectErrorOnField(result, 'config');
-  });
-
-  it('should reject accessKeyId without secretAccessKey', () => {
-    const profile: S3Profile = {
-      ...validS3ProfileWithAwsProfile,
-      config: { accessKeyId: 'AKIAIOSFODNN7EXAMPLE' },
-    };
-    const result = validateProfile(profile);
-    expectInvalid(result);
-    expectErrorOnField(result, 'config.secretAccessKey');
-  });
-
-  it('should reject secretAccessKey without accessKeyId', () => {
-    const profile: S3Profile = {
-      ...validS3ProfileWithAwsProfile,
-      config: { secretAccessKey: 'secret' },
-    };
-    const result = validateProfile(profile);
-    expectInvalid(result);
-    expectErrorOnField(result, 'config.accessKeyId');
   });
 
   it('should reject non-boolean forcePathStyle', () => {

@@ -175,25 +175,6 @@ class TestableProfileManager {
       });
     }
 
-    // Provider-specific validation
-    if (profile.provider === 's3') {
-      const s3Profile = profile;
-      if (s3Profile.config?.accessKeyId && !s3Profile.config?.secretAccessKey) {
-        errors.push({
-          field: 'config.secretAccessKey',
-          message: 'secretAccessKey is required when accessKeyId is provided',
-          code: 'required',
-        });
-      }
-      if (s3Profile.config?.secretAccessKey && !s3Profile.config?.accessKeyId) {
-        errors.push({
-          field: 'config.accessKeyId',
-          message: 'accessKeyId is required when secretAccessKey is provided',
-          code: 'required',
-        });
-      }
-    }
-
     if (profile.provider === 'sftp') {
       const sftpProfile = profile;
       if (!sftpProfile.config?.host) {
@@ -659,36 +640,18 @@ describe('ProfileManager Integration Tests', () => {
       expect(result.errors.some(e => e.field === 'provider')).toBe(true);
     });
 
-    it('should reject S3 profile with mismatched credential pair', async () => {
+    it('should accept S3 profile with empty config', async () => {
       const manager = new TestableProfileManager(profilesPath);
 
-      // accessKeyId without secretAccessKey
-      const profile1: S3Profile = {
-        id: 'incomplete-creds-1',
+      const profile: S3Profile = {
+        id: 'default-creds',
         displayName: 'Test',
         provider: 's3',
-        config: {
-          accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
-        },
+        config: {},
       };
 
-      const result1 = await manager.saveProfile(profile1);
-      expect(result1.valid).toBe(false);
-      expect(result1.errors.some(e => e.field === 'config.secretAccessKey')).toBe(true);
-
-      // secretAccessKey without accessKeyId
-      const profile2: S3Profile = {
-        id: 'incomplete-creds-2',
-        displayName: 'Test',
-        provider: 's3',
-        config: {
-          secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-        },
-      };
-
-      const result2 = await manager.saveProfile(profile2);
-      expect(result2.valid).toBe(false);
-      expect(result2.errors.some(e => e.field === 'config.accessKeyId')).toBe(true);
+      const result = await manager.saveProfile(profile);
+      expect(result.valid).toBe(true);
     });
 
     it('should reject SFTP profile missing required fields', async () => {
@@ -907,9 +870,6 @@ describe('ProfileManager Integration Tests', () => {
         config: {
           region: 'us-west-2',
           profile: 'production',
-          accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
-          secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-          sessionToken: 'AQoDYXdzEJr...',
           endpoint: 'https://s3.custom.endpoint.com',
           forcePathStyle: true,
         },
@@ -921,9 +881,6 @@ describe('ProfileManager Integration Tests', () => {
       const loaded = (await manager.getProfile('full-s3')) as S3Profile;
       expect(loaded.config.region).toBe('us-west-2');
       expect(loaded.config.profile).toBe('production');
-      expect(loaded.config.accessKeyId).toBe('AKIAIOSFODNN7EXAMPLE');
-      expect(loaded.config.secretAccessKey).toBe('wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY');
-      expect(loaded.config.sessionToken).toBe('AQoDYXdzEJr...');
       expect(loaded.config.endpoint).toBe('https://s3.custom.endpoint.com');
       expect(loaded.config.forcePathStyle).toBe(true);
     });
@@ -943,7 +900,7 @@ describe('ProfileManager Integration Tests', () => {
 
       const loaded = (await manager.getProfile('minimal-s3')) as S3Profile;
       expect(loaded.config.region).toBeUndefined();
-      expect(loaded.config.accessKeyId).toBeUndefined();
+      expect(loaded.config.profile).toBeUndefined();
     });
   });
 
@@ -1034,7 +991,10 @@ describe('Credential Resolution Chain', () => {
     expect(chain.getProviders().length).toBe(0);
   });
 
-  it('should resolve S3 credentials from environment', async () => {
+  it('should defer S3 credentials to AWS SDK (not resolve via EnvironmentCredentialProvider)', async () => {
+    // S3 credentials are now handled by the AWS SDK's built-in credential
+    // provider chain (fromIni, fromEnv, IMDS, etc.) in client-factory.ts,
+    // so our EnvironmentCredentialProvider no longer resolves S3 credentials.
     const { CredentialChain, EnvironmentCredentialProvider } =
       await import('../credentials/credential-chain.js');
 
@@ -1052,10 +1012,11 @@ describe('Credential Resolution Chain', () => {
 
       const result = await chain.resolve({ providerType: 's3', profileId: 'test' });
 
-      expect(result.success).toBe(true);
-      expect(result.resolvedBy).toBe('environment');
-      expect(result.credentials?.type).toBe('s3');
-      expect((result.credentials as any).accessKeyId).toBe('AKIATEST123456789');
+      // S3 is now handled by AWS SDK directly, not our credential chain
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.errors[0].error.message).toContain('AWS SDK');
+      }
     } finally {
       // Restore original env vars
       if (originalAccessKey !== undefined) {
