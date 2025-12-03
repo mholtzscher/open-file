@@ -165,7 +165,7 @@ function BufferViewHeader({
   nameColumnWidth,
 }: BufferViewHeaderProps) {
   return (
-    <text fg={Theme.getMutedColor()}>
+    <text flexShrink={0} fg={Theme.getMutedColor()}>
       {formatHeader(showIcons, showSizes, showDates, nameColumnWidth)}
     </text>
   );
