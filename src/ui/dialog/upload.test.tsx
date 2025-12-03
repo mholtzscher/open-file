@@ -244,39 +244,8 @@ describe('UploadDialog', () => {
     });
   });
 
-  describe('scroll offset management', () => {
-    it('calculates scroll offset when moving down', () => {
-      const entriesCount = 20;
-      const visibleHeight = 10;
-      let selectedIndex = 0;
-      let scrollOffset = 0;
-
-      // Move down past visible area
-      for (let i = 0; i < 15; i++) {
-        selectedIndex = Math.min(selectedIndex + 1, entriesCount - 1);
-        if (selectedIndex >= scrollOffset + visibleHeight - 1) {
-          scrollOffset = Math.min(selectedIndex - visibleHeight + 2, entriesCount - visibleHeight);
-        }
-      }
-
-      expect(selectedIndex).toBe(15);
-      expect(scrollOffset).toBeGreaterThan(0);
-    });
-
-    it('calculates scroll offset when moving up', () => {
-      let selectedIndex = 10;
-      let scrollOffset = 5;
-
-      // Move up past scroll offset
-      selectedIndex = Math.max(selectedIndex - 8, 0);
-      if (selectedIndex < scrollOffset) {
-        scrollOffset = selectedIndex;
-      }
-
-      expect(selectedIndex).toBe(2);
-      expect(scrollOffset).toBe(2);
-    });
-  });
+  // Note: Scroll offset management is now handled by OpenTUI's ScrollBox component.
+  // The component automatically scrolls to keep the selected item visible.
 
   describe('file filtering', () => {
     it('filters file entries by extension', () => {

@@ -4,8 +4,11 @@
  * Renders the entry list as a buffer that can be edited.
  * Similar to oil.nvim's approach - the buffer itself is the interface.
  * Uses BufferContext to access buffer state.
+ * Uses OpenTUI's ScrollBox for viewport management and scrolling.
  */
 
+import { useRef, useEffect } from 'react';
+import type { ScrollBoxRenderable } from '@opentui/core';
 import { Entry, EntryType } from '../types/entry.js';
 import { useBuffer } from '../contexts/BufferContext.js';
 import { Theme } from './theme.js';
@@ -146,6 +149,29 @@ function getEntryColor(entry: Entry, isSelected: boolean): string {
 }
 
 /**
+ * BufferView header component
+ */
+interface BufferViewHeaderProps {
+  showIcons: boolean;
+  showSizes: boolean;
+  showDates: boolean;
+  nameColumnWidth: number;
+}
+
+function BufferViewHeader({
+  showIcons,
+  showSizes,
+  showDates,
+  nameColumnWidth,
+}: BufferViewHeaderProps) {
+  return (
+    <text fg={Theme.getMutedColor()}>
+      {formatHeader(showIcons, showSizes, showDates, nameColumnWidth)}
+    </text>
+  );
+}
+
+/**
  * BufferView React component
  */
 export function BufferView({
@@ -156,6 +182,9 @@ export function BufferView({
 }: BufferViewProps) {
   // Get buffer state from context
   const bufferState = useBuffer();
+
+  // Ref for programmatic scrolling
+  const scrollBoxRef = useRef<ScrollBoxRenderable>(null);
 
   // Calculate dynamic name column width based on terminal size
   const nameColumnWidth = calculateNameColumnWidth(terminalWidth);
@@ -168,16 +197,16 @@ export function BufferView({
 
   const cursorIndex = bufferState.selection.cursorIndex;
 
-  // Get visible entries (with scroll offset)
-  const viewportHeight = bufferState.viewportHeight;
-  const visibleEntries = entries.slice(
-    bufferState.scrollOffset,
-    bufferState.scrollOffset + viewportHeight
-  );
-
   // Check if in insert mode
   const isInsertMode = bufferState.mode === EditMode.Insert;
   const editBuffer = bufferState.editBuffer || '';
+
+  // Scroll to keep cursor visible when it changes
+  useEffect(() => {
+    if (scrollBoxRef.current && entries.length > 0) {
+      scrollBoxRef.current.scrollTo({ x: 0, y: cursorIndex });
+    }
+  }, [cursorIndex, entries.length]);
 
   // If no entries, show empty indicator (but still allow insert mode)
   if (entries.length === 0 && !isInsertMode) {
@@ -190,41 +219,45 @@ export function BufferView({
 
   return (
     <box flexDirection="column" width="100%" height="100%">
-      <text fg={Theme.getMutedColor()}>
-        {formatHeader(showIcons, showSizes, showDates, nameColumnWidth)}
-      </text>
-      {visibleEntries.map((entry, idx) => {
-        const realIndex = bufferState.scrollOffset + idx;
-        const isSelected = realIndex === cursorIndex;
-        const isInVisualSelection =
-          bufferState.selection.isActive &&
-          bufferState.selection.selectionStart !== undefined &&
-          realIndex >=
-            Math.min(
-              bufferState.selection.selectionStart,
-              bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
-            ) &&
-          realIndex <=
-            Math.max(
-              bufferState.selection.selectionStart,
-              bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
-            );
+      <BufferViewHeader
+        showIcons={showIcons}
+        showSizes={showSizes}
+        showDates={showDates}
+        nameColumnWidth={nameColumnWidth}
+      />
+      <scrollbox ref={scrollBoxRef} flexGrow={1} scrollY={true} viewportCulling={true}>
+        {entries.map((entry, idx) => {
+          const isSelected = idx === cursorIndex;
+          const isInVisualSelection =
+            bufferState.selection.isActive &&
+            bufferState.selection.selectionStart !== undefined &&
+            idx >=
+              Math.min(
+                bufferState.selection.selectionStart,
+                bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
+              ) &&
+            idx <=
+              Math.max(
+                bufferState.selection.selectionStart,
+                bufferState.selection.selectionEnd ?? bufferState.selection.selectionStart
+              );
 
-        const cursor = isSelected ? '> ' : '  ';
-        const content =
-          cursor + formatEntry(entry, showIcons, showSizes, showDates, nameColumnWidth);
-        const color = getEntryColor(entry, isSelected);
+          const cursor = isSelected ? '> ' : '  ';
+          const content =
+            cursor + formatEntry(entry, showIcons, showSizes, showDates, nameColumnWidth);
+          const color = getEntryColor(entry, isSelected);
 
-        return (
-          <text
-            key={entry.id}
-            fg={color}
-            bg={isInVisualSelection ? Theme.getBgSurface() : undefined}
-          >
-            {content}
-          </text>
-        );
-      })}
+          return (
+            <text
+              key={entry.id}
+              fg={color}
+              bg={isInVisualSelection ? Theme.getBgSurface() : undefined}
+            >
+              {content}
+            </text>
+          );
+        })}
+      </scrollbox>
       {/* Show insert mode input line */}
       {isInsertMode && (
         <text fg={Theme.getInsertModeColor()} bg={Theme.getBgSurface()}>

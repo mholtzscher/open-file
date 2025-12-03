@@ -5,7 +5,7 @@
  * Declarative React component that uses hooks for state management and rendering.
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useBufferState } from '../hooks/useBufferState.js';
 import { useNavigationHandlers } from '../hooks/useNavigationHandlers.js';
 import { useTerminalSize, useLayoutDimensions } from '../hooks/useTerminalSize.js';
@@ -111,11 +111,6 @@ export function FileExplorer() {
   // Initialize buffer state
   const initialPath = '';
   const bufferState = useBufferState([], initialPath);
-
-  // Update viewport height when layout changes
-  useEffect(() => {
-    bufferState.setViewportHeight(layout.contentHeight);
-  }, [layout.contentHeight, bufferState.setViewportHeight]);
 
   // ============================================
   // Navigation Handlers

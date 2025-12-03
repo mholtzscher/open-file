@@ -5,7 +5,7 @@
  * This hook manages entries, cursor, selection, and edit modes.
  */
 
-import { useReducer, useCallback, useMemo } from 'react';
+import { useReducer, useCallback } from 'react';
 import { Entry } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
 import { SortConfig } from '../utils/sorting.js';
@@ -19,15 +19,12 @@ export interface UseBufferStateReturn {
   sortConfig: SortConfig;
   showHiddenFiles: boolean;
   searchQuery: string;
-  scrollOffset: number;
-  viewportHeight: number;
   editBuffer: string;
   editBufferCursor: number;
 
   // Buffer data operations
   setEntries: (entries: Entry[]) => void;
   setCurrentPath: (path: string) => void;
-  setViewportHeight: (height: number) => void;
 
   // Edit buffer operations
   getEditBuffer: () => string;
@@ -97,10 +94,6 @@ export function useBufferState(
 
   const setCurrentPath = useCallback((path: string) => {
     dispatch({ type: 'SET_CURRENT_PATH', path });
-  }, []);
-
-  const setViewportHeight = useCallback((height: number) => {
-    dispatch({ type: 'SET_VIEWPORT_HEIGHT', height });
   }, []);
 
   // Edit buffer operations
@@ -259,7 +252,6 @@ export function useBufferState(
     ...state,
     setEntries,
     setCurrentPath,
-    setViewportHeight,
     getEditBuffer,
     getEditBufferCursor,
     setEditBuffer,

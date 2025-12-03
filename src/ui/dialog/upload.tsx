@@ -1,10 +1,12 @@
 /**
  * UploadDialog React component
  *
- * Interactive file upload dialog with file browser, selection, and queue management
+ * Interactive file upload dialog with file browser, selection, and queue management.
+ * Uses OpenTUI's ScrollBox for viewport management and scrolling.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import type { ScrollBoxRenderable } from '@opentui/core';
 import { useTerminalSize } from '../../hooks/useTerminalSize.js';
 import { useKeyboardHandler, KeyboardPriority } from '../../contexts/KeyboardContext.js';
 import {
@@ -32,7 +34,6 @@ interface DialogState {
   currentPath: string;
   entries: LocalFileEntry[];
   selectedIndex: number;
-  scrollOffset: number;
   selectedFiles: Set<string>;
   filter: FileTypeFilter;
   searchPattern: string;
@@ -49,12 +50,21 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
     currentPath: process.cwd(),
     entries: [],
     selectedIndex: 0,
-    scrollOffset: 0,
     selectedFiles: new Set(),
     filter: FileTypeFilter.All,
     searchPattern: '',
     isSearchMode: false,
   });
+
+  // Ref for programmatic scrolling
+  const scrollBoxRef = useRef<ScrollBoxRenderable>(null);
+
+  // Scroll to keep selected item visible when it changes
+  useEffect(() => {
+    if (scrollBoxRef.current && state.entries.length > 0) {
+      scrollBoxRef.current.scrollTo({ x: 0, y: state.selectedIndex });
+    }
+  }, [state.selectedIndex, state.entries.length]);
 
   // Use most of the available space, but leave room for margins
   const windowWidth = Math.min(80, terminalSize.width - 4);
@@ -90,35 +100,21 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
     (key: KeyboardKey) => {
       if (!visible) return false;
 
-      // Estimate visible list height (rough, will work for dynamic sizing)
-      const estimatedListHeight = Math.max(3, windowHeight - 7);
-
       switch (key.name) {
         case 'j': {
-          // Move down with scrolling
+          // Move down
           setState(prev => {
             const newIndex = Math.min(prev.selectedIndex + 1, prev.entries.length - 1);
-            let newOffset = prev.scrollOffset;
-            if (newIndex >= prev.scrollOffset + estimatedListHeight - 1) {
-              newOffset = Math.min(
-                newIndex - estimatedListHeight + 2,
-                prev.entries.length - estimatedListHeight
-              );
-            }
-            return { ...prev, selectedIndex: newIndex, scrollOffset: Math.max(0, newOffset) };
+            return { ...prev, selectedIndex: newIndex };
           });
           return true;
         }
 
         case 'k': {
-          // Move up with scrolling
+          // Move up
           setState(prev => {
             const newIndex = Math.max(prev.selectedIndex - 1, 0);
-            let newOffset = prev.scrollOffset;
-            if (newIndex < prev.scrollOffset) {
-              newOffset = newIndex;
-            }
-            return { ...prev, selectedIndex: newIndex, scrollOffset: newOffset };
+            return { ...prev, selectedIndex: newIndex };
           });
           return true;
         }
@@ -184,7 +180,7 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
           return true; // Block all other keys when upload dialog is open
       }
     },
-    [visible, windowHeight, state, onConfirm, onCancel]
+    [visible, state, onConfirm, onCancel]
   );
 
   useKeyboardHandler(handleKey, KeyboardPriority.High);
@@ -208,44 +204,46 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
       {/* Path display */}
       <text fg={Theme.getTextColor()}>📁 {state.currentPath}</text>
 
-      {/* File list - grows to fill available space */}
-      <box flexDirection="column" overflow="hidden" marginTop={1} marginBottom={1}>
+      {/* File list with ScrollBox for scrolling */}
+      <scrollbox
+        ref={scrollBoxRef}
+        flexGrow={1}
+        scrollY={true}
+        viewportCulling={true}
+        marginTop={1}
+        marginBottom={1}
+      >
         {state.entries.length === 0 ? (
           <text fg={Theme.getMutedColor()}>
             {state.error ? `Error: ${state.error}` : 'No files'}
           </text>
         ) : (
-          // Show files based on scroll offset
-          // Since we can't know exact height, just show a reasonable amount
-          state.entries
-            .slice(state.scrollOffset, state.scrollOffset + 15)
-            .map((entry, visibleIndex) => {
-              const actualIndex = state.scrollOffset + visibleIndex;
-              const isSelected = actualIndex === state.selectedIndex;
-              const isSelectedFile = state.selectedFiles.has(entry.path);
-              const prefix = entry.isDirectory ? '📁' : '📄';
-              const checkmark = isSelectedFile ? '✓' : ' ';
-              const displayName = `${checkmark} ${prefix} ${entry.name}`;
+          state.entries.map((entry, idx) => {
+            const isSelected = idx === state.selectedIndex;
+            const isSelectedFile = state.selectedFiles.has(entry.path);
+            const prefix = entry.isDirectory ? '📁' : '📄';
+            const checkmark = isSelectedFile ? '✓' : ' ';
+            const displayName = `${checkmark} ${prefix} ${entry.name}`;
 
-              return (
-                <text
-                  key={entry.path}
-                  fg={
-                    isSelected
-                      ? Theme.getInfoColor()
-                      : isSelectedFile
-                        ? Theme.getSuccessColor()
-                        : Theme.getTextColor()
-                  }
-                  bg={isSelected ? Theme.getBgSurface() : undefined}
-                  width={contentWidth}
-                >
-                  {displayName}
-                </text>
-              );
-            })
+            return (
+              <text
+                key={entry.path}
+                fg={
+                  isSelected
+                    ? Theme.getInfoColor()
+                    : isSelectedFile
+                      ? Theme.getSuccessColor()
+                      : Theme.getTextColor()
+                }
+                bg={isSelected ? Theme.getBgSurface() : undefined}
+                width={contentWidth}
+              >
+                {displayName}
+              </text>
+            );
+          })
         )}
-      </box>
+      </scrollbox>
 
       {/* Selection summary */}
       {selectedCount > 0 && (

@@ -21,8 +21,6 @@ export interface BufferState {
   sortConfig: SortConfig;
   showHiddenFiles: boolean;
   searchQuery: string;
-  scrollOffset: number;
-  viewportHeight: number;
   editBuffer: string;
   editBufferCursor: number;
 }
@@ -35,8 +33,6 @@ export const INITIAL_BUFFER_STATE: BufferState = {
   sortConfig: DEFAULT_SORT_CONFIG,
   showHiddenFiles: false,
   searchQuery: '',
-  scrollOffset: 0,
-  viewportHeight: 20,
   editBuffer: '',
   editBufferCursor: 0,
 };
@@ -48,7 +44,6 @@ export const INITIAL_BUFFER_STATE: BufferState = {
 export type BufferAction =
   | { type: 'SET_ENTRIES'; entries: Entry[] }
   | { type: 'SET_CURRENT_PATH'; path: string }
-  | { type: 'SET_VIEWPORT_HEIGHT'; height: number }
   | { type: 'MOVE_CURSOR'; amount: number }
   | { type: 'CURSOR_TO_TOP' }
   | { type: 'CURSOR_TO_BOTTOM' }
@@ -78,23 +73,6 @@ function constrainCursor(index: number, length: number): number {
   return Math.max(0, Math.min(index, length - 1));
 }
 
-function calculateScrollOffset(
-  currentOffset: number,
-  cursorIndex: number,
-  viewportHeight: number
-): number {
-  // If cursor is above viewport, scroll up
-  if (cursorIndex < currentOffset) {
-    return cursorIndex;
-  }
-  // If cursor is below viewport, scroll down
-  if (cursorIndex >= currentOffset + viewportHeight) {
-    return cursorIndex - viewportHeight + 1;
-  }
-  // Cursor is visible, no scroll needed
-  return currentOffset;
-}
-
 // ============================================================================
 // Reducer
 // ============================================================================
@@ -106,11 +84,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
       const sortedEntries = sortEntries([...action.entries], state.sortConfig);
       // Ensure cursor is still valid
       const newCursorIndex = constrainCursor(state.selection.cursorIndex, sortedEntries.length);
-      const newScrollOffset = calculateScrollOffset(
-        state.scrollOffset,
-        newCursorIndex,
-        state.viewportHeight
-      );
 
       return {
         ...state,
@@ -119,7 +92,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
           ...state.selection,
           cursorIndex: newCursorIndex,
         },
-        scrollOffset: newScrollOffset,
       };
     }
 
@@ -129,27 +101,10 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
         currentPath: action.path,
       };
 
-    case 'SET_VIEWPORT_HEIGHT':
-      return {
-        ...state,
-        viewportHeight: action.height,
-        // Re-calculate scroll offset with new height
-        scrollOffset: calculateScrollOffset(
-          state.scrollOffset,
-          state.selection.cursorIndex,
-          action.height
-        ),
-      };
-
     case 'MOVE_CURSOR': {
       const newIndex = constrainCursor(
         state.selection.cursorIndex + action.amount,
         state.entries.length
-      );
-      const newScrollOffset = calculateScrollOffset(
-        state.scrollOffset,
-        newIndex,
-        state.viewportHeight
       );
 
       return {
@@ -158,7 +113,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
           ...state.selection,
           cursorIndex: newIndex,
         },
-        scrollOffset: newScrollOffset,
       };
     }
 
@@ -169,23 +123,16 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
           ...state.selection,
           cursorIndex: 0,
         },
-        scrollOffset: 0,
       };
 
     case 'CURSOR_TO_BOTTOM': {
       const newIndex = Math.max(0, state.entries.length - 1);
-      const newScrollOffset = calculateScrollOffset(
-        state.scrollOffset,
-        newIndex,
-        state.viewportHeight
-      );
       return {
         ...state,
         selection: {
           ...state.selection,
           cursorIndex: newIndex,
         },
-        scrollOffset: newScrollOffset,
       };
     }
 
@@ -210,11 +157,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
           ? state.selection.cursorIndex - 1
           : state.selection.cursorIndex + 1;
       const newIndex = constrainCursor(newEnd, state.entries.length);
-      const newScrollOffset = calculateScrollOffset(
-        state.scrollOffset,
-        newIndex,
-        state.viewportHeight
-      );
 
       return {
         ...state,
@@ -223,7 +165,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
           cursorIndex: newIndex,
           selectionEnd: newIndex,
         },
-        scrollOffset: newScrollOffset,
       };
     }
 
@@ -275,7 +216,6 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
         mode: EditMode.Normal,
         editBuffer: '',
         // searchQuery is preserved
-        scrollOffset: 0,
       };
 
     case 'SET_SORT_CONFIG': {
