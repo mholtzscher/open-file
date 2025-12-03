@@ -33,8 +33,8 @@ const PROFILES_TEMPLATE = `// Open-File Profiles Configuration
 // selector to edit this file. The "Local Filesystem" profile is
 // built-in and always available.
 //
-// Supported providers: s3, gcs, sftp, ftp, local
-// (nfs, smb, gdrive coming soon)
+// Supported providers: s3, gcs, sftp, ftp, smb, gdrive, local
+// (nfs coming soon)
 //
 // Documentation: https://github.com/mikea/open-file#profiles
 {
@@ -113,6 +113,26 @@ const PROFILES_TEMPLATE = `// Open-File Profiles Configuration
     //     "password": "anonymous@",
     //     // For FTPS: true (explicit) or "implicit"
     //     // "secure": true
+    //   }
+    // },
+
+    // ============================================================
+    // Google Drive Example
+    // ============================================================
+    // First, run: open-file auth gdrive my-gdrive --client-id <id> --client-secret <secret>
+    // This will populate the refreshToken automatically.
+    // {
+    //   "id": "my-gdrive",
+    //   "displayName": "My Google Drive",
+    //   "provider": "gdrive",
+    //   "config": {
+    //     "clientId": "123456789.apps.googleusercontent.com",
+    //     "clientSecret": "GOCSPX-...",
+    //     "refreshToken": "1//...",  // Set by 'open-file auth gdrive'
+    //     // Optional: Include Shared Drives
+    //     "includeSharedDrives": true,
+    //     // Optional: Cache TTL in milliseconds (default: 60000)
+    //     "cacheTtlMs": 60000
     //   }
     // }
   ]

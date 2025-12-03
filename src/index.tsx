@@ -10,12 +10,13 @@ import { createCliRenderer } from '@opentui/core';
 import { createRoot } from '@opentui/react';
 import { App } from './ui/app.js';
 import { FileProfileManager } from './providers/services/file-profile-manager.js';
-import { parseArgs, printHelp, printVersion } from './utils/cli.js';
+import { parseArgs, printHelp, printVersion, printAuthHelp } from './utils/cli.js';
 import { getLogger, shutdownLogger, setLogLevel, LogLevel } from './utils/logger.js';
 import { openInExternalEditor } from './utils/external-editor.js';
 import { getProfilesPath } from './providers/services/profile-storage.js';
 import { initializeThemes } from './themes/index.js';
 import type { KeyboardKey, KeyboardDispatcher } from './types/keyboard.js';
+import { runAuthCommand, printAuthHelp as printGDriveAuthHelp } from './commands/auth-gdrive.js';
 
 // Global keyboard event dispatcher - bridges external renderer to React context
 let globalKeyboardDispatcher: KeyboardDispatcher | null = null;
@@ -39,6 +40,27 @@ async function main() {
     // Ensure log level is set in case logger was already initialized
     setLogLevel(logLevel);
     logger.info('Application starting', { args, debug: cliArgs.debug });
+
+    // Handle auth subcommand - this runs before TUI
+    if (cliArgs.subCommand === 'auth') {
+      if (cliArgs.help || !cliArgs.authProvider) {
+        if (cliArgs.authProvider === 'gdrive') {
+          printGDriveAuthHelp();
+        } else {
+          printAuthHelp();
+        }
+        process.exit(0);
+      }
+
+      if (cliArgs.authProvider === 'gdrive') {
+        const exitCode = await runAuthCommand(cliArgs.subArgs || []);
+        process.exit(exitCode);
+      } else {
+        console.error(`Unknown auth provider: ${cliArgs.authProvider}`);
+        printAuthHelp();
+        process.exit(1);
+      }
+    }
 
     // Handle help and version flags
     if (cliArgs.help) {
