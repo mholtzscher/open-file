@@ -86,6 +86,10 @@ export type { FTPProviderLogger, FTPProviderDependencies } from './ftp/index.js'
 export { LocalProvider } from './local/index.js';
 export type { LocalProviderLogger, LocalProviderDependencies } from './local/index.js';
 
+// SMB Provider
+export { SMBProvider } from './smb/index.js';
+export type { SMBProviderLogger, SMBProviderDependencies } from './smb/index.js';
+
 // Test utilities (for consumers that need to test provider integrations)
 export * from './__tests__/fixtures.js';
 export * from './__tests__/test-utils.js';

@@ -187,6 +187,34 @@ export class ProviderStorageAdapter implements StorageContextValue {
     }
   }
 
+  /**
+   * Ensure the provider is connected before performing operations.
+   * For connection-oriented providers (SFTP, SMB, FTP), this will
+   * establish the connection if not already connected.
+   */
+  private async ensureConnected(): Promise<void> {
+    // Check if provider supports connection lifecycle
+    if (!this.provider.connect || !this.provider.isConnected) {
+      return; // Provider doesn't need connection management
+    }
+
+    // Already connected
+    if (this.provider.isConnected()) {
+      return;
+    }
+
+    // Attempt to connect
+    console.error(`[ProviderStorageAdapter] Auto-connecting to ${this.provider.name}...`);
+    const result = await this.provider.connect();
+
+    if (!isSuccess(result)) {
+      throw new Error(`Failed to connect: ${result.error?.message}`);
+    }
+
+    this.setState({ isConnected: true });
+    console.error(`[ProviderStorageAdapter] Auto-connect successful`);
+  }
+
   // ==========================================================================
   // Navigation Actions
   // ==========================================================================
@@ -198,6 +226,9 @@ export class ProviderStorageAdapter implements StorageContextValue {
     this.setState({ isLoading: true, error: undefined });
 
     try {
+      // Ensure connected before listing
+      await this.ensureConnected();
+
       const result = await this.provider.list(path);
 
       if (isSuccess(result)) {
@@ -267,6 +298,9 @@ export class ProviderStorageAdapter implements StorageContextValue {
     this.setState({ isLoading: true, error: undefined });
 
     try {
+      // Ensure connected before listing
+      await this.ensureConnected();
+
       const result = await this.provider.list(targetPath, providerOptions);
 
       if (isSuccess(result)) {
@@ -490,6 +524,9 @@ export class ProviderStorageAdapter implements StorageContextValue {
     if (!this.provider.listContainers) {
       throw new Error('listContainers method not available');
     }
+
+    // Ensure connected before listing containers
+    await this.ensureConnected();
 
     return await this.executeOperation(async () => {
       return await this.provider.listContainers!();

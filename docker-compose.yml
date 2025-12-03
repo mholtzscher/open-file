@@ -62,3 +62,36 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+
+  samba:
+    image: dperson/samba:latest
+    container_name: open-file-samba
+    ports:
+      - '445:445'
+      - '139:139'
+    environment:
+      - TZ=UTC
+      - USERID=1000
+      - GROUPID=1000
+    volumes:
+      - './test-data/samba-data:/share'
+      - './test-data/scripts/samba-init.sh:/etc/samba-init.sh:ro'
+    # -p: disable nmbd (NetBIOS) to speed up startup
+    # -u: create user with format "username;password"
+    # -s: create share with format "name;path;browsable;readonly;guest;users;admins;writelist;comment"
+    # -g: add global config options
+    # -G: add share-level config options
+    command: >-
+      -p
+      -u "testuser;testpass"
+      -s "testshare;/share;yes;no;no;testuser;testuser;testuser;Test Share"
+      -g "ntlm auth = ntlmv1-permitted"
+      -g "lanman auth = yes"
+      -g "raw NTLMv2 auth = yes"
+      -g "vfs objects ="
+    healthcheck:
+      test: ['CMD-SHELL', 'netstat -tlnp | grep -q ":445"']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s

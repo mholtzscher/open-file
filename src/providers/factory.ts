@@ -68,11 +68,10 @@ export async function createProvider(profile: Profile): Promise<StorageProvider>
       // return new NFSProvider(profile);
       throw new Error('NFSProvider not yet implemented');
 
-    case 'smb':
-      // Phase 4D: SMB Provider
-      // const { SMBProvider } = await import('./smb/smb-provider.js');
-      // return new SMBProvider(profile);
-      throw new Error('SMBProvider not yet implemented');
+    case 'smb': {
+      const { SMBProvider } = await import('./smb/smb-provider.js');
+      return new SMBProvider(profile);
+    }
 
     case 'gdrive':
       // Phase 4G: Google Drive Provider
@@ -127,10 +126,11 @@ export function isProviderImplemented(providerType: ProviderType): boolean {
       return true; // SFTPProvider implemented
     case 'ftp':
       return true; // FTPProvider implemented
+    case 'smb':
+      return true; // SMBProvider implemented
     case 'local':
       return true; // LocalProvider implemented
     case 'nfs':
-    case 'smb':
     case 'gdrive':
       return false;
     default:
