@@ -9,7 +9,12 @@ import { useReducer, useCallback } from 'react';
 import { Entry } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
 import { SortConfig } from '../utils/sorting.js';
-import { bufferReducer, INITIAL_BUFFER_STATE, SelectionState } from './buffer-reducer.js';
+import {
+  bufferReducer,
+  INITIAL_BUFFER_STATE,
+  SelectionState,
+  getFilteredEntries,
+} from './buffer-reducer.js';
 
 export interface UseBufferStateReturn {
   entries: Entry[];
@@ -219,12 +224,15 @@ export function useBufferState(
 
   // Getting data
   const getSelectedEntry = useCallback((): Entry | undefined => {
-    return state.entries[state.selection.cursorIndex];
-  }, [state.entries, state.selection.cursorIndex]);
+    const entries = getFilteredEntries(state);
+    return entries[state.selection.cursorIndex];
+  }, [state.entries, state.selection.cursorIndex, state.searchQuery]);
 
   const getSelectedEntries = useCallback((): Entry[] => {
+    const entries = getFilteredEntries(state);
+
     if (!state.selection.isActive || state.selection.selectionStart === undefined) {
-      const entry = state.entries[state.selection.cursorIndex];
+      const entry = entries[state.selection.cursorIndex];
       return entry ? [entry] : [];
     }
 
@@ -236,17 +244,10 @@ export function useBufferState(
       state.selection.selectionStart,
       state.selection.selectionEnd ?? state.selection.selectionStart
     );
-    return state.entries.slice(start, end + 1);
-  }, [state.selection, state.entries]);
+    return entries.slice(start, end + 1);
+  }, [state.selection, state.entries, state.searchQuery]);
 
-  const getFilteredEntries = useCallback((): Entry[] => {
-    if (!state.searchQuery) {
-      return state.entries;
-    }
-
-    const query = state.searchQuery.toLowerCase();
-    return state.entries.filter(entry => entry.name.toLowerCase().includes(query));
-  }, [state.entries, state.searchQuery]);
+  const getFilteredEntriesCallback = useCallback((): Entry[] => getFilteredEntries(state), [state]);
 
   return {
     ...state,
@@ -284,6 +285,6 @@ export function useBufferState(
     toggleHiddenFiles,
     getSelectedEntry,
     getSelectedEntries,
-    getFilteredEntries,
+    getFilteredEntries: getFilteredEntriesCallback,
   };
 }

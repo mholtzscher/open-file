@@ -146,7 +146,7 @@ export function FileExplorer() {
   // ============================================
   // Preview Hook
   // ============================================
-  const selectedEntry = bufferState.entries[bufferState.selection.cursorIndex];
+  const selectedEntry = bufferState.getSelectedEntry();
   // For container-based providers (S3, GCS), require bucket to be selected
   // For non-container providers (Local, SFTP, FTP), just need to be initialized
   const hasContainers = storage.hasCapability(Capability.Containers);

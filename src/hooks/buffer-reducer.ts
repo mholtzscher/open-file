@@ -73,6 +73,14 @@ function constrainCursor(index: number, length: number): number {
   return Math.max(0, Math.min(index, length - 1));
 }
 
+export function getFilteredEntries(state: BufferState): Entry[] {
+  if (!state.searchQuery) {
+    return state.entries;
+  }
+  const query = state.searchQuery.toLowerCase();
+  return state.entries.filter(entry => entry.name.toLowerCase().includes(query));
+}
+
 // ============================================================================
 // Reducer
 // ============================================================================
@@ -88,9 +96,14 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
       return {
         ...state,
         entries: sortedEntries,
+        // Clear search query when navigating to new directory
+        searchQuery: '',
+        // Reset selection to avoid stale indices referencing old filtered list
         selection: {
-          ...state.selection,
           cursorIndex: newCursorIndex,
+          isActive: false,
+          selectionStart: undefined,
+          selectionEnd: undefined,
         },
       };
     }
@@ -102,9 +115,10 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
       };
 
     case 'MOVE_CURSOR': {
+      const filteredEntries = getFilteredEntries(state);
       const newIndex = constrainCursor(
         state.selection.cursorIndex + action.amount,
-        state.entries.length
+        filteredEntries.length
       );
 
       return {
@@ -126,7 +140,8 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
       };
 
     case 'CURSOR_TO_BOTTOM': {
-      const newIndex = Math.max(0, state.entries.length - 1);
+      const filteredEntries = getFilteredEntries(state);
+      const newIndex = Math.max(0, filteredEntries.length - 1);
       return {
         ...state,
         selection: {
@@ -152,11 +167,12 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
       if (!state.selection.isActive || state.selection.selectionStart === undefined) {
         return state;
       }
+      const filteredEntries = getFilteredEntries(state);
       const newEnd =
         action.direction === 'up'
           ? state.selection.cursorIndex - 1
           : state.selection.cursorIndex + 1;
-      const newIndex = constrainCursor(newEnd, state.entries.length);
+      const newIndex = constrainCursor(newEnd, filteredEntries.length);
 
       return {
         ...state,
@@ -231,6 +247,14 @@ export function bufferReducer(state: BufferState, action: BufferAction): BufferS
       return {
         ...state,
         searchQuery: action.query,
+        // Reset cursor to beginning when search query changes to avoid out-of-bounds
+        selection: {
+          ...state.selection,
+          cursorIndex: 0,
+          isActive: false,
+          selectionStart: undefined,
+          selectionEnd: undefined,
+        },
       };
 
     case 'TOGGLE_HIDDEN_FILES':
