@@ -49,7 +49,6 @@ const providerRegistry = new Map<ProviderType, ProviderConstructor>([
   ['smb', SMBProvider],
   ['gdrive', GoogleDriveProvider],
   ['local', LocalProvider],
-  // 'nfs' intentionally not registered (not yet implemented)
 ]);
 
 /**

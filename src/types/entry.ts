@@ -3,7 +3,7 @@
  *
  * Entry types with extended metadata support for all provider types.
  * Supports files, directories, buckets, and symlinks with metadata
- * for cloud storage (S3/GCS), POSIX filesystems (SFTP/NFS), and more.
+ * for cloud storage (S3/GCS), POSIX filesystems (SFTP), and more.
  */
 
 /**
@@ -16,7 +16,7 @@ export enum EntryType {
   Directory = 'directory',
   /** Storage container (S3/GCS bucket, SMB share, Google Drive) */
   Bucket = 'bucket',
-  /** Symbolic link (SFTP, NFS) */
+  /** Symbolic link (SFTP) */
   Symlink = 'symlink',
 }
 
@@ -38,7 +38,7 @@ export interface EntryMetadata {
   /** Version identifier */
   versionId?: string;
 
-  // POSIX metadata (SFTP, NFS)
+  // POSIX metadata (SFTP)
   /** POSIX permissions (e.g., 0o755) */
   permissions?: number;
   /** File owner username */

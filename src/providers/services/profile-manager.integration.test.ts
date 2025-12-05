@@ -166,7 +166,7 @@ class TestableProfileManager {
     }
 
     // Validate provider
-    const validProviders = ['s3', 'gcs', 'sftp', 'ftp', 'nfs', 'smb', 'gdrive', 'local'];
+    const validProviders = ['s3', 'gcs', 'sftp', 'ftp', 'smb', 'gdrive', 'local'];
     if (!profile.provider) {
       errors.push({ field: 'provider', message: 'provider is required', code: 'required' });
     } else if (!validProviders.includes(profile.provider)) {

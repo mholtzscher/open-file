@@ -9,7 +9,6 @@ import type {
   GCSProfile,
   SFTPProfile,
   FTPProfile,
-  NFSProfile,
   SMBProfile,
   GoogleDriveProfile,
   LocalProfile,
@@ -171,7 +170,7 @@ describe('Profile Validator - Base Profile', () => {
     });
 
     it('should accept all valid provider types', () => {
-      const providers = ['s3', 'gcs', 'sftp', 'ftp', 'nfs', 'smb', 'gdrive', 'local'];
+      const providers = ['s3', 'gcs', 'sftp', 'ftp', 'smb', 'gdrive', 'local'];
       for (const provider of providers) {
         const profile: Record<string, unknown> = {
           id: 'test',
@@ -185,8 +184,6 @@ describe('Profile Validator - Base Profile', () => {
           profile.config = { profile: 'default' };
         } else if (provider === 'sftp') {
           profile.config = { host: 'example.com', username: 'user', authMethod: 'agent' };
-        } else if (provider === 'nfs') {
-          profile.config = { host: 'example.com', exportPath: '/exports' };
         } else if (provider === 'smb') {
           profile.config = { host: 'example.com', share: 'documents' };
         } else if (provider === 'gdrive') {
@@ -511,91 +508,6 @@ describe('Profile Validator - FTP', () => {
     });
     expectInvalid(result);
     expectErrorOnField(result, 'config.secure');
-  });
-});
-
-// ============================================================================
-// NFS Profile Validation
-// ============================================================================
-
-describe('Profile Validator - NFS', () => {
-  const validNFSProfile: NFSProfile = {
-    id: 'test-nfs',
-    displayName: 'Test NFS',
-    provider: 'nfs',
-    config: {
-      host: 'example.com',
-      exportPath: '/exports/data',
-    },
-  };
-
-  it('should accept minimal valid NFS profile', () => {
-    const result = validateProfile(validNFSProfile);
-    expectValid(result);
-  });
-
-  it('should reject missing host', () => {
-    const result = validateProfile({
-      ...validNFSProfile,
-      config: { exportPath: '/exports' },
-    });
-    expectInvalid(result);
-    expectErrorOnField(result, 'config.host');
-  });
-
-  it('should reject missing exportPath', () => {
-    const result = validateProfile({
-      ...validNFSProfile,
-      config: { host: 'example.com' },
-    });
-    expectInvalid(result);
-    expectErrorOnField(result, 'config.exportPath');
-  });
-
-  it('should accept valid NFS versions', () => {
-    for (const version of [3, 4, 4.1, 4.2]) {
-      const result = validateProfile({
-        ...validNFSProfile,
-        config: { ...validNFSProfile.config, version },
-      });
-      expectValid(result);
-    }
-  });
-
-  it('should reject invalid NFS version', () => {
-    const result = validateProfile({
-      ...validNFSProfile,
-      config: { ...validNFSProfile.config, version: 5 },
-    });
-    expectInvalid(result);
-    expectErrorOnField(result, 'config.version');
-  });
-
-  it('should accept valid authMethod', () => {
-    for (const authMethod of ['sys', 'krb5', 'krb5i', 'krb5p']) {
-      const result = validateProfile({
-        ...validNFSProfile,
-        config: { ...validNFSProfile.config, authMethod },
-      });
-      expectValid(result);
-    }
-  });
-
-  it('should accept mountOptions as array of strings', () => {
-    const result = validateProfile({
-      ...validNFSProfile,
-      config: { ...validNFSProfile.config, mountOptions: ['ro', 'noatime'] },
-    });
-    expectValid(result);
-  });
-
-  it('should reject mountOptions with non-string elements', () => {
-    const result = validateProfile({
-      ...validNFSProfile,
-      config: { ...validNFSProfile.config, mountOptions: ['ro', 123] },
-    });
-    expectInvalid(result);
-    expectErrorOnField(result, 'config.mountOptions');
   });
 });
 

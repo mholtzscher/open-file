@@ -56,8 +56,8 @@ describe('Header - Connection Capability', () => {
   });
 
   it('ConnectionStatus should render for connection-oriented providers', () => {
-    // Pattern: SFTP, FTP, SMB, NFS providers need connection status
-    const connectionOrientedProviders = ['sftp', 'ftp', 'smb', 'nfs'];
+    // Pattern: SFTP, FTP, SMB providers need connection status
+    const connectionOrientedProviders = ['sftp', 'ftp', 'smb'];
 
     connectionOrientedProviders.forEach(provider => {
       // Each of these should report hasConnection = true

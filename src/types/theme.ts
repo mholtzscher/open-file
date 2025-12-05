@@ -107,7 +107,6 @@ export interface ThemeSemanticColors {
   providerSftp: string;
   providerFtp: string;
   providerLocal: string;
-  providerNfs: string;
   providerSmb: string;
   providerGdrive: string;
 }
@@ -274,4 +273,4 @@ export type DialogBorderType = 'neutral' | 'warning' | 'error' | 'info' | 'succe
 /**
  * Provider types for color lookup
  */
-export type ProviderType = 's3' | 'gcs' | 'sftp' | 'ftp' | 'local' | 'nfs' | 'smb' | 'gdrive';
+export type ProviderType = 's3' | 'gcs' | 'sftp' | 'ftp' | 'local' | 'smb' | 'gdrive';

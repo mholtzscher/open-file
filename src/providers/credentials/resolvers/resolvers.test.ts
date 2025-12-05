@@ -430,11 +430,6 @@ describe('Factory Functions', () => {
       const providers = createCredentialProvidersForType('local');
       expect(providers).toHaveLength(0);
     });
-
-    it('should return empty array for nfs type', () => {
-      const providers = createCredentialProvidersForType('nfs');
-      expect(providers).toHaveLength(0);
-    });
   });
 
   describe('createCredentialChainForType', () => {

@@ -34,7 +34,6 @@ const PROFILES_TEMPLATE = `// Open-File Profiles Configuration
 // built-in and always available.
 //
 // Supported providers: s3, gcs, sftp, ftp, smb, gdrive, local
-// (nfs coming soon)
 //
 // Documentation: https://github.com/mikea/open-file#profiles
 {

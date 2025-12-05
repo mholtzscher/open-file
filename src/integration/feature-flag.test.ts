@@ -194,17 +194,6 @@ describe('New Provider System Integration', () => {
     expect(coreOperations.length).toBeGreaterThan(0);
   });
 
-  it('supports multiple provider types', () => {
-    // New system should support:
-    // - S3, GCS
-    // - SFTP, FTP
-    // - NFS, SMB
-    // - Local, Google Drive
-    const providerTypes = ['s3', 'gcs', 'sftp', 'ftp', 'nfs', 'smb', 'gdrive', 'local'];
-
-    expect(providerTypes.length).toBe(8);
-  });
-
   it('shows new provider UI elements', () => {
     // Components that should be visible in new mode:
     // - ProfileSelector
@@ -303,10 +292,10 @@ describe('Known Differences Between Systems', () => {
     // Legacy: Only supports S3
     // New: Supports multiple providers
     const legacyProviders = ['s3'];
-    const newProviders = ['s3', 'gcs', 'sftp', 'ftp', 'nfs', 'smb', 'gdrive', 'local'];
+    const newProviders = ['s3', 'gcs', 'sftp', 'ftp', 'smb', 'gdrive', 'local'];
 
     expect(legacyProviders.length).toBe(1);
-    expect(newProviders.length).toBe(8);
+    expect(newProviders.length).toBe(7);
   });
 
   it('legacy system uses bucket terminology', () => {

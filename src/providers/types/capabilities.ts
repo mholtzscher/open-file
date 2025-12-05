@@ -53,20 +53,20 @@ export enum Capability {
   PresignedUrls = 'presignedUrls',
   /** Batch delete operations */
   BatchDelete = 'batchDelete',
-  /** Extended attributes (xattr on NFS, ADS on SMB) */
+  /** Extended attributes (xattr, ADS on SMB) */
   ExtendedAttrs = 'extendedAttrs',
 
   // Container concepts
   /** S3/GCS bucket listing, SMB shares, Google Drive folders */
   Containers = 'containers',
 
-  // Locking (NFS/SMB)
+  // Locking (SMB)
   /** Byte-range file locking */
   FileLocking = 'fileLocking',
-  /** NFS delegations / SMB oplocks */
+  /** SMB oplocks */
   Delegations = 'delegations',
 
-  // Connection-oriented protocols (SFTP, FTP, SMB, NFS)
+  // Connection-oriented protocols (SFTP, FTP, SMB)
   /** Provider maintains persistent connection state */
   Connection = 'connection',
 }

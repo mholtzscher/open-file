@@ -450,11 +450,6 @@ export class InlineCredentialProvider implements CredentialProvider {
           success: true,
           credentials: { type: 'local', source: 'inline' },
         });
-      case 'nfs':
-        return Promise.resolve({
-          success: true,
-          credentials: { type: 'nfs', source: 'inline' },
-        });
       default:
         return Promise.resolve({
           success: false,

@@ -21,7 +21,6 @@ function getProviderTypeDisplay(providerType: string): string {
     gcs: 'GCS',
     sftp: 'SFTP',
     ftp: 'FTP',
-    nfs: 'NFS',
     smb: 'SMB',
     gdrive: 'Drive',
     local: 'Local',

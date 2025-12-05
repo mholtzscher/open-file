@@ -62,12 +62,11 @@ This document describes the test coverage for both the legacy adapter system and
 | GCS           | ❌            | ✅                  |
 | SFTP          | ❌            | ✅                  |
 | FTP           | ❌            | ✅                  |
-| NFS           | ❌            | ✅                  |
 | SMB           | ❌            | ✅                  |
 | Google Drive  | ❌            | ✅                  |
 | Local         | ❌            | ✅                  |
 
-**Status**: Legacy is S3-only, new system supports 8 providers
+**Status**: Legacy is S3-only, new system supports 7 providers
 
 ### 5. Error Handling
 

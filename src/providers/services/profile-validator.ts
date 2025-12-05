@@ -11,7 +11,6 @@ import type {
   GCSProfile,
   SFTPProfile,
   FTPProfile,
-  NFSProfile,
   SMBProfile,
   GoogleDriveProfile,
   LocalProfile,
@@ -65,16 +64,7 @@ const VALID_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 /**
  * Valid provider types
  */
-const VALID_PROVIDER_TYPES: ProviderType[] = [
-  's3',
-  'gcs',
-  'sftp',
-  'ftp',
-  'nfs',
-  'smb',
-  'gdrive',
-  'local',
-];
+const VALID_PROVIDER_TYPES: ProviderType[] = ['s3', 'gcs', 'sftp', 'ftp', 'smb', 'gdrive', 'local'];
 
 // ============================================================================
 // Base Profile Validation
@@ -353,88 +343,6 @@ function validateFTPProfile(profile: FTPProfile): ValidationError[] {
 }
 
 // ============================================================================
-// NFS Profile Validation
-// ============================================================================
-
-/**
- * Validate NFS-specific profile fields
- */
-function validateNFSProfile(profile: NFSProfile): ValidationError[] {
-  const errors: ValidationError[] = [];
-
-  // config: required object
-  if (!profile.config || typeof profile.config !== 'object') {
-    errors.push(required('config'));
-    return errors;
-  }
-
-  const config = profile.config;
-
-  // host: required string
-  if (!config.host) {
-    errors.push(required('config.host'));
-  } else if (typeof config.host !== 'string') {
-    errors.push(invalidType('config.host', 'a string'));
-  }
-
-  // exportPath: required string
-  if (!config.exportPath) {
-    errors.push(required('config.exportPath'));
-  } else if (typeof config.exportPath !== 'string') {
-    errors.push(invalidType('config.exportPath', 'a string'));
-  }
-
-  // version: optional, must be 3, 4, 4.1, or 4.2
-  const validVersions = [3, 4, 4.1, 4.2];
-  if (config.version !== undefined) {
-    if (typeof config.version !== 'number' || !validVersions.includes(config.version)) {
-      errors.push(invalidOption('config.version', validVersions.map(String)));
-    }
-  }
-
-  // port: optional number (1-65535)
-  if (config.port !== undefined) {
-    if (typeof config.port !== 'number') {
-      errors.push(invalidType('config.port', 'a number'));
-    } else if (config.port < 1 || config.port > 65535) {
-      errors.push(invalidRange('config.port', 1, 65535));
-    }
-  }
-
-  // uid: optional number
-  if (config.uid !== undefined && typeof config.uid !== 'number') {
-    errors.push(invalidType('config.uid', 'a number'));
-  }
-
-  // gid: optional number
-  if (config.gid !== undefined && typeof config.gid !== 'number') {
-    errors.push(invalidType('config.gid', 'a number'));
-  }
-
-  // authMethod: optional, must be 'sys' | 'krb5' | 'krb5i' | 'krb5p'
-  const validAuthMethods = ['sys', 'krb5', 'krb5i', 'krb5p'];
-  if (config.authMethod !== undefined && !validAuthMethods.includes(config.authMethod)) {
-    errors.push(invalidOption('config.authMethod', validAuthMethods));
-  }
-
-  // mountOptions: optional array of strings
-  if (config.mountOptions !== undefined) {
-    if (!Array.isArray(config.mountOptions)) {
-      errors.push(invalidType('config.mountOptions', 'an array of strings'));
-    } else if (!config.mountOptions.every(opt => typeof opt === 'string')) {
-      errors.push(invalidType('config.mountOptions', 'an array of strings'));
-    }
-  }
-
-  // mountPoint: optional string
-  if (config.mountPoint !== undefined && typeof config.mountPoint !== 'string') {
-    errors.push(invalidType('config.mountPoint', 'a string'));
-  }
-
-  return errors;
-}
-
-// ============================================================================
 // SMB Profile Validation
 // ============================================================================
 
@@ -657,9 +565,6 @@ export function validateProfile(profile: unknown): ValidationResult {
       break;
     case 'ftp':
       errors.push(...validateFTPProfile(profile as FTPProfile));
-      break;
-    case 'nfs':
-      errors.push(...validateNFSProfile(profile as NFSProfile));
       break;
     case 'smb':
       errors.push(...validateSMBProfile(profile as SMBProfile));

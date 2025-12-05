@@ -80,9 +80,8 @@ export function createCredentialProvidersForType(providerType: ProviderType): Cr
       return createSMBCredentialProviders();
     case 'gdrive':
       return createGDriveCredentialProviders();
-    case 'nfs':
     case 'local':
-      // NFS and Local typically don't need credentials
+      // Local filesystem doesn't need credentials
       return [];
     default:
       return [];

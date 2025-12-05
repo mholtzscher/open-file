@@ -8,7 +8,7 @@
 /**
  * Supported provider types
  */
-export type ProviderType = 's3' | 'gcs' | 'sftp' | 'ftp' | 'nfs' | 'smb' | 'gdrive' | 'local';
+export type ProviderType = 's3' | 'gcs' | 'sftp' | 'ftp' | 'smb' | 'gdrive' | 'local';
 
 /**
  * Base profile that all providers share
@@ -124,33 +124,6 @@ export interface FTPProfile extends BaseProfile {
 }
 
 /**
- * NFS-specific profile configuration
- */
-export interface NFSProfile extends BaseProfile {
-  provider: 'nfs';
-  config: {
-    /** NFS server hostname */
-    host: string;
-    /** Server export path (e.g., /exports/data) */
-    exportPath: string;
-    /** NFS version (default: auto-negotiate) */
-    version?: 3 | 4 | 4.1 | 4.2;
-    /** NFS port (default: 2049) */
-    port?: number;
-    /** Override local UID */
-    uid?: number;
-    /** Override local GID */
-    gid?: number;
-    /** Authentication method */
-    authMethod?: 'sys' | 'krb5' | 'krb5i' | 'krb5p';
-    /** Additional mount options */
-    mountOptions?: string[];
-    /** Local mount point (required for OS mount approach) */
-    mountPoint?: string;
-  };
-}
-
-/**
  * SMB/CIFS-specific profile configuration
  */
 export interface SMBProfile extends BaseProfile {
@@ -221,7 +194,6 @@ export type Profile =
   | GCSProfile
   | SFTPProfile
   | FTPProfile
-  | NFSProfile
   | SMBProfile
   | GoogleDriveProfile
   | LocalProfile;

@@ -109,15 +109,6 @@ export interface GoogleDriveCredentials extends BaseCredentials {
 }
 
 /**
- * NFS credentials (typically system-level, may be empty)
- */
-export interface NFSCredentials extends BaseCredentials {
-  type: 'nfs';
-  /** Kerberos principal for krb5 auth */
-  kerberosPrincipal?: string;
-}
-
-/**
  * Local filesystem credentials (no credentials needed)
  */
 export interface LocalCredentials extends BaseCredentials {
@@ -134,7 +125,6 @@ export type Credentials =
   | FTPCredentials
   | SMBCredentials
   | GoogleDriveCredentials
-  | NFSCredentials
   | LocalCredentials;
 
 // ============================================================================

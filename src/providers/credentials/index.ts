@@ -15,7 +15,6 @@ export type {
   FTPCredentials,
   SMBCredentials,
   GoogleDriveCredentials,
-  NFSCredentials,
   LocalCredentials,
   Credentials,
   CredentialResult,

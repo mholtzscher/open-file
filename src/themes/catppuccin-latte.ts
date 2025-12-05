@@ -108,7 +108,6 @@ const semantic: ThemeSemanticColors = {
   providerSftp: palette.green,
   providerFtp: palette.peach,
   providerLocal: palette.lavender,
-  providerNfs: palette.teal,
   providerSmb: palette.mauve,
   providerGdrive: palette.red,
 };
