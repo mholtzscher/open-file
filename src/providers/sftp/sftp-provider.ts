@@ -793,28 +793,6 @@ export class SFTPProvider extends BaseStorageProvider {
   }
 
   // ==========================================================================
-  // Advanced Operations
-  // ==========================================================================
-
-  /**
-   * Read the target of a symbolic link
-   */
-  async readSymlink(path: string): Promise<OperationResult<string>> {
-    const connError = this.ensureConnected();
-    if (connError) return connError;
-
-    const resolved = this.resolvePath(path);
-
-    try {
-      const target = await this.client.realPath(resolved);
-      return Result.success(target);
-    } catch (error) {
-      this.logger.error(`Failed to read symlink ${path}`, error);
-      return mapSFTPError(error, 'readSymlink');
-    }
-  }
-
-  // ==========================================================================
   // Internal Accessors (for testing)
   // ==========================================================================
 

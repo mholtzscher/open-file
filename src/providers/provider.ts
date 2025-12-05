@@ -259,14 +259,4 @@ export interface StorageProvider {
    * Get the current container context
    */
   getContainer?(): string | undefined;
-
-  // ==========================================================================
-  // Advanced Operations (optional)
-  // ==========================================================================
-
-  /**
-   * Read the target of a symbolic link
-   * Only available if provider has Capability.Symlinks
-   */
-  readSymlink?(path: string): Promise<OperationResult<string>>;
 }
