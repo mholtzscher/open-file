@@ -269,10 +269,4 @@ export interface StorageProvider {
    * Only available if provider has Capability.Symlinks
    */
   readSymlink?(path: string): Promise<OperationResult<string>>;
-
-  /**
-   * Set POSIX permissions on a file/directory
-   * Only available if provider has Capability.Permissions
-   */
-  setPermissions?(path: string, mode: number): Promise<OperationResult>;
 }

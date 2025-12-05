@@ -797,24 +797,6 @@ export class SFTPProvider extends BaseStorageProvider {
   // ==========================================================================
 
   /**
-   * Set POSIX permissions on a file/directory
-   */
-  async setPermissions(path: string, mode: number): Promise<OperationResult> {
-    const connError = this.ensureConnected();
-    if (connError) return connError;
-
-    const resolved = this.resolvePath(path);
-
-    try {
-      await this.client.chmod(resolved, mode);
-      return Result.success();
-    } catch (error) {
-      this.logger.error(`Failed to set permissions on ${path}`, error);
-      return mapSFTPError(error, 'setPermissions');
-    }
-  }
-
-  /**
    * Read the target of a symbolic link
    */
   async readSymlink(path: string): Promise<OperationResult<string>> {
