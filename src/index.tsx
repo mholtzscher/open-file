@@ -6,6 +6,8 @@
  * Sets up the CLI renderer and bridges keyboard events to the App.
  */
 
+/* global Bun */
+
 import { createCliRenderer } from '@opentui/core';
 import { createRoot } from '@opentui/react';
 import { App } from './ui/app.js';
@@ -56,7 +58,8 @@ async function main() {
         const exitCode = await runAuthCommand(cliArgs.subArgs || []);
         process.exit(exitCode);
       } else {
-        console.error(`Unknown auth provider: ${cliArgs.authProvider}`);
+        // This branch handles future auth providers or validation errors
+        console.error(`Unknown auth provider: ${String(cliArgs.authProvider)}`);
         printAuthHelp();
         process.exit(1);
       }
