@@ -314,7 +314,7 @@ export class FileProfileManager implements ProfileManager {
     // Note: createProvider may throw if provider is not yet implemented
     let provider: StorageProvider;
     try {
-      provider = await createProvider(profile);
+      provider = createProvider(profile);
     } catch (err) {
       const error = err as Error;
       if (error.message.includes('not yet implemented')) {

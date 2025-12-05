@@ -2,69 +2,79 @@
  * Provider Factory
  *
  * Factory functions for creating storage provider instances from profiles.
- * Supports lazy loading of provider implementations to minimize bundle size.
+ * Uses a registry pattern for extensibility and testability.
  */
 
-import type { Profile } from './types/profile.js';
+import type { Profile, ProviderType } from './types/profile.js';
 import type { StorageProvider } from './provider.js';
+
+import { S3Provider } from './s3/s3-provider.js';
+import { GCSProvider } from './gcs/gcs-provider.js';
+import { SFTPProvider } from './sftp/sftp-provider.js';
+import { FTPProvider } from './ftp/ftp-provider.js';
+import { SMBProvider } from './smb/smb-provider.js';
+import { GoogleDriveProvider } from './gdrive/gdrive-provider.js';
+import { LocalProvider } from './local/local-provider.js';
+
+// Provider constructor type - uses 'any' for profile to allow specific profile types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ProviderConstructor = new (profile: any) => StorageProvider;
+
+// Registry: map from provider type to constructor
+const providerRegistry = new Map<ProviderType, ProviderConstructor>([
+  ['s3', S3Provider],
+  ['gcs', GCSProvider],
+  ['sftp', SFTPProvider],
+  ['ftp', FTPProvider],
+  ['smb', SMBProvider],
+  ['gdrive', GoogleDriveProvider],
+  ['local', LocalProvider],
+  // 'nfs' intentionally not registered (not yet implemented)
+]);
 
 /**
  * Create a storage provider instance from a profile
- *
- * Uses lazy loading to minimize bundle size - providers are only loaded
- * when needed.
  *
  * @param profile - Profile configuration for the provider
  * @returns Storage provider instance
  * @throws Error if provider type is not supported or not yet implemented
  */
-export async function createProvider(profile: Profile): Promise<StorageProvider> {
-  switch (profile.provider) {
-    case 's3': {
-      const { S3Provider } = await import('./s3/s3-provider.js');
-      return new S3Provider(profile);
-    }
+export function createProvider(profile: Profile): StorageProvider {
+  const ProviderClass = providerRegistry.get(profile.provider);
 
-    case 'gcs': {
-      const { GCSProvider } = await import('./gcs/gcs-provider.js');
-      return new GCSProvider(profile);
-    }
-
-    case 'sftp': {
-      const { SFTPProvider } = await import('./sftp/sftp-provider.js');
-      return new SFTPProvider(profile);
-    }
-
-    case 'ftp': {
-      const { FTPProvider } = await import('./ftp/ftp-provider.js');
-      return new FTPProvider(profile);
-    }
-
-    case 'nfs':
-      // Phase 4E: NFS Provider
-      // const { NFSProvider } = await import('./nfs/nfs-provider.js');
-      // return new NFSProvider(profile);
-      throw new Error('NFSProvider not yet implemented');
-
-    case 'smb': {
-      const { SMBProvider } = await import('./smb/smb-provider.js');
-      return new SMBProvider(profile);
-    }
-
-    case 'gdrive': {
-      const { GoogleDriveProvider } = await import('./gdrive/gdrive-provider.js');
-      return new GoogleDriveProvider(profile);
-    }
-
-    case 'local': {
-      const { LocalProvider } = await import('./local/local-provider.js');
-      return new LocalProvider(profile);
-    }
-
-    default: {
-      // TypeScript exhaustive check - this should never happen
-      const _exhaustiveCheck: never = profile;
-      throw new Error(`Unknown provider type: ${(_exhaustiveCheck as Profile).provider}`);
-    }
+  if (!ProviderClass) {
+    throw new Error(`Provider '${profile.provider}' is not yet implemented`);
   }
+
+  return new ProviderClass(profile);
+}
+
+/**
+ * Check if a provider type is available (implemented and registered)
+ */
+export function isProviderAvailable(type: ProviderType): boolean {
+  return providerRegistry.has(type);
+}
+
+/**
+ * Get all available provider types
+ */
+export function getAvailableProviders(): ProviderType[] {
+  return Array.from(providerRegistry.keys());
+}
+
+/**
+ * Register a provider (for testing or plugins)
+ * @internal
+ */
+export function _registerProvider(type: ProviderType, ctor: ProviderConstructor): void {
+  providerRegistry.set(type, ctor);
+}
+
+/**
+ * Unregister a provider (for testing)
+ * @internal
+ */
+export function _unregisterProvider(type: ProviderType): void {
+  providerRegistry.delete(type);
 }
