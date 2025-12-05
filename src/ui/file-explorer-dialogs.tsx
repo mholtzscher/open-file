@@ -73,6 +73,7 @@ export interface ProfileSelectorDialogState {
   currentProfileId?: string;
   onProfileSelect: (profile: Profile) => void;
   onCancel: () => void;
+  onEditProfiles?: () => Promise<void>;
 }
 
 export interface ThemeSelectorDialogState {
@@ -163,6 +164,7 @@ export function FileExplorerDialogs({ dialogs }: FileExplorerDialogsProps) {
         currentProfileId={profileSelector.currentProfileId}
         onProfileSelect={profileSelector.onProfileSelect}
         onCancel={profileSelector.onCancel}
+        onEditProfiles={profileSelector.onEditProfiles}
       />
 
       {/* Theme Selector Dialog */}

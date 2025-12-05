@@ -85,7 +85,7 @@ function AppContent({ onEditProfiles, profilesReloadKey }: AppContentProps) {
       profileId={profileId}
       profileName={profileName}
     >
-      <FileExplorer />
+      <FileExplorer onEditProfiles={onEditProfiles} />
     </StorageContextProvider>
   );
 }

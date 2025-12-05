@@ -75,6 +75,9 @@ export interface UseDialogHandlersProps {
 
   /** Refresh the current listing after operations complete */
   refreshListing: () => Promise<void>;
+
+  /** Optional handler to edit profiles in external editor */
+  onEditProfiles?: () => Promise<void>;
 }
 
 /**
@@ -103,6 +106,7 @@ export function useDialogHandlers({
   executeOperationsWithProgress,
   handleCancelOperation,
   refreshListing,
+  onEditProfiles,
 }: UseDialogHandlersProps): DialogsState {
   // ============================================
   // Confirm Handler
@@ -278,6 +282,7 @@ export function useDialogHandlers({
         }
       },
       onCancel: () => closeDialog(),
+      onEditProfiles,
     },
     themeSelector: {
       visible: showThemeSelectorDialog,

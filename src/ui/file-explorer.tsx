@@ -29,9 +29,17 @@ import { Capability } from '../providers/types/capabilities.js';
 import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 
 /**
+ * Props for FileExplorer component
+ */
+export interface FileExplorerProps {
+  /** Optional handler to edit profiles in external editor */
+  onEditProfiles?: () => Promise<void>;
+}
+
+/**
  * Main FileExplorer component - declarative React implementation
  */
-export function FileExplorer() {
+export function FileExplorer({ onEditProfiles }: FileExplorerProps) {
   // Subscribe to theme changes so the whole app re-renders when the theme changes
   useTheme();
 
@@ -251,6 +259,7 @@ export function FileExplorer() {
     executeOperationsWithProgress,
     handleCancelOperation,
     refreshListing,
+    onEditProfiles,
   });
 
   // ============================================
