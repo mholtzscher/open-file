@@ -449,33 +449,6 @@ describe.if(await isLocalStackAvailable())('S3Provider LocalStack Integration', 
       }
     });
   });
-
-  // ==========================================================================
-  // Advanced Operations
-  // ==========================================================================
-
-  describe('presigned URL operation', () => {
-    it('should generate presigned URL for read', async () => {
-      await provider.write('presign-test.txt', 'content');
-
-      const result = await provider.getPresignedUrl('presign-test.txt', 'read', 3600);
-
-      expect(isSuccess(result)).toBe(true);
-      if (isSuccess(result)) {
-        expect(result.data).toContain(LOCALSTACK_ENDPOINT);
-        expect(result.data).toContain('presign-test.txt');
-      }
-    });
-
-    it('should generate presigned URL for write', async () => {
-      const result = await provider.getPresignedUrl('new-file.txt', 'write', 3600);
-
-      expect(isSuccess(result)).toBe(true);
-      if (isSuccess(result)) {
-        expect(result.data).toContain(LOCALSTACK_ENDPOINT);
-      }
-    });
-  });
 });
 
 // ============================================================================

@@ -110,7 +110,6 @@ function mapGCSError(error: unknown, operation: string): OperationResult<any> {
  * - Virtual directory support (prefixes with delimiters)
  * - Bucket listing and selection
  * - Server-side copy operations
- * - Presigned URL generation (signed URLs)
  * - Custom metadata
  * - Object versioning (when bucket versioning is enabled)
  */
@@ -145,7 +144,6 @@ export class GCSProvider extends BaseStorageProvider {
       Capability.Upload,
       Capability.Versioning,
       Capability.Metadata,
-      Capability.PresignedUrls,
       Capability.BatchDelete,
       Capability.Containers
     );
@@ -808,34 +806,6 @@ export class GCSProvider extends BaseStorageProvider {
   // ==========================================================================
   // Advanced Operations
   // ==========================================================================
-
-  /**
-   * Generate a signed URL for direct access
-   */
-  async getPresignedUrl(
-    path: string,
-    operation: 'read' | 'write',
-    expiresInSeconds: number
-  ): Promise<OperationResult<string>> {
-    const bucketError = this.ensureBucket();
-    if (bucketError) return bucketError;
-
-    const normalized = this.normalizePath(path);
-
-    try {
-      const file = this.bucket!.file(normalized);
-
-      const [url] = await file.getSignedUrl({
-        action: operation === 'read' ? 'read' : 'write',
-        expires: Date.now() + expiresInSeconds * 1000,
-      });
-
-      return Result.success(url);
-    } catch (error) {
-      this.logger.error(`Failed to generate signed URL for ${path}`, error);
-      return mapGCSError(error, 'getPresignedUrl');
-    }
-  }
 
   // ==========================================================================
   // Internal Accessors (for testing)

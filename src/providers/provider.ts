@@ -265,16 +265,6 @@ export interface StorageProvider {
   // ==========================================================================
 
   /**
-   * Generate a presigned URL for direct access
-   * Only available if provider has Capability.PresignedUrls
-   */
-  getPresignedUrl?(
-    path: string,
-    operation: 'read' | 'write',
-    expiresInSeconds: number
-  ): Promise<OperationResult<string>>;
-
-  /**
    * Read the target of a symbolic link
    * Only available if provider has Capability.Symlinks
    */

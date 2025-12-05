@@ -14,9 +14,7 @@ import {
   HeadObjectCommand,
   GetObjectTaggingCommand,
   GetObjectCommand,
-  CopyObjectCommand,
 } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { promises as fs } from 'fs';
 import type { S3Profile } from '../types/profile.js';
 import { BaseStorageProvider } from '../base-provider.js';
@@ -159,7 +157,6 @@ function mapS3Error(error: unknown, operation: string): OperationResult<any> {
  * - Bucket listing and selection
  * - Multipart uploads for large files
  * - Server-side copy operations
- * - Presigned URL generation
  * - Custom metadata and tagging
  */
 export class S3Provider extends BaseStorageProvider {
@@ -195,7 +192,6 @@ export class S3Provider extends BaseStorageProvider {
       Capability.Upload,
       Capability.Metadata,
       Capability.Containers,
-      Capability.PresignedUrls,
       Capability.BatchDelete
     );
 
@@ -776,37 +772,6 @@ export class S3Provider extends BaseStorageProvider {
   // ==========================================================================
   // Advanced Operations
   // ==========================================================================
-
-  /**
-   * Generate a presigned URL for direct access
-   */
-  async getPresignedUrl(
-    path: string,
-    operation: 'read' | 'write',
-    expiresInSeconds: number
-  ): Promise<OperationResult<string>> {
-    const bucketError = this.ensureBucket();
-    if (bucketError) return bucketError;
-
-    const normalized = this.normalizePath(path);
-
-    try {
-      const command =
-        operation === 'read'
-          ? new GetObjectCommand({ Bucket: this.bucket, Key: normalized })
-          : new PutObjectCommand({ Bucket: this.bucket, Key: normalized });
-
-      // Cast to work around AWS SDK v3 type mismatch between S3Client and presigner
-      const url = await getSignedUrl(this.client as Parameters<typeof getSignedUrl>[0], command, {
-        expiresIn: expiresInSeconds,
-      });
-
-      return Result.success(url);
-    } catch (error) {
-      this.logger.error(`Failed to generate presigned URL for ${path}`, error);
-      return mapS3Error(error, 'getPresignedUrl');
-    }
-  }
 
   // ==========================================================================
   // Internal Accessors (for testing)

@@ -49,8 +49,6 @@ export enum Capability {
   Symlinks = 'symlinks',
   /** Hard links */
   Hardlinks = 'hardlinks',
-  /** Generate presigned URLs */
-  PresignedUrls = 'presignedUrls',
   /** Batch delete operations */
   BatchDelete = 'batchDelete',
   /** Extended attributes (xattr, ADS on SMB) */

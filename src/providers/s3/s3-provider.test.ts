@@ -152,7 +152,6 @@ describe('S3Provider', () => {
       expect(caps.has(Capability.Upload)).toBe(true);
       expect(caps.has(Capability.Metadata)).toBe(true);
       expect(caps.has(Capability.Containers)).toBe(true);
-      expect(caps.has(Capability.PresignedUrls)).toBe(true);
       expect(caps.has(Capability.BatchDelete)).toBe(true);
     });
 
