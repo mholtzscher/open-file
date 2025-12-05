@@ -16,6 +16,26 @@ import { SMBProvider } from './smb/smb-provider.js';
 import { GoogleDriveProvider } from './gdrive/gdrive-provider.js';
 import { LocalProvider } from './local/local-provider.js';
 
+// ============================================================================
+// Error Types
+// ============================================================================
+
+/**
+ * Error thrown when a provider type is not implemented or registered
+ */
+export class ProviderNotImplementedError extends Error {
+  readonly code = 'provider_not_implemented' as const;
+
+  constructor(public readonly providerType: ProviderType) {
+    super(`Provider '${providerType}' is not yet implemented`);
+    this.name = 'ProviderNotImplementedError';
+  }
+}
+
+// ============================================================================
+// Registry
+// ============================================================================
+
 // Provider constructor type - uses 'any' for profile to allow specific profile types
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ProviderConstructor = new (profile: any) => StorageProvider;
@@ -37,13 +57,13 @@ const providerRegistry = new Map<ProviderType, ProviderConstructor>([
  *
  * @param profile - Profile configuration for the provider
  * @returns Storage provider instance
- * @throws Error if provider type is not supported or not yet implemented
+ * @throws ProviderNotImplementedError if provider type is not registered
  */
 export function createProvider(profile: Profile): StorageProvider {
   const ProviderClass = providerRegistry.get(profile.provider);
 
   if (!ProviderClass) {
-    throw new Error(`Provider '${profile.provider}' is not yet implemented`);
+    throw new ProviderNotImplementedError(profile.provider);
   }
 
   return new ProviderClass(profile);

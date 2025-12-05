@@ -22,7 +22,7 @@ import {
   type LoadProfilesResult,
 } from './profile-storage.js';
 import { validateProfile } from './profile-validator.js';
-import { createProvider } from '../factory.js';
+import { createProvider, ProviderNotImplementedError } from '../factory.js';
 import { OperationStatus } from '../types/result.js';
 
 // ============================================================================
@@ -311,17 +311,15 @@ export class FileProfileManager implements ProfileManager {
     }
 
     // Create the provider
-    // Note: createProvider may throw if provider is not yet implemented
     let provider: StorageProvider;
     try {
       provider = createProvider(profile);
     } catch (err) {
-      const error = err as Error;
-      if (error.message.includes('not yet implemented')) {
+      if (err instanceof ProviderNotImplementedError) {
         throw new ProfileManagerError(
-          `Provider "${profile.provider}" is not yet implemented`,
+          `Provider "${err.providerType}" is not yet implemented`,
           'provider_not_implemented',
-          error
+          err
         );
       }
       throw err;
