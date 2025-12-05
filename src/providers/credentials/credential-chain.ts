@@ -288,30 +288,30 @@ export class EnvironmentCredentialProvider implements CredentialProvider {
     return true;
   }
 
-  async resolve(context: CredentialContext): Promise<CredentialResult> {
+  resolve(context: CredentialContext): Promise<CredentialResult> {
     switch (context.providerType) {
       case 's3':
-        return {
+        return Promise.resolve({
           success: false,
           error: {
             code: 'not_found',
             message: 'S3 credentials are resolved by AWS SDK credential chain',
           },
-        };
+        });
       case 'gcs':
-        return this.resolveGCS();
+        return Promise.resolve(this.resolveGCS());
       case 'sftp':
       case 'ftp':
       case 'smb':
-        return this.resolveGenericPassword(context.providerType);
+        return Promise.resolve(this.resolveGenericPassword(context.providerType));
       default:
-        return {
+        return Promise.resolve({
           success: false,
           error: {
             code: 'not_found',
             message: `No environment variables found for ${context.providerType}`,
           },
-        };
+        });
     }
   }
 
@@ -413,56 +413,56 @@ export class InlineCredentialProvider implements CredentialProvider {
     return this.profileConfig !== undefined;
   }
 
-  async resolve(context: CredentialContext): Promise<CredentialResult> {
+  resolve(context: CredentialContext): Promise<CredentialResult> {
     if (!this.profileConfig) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'No profile configuration provided',
         },
-      };
+      });
     }
 
     const config = this.profileConfig;
 
     switch (context.providerType) {
       case 's3':
-        return {
+        return Promise.resolve({
           success: false,
           error: {
             code: 'not_found',
             message: 'S3 credentials are resolved by AWS SDK credential chain',
           },
-        };
+        });
       case 'sftp':
-        return this.resolveSFTP(config);
+        return Promise.resolve(this.resolveSFTP(config));
       case 'ftp':
-        return this.resolveFTP(config);
+        return Promise.resolve(this.resolveFTP(config));
       case 'smb':
-        return this.resolveSMB(config);
+        return Promise.resolve(this.resolveSMB(config));
       case 'gcs':
-        return this.resolveGCS(config);
+        return Promise.resolve(this.resolveGCS(config));
       case 'gdrive':
-        return this.resolveGDrive(config);
+        return Promise.resolve(this.resolveGDrive(config));
       case 'local':
-        return {
+        return Promise.resolve({
           success: true,
           credentials: { type: 'local', source: 'inline' },
-        };
+        });
       case 'nfs':
-        return {
+        return Promise.resolve({
           success: true,
           credentials: { type: 'nfs', source: 'inline' },
-        };
+        });
       default:
-        return {
+        return Promise.resolve({
           success: false,
           error: {
             code: 'unsupported',
             message: `Inline credentials not supported for ${context.providerType as string}`,
           },
-        };
+        });
     }
   }
 

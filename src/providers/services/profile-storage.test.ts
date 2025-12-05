@@ -10,13 +10,11 @@ import {
   getConfigDir,
   getProfilesPath,
   loadProfilesFromDisk,
-  saveProfilesToDisk,
   isDefaultProfile,
   DEFAULT_LOCAL_PROFILE,
   DEFAULT_LOCAL_PROFILE_ID,
-  createProfilesTemplate,
 } from './profile-storage.js';
-import type { S3Profile, SFTPProfile, LocalProfile } from '../types/profile.js';
+import type { S3Profile, SFTPProfile } from '../types/profile.js';
 
 // ============================================================================
 // Test Fixtures

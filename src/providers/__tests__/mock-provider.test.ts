@@ -13,9 +13,8 @@ import {
   expectSuccessWithData,
   expectNotFound,
   expectUnimplemented,
-  createProgressCapture,
 } from './test-utils.js';
-import { createMockFile, createMockDirectory, SAMPLE_TEXT_CONTENT } from './fixtures.js';
+import { SAMPLE_TEXT_CONTENT } from './fixtures.js';
 
 describe('MockStorageProvider', () => {
   let provider: MockStorageProvider;

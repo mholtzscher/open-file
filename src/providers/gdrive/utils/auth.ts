@@ -163,7 +163,7 @@ function createServiceAccountClient(
   let keyFileContent: string;
   try {
     keyFileContent = readFileSync(keyFilePath, 'utf-8');
-  } catch (err) {
+  } catch {
     return {
       success: false,
       error: `Cannot read service account key file: ${keyFilePath}`,

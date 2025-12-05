@@ -140,8 +140,9 @@ export class MockStorageProvider {
     return Result.success();
   }
 
-  async disconnect(): Promise<void> {
+  disconnect(): Promise<void> {
     this.connected = false;
+    return Promise.resolve();
   }
 
   isConnected(): boolean {

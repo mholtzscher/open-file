@@ -36,7 +36,7 @@ export interface FTPProviderLogger {
   debug(message: string, data?: unknown): void;
   info(message: string, data?: unknown): void;
   warn(message: string, data?: unknown): void;
-  error(message: string, error?: Error | unknown): void;
+  error(message: string, error?: unknown): void;
 }
 
 /**
@@ -193,7 +193,7 @@ export class FTPProvider extends BaseStorageProvider {
   /**
    * Close connection to the FTP server
    */
-  async disconnect(): Promise<void> {
+  disconnect(): Promise<void> {
     if (this.connected) {
       try {
         this.client.close();
@@ -203,6 +203,7 @@ export class FTPProvider extends BaseStorageProvider {
       this.connected = false;
       this.logger.info('Disconnected from FTP server');
     }
+    return Promise.resolve();
   }
 
   /**
@@ -384,10 +385,10 @@ export class FTPProvider extends BaseStorageProvider {
     const resolved = this.resolvePath(path);
 
     try {
-      const chunks: Buffer[] = [];
+      const chunks: Uint8Array[] = [];
       const writable = new Writable({
         write(chunk, _encoding, callback) {
-          chunks.push(Buffer.from(chunk));
+          chunks.push(chunk as Uint8Array);
           callback();
         },
       });

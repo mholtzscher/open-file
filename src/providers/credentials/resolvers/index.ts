@@ -9,6 +9,12 @@ import type { CredentialProvider } from '../types.js';
 import { CredentialChain } from '../credential-chain.js';
 
 // GCS resolvers
+import { createGCSCredentialProviders } from './gcs-credential-resolver.js';
+import { createSFTPCredentialProviders } from './sftp-credential-resolver.js';
+import { createFTPCredentialProviders } from './ftp-credential-resolver.js';
+import { createSMBCredentialProviders } from './smb-credential-resolver.js';
+import { createGDriveCredentialProviders } from './gdrive-credential-resolver.js';
+
 export {
   GCSAdcCredentialProvider,
   GCSKeyFileCredentialProvider,
@@ -60,12 +66,7 @@ export {
  * @returns Array of credential providers in priority order
  */
 export function createCredentialProvidersForType(providerType: ProviderType): CredentialProvider[] {
-  const { createGCSCredentialProviders } = require('./gcs-credential-resolver.js');
-  const { createSFTPCredentialProviders } = require('./sftp-credential-resolver.js');
-  const { createFTPCredentialProviders } = require('./ftp-credential-resolver.js');
-  const { createSMBCredentialProviders } = require('./smb-credential-resolver.js');
-  const { createGDriveCredentialProviders } = require('./gdrive-credential-resolver.js');
-
+  // Imports are at top of file via re-exports
   switch (providerType) {
     case 's3':
       return [];

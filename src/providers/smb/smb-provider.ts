@@ -543,7 +543,7 @@ export class SMBProvider extends BaseStorageProvider {
         if (!exists) {
           await this.client!.mkdir(currentPath);
         }
-      } catch (existsError) {
+      } catch {
         // exists() failed - try to create the directory
         try {
           await this.client!.mkdir(currentPath);

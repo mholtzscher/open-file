@@ -34,6 +34,9 @@ export default [
         structuredClone: 'readonly',
         performance: 'readonly',
         React: 'readonly',
+        NodeJS: 'readonly',
+        fetch: 'readonly',
+        require: 'readonly',
       },
     },
     plugins: {

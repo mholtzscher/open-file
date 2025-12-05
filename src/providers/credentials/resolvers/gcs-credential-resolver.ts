@@ -37,33 +37,33 @@ export class GCSAdcCredentialProvider implements CredentialProvider {
     return context.providerType === 'gcs';
   }
 
-  async resolve(context: CredentialContext): Promise<CredentialResult<GCSCredentials>> {
+  resolve(context: CredentialContext): Promise<CredentialResult<GCSCredentials>> {
     // Check if ADC is explicitly requested or if env var is set
     const useAdc = context.source?.type === 'gcpAdc' || process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
     if (!useAdc) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'Application Default Credentials not configured',
         },
-      };
+      });
     }
 
     // If GOOGLE_APPLICATION_CREDENTIALS is set, verify file exists
     const keyFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     if (keyFilePath && !existsSync(keyFilePath)) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: `GOOGLE_APPLICATION_CREDENTIALS file not found: ${keyFilePath}`,
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'gcs',
@@ -71,7 +71,7 @@ export class GCSAdcCredentialProvider implements CredentialProvider {
         keyFilePath,
         useApplicationDefault: true,
       },
-    };
+    });
   }
 }
 
@@ -103,7 +103,7 @@ export class GCSKeyFileCredentialProvider implements CredentialProvider {
     return !!(this.keyFilePath || context.source?.type === 'file');
   }
 
-  async resolve(context: CredentialContext): Promise<CredentialResult<GCSCredentials>> {
+  resolve(context: CredentialContext): Promise<CredentialResult<GCSCredentials>> {
     let keyFilePath = this.keyFilePath;
 
     // Get from source hint if available
@@ -112,34 +112,34 @@ export class GCSKeyFileCredentialProvider implements CredentialProvider {
     }
 
     if (!keyFilePath) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'No key file path configured',
         },
-      };
+      });
     }
 
     // Verify file exists
     if (!existsSync(keyFilePath)) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: `Service account key file not found: ${keyFilePath}`,
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'gcs',
         source: 'file',
         keyFilePath,
       },
-    };
+    });
   }
 }
 
@@ -168,15 +168,15 @@ export class GCSInlineCredentialProvider implements CredentialProvider {
     return context.providerType === 'gcs' && this.config !== undefined;
   }
 
-  async resolve(_context: CredentialContext): Promise<CredentialResult<GCSCredentials>> {
+  resolve(_context: CredentialContext): Promise<CredentialResult<GCSCredentials>> {
     if (!this.config) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'No profile configuration provided',
         },
-      };
+      });
     }
 
     const keyFilePath = this.config.keyFilePath as string | undefined;
@@ -184,16 +184,16 @@ export class GCSInlineCredentialProvider implements CredentialProvider {
 
     // Check if key file exists when specified
     if (keyFilePath && !existsSync(keyFilePath)) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: `Service account key file not found: ${keyFilePath}`,
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'gcs',
@@ -201,7 +201,7 @@ export class GCSInlineCredentialProvider implements CredentialProvider {
         keyFilePath,
         useApplicationDefault,
       },
-    };
+    });
   }
 }
 

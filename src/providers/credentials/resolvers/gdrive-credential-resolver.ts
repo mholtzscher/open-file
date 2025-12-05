@@ -43,7 +43,7 @@ export class GDriveServiceAccountCredentialProvider implements CredentialProvide
     return !!(this.keyFilePath || context.source?.type === 'file');
   }
 
-  async resolve(context: CredentialContext): Promise<CredentialResult<GoogleDriveCredentials>> {
+  resolve(context: CredentialContext): Promise<CredentialResult<GoogleDriveCredentials>> {
     let keyFilePath = this.keyFilePath;
 
     // Get from source hint if available
@@ -52,24 +52,24 @@ export class GDriveServiceAccountCredentialProvider implements CredentialProvide
     }
 
     if (!keyFilePath) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'No service account key file path configured',
         },
-      };
+      });
     }
 
     // Verify file exists
     if (!existsSync(keyFilePath)) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: `Service account key file not found: ${keyFilePath}`,
         },
-      };
+      });
     }
 
     // Read the key file content
@@ -77,37 +77,37 @@ export class GDriveServiceAccountCredentialProvider implements CredentialProvide
     try {
       keyFileContent = readFileSync(keyFilePath, 'utf-8');
     } catch (err) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'access_denied',
           message: `Cannot read service account key file: ${keyFilePath}`,
           cause: err as Error,
         },
-      };
+      });
     }
 
     // Validate it's valid JSON
     try {
       JSON.parse(keyFileContent);
     } catch {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'invalid_format',
           message: `Invalid service account key file format: ${keyFilePath}`,
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'gdrive',
         source: 'file',
         keyFileContent,
       },
-    };
+    });
   }
 }
 
@@ -144,18 +144,18 @@ export class GDriveOAuthCredentialProvider implements CredentialProvider {
     return context.providerType === 'gdrive';
   }
 
-  async resolve(_context: CredentialContext): Promise<CredentialResult<GoogleDriveCredentials>> {
+  resolve(_context: CredentialContext): Promise<CredentialResult<GoogleDriveCredentials>> {
     if (!this.refreshToken && !this.accessToken) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'No OAuth tokens configured',
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'gdrive',
@@ -163,7 +163,7 @@ export class GDriveOAuthCredentialProvider implements CredentialProvider {
         refreshToken: this.refreshToken,
         accessToken: this.accessToken,
       },
-    };
+    });
   }
 }
 
@@ -192,15 +192,15 @@ export class GDriveInlineCredentialProvider implements CredentialProvider {
     return context.providerType === 'gdrive' && this.config !== undefined;
   }
 
-  async resolve(_context: CredentialContext): Promise<CredentialResult<GoogleDriveCredentials>> {
+  resolve(_context: CredentialContext): Promise<CredentialResult<GoogleDriveCredentials>> {
     if (!this.config) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'No profile configuration provided',
         },
-      };
+      });
     }
 
     const refreshToken = this.config.refreshToken as string | undefined;
@@ -209,13 +209,13 @@ export class GDriveInlineCredentialProvider implements CredentialProvider {
     // Check for service account key file
     if (keyFilePath) {
       if (!existsSync(keyFilePath)) {
-        return {
+        return Promise.resolve({
           success: false,
           error: {
             code: 'not_found',
             message: `Service account key file not found: ${keyFilePath}`,
           },
-        };
+        });
       }
 
       let keyFileContent: string;
@@ -223,45 +223,45 @@ export class GDriveInlineCredentialProvider implements CredentialProvider {
         keyFileContent = readFileSync(keyFilePath, 'utf-8');
         JSON.parse(keyFileContent); // Validate JSON
       } catch (err) {
-        return {
+        return Promise.resolve({
           success: false,
           error: {
             code: 'invalid_format',
             message: `Invalid service account key file: ${keyFilePath}`,
             cause: err as Error,
           },
-        };
+        });
       }
 
-      return {
+      return Promise.resolve({
         success: true,
         credentials: {
           type: 'gdrive',
           source: 'inline',
           keyFileContent,
         },
-      };
+      });
     }
 
     // Check for OAuth refresh token
     if (refreshToken) {
-      return {
+      return Promise.resolve({
         success: true,
         credentials: {
           type: 'gdrive',
           source: 'inline',
           refreshToken,
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: false,
       error: {
         code: 'not_found',
         message: 'No Google Drive credentials found in profile config',
       },
-    };
+    });
   }
 }
 

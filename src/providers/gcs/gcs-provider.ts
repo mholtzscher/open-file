@@ -33,7 +33,7 @@ export interface GCSProviderLogger {
   debug(message: string, data?: unknown): void;
   info(message: string, data?: unknown): void;
   warn(message: string, data?: unknown): void;
-  error(message: string, error?: Error | unknown): void;
+  error(message: string, error?: unknown): void;
 }
 
 /**
@@ -690,7 +690,7 @@ export class GCSProvider extends BaseStorageProvider {
       if (options?.recursive && remotePath.endsWith('/')) {
         // Download directory
         const { promises: fs } = await import('fs');
-        const { join, dirname } = await import('path');
+        const pathModule = await import('path');
 
         const prefix = normalized.endsWith('/') ? normalized : normalized + '/';
         const [files] = await this.bucket!.getFiles({ prefix });
@@ -698,10 +698,10 @@ export class GCSProvider extends BaseStorageProvider {
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
           const relativePath = file.name.slice(prefix.length);
-          const destPath = join(localPath, relativePath);
+          const destPath = pathModule.join(localPath, relativePath);
 
           // Ensure parent directory exists
-          await fs.mkdir(dirname(destPath), { recursive: true });
+          await fs.mkdir(pathModule.dirname(destPath), { recursive: true });
 
           // Skip directory markers
           if (!file.name.endsWith('/')) {
@@ -743,7 +743,7 @@ export class GCSProvider extends BaseStorageProvider {
 
     try {
       const { promises: fs, statSync } = await import('fs');
-      const { join, relative } = await import('path');
+      const pathModule = await import('path');
 
       const stats = statSync(localPath);
 
@@ -757,7 +757,7 @@ export class GCSProvider extends BaseStorageProvider {
           const files: string[] = [];
 
           for (const entry of entries) {
-            const fullPath = join(dir, entry.name);
+            const fullPath = pathModule.join(dir, entry.name);
             if (entry.isDirectory()) {
               files.push(...(await getAllFiles(fullPath)));
             } else {
@@ -772,7 +772,7 @@ export class GCSProvider extends BaseStorageProvider {
 
         for (let i = 0; i < files.length; i++) {
           const filePath = files[i];
-          const relativePath = relative(localPath, filePath);
+          const relativePath = pathModule.relative(localPath, filePath);
           const destKey = normalized + relativePath.replace(/\\/g, '/');
 
           await this.bucket!.upload(filePath, { destination: destKey });

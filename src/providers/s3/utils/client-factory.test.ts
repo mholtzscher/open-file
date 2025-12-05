@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'bun:test';
-import { createS3Client, S3ClientOptions } from './client-factory.js';
+import { createS3Client } from './client-factory.js';
 
 /**
  * Helper to verify that an object is an S3Client

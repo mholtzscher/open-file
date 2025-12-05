@@ -30,11 +30,11 @@ function createMockProvider(
     description: `Mock provider ${name}`,
     priority,
     canHandle: () => canHandle,
-    resolve: async () => {
+    resolve: () => {
       if (result === 'throw') {
         throw new Error(`Provider ${name} threw an error`);
       }
-      return result;
+      return Promise.resolve(result);
     },
   };
 }

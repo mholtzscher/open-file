@@ -5,15 +5,7 @@
  * Supports lazy loading of provider implementations to minimize bundle size.
  */
 
-import type {
-  Profile,
-  ProviderType,
-  S3Profile,
-  GCSProfile,
-  SFTPProfile,
-  FTPProfile,
-  LocalProfile,
-} from './types/profile.js';
+import type { Profile, ProviderType } from './types/profile.js';
 import type { StorageProvider } from './provider.js';
 
 /**
@@ -83,10 +75,11 @@ export async function createProvider(profile: Profile): Promise<StorageProvider>
       return new LocalProvider(profile);
     }
 
-    default:
+    default: {
       // TypeScript exhaustive check - this should never happen
       const _exhaustiveCheck: never = profile;
       throw new Error(`Unknown provider type: ${(_exhaustiveCheck as Profile).provider}`);
+    }
   }
 }
 

@@ -37,28 +37,28 @@ export class SFTPAgentCredentialProvider implements CredentialProvider {
     return !!process.env.SSH_AUTH_SOCK;
   }
 
-  async resolve(context: CredentialContext): Promise<CredentialResult<SFTPCredentials>> {
+  resolve(context: CredentialContext): Promise<CredentialResult<SFTPCredentials>> {
     // Check if agent is explicitly requested or available
     const useAgent = context.source?.type === 'sshAgent' || !!process.env.SSH_AUTH_SOCK;
 
     if (!useAgent) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'SSH agent not available (SSH_AUTH_SOCK not set)',
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'sftp',
         source: 'sshAgent',
         useAgent: true,
       },
-    };
+    });
   }
 }
 
@@ -78,27 +78,27 @@ export class SFTPEnvironmentCredentialProvider implements CredentialProvider {
     return context.providerType === 'sftp';
   }
 
-  async resolve(_context: CredentialContext): Promise<CredentialResult<SFTPCredentials>> {
+  resolve(_context: CredentialContext): Promise<CredentialResult<SFTPCredentials>> {
     const password = process.env.SFTP_PASSWORD;
 
     if (!password) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'SFTP_PASSWORD not set in environment',
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'sftp',
         source: 'environment',
         password,
       },
-    };
+    });
   }
 }
 
@@ -163,7 +163,7 @@ export class SFTPKeyFileCredentialProvider implements CredentialProvider {
     return DEFAULT_SSH_KEY_PATHS.some(p => existsSync(expandPath(p)));
   }
 
-  async resolve(context: CredentialContext): Promise<CredentialResult<SFTPCredentials>> {
+  resolve(context: CredentialContext): Promise<CredentialResult<SFTPCredentials>> {
     let keyPath = this.privateKeyPath;
 
     // Get from source hint if available
@@ -183,25 +183,25 @@ export class SFTPKeyFileCredentialProvider implements CredentialProvider {
     }
 
     if (!keyPath) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'No SSH private key found',
         },
-      };
+      });
     }
 
     const expandedPath = expandPath(keyPath);
 
     if (!existsSync(expandedPath)) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: `Private key file not found: ${keyPath}`,
         },
-      };
+      });
     }
 
     // Read the private key
@@ -209,17 +209,17 @@ export class SFTPKeyFileCredentialProvider implements CredentialProvider {
     try {
       privateKey = readFileSync(expandedPath, 'utf-8');
     } catch (err) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'access_denied',
           message: `Cannot read private key file: ${keyPath}`,
           cause: err as Error,
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'sftp',
@@ -227,7 +227,7 @@ export class SFTPKeyFileCredentialProvider implements CredentialProvider {
         privateKey,
         passphrase: this.passphrase,
       },
-    };
+    });
   }
 }
 
@@ -256,15 +256,15 @@ export class SFTPInlineCredentialProvider implements CredentialProvider {
     return context.providerType === 'sftp' && this.config !== undefined;
   }
 
-  async resolve(_context: CredentialContext): Promise<CredentialResult<SFTPCredentials>> {
+  resolve(_context: CredentialContext): Promise<CredentialResult<SFTPCredentials>> {
     if (!this.config) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'No profile configuration provided',
         },
-      };
+      });
     }
 
     const password = this.config.password as string | undefined;
@@ -275,62 +275,62 @@ export class SFTPInlineCredentialProvider implements CredentialProvider {
     // For password auth
     if (authMethod === 'password') {
       if (!password) {
-        return {
+        return Promise.resolve({
           success: false,
           error: {
             code: 'not_found',
             message: 'Password required for password authentication',
           },
-        };
+        });
       }
-      return {
+      return Promise.resolve({
         success: true,
         credentials: {
           type: 'sftp',
           source: 'inline',
           password,
         },
-      };
+      });
     }
 
     // For key auth
     if (authMethod === 'key') {
       if (!privateKeyPath) {
-        return {
+        return Promise.resolve({
           success: false,
           error: {
             code: 'not_found',
             message: 'Private key path required for key authentication',
           },
-        };
+        });
       }
 
       const expandedPath = expandPath(privateKeyPath);
       if (!existsSync(expandedPath)) {
-        return {
+        return Promise.resolve({
           success: false,
           error: {
             code: 'not_found',
             message: `Private key file not found: ${privateKeyPath}`,
           },
-        };
+        });
       }
 
       let privateKey: string;
       try {
         privateKey = readFileSync(expandedPath, 'utf-8');
       } catch (err) {
-        return {
+        return Promise.resolve({
           success: false,
           error: {
             code: 'access_denied',
             message: `Cannot read private key file: ${privateKeyPath}`,
             cause: err as Error,
           },
-        };
+        });
       }
 
-      return {
+      return Promise.resolve({
         success: true,
         credentials: {
           type: 'sftp',
@@ -338,28 +338,28 @@ export class SFTPInlineCredentialProvider implements CredentialProvider {
           privateKey,
           passphrase,
         },
-      };
+      });
     }
 
     // For agent auth
     if (authMethod === 'agent') {
-      return {
+      return Promise.resolve({
         success: true,
         credentials: {
           type: 'sftp',
           source: 'inline',
           useAgent: true,
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: false,
       error: {
         code: 'not_found',
         message: 'No valid SFTP authentication method configured',
       },
-    };
+    });
   }
 }
 

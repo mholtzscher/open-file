@@ -2,7 +2,7 @@
  * Tests for S3 Multipart Upload
  */
 
-import { describe, it, expect, mock, beforeEach } from 'bun:test';
+import { describe, it, expect, mock } from 'bun:test';
 import {
   shouldUseMultipartUpload,
   MULTIPART_THRESHOLD,

@@ -68,7 +68,7 @@ export interface S3ProviderLogger {
   debug(message: string, data?: unknown): void;
   info(message: string, data?: unknown): void;
   warn(message: string, data?: unknown): void;
-  error(message: string, error?: Error | unknown): void;
+  error(message: string, error?: unknown): void;
 }
 
 /**

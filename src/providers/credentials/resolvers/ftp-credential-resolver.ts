@@ -30,22 +30,22 @@ export class FTPEnvironmentCredentialProvider implements CredentialProvider {
     return context.providerType === 'ftp';
   }
 
-  async resolve(_context: CredentialContext): Promise<CredentialResult<FTPCredentials>> {
+  resolve(_context: CredentialContext): Promise<CredentialResult<FTPCredentials>> {
     const username = process.env.FTP_USERNAME;
     const password = process.env.FTP_PASSWORD;
 
     // At least password must be set for this provider to succeed
     if (!password) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'FTP_PASSWORD not set in environment',
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'ftp',
@@ -53,7 +53,7 @@ export class FTPEnvironmentCredentialProvider implements CredentialProvider {
         username,
         password,
       },
-    };
+    });
   }
 }
 
@@ -82,22 +82,22 @@ export class FTPInlineCredentialProvider implements CredentialProvider {
     return context.providerType === 'ftp' && this.config !== undefined;
   }
 
-  async resolve(_context: CredentialContext): Promise<CredentialResult<FTPCredentials>> {
+  resolve(_context: CredentialContext): Promise<CredentialResult<FTPCredentials>> {
     if (!this.config) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'No profile configuration provided',
         },
-      };
+      });
     }
 
     const username = this.config.username as string | undefined;
     const password = this.config.password as string | undefined;
 
     // FTP can work with just username (or anonymous)
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'ftp',
@@ -105,7 +105,7 @@ export class FTPInlineCredentialProvider implements CredentialProvider {
         username,
         password,
       },
-    };
+    });
   }
 }
 
@@ -125,10 +125,10 @@ export class FTPAnonymousCredentialProvider implements CredentialProvider {
     return context.providerType === 'ftp';
   }
 
-  async resolve(_context: CredentialContext): Promise<CredentialResult<FTPCredentials>> {
+  resolve(_context: CredentialContext): Promise<CredentialResult<FTPCredentials>> {
     // Anonymous FTP typically uses "anonymous" as username
     // and an email address as password
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'ftp',
@@ -136,7 +136,7 @@ export class FTPAnonymousCredentialProvider implements CredentialProvider {
         username: 'anonymous',
         password: 'anonymous@',
       },
-    };
+    });
   }
 }
 

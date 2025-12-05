@@ -42,7 +42,7 @@ export interface GoogleDriveProviderLogger {
   debug(message: string, data?: unknown): void;
   info(message: string, data?: unknown): void;
   warn(message: string, data?: unknown): void;
-  error(message: string, error?: Error | unknown): void;
+  error(message: string, error?: unknown): void;
 }
 
 /**
@@ -970,7 +970,7 @@ export class GoogleDriveProvider extends BaseStorageProvider {
 
       // Write to local file
       const writeStream = createWriteStream(localPath);
-      const dataStream = response.data as Readable;
+      const dataStream = response.data;
 
       let bytesDownloaded = 0;
 

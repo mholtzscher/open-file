@@ -128,12 +128,12 @@ export abstract class BaseStorageProvider implements StorageProvider {
    * Default: returns unimplemented
    * Override if provider has Capability.Write
    */
-  async write(
+  write(
     _path: string,
     _content: Buffer | string,
     _options?: WriteOptions
   ): Promise<OperationResult> {
-    return Result.unimplemented('write');
+    return Promise.resolve(Result.unimplemented('write'));
   }
 
   /**
@@ -141,8 +141,8 @@ export abstract class BaseStorageProvider implements StorageProvider {
    * Default: returns unimplemented
    * Override if provider has Capability.Mkdir
    */
-  async mkdir(_path: string): Promise<OperationResult> {
-    return Result.unimplemented('mkdir');
+  mkdir(_path: string): Promise<OperationResult> {
+    return Promise.resolve(Result.unimplemented('mkdir'));
   }
 
   /**
@@ -150,8 +150,8 @@ export abstract class BaseStorageProvider implements StorageProvider {
    * Default: returns unimplemented
    * Override if provider has Capability.Delete
    */
-  async delete(_path: string, _options?: DeleteOptions): Promise<OperationResult> {
-    return Result.unimplemented('delete');
+  delete(_path: string, _options?: DeleteOptions): Promise<OperationResult> {
+    return Promise.resolve(Result.unimplemented('delete'));
   }
 
   /**
@@ -159,12 +159,12 @@ export abstract class BaseStorageProvider implements StorageProvider {
    * Default: returns unimplemented
    * Override if provider has Capability.Download
    */
-  async downloadToLocal(
+  downloadToLocal(
     _remotePath: string,
     _localPath: string,
     _options?: TransferOptions
   ): Promise<OperationResult> {
-    return Result.unimplemented('downloadToLocal');
+    return Promise.resolve(Result.unimplemented('downloadToLocal'));
   }
 
   /**
@@ -172,12 +172,12 @@ export abstract class BaseStorageProvider implements StorageProvider {
    * Default: returns unimplemented
    * Override if provider has Capability.Upload
    */
-  async uploadFromLocal(
+  uploadFromLocal(
     _localPath: string,
     _remotePath: string,
     _options?: TransferOptions
   ): Promise<OperationResult> {
-    return Result.unimplemented('uploadFromLocal');
+    return Promise.resolve(Result.unimplemented('uploadFromLocal'));
   }
 
   // ==========================================================================
@@ -237,12 +237,12 @@ export abstract class BaseStorageProvider implements StorageProvider {
    * @param dest - Destination path
    * @param options - Transfer options
    */
-  protected async nativeMove(
+  protected nativeMove(
     _source: string,
     _dest: string,
     _options?: TransferOptions
   ): Promise<OperationResult> {
-    return Result.unimplemented('move');
+    return Promise.resolve(Result.unimplemented('move'));
   }
 
   // ==========================================================================
@@ -283,11 +283,11 @@ export abstract class BaseStorageProvider implements StorageProvider {
    * @param dest - Destination path
    * @param options - Transfer options
    */
-  protected async nativeCopy(
+  protected nativeCopy(
     _source: string,
     _dest: string,
     _options?: TransferOptions
   ): Promise<OperationResult> {
-    return Result.unimplemented('copy');
+    return Promise.resolve(Result.unimplemented('copy'));
   }
 }

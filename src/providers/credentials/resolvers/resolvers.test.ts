@@ -36,7 +36,7 @@ import {
   createCredentialChainForType,
 } from './index.js';
 
-import type { FTPCredentials, SMBCredentials } from '../types.js';
+import type {} from '../types.js';
 
 // ============================================================================
 // Test Setup

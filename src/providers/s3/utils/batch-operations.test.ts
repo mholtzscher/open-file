@@ -2,14 +2,8 @@
  * Tests for S3 Batch Operations
  */
 
-import { describe, it, expect, mock, beforeEach } from 'bun:test';
-import {
-  listAllObjects,
-  batchDeleteObjects,
-  DELETE_BATCH_SIZE,
-  ListAllObjectsOptions,
-  BatchDeleteOptions,
-} from './batch-operations.js';
+import { describe, it, expect, mock } from 'bun:test';
+import { listAllObjects, batchDeleteObjects, DELETE_BATCH_SIZE } from './batch-operations.js';
 
 // Mock S3Client
 function createMockClient(responses: any[]) {

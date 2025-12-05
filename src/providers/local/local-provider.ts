@@ -43,7 +43,7 @@ export interface LocalProviderLogger {
   debug(message: string, data?: unknown): void;
   info(message: string, data?: unknown): void;
   warn(message: string, data?: unknown): void;
-  error(message: string, error?: Error | unknown): void;
+  error(message: string, error?: unknown): void;
 }
 
 /**
@@ -163,21 +163,23 @@ export class LocalProvider extends BaseStorageProvider {
   /**
    * List contents of a directory
    */
-  async list(path: string, options?: ListOptions): Promise<OperationResult<ListResult>> {
+  list(path: string, options?: ListOptions): Promise<OperationResult<ListResult>> {
     const fullPath = this.resolvePath(path);
 
     try {
       if (!existsSync(fullPath)) {
-        return Result.notFound(path) as OperationResult<ListResult>;
+        return Promise.resolve(Result.notFound(path) as OperationResult<ListResult>);
       }
 
       const stats = statSync(fullPath);
       if (!stats.isDirectory()) {
-        return Result.error(
-          'NOT_DIRECTORY',
-          `Path is not a directory: ${path}`,
-          false
-        ) as OperationResult<ListResult>;
+        return Promise.resolve(
+          Result.error(
+            'NOT_DIRECTORY',
+            `Path is not a directory: ${path}`,
+            false
+          ) as OperationResult<ListResult>
+        );
       }
 
       const entries = readdirSync(fullPath);
@@ -200,67 +202,75 @@ export class LocalProvider extends BaseStorageProvider {
         return a.name.localeCompare(b.name);
       });
 
-      return Result.success({
-        entries: items,
-        hasMore: false,
-        path,
-      });
+      return Promise.resolve(
+        Result.success({
+          entries: items,
+          hasMore: false,
+          path,
+        })
+      );
     } catch (err) {
       const error = err as NodeJS.ErrnoException;
       if (error.code === 'EACCES') {
-        return Result.permissionDenied(path) as OperationResult<ListResult>;
+        return Promise.resolve(Result.permissionDenied(path) as OperationResult<ListResult>);
       }
-      return Result.error(
-        'LIST_ERROR',
-        `Failed to list directory: ${error.message}`,
-        false,
-        err
-      ) as OperationResult<ListResult>;
+      return Promise.resolve(
+        Result.error(
+          'LIST_ERROR',
+          `Failed to list directory: ${error.message}`,
+          false,
+          err
+        ) as OperationResult<ListResult>
+      );
     }
   }
 
   /**
    * Get metadata for a file or directory
    */
-  async getMetadata(path: string): Promise<OperationResult<Entry>> {
+  getMetadata(path: string): Promise<OperationResult<Entry>> {
     const fullPath = this.resolvePath(path);
 
     try {
       if (!existsSync(fullPath)) {
-        return Result.notFound(path) as OperationResult<Entry>;
+        return Promise.resolve(Result.notFound(path) as OperationResult<Entry>);
       }
 
       const name = basename(fullPath) || '/';
-      return Result.success(this.statsToEntry(fullPath, name));
+      return Promise.resolve(Result.success(this.statsToEntry(fullPath, name)));
     } catch (err) {
       const error = err as NodeJS.ErrnoException;
       if (error.code === 'EACCES') {
-        return Result.permissionDenied(path) as OperationResult<Entry>;
+        return Promise.resolve(Result.permissionDenied(path) as OperationResult<Entry>);
       }
-      return Result.error(
-        'METADATA_ERROR',
-        `Failed to get metadata: ${error.message}`,
-        false,
-        err
-      ) as OperationResult<Entry>;
+      return Promise.resolve(
+        Result.error(
+          'METADATA_ERROR',
+          `Failed to get metadata: ${error.message}`,
+          false,
+          err
+        ) as OperationResult<Entry>
+      );
     }
   }
 
   /**
    * Check if a path exists
    */
-  async exists(path: string): Promise<OperationResult<boolean>> {
+  exists(path: string): Promise<OperationResult<boolean>> {
     const fullPath = this.resolvePath(path);
 
     try {
-      return Result.success(existsSync(fullPath));
+      return Promise.resolve(Result.success(existsSync(fullPath)));
     } catch (err) {
-      return Result.error(
-        'EXISTS_ERROR',
-        `Failed to check existence: ${(err as Error).message}`,
-        false,
-        err
-      ) as OperationResult<boolean>;
+      return Promise.resolve(
+        Result.error(
+          'EXISTS_ERROR',
+          `Failed to check existence: ${(err as Error).message}`,
+          false,
+          err
+        ) as OperationResult<boolean>
+      );
     }
   }
 

@@ -29,23 +29,23 @@ export class SMBEnvironmentCredentialProvider implements CredentialProvider {
     return context.providerType === 'smb';
   }
 
-  async resolve(_context: CredentialContext): Promise<CredentialResult<SMBCredentials>> {
+  resolve(_context: CredentialContext): Promise<CredentialResult<SMBCredentials>> {
     const username = process.env.SMB_USERNAME;
     const password = process.env.SMB_PASSWORD;
     const domain = process.env.SMB_DOMAIN;
 
     // At least password must be set for this provider to succeed
     if (!password) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'SMB_PASSWORD not set in environment',
         },
-      };
+      });
     }
 
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'smb',
@@ -54,7 +54,7 @@ export class SMBEnvironmentCredentialProvider implements CredentialProvider {
         password,
         domain,
       },
-    };
+    });
   }
 }
 
@@ -83,15 +83,15 @@ export class SMBInlineCredentialProvider implements CredentialProvider {
     return context.providerType === 'smb' && this.config !== undefined;
   }
 
-  async resolve(_context: CredentialContext): Promise<CredentialResult<SMBCredentials>> {
+  resolve(_context: CredentialContext): Promise<CredentialResult<SMBCredentials>> {
     if (!this.config) {
-      return {
+      return Promise.resolve({
         success: false,
         error: {
           code: 'not_found',
           message: 'No profile configuration provided',
         },
-      };
+      });
     }
 
     const username = this.config.username as string | undefined;
@@ -99,7 +99,7 @@ export class SMBInlineCredentialProvider implements CredentialProvider {
     const domain = this.config.domain as string | undefined;
 
     // SMB can work with username only (for guest shares) but typically needs password
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'smb',
@@ -108,7 +108,7 @@ export class SMBInlineCredentialProvider implements CredentialProvider {
         password,
         domain,
       },
-    };
+    });
   }
 }
 
@@ -128,9 +128,9 @@ export class SMBGuestCredentialProvider implements CredentialProvider {
     return context.providerType === 'smb';
   }
 
-  async resolve(_context: CredentialContext): Promise<CredentialResult<SMBCredentials>> {
+  resolve(_context: CredentialContext): Promise<CredentialResult<SMBCredentials>> {
     // Guest access typically uses empty credentials
-    return {
+    return Promise.resolve({
       success: true,
       credentials: {
         type: 'smb',
@@ -138,7 +138,7 @@ export class SMBGuestCredentialProvider implements CredentialProvider {
         username: 'guest',
         password: '',
       },
-    };
+    });
   }
 }
 

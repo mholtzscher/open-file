@@ -184,7 +184,12 @@ export function maskValue(value: unknown, options: MaskOptions = {}): string {
     return '';
   }
 
-  const str = String(value);
+  // Handle objects by masking them directly
+  if (typeof value === 'object') {
+    return mask;
+  }
+
+  const str = String(value as string | number | boolean | bigint | symbol);
 
   if (!showPartial || str.length <= showStart + showEnd + 4) {
     return mask;
