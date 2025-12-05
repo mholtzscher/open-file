@@ -7,7 +7,7 @@ import { testRender } from '@opentui/react/test-utils';
 import { KeyboardProvider } from '../../contexts/KeyboardContext.js';
 import { ErrorDialog } from './error.js';
 
-const WrappedErrorDialog = (props: any) => (
+const WrappedErrorDialog = (props: Parameters<typeof ErrorDialog>[0]) => (
   <KeyboardProvider>
     <ErrorDialog {...props} />
   </KeyboardProvider>

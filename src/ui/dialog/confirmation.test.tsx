@@ -10,7 +10,7 @@ import { ConfirmationDialog, type Operation } from './confirmation.js';
 const TERMINAL_WIDTH = 100;
 const TERMINAL_HEIGHT = 100;
 
-const WrappedConfirmationDialog = (props: any) => (
+const WrappedConfirmationDialog = (props: Partial<Parameters<typeof ConfirmationDialog>[0]>) => (
   <KeyboardProvider>
     <ConfirmationDialog {...props} />
   </KeyboardProvider>
@@ -392,7 +392,7 @@ describe('ConfirmationDialog', () => {
       expect(typeof module.ConfirmationDialog).toBe('function');
     });
 
-    it('exports Operation type', async () => {
+    it('exports Operation type', () => {
       // TypeScript interface check - if this compiles, the type exists
       const op: import('./confirmation.js').Operation = {
         id: '1',
@@ -402,7 +402,7 @@ describe('ConfirmationDialog', () => {
       expect(op.id).toBe('1');
     });
 
-    it('exports ConfirmationDialogProps interface', async () => {
+    it('exports ConfirmationDialogProps interface', () => {
       const props: import('./confirmation.js').ConfirmationDialogProps = {
         visible: true,
         title: 'Test',

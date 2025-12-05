@@ -10,7 +10,7 @@ import type { Profile } from '../../providers/types/profile.js';
 import type { ProfileManager } from '../../providers/services/profile-manager.js';
 
 // Wrapper component that provides KeyboardContext
-const WrappedProfileSelectorDialog = (props: any) => (
+const WrappedProfileSelectorDialog = (props: Parameters<typeof ProfileSelectorDialog>[0]) => (
   <KeyboardProvider>
     <ProfileSelectorDialog {...props} />
   </KeyboardProvider>
@@ -46,7 +46,9 @@ function createMockProfileManager(profiles: Profile[] = mockProfiles): ProfileMa
     saveProfile: mock(() => Promise.resolve({ valid: true, errors: [] })),
     deleteProfile: mock(() => Promise.resolve(true)),
     validateProfile: mock(() => Promise.resolve({ valid: true, errors: [] })),
-    createProviderFromProfile: mock(() => Promise.resolve({} as any)),
+    createProviderFromProfile: mock(() =>
+      Promise.resolve({} as unknown as ReturnType<ProfileManager['createProviderFromProfile']>)
+    ),
     reload: mock(() => Promise.resolve()),
   };
 }
@@ -361,7 +363,9 @@ describe('ProfileSelectorDialog', () => {
         saveProfile: mock(() => Promise.resolve({ valid: true, errors: [] })),
         deleteProfile: mock(() => Promise.resolve(true)),
         validateProfile: mock(() => Promise.resolve({ valid: true, errors: [] })),
-        createProviderFromProfile: mock(() => Promise.resolve({} as any)),
+        createProviderFromProfile: mock(() =>
+          Promise.resolve({} as unknown as ReturnType<ProfileManager['createProviderFromProfile']>)
+        ),
         reload: mock(() => Promise.resolve()),
       };
 

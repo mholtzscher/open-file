@@ -93,7 +93,7 @@ export function UploadDialog({ visible = true, onConfirm, onCancel }: UploadDial
       }
     };
 
-    loadDirectory();
+    void loadDirectory();
   }, [state.currentPath, state.filter, state.searchPattern]);
 
   const handleKey = useCallback<Parameters<typeof useKeyboardHandler>[0]>(

@@ -223,7 +223,7 @@ describe('SortMenu', () => {
       expect(typeof module.SortMenu).toBe('function');
     });
 
-    it('exports SortMenuProps interface', async () => {
+    it('exports SortMenuProps interface', () => {
       const props: import('./sort.js').SortMenuProps = {
         visible: true,
         currentField: SortField.Name,

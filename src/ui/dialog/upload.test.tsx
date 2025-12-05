@@ -8,7 +8,7 @@ import { KeyboardProvider } from '../../contexts/KeyboardContext.js';
 import { UploadDialog } from './upload.js';
 import type { LocalFileEntry } from '../../utils/file-browser.js';
 
-const WrappedUploadDialog = (props: any) => (
+const WrappedUploadDialog = (props: Partial<Parameters<typeof UploadDialog>[0]>) => (
   <KeyboardProvider>
     <UploadDialog {...props} />
   </KeyboardProvider>
@@ -422,7 +422,7 @@ describe('UploadDialog', () => {
   });
 
   describe('empty state', () => {
-    it('shows "No files" when directory is empty', async () => {
+    it('shows "No files" when directory is empty', () => {
       // The component will load from actual filesystem, but we test the logic
       const entries: LocalFileEntry[] = [];
       const isEmpty = entries.length === 0;
@@ -478,7 +478,7 @@ describe('UploadDialog', () => {
       expect(typeof module.UploadDialog).toBe('function');
     });
 
-    it('exports UploadDialogProps interface', async () => {
+    it('exports UploadDialogProps interface', () => {
       // TypeScript interface check - if this compiles, the interface exists
       const props: import('./upload.js').UploadDialogProps = {
         visible: true,

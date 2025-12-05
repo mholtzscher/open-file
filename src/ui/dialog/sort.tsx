@@ -47,8 +47,11 @@ export function SortMenu({
   // Reset selection when dialog opens
   useEffect(() => {
     if (visible) {
-      const fieldIndex = sortFields.indexOf(currentField);
-      setSelectedIndex(fieldIndex >= 0 ? fieldIndex : 0);
+      // Use queueMicrotask to avoid synchronous setState during render
+      queueMicrotask(() => {
+        const fieldIndex = sortFields.indexOf(currentField);
+        setSelectedIndex(fieldIndex >= 0 ? fieldIndex : 0);
+      });
     }
   }, [visible, currentField]);
 

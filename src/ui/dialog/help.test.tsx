@@ -11,7 +11,7 @@ import { HelpDialog } from './help.js';
 const TERMINAL_WIDTH = 80;
 const TERMINAL_HEIGHT = 50;
 
-const WrappedHelpDialog = (props: any) => (
+const WrappedHelpDialog = (props: { visible: boolean; onClose?: () => void }) => (
   <KeyboardProvider>
     <HelpDialog {...props} />
   </KeyboardProvider>

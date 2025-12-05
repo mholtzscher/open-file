@@ -43,20 +43,23 @@ export function ThemeSelectorDialog({ visible, onClose }: ThemeSelectorDialogPro
       return;
     }
 
-    // Use the currently active theme ID at the moment the dialog opens.
-    // This avoids fighting with navigation updates while the dialog is open.
-    const activeId = ThemeRegistry.getActiveId();
-    const idToUse = activeId ?? themes[0]?.id ?? null;
+    // Use queueMicrotask to avoid synchronous setState during render
+    queueMicrotask(() => {
+      // Use the currently active theme ID at the moment the dialog opens.
+      // This avoids fighting with navigation updates while the dialog is open.
+      const activeId = ThemeRegistry.getActiveId();
+      const idToUse = activeId ?? themes[0]?.id ?? null;
 
-    if (idToUse) {
-      const index = themes.findIndex(t => t.id === idToUse);
-      setSelectedIndex(index >= 0 ? index : 0);
-      setOriginalThemeId(idToUse);
-    } else {
-      setSelectedIndex(0);
-      setOriginalThemeId(null);
-    }
-  }, [visible]);
+      if (idToUse) {
+        const index = themes.findIndex(t => t.id === idToUse);
+        setSelectedIndex(index >= 0 ? index : 0);
+        setOriginalThemeId(idToUse);
+      } else {
+        setSelectedIndex(0);
+        setOriginalThemeId(null);
+      }
+    });
+  }, [visible, themes]);
 
   // Apply theme preview as selection changes
   useEffect(() => {

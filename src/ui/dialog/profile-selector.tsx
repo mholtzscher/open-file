@@ -123,7 +123,7 @@ export function ProfileSelectorDialog({
       }
     };
 
-    loadProfiles();
+    void loadProfiles();
   }, [visible, profileManager, profilesReloadKey]);
 
   // Keyboard handler for KeyboardContext (KeyboardKey-based)
@@ -171,7 +171,7 @@ export function ProfileSelectorDialog({
         case 'e':
           // Open profiles.json in external editor
           if (onEditProfiles) {
-            onEditProfiles();
+            void onEditProfiles();
           }
           return true;
 
@@ -183,7 +183,7 @@ export function ProfileSelectorDialog({
           return true; // Block all other keys when profile selector is open
       }
     },
-    [visible, isLoading, error, profiles, selectedIndex, onProfileSelect, onCancel]
+    [visible, isLoading, error, profiles, selectedIndex, onProfileSelect, onCancel, onEditProfiles]
   );
 
   // Register keyboard handler with KeyboardContext (high priority for dialogs)
