@@ -13,7 +13,6 @@ import {
   DeleteObjectCommand,
   HeadObjectCommand,
   GetObjectTaggingCommand,
-  GetObjectCommand,
 } from '@aws-sdk/client-s3';
 import { promises as fs } from 'fs';
 import type { S3Profile } from '../types/profile.js';
