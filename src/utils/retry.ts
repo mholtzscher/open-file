@@ -2,6 +2,21 @@
  * Retry logic utilities with exponential backoff
  */
 
+/** Interface for AWS SDK-like errors with retry-relevant properties */
+interface RetryableError {
+  code?: string;
+  $fault?: string;
+  name?: string;
+  $metadata?: {
+    httpStatusCode?: number;
+  };
+}
+
+/** Type guard to check if error has retry-relevant properties */
+function isRetryableErrorShape(error: unknown): error is RetryableError {
+  return typeof error === 'object' && error !== null;
+}
+
 export interface RetryOptions {
   /** Maximum number of retry attempts */
   maxAttempts?: number;
@@ -12,7 +27,7 @@ export interface RetryOptions {
   /** Exponential backoff multiplier */
   backoffMultiplier?: number;
   /** Function to determine if error is retryable */
-  isRetryable?: (error: any) => boolean;
+  isRetryable?: (error: unknown) => boolean;
 }
 
 /**
@@ -45,11 +60,8 @@ export async function retryWithBackoff<T>(
       }
 
       // Wait before retrying
-      console.debug(
-        `Retry attempt ${attempt}/${maxAttempts} after ${delay}ms: ${
-          (error as any)?.message || String(error)
-        }`
-      );
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.debug(`Retry attempt ${attempt}/${maxAttempts} after ${delay}ms: ${errorMessage}`);
       await new Promise(resolve => setTimeout(resolve, delay));
 
       // Increase delay for next attempt
@@ -57,14 +69,15 @@ export async function retryWithBackoff<T>(
     }
   }
 
-  throw lastError;
+  // This should only be reached if maxAttempts is 0 or negative
+  throw lastError ?? new Error('Retry failed with no attempts');
 }
 
 /**
  * Default function to check if error is retryable
  */
-function defaultIsRetryable(error: any): boolean {
-  if (!error) return false;
+function defaultIsRetryable(error: unknown): boolean {
+  if (!error || !isRetryableErrorShape(error)) return false;
 
   const code = error.code || error.$fault || error.name;
   const statusCode = error.$metadata?.httpStatusCode;
@@ -89,7 +102,7 @@ function defaultIsRetryable(error: any): boolean {
     'ETIMEDOUT',
   ];
 
-  return retryableAwsCodes.includes(code);
+  return code !== undefined && retryableAwsCodes.includes(code);
 }
 
 /**

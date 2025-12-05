@@ -15,7 +15,15 @@ import {
   parseAwsError,
   formatErrorForDisplay,
   isRetryable,
+  type AwsLikeError,
 } from './errors.js';
+
+/** Helper to create AWS-like errors for testing */
+function createAwsError(message: string, code: string): AwsLikeError {
+  const error = new Error(message) as AwsLikeError;
+  error.code = code;
+  return error;
+}
 
 describe('AdapterError', () => {
   it('should create base adapter error', () => {
@@ -149,8 +157,7 @@ describe('parseAwsError', () => {
   });
 
   it('should parse AWS error codes', () => {
-    const awsError = new Error('Test error');
-    (awsError as any).code = 'NoSuchKey';
+    const awsError = createAwsError('Test error', 'NoSuchKey');
 
     const result = parseAwsError(awsError, 'get');
 
@@ -158,8 +165,7 @@ describe('parseAwsError', () => {
   });
 
   it('should parse AccessDenied error', () => {
-    const awsError = new Error('Access denied');
-    (awsError as any).code = 'AccessDenied';
+    const awsError = createAwsError('Access denied', 'AccessDenied');
 
     const result = parseAwsError(awsError, 'read');
 
@@ -167,8 +173,7 @@ describe('parseAwsError', () => {
   });
 
   it('should parse ServiceUnavailable error', () => {
-    const awsError = new Error('Service unavailable');
-    (awsError as any).code = 'ServiceUnavailable';
+    const awsError = createAwsError('Service unavailable', 'ServiceUnavailable');
 
     const result = parseAwsError(awsError, 'list');
 

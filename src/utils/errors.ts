@@ -5,6 +5,16 @@
  */
 
 /**
+ * Interface for AWS SDK-like errors with code and metadata
+ */
+export interface AwsLikeError extends Error {
+  code?: string;
+  $metadata?: {
+    httpStatusCode?: number;
+  };
+}
+
+/**
  * Base adapter error class
  */
 export class AdapterError extends Error {
@@ -148,13 +158,14 @@ export function parseAwsError(error: unknown, operation: string = 'operation'): 
 
   // Check for specific AWS error codes
   if ('code' in error) {
-    const awsCode = (error as any).code;
+    const awsError = error as AwsLikeError;
+    const awsCode = awsError.code;
 
     switch (awsCode) {
       case 'NoSuchKey':
       case 'NoSuchBucket':
         return new NotFoundError(
-          (error as any).$metadata?.httpStatusCode === 404 ? 'S3 object' : 'bucket'
+          awsError.$metadata?.httpStatusCode === 404 ? 'S3 object' : 'bucket'
         );
 
       case 'AccessDenied':

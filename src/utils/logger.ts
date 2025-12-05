@@ -2,7 +2,7 @@
  * Writes logs to appropriate OS-specific directories and a log file.
  */
 
-import { createWriteStream, mkdirSync, existsSync } from 'fs';
+import { createWriteStream, mkdirSync, existsSync, type WriteStream } from 'fs';
 import { join } from 'path';
 import { homedir, platform } from 'os';
 
@@ -63,7 +63,7 @@ export class Logger {
   level: LogLevel;
   private logDir: string;
   private logFile: string;
-  private stream: any = null;
+  private stream: WriteStream | null = null;
   private queue: string[] = [];
   private isWriting = false;
 
@@ -75,7 +75,7 @@ export class Logger {
       if (!existsSync(this.logDir)) {
         mkdirSync(this.logDir, { recursive: true });
       }
-    } catch (err) {
+    } catch {
       // If log dir can't be created, we'll still try to write to where we can
       // Do not throw in constructor
     }
@@ -85,13 +85,13 @@ export class Logger {
 
     try {
       this.stream = createWriteStream(this.logFile, { flags: 'a' });
-    } catch (err) {
+    } catch {
       // If stream can't be created, logging to file won't happen
       this.stream = null;
     }
   }
 
-  private write(level: LogLevel, message: string, data?: any): void {
+  private write(level: LogLevel, message: string, data?: unknown): void {
     if (level < this.level) return;
     if (!this.stream) return;
 
@@ -122,19 +122,19 @@ export class Logger {
     }
   }
 
-  debug(message: string, data?: any): void {
+  debug(message: string, data?: unknown): void {
     this.write(LogLevel.Debug, message, data);
   }
 
-  info(message: string, data?: any): void {
+  info(message: string, data?: unknown): void {
     this.write(LogLevel.Info, message, data);
   }
 
-  warn(message: string, data?: any): void {
+  warn(message: string, data?: unknown): void {
     this.write(LogLevel.Warn, message, data);
   }
 
-  error(message: string, error?: Error | any): void {
+  error(message: string, error?: unknown): void {
     if (error instanceof Error) {
       const payload = {
         name: error.name,
