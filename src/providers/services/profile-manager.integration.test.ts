@@ -56,7 +56,9 @@ class TestableProfileManager {
       return;
     }
 
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(content) as {
+      profiles?: Array<S3Profile | SFTPProfile | GCSProfile | FTPProfile | LocalProfile>;
+    };
     this.profiles.clear();
     for (const profile of parsed.profiles || []) {
       this.profiles.set(profile.id, profile);
@@ -76,7 +78,7 @@ class TestableProfileManager {
     }
   }
 
-  async listProfiles(options?: {
+  listProfiles(options?: {
     providerType?: string;
   }): Promise<Array<S3Profile | SFTPProfile | GCSProfile | FTPProfile | LocalProfile>> {
     this.ensureLoaded();
@@ -86,14 +88,14 @@ class TestableProfileManager {
       profiles = profiles.filter(p => p.provider === options.providerType);
     }
 
-    return profiles;
+    return Promise.resolve(profiles);
   }
 
-  async getProfile(
+  getProfile(
     id: string
   ): Promise<S3Profile | SFTPProfile | GCSProfile | FTPProfile | LocalProfile | undefined> {
     this.ensureLoaded();
-    return this.profiles.get(id);
+    return Promise.resolve(this.profiles.get(id));
   }
 
   async saveProfile(
@@ -128,19 +130,19 @@ class TestableProfileManager {
     return { valid: true, errors: [] };
   }
 
-  async deleteProfile(id: string): Promise<boolean> {
+  deleteProfile(id: string): Promise<boolean> {
     this.ensureLoaded();
 
     if (!this.profiles.has(id)) {
-      return false;
+      return Promise.resolve(false);
     }
 
     this.profiles.delete(id);
     this.save();
-    return true;
+    return Promise.resolve(true);
   }
 
-  async validateProfile(
+  validateProfile(
     profile: S3Profile | SFTPProfile | GCSProfile | FTPProfile | LocalProfile
   ): Promise<ValidationResult> {
     const errors: ValidationError[] = [];
@@ -221,22 +223,23 @@ class TestableProfileManager {
       }
     }
 
-    return { valid: errors.length === 0, errors };
+    return Promise.resolve({ valid: errors.length === 0, errors });
   }
 
-  async hasProfile(id: string): Promise<boolean> {
+  hasProfile(id: string): Promise<boolean> {
     this.ensureLoaded();
-    return this.profiles.has(id);
+    return Promise.resolve(this.profiles.has(id));
   }
 
-  async getProfileCount(): Promise<number> {
+  getProfileCount(): Promise<number> {
     this.ensureLoaded();
-    return this.profiles.size;
+    return Promise.resolve(this.profiles.size);
   }
 
-  async reload(): Promise<void> {
+  reload(): Promise<void> {
     this.loaded = false;
     this.load();
+    return Promise.resolve();
   }
 }
 
@@ -282,7 +285,7 @@ function createTestGCSProfile(id: string): GCSProfile {
   };
 }
 
-function createTestLocalProfile(id: string): LocalProfile {
+function _createTestLocalProfile(id: string): LocalProfile {
   return {
     id,
     displayName: `Test Local Profile ${id}`,

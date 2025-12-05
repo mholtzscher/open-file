@@ -329,7 +329,7 @@ export class SFTPProvider extends BaseStorageProvider {
    * Since SFTP doesn't have buckets, we return a single virtual container
    * representing the base path configured in the profile.
    */
-  async listContainers(): Promise<OperationResult<Entry[]>> {
+  listContainers(): Promise<OperationResult<Entry[]>> {
     // Return a single virtual "container" representing the SFTP root/base path
     const containerName =
       this.basePath === '/' ? 'root' : this.basePath.split('/').filter(Boolean).pop() || 'sftp';
@@ -348,7 +348,7 @@ export class SFTPProvider extends BaseStorageProvider {
       },
     };
 
-    return Result.success([entry]);
+    return Promise.resolve(Result.success([entry]));
   }
 
   /**

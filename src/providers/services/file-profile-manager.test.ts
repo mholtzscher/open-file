@@ -4,7 +4,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { FileProfileManager, ProfileManagerError } from './file-profile-manager.js';
-import type { S3Profile, SFTPProfile, GCSProfile } from '../types/profile.js';
+import type { S3Profile, SFTPProfile, GCSProfile, Profile } from '../types/profile.js';
 
 // ============================================================================
 // Test Setup
@@ -224,7 +224,7 @@ describe('FileProfileManager - Validation Integration', () => {
       config: {},
     };
 
-    const result = await manager.validateProfile(profile as any);
+    const result = await manager.validateProfile(profile as unknown as Profile);
 
     expect(result.valid).toBe(false);
     expect(result.errors.some(e => e.field === 'provider')).toBe(true);

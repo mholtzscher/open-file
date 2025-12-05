@@ -12,13 +12,13 @@ import {
 } from './object-operations.js';
 
 // Mock S3Client
-function createMockClient(responses: any[] = [{}]) {
+function createMockClient(responses: unknown[] = [{}]) {
   let callIndex = 0;
   return {
-    send: mock(async () => {
+    send: mock(() => {
       const response = responses[callIndex] || responses[responses.length - 1];
       callIndex++;
-      return response;
+      return Promise.resolve(response);
     }),
   };
 }

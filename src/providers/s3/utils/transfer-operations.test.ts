@@ -14,20 +14,20 @@ import {
 } from './transfer-operations.js';
 
 // Mock S3Client
-function createMockClient(responses: any[] = [{}]) {
+function createMockClient(responses: unknown[] = [{}]) {
   let callIndex = 0;
   return {
-    send: mock(async () => {
+    send: mock(() => {
       const response = responses[callIndex] || responses[responses.length - 1];
       callIndex++;
-      return response;
+      return Promise.resolve(response);
     }),
   };
 }
 
 // Create a mock read function
 function createMockReadFn(content: Buffer = Buffer.from('test content')) {
-  return mock(async () => content);
+  return mock(() => Promise.resolve(content));
 }
 
 describe('downloadFileToLocal', () => {
@@ -95,9 +95,9 @@ describe('downloadDirectoryToLocal', () => {
     ]);
 
     let readCount = 0;
-    const mockRead = mock(async (key: string) => {
+    const mockRead = mock((key: string) => {
       readCount++;
-      return Buffer.from(`content of ${key}`);
+      return Promise.resolve(Buffer.from(`content of ${key}`));
     });
 
     await downloadDirectoryToLocal({

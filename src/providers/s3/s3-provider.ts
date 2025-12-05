@@ -825,9 +825,8 @@ export class S3Provider extends BaseStorageProvider {
           ? new GetObjectCommand({ Bucket: this.bucket, Key: normalized })
           : new PutObjectCommand({ Bucket: this.bucket, Key: normalized });
 
-      // Cast to any to work around AWS SDK v3 type mismatch between S3Client and presigner
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const url = await getSignedUrl(this.client as any, command, {
+      // Cast to work around AWS SDK v3 type mismatch between S3Client and presigner
+      const url = await getSignedUrl(this.client as Parameters<typeof getSignedUrl>[0], command, {
         expiresIn: expiresInSeconds,
       });
 

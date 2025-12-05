@@ -6,13 +6,13 @@ import { describe, it, expect, mock } from 'bun:test';
 import { listAllObjects, batchDeleteObjects, DELETE_BATCH_SIZE } from './batch-operations.js';
 
 // Mock S3Client
-function createMockClient(responses: any[]) {
+function createMockClient(responses: unknown[]) {
   let callIndex = 0;
   return {
-    send: mock(async () => {
+    send: mock(() => {
       const response = responses[callIndex] || responses[responses.length - 1];
       callIndex++;
-      return response;
+      return Promise.resolve(response);
     }),
   };
 }

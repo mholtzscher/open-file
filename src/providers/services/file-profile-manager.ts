@@ -119,12 +119,13 @@ export class FileProfileManager implements ProfileManager {
   /**
    * Load profiles from disk asynchronously
    */
-  private async load(): Promise<void> {
-    if (this.loaded) return;
+  private load(): Promise<void> {
+    if (this.loaded) return Promise.resolve();
 
     // Currently loadProfilesFromDisk is sync, but we wrap it for future async support
     const result = loadProfilesFromDisk();
     this.handleLoadResult(result);
+    return Promise.resolve();
   }
 
   /**
@@ -149,7 +150,7 @@ export class FileProfileManager implements ProfileManager {
   /**
    * Save profiles to disk
    */
-  private async save(): Promise<void> {
+  private save(): Promise<void> {
     const profiles = Array.from(this.profiles.values());
     const result = saveProfilesToDisk(profiles);
 
@@ -160,6 +161,7 @@ export class FileProfileManager implements ProfileManager {
         result.error.cause
       );
     }
+    return Promise.resolve();
   }
 
   /**
@@ -279,8 +281,8 @@ export class FileProfileManager implements ProfileManager {
   /**
    * Validate a profile without saving it
    */
-  async validateProfile(profile: Profile): Promise<ValidationResult> {
-    return validateProfile(profile);
+  validateProfile(profile: Profile): Promise<ValidationResult> {
+    return Promise.resolve(validateProfile(profile));
   }
 
   /**

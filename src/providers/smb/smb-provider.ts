@@ -148,6 +148,7 @@ export class SMBProvider extends BaseStorageProvider {
   readonly name = 'smb';
   readonly displayName = 'SMB/CIFS';
 
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   private client: SMB2 | null = null;
   private connected = false;
   private readonly profile: SMBProfile;
@@ -267,7 +268,7 @@ export class SMBProvider extends BaseStorageProvider {
   /**
    * Close connection to the SMB server
    */
-  async disconnect(): Promise<void> {
+  disconnect(): Promise<void> {
     if (this.connected && this.client) {
       try {
         this.client.disconnect();
@@ -278,6 +279,7 @@ export class SMBProvider extends BaseStorageProvider {
       this.connected = false;
       this.logger.info('Disconnected from SMB server');
     }
+    return Promise.resolve();
   }
 
   /**

@@ -7,15 +7,17 @@ import { readObject, ReadOperationsLogger } from './read-operations.js';
 import { ProgressEvent } from '../../../types/progress.js';
 
 // Mock S3Client - returns responses in order (HeadObject first, then GetObject)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createMockClient(headResponse: any, getResponse: any) {
   let callIndex = 0;
   const responses = [headResponse, getResponse];
   return {
-    send: mock(async () => {
+    send: mock(() => {
       const response = responses[callIndex] || responses[responses.length - 1];
       callIndex++;
-      return response;
+      return Promise.resolve(response);
     }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 

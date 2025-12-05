@@ -46,7 +46,7 @@ function createMockS3Client(responses?: {
 }) {
   const sendCalls: unknown[] = [];
   const client = {
-    send: async (command: unknown) => {
+    send: (command: unknown) => {
       sendCalls.push(command);
 
       if (responses?.error) {
@@ -335,7 +335,7 @@ describe('S3Provider', () => {
 
   describe('error mapping', () => {
     it('should map NoSuchKey to NotFound', async () => {
-      const error = new Error('The specified key does not exist.') as Error & { name: string };
+      const error = new Error('The specified key does not exist.');
       error.name = 'NoSuchKey';
 
       const { client } = createMockS3Client({ error });
@@ -354,7 +354,7 @@ describe('S3Provider', () => {
     });
 
     it('should map AccessDenied to PermissionDenied', async () => {
-      const error = new Error('Access Denied') as Error & { name: string };
+      const error = new Error('Access Denied');
       error.name = 'AccessDenied';
 
       const { client } = createMockS3Client({ error });
@@ -373,7 +373,7 @@ describe('S3Provider', () => {
     });
 
     it('should map ServiceUnavailable to ConnectionFailed', async () => {
-      const error = new Error('Service Unavailable') as Error & { name: string };
+      const error = new Error('Service Unavailable');
       error.name = 'ServiceUnavailable';
 
       const { client } = createMockS3Client({ error });
@@ -415,7 +415,7 @@ describe('S3Provider', () => {
     });
 
     it('should return false when object does not exist', async () => {
-      const error = new Error('Not Found') as Error & { name: string };
+      const error = new Error('Not Found');
       error.name = 'NotFound';
 
       const { client } = createMockS3Client({ error });

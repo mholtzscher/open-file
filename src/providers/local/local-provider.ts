@@ -277,21 +277,23 @@ export class LocalProvider extends BaseStorageProvider {
   /**
    * Read file contents
    */
-  async read(path: string, options?: ReadOptions): Promise<OperationResult<Buffer>> {
+  read(path: string, options?: ReadOptions): Promise<OperationResult<Buffer>> {
     const fullPath = this.resolvePath(path);
 
     try {
       if (!existsSync(fullPath)) {
-        return Result.notFound(path) as OperationResult<Buffer>;
+        return Promise.resolve(Result.notFound(path) as OperationResult<Buffer>);
       }
 
       const stats = statSync(fullPath);
       if (stats.isDirectory()) {
-        return Result.error(
-          'IS_DIRECTORY',
-          `Cannot read directory as file: ${path}`,
-          false
-        ) as OperationResult<Buffer>;
+        return Promise.resolve(
+          Result.error(
+            'IS_DIRECTORY',
+            `Cannot read directory as file: ${path}`,
+            false
+          ) as OperationResult<Buffer>
+        );
       }
 
       let content: Buffer;
@@ -305,29 +307,27 @@ export class LocalProvider extends BaseStorageProvider {
         content = readFileSync(fullPath);
       }
 
-      return Result.success(content);
+      return Promise.resolve(Result.success(content));
     } catch (err) {
       const error = err as NodeJS.ErrnoException;
       if (error.code === 'EACCES') {
-        return Result.permissionDenied(path) as OperationResult<Buffer>;
+        return Promise.resolve(Result.permissionDenied(path) as OperationResult<Buffer>);
       }
-      return Result.error(
-        'READ_ERROR',
-        `Failed to read file: ${error.message}`,
-        false,
-        err
-      ) as OperationResult<Buffer>;
+      return Promise.resolve(
+        Result.error(
+          'READ_ERROR',
+          `Failed to read file: ${error.message}`,
+          false,
+          err
+        ) as OperationResult<Buffer>
+      );
     }
   }
 
   /**
    * Write content to a file
    */
-  async write(
-    path: string,
-    content: Buffer | string,
-    _options?: WriteOptions
-  ): Promise<OperationResult> {
+  write(path: string, content: Buffer | string, _options?: WriteOptions): Promise<OperationResult> {
     const fullPath = this.resolvePath(path);
 
     try {
@@ -338,39 +338,40 @@ export class LocalProvider extends BaseStorageProvider {
       }
 
       writeFileSync(fullPath, content);
-      return Result.success();
+      return Promise.resolve(Result.success());
     } catch (err) {
       const error = err as NodeJS.ErrnoException;
       if (error.code === 'EACCES') {
-        return Result.permissionDenied(path);
+        return Promise.resolve(Result.permissionDenied(path));
       }
-      return Result.error('WRITE_ERROR', `Failed to write file: ${error.message}`, false, err);
+      return Promise.resolve(
+        Result.error('WRITE_ERROR', `Failed to write file: ${error.message}`, false, err)
+      );
     }
   }
 
   /**
    * Create a directory
    */
-  async mkdir(path: string): Promise<OperationResult> {
+  mkdir(path: string): Promise<OperationResult> {
     const fullPath = this.resolvePath(path);
 
     try {
       if (existsSync(fullPath)) {
-        return Result.error('ALREADY_EXISTS', `Directory already exists: ${path}`, false);
+        return Promise.resolve(
+          Result.error('ALREADY_EXISTS', `Directory already exists: ${path}`, false)
+        );
       }
 
       mkdirSync(fullPath, { recursive: true });
-      return Result.success();
+      return Promise.resolve(Result.success());
     } catch (err) {
       const error = err as NodeJS.ErrnoException;
       if (error.code === 'EACCES') {
-        return Result.permissionDenied(path);
+        return Promise.resolve(Result.permissionDenied(path));
       }
-      return Result.error(
-        'MKDIR_ERROR',
-        `Failed to create directory: ${error.message}`,
-        false,
-        err
+      return Promise.resolve(
+        Result.error('MKDIR_ERROR', `Failed to create directory: ${error.message}`, false, err)
       );
     }
   }
@@ -378,12 +379,12 @@ export class LocalProvider extends BaseStorageProvider {
   /**
    * Delete a file or directory
    */
-  async delete(path: string, options?: DeleteOptions): Promise<OperationResult> {
+  delete(path: string, options?: DeleteOptions): Promise<OperationResult> {
     const fullPath = this.resolvePath(path);
 
     try {
       if (!existsSync(fullPath)) {
-        return Result.notFound(path);
+        return Promise.resolve(Result.notFound(path));
       }
 
       const stats = statSync(fullPath);
@@ -393,20 +394,20 @@ export class LocalProvider extends BaseStorageProvider {
       const shouldRecurse = stats.isDirectory() || (options?.recursive ?? false);
 
       rmSync(fullPath, { recursive: shouldRecurse, force: true });
-      return Result.success();
+      return Promise.resolve(Result.success());
     } catch (err) {
       const error = err as NodeJS.ErrnoException;
       if (error.code === 'EACCES') {
-        return Result.permissionDenied(path);
+        return Promise.resolve(Result.permissionDenied(path));
       }
       if (error.code === 'ENOTEMPTY') {
-        return Result.error(
-          'NOT_EMPTY',
-          `Directory is not empty: ${path}. Use recursive option.`,
-          false
+        return Promise.resolve(
+          Result.error('NOT_EMPTY', `Directory is not empty: ${path}. Use recursive option.`, false)
         );
       }
-      return Result.error('DELETE_ERROR', `Failed to delete: ${error.message}`, false, err);
+      return Promise.resolve(
+        Result.error('DELETE_ERROR', `Failed to delete: ${error.message}`, false, err)
+      );
     }
   }
 

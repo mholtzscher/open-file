@@ -7,14 +7,16 @@ import { listObjects, listBuckets, ListOperationsLogger } from './list-operation
 import { EntryType } from '../../../types/entry.js';
 
 // Mock S3Client - returns responses in order
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function createMockClient(responses: any[]) {
   let callIndex = 0;
   return {
-    send: mock(async () => {
+    send: mock(() => {
       const response = responses[callIndex] || responses[responses.length - 1];
       callIndex++;
-      return response;
+      return Promise.resolve(response);
     }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
 
