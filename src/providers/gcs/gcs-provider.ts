@@ -810,26 +810,6 @@ export class GCSProvider extends BaseStorageProvider {
   // ==========================================================================
 
   /**
-   * Set custom metadata on a file
-   */
-  async setMetadata(path: string, metadata: Record<string, string>): Promise<OperationResult> {
-    const bucketError = this.ensureBucket();
-    if (bucketError) return bucketError;
-
-    const normalized = this.normalizePath(path);
-
-    try {
-      const file = this.bucket!.file(normalized);
-      await file.setMetadata({ metadata });
-
-      return Result.success();
-    } catch (error) {
-      this.logger.error(`Failed to set metadata for ${path}`, error);
-      return mapGCSError(error, 'setMetadata');
-    }
-  }
-
-  /**
    * Generate a signed URL for direct access
    */
   async getPresignedUrl(

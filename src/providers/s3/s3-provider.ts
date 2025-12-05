@@ -778,35 +778,6 @@ export class S3Provider extends BaseStorageProvider {
   // ==========================================================================
 
   /**
-   * Set custom metadata on a file (uses copy-replace)
-   */
-  async setMetadata(path: string, metadata: Record<string, string>): Promise<OperationResult> {
-    const bucketError = this.ensureBucket();
-    if (bucketError) return bucketError;
-
-    const normalized = this.normalizePath(path);
-
-    try {
-      // S3 requires copy-replace to update metadata
-      await retryWithBackoff(() => {
-        const command = new CopyObjectCommand({
-          Bucket: this.bucket,
-          CopySource: `${this.bucket}/${normalized}`,
-          Key: normalized,
-          Metadata: metadata,
-          MetadataDirective: 'REPLACE',
-        });
-        return this.client.send(command);
-      }, getS3RetryConfig());
-
-      return Result.success();
-    } catch (error) {
-      this.logger.error(`Failed to set metadata for ${path}`, error);
-      return mapS3Error(error, 'setMetadata');
-    }
-  }
-
-  /**
    * Generate a presigned URL for direct access
    */
   async getPresignedUrl(

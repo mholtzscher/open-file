@@ -454,18 +454,6 @@ describe.if(await isLocalStackAvailable())('S3Provider LocalStack Integration', 
   // Advanced Operations
   // ==========================================================================
 
-  describe('setMetadata operation', () => {
-    it('should update file metadata', async () => {
-      await provider.write('meta-update.txt', 'content');
-
-      const result = await provider.setMetadata('meta-update.txt', {
-        'x-custom-header': 'custom-value',
-      });
-
-      expect(isSuccess(result)).toBe(true);
-    });
-  });
-
   describe('presigned URL operation', () => {
     it('should generate presigned URL for read', async () => {
       await provider.write('presign-test.txt', 'content');

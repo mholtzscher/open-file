@@ -265,12 +265,6 @@ export interface StorageProvider {
   // ==========================================================================
 
   /**
-   * Set custom metadata on a file
-   * Only available if provider has Capability.Metadata
-   */
-  setMetadata?(path: string, metadata: Record<string, string>): Promise<OperationResult>;
-
-  /**
    * Generate a presigned URL for direct access
    * Only available if provider has Capability.PresignedUrls
    */
