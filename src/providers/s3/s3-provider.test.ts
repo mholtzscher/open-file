@@ -473,9 +473,7 @@ describe('S3Provider', () => {
 
 describe('S3Provider factory integration', () => {
   it('should be creatable from factory', async () => {
-    const { createProvider, isProviderImplemented } = await import('../factory.js');
-
-    expect(isProviderImplemented('s3')).toBe(true);
+    const { createProvider } = await import('../factory.js');
 
     const profile = createTestProfile();
     const provider = await createProvider(profile);

@@ -21,13 +21,7 @@ export * from './provider.js';
 export { BaseStorageProvider } from './base-provider.js';
 
 // Provider factory
-export {
-  createProvider,
-  getSupportedProviders,
-  isProviderSupported,
-  isProviderImplemented,
-  getImplementedProviders,
-} from './factory.js';
+export { createProvider } from './factory.js';
 
 // Profile management
 export type {

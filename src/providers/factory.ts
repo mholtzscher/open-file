@@ -5,22 +5,8 @@
  * Supports lazy loading of provider implementations to minimize bundle size.
  */
 
-import type { Profile, ProviderType } from './types/profile.js';
+import type { Profile } from './types/profile.js';
 import type { StorageProvider } from './provider.js';
-
-/**
- * All supported provider types
- */
-const SUPPORTED_PROVIDERS: ProviderType[] = [
-  's3',
-  'gcs',
-  'sftp',
-  'ftp',
-  'nfs',
-  'smb',
-  'gdrive',
-  'local',
-];
 
 /**
  * Create a storage provider instance from a profile
@@ -81,61 +67,4 @@ export async function createProvider(profile: Profile): Promise<StorageProvider>
       throw new Error(`Unknown provider type: ${(_exhaustiveCheck as Profile).provider}`);
     }
   }
-}
-
-/**
- * Get list of all supported provider types
- *
- * @returns Array of supported provider type identifiers
- */
-export function getSupportedProviders(): ProviderType[] {
-  return [...SUPPORTED_PROVIDERS];
-}
-
-/**
- * Check if a provider type is supported
- *
- * @param providerType - Provider type to check
- * @returns true if the provider type is supported
- */
-export function isProviderSupported(providerType: string): providerType is ProviderType {
-  return SUPPORTED_PROVIDERS.includes(providerType as ProviderType);
-}
-
-/**
- * Check if a provider implementation is available
- *
- * @param providerType - Provider type to check
- * @returns true if the provider implementation is available
- */
-export function isProviderImplemented(providerType: ProviderType): boolean {
-  switch (providerType) {
-    case 's3':
-      return true; // S3Provider implemented
-    case 'gcs':
-      return true; // GCSProvider implemented
-    case 'sftp':
-      return true; // SFTPProvider implemented
-    case 'ftp':
-      return true; // FTPProvider implemented
-    case 'smb':
-      return true; // SMBProvider implemented
-    case 'local':
-      return true; // LocalProvider implemented
-    case 'gdrive':
-      return true; // GoogleDriveProvider implemented
-    case 'nfs':
-      return false;
-    default:
-      return false;
-  }
-}
-
-/**
- * Get list of currently implemented provider types
- *
- * @returns Array of implemented provider type identifiers
- */
-export function getImplementedProviders(): ProviderType[] {
-  return SUPPORTED_PROVIDERS.filter(isProviderImplemented);
 }
