@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from 'bun:test';
-import { Header, type HeaderProps } from './header.js';
+import { Header } from './header.js';
 import { Capability } from '../providers/types/capabilities.js';
 
 describe('Header', () => {
@@ -15,9 +15,9 @@ describe('Header', () => {
     expect(typeof Header).toBe('function');
   });
 
-  it('HeaderProps interface allows empty props', () => {
-    const props: HeaderProps = {};
-    expect(props).toBeDefined();
+  it('Header component takes no props', () => {
+    // Header is a no-props component
+    expect(Header.length).toBe(0);
   });
 });
 

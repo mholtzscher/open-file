@@ -53,7 +53,6 @@ export function BaseDialog({
 
   return (
     <box
-      // @ts-expect-error - OpenTUI position prop not yet in types
       position="absolute"
       left={0}
       top={0}

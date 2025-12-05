@@ -25,7 +25,7 @@ function createMockClient(responses: unknown[]): {
 
 describe('listAllObjects', () => {
   it('lists objects from a single page', async () => {
-    const { client: mockClient, _sendMock } = createMockClient([
+    const { client: mockClient, sendMock: _sendMock } = createMockClient([
       {
         Contents: [
           { Key: 'folder/file1.txt' },
@@ -46,7 +46,7 @@ describe('listAllObjects', () => {
   });
 
   it('handles pagination across multiple pages', async () => {
-    const { client: mockClient, _sendMock } = createMockClient([
+    const { client: mockClient, sendMock: _sendMock } = createMockClient([
       {
         Contents: [{ Key: 'folder/file1.txt' }, { Key: 'folder/file2.txt' }],
         NextContinuationToken: 'token1',
@@ -67,7 +67,7 @@ describe('listAllObjects', () => {
   });
 
   it('excludes specified key', async () => {
-    const { client: mockClient, _sendMock } = createMockClient([
+    const { client: mockClient, sendMock: _sendMock } = createMockClient([
       {
         Contents: [{ Key: 'folder/' }, { Key: 'folder/file1.txt' }, { Key: 'folder/file2.txt' }],
         NextContinuationToken: undefined,
@@ -85,7 +85,7 @@ describe('listAllObjects', () => {
   });
 
   it('excludes directory markers when requested', async () => {
-    const { client: mockClient, _sendMock } = createMockClient([
+    const { client: mockClient, sendMock: _sendMock } = createMockClient([
       {
         Contents: [{ Key: 'folder/' }, { Key: 'folder/subfolder/' }, { Key: 'folder/file1.txt' }],
         NextContinuationToken: undefined,
@@ -103,7 +103,7 @@ describe('listAllObjects', () => {
   });
 
   it('handles empty results', async () => {
-    const { client: mockClient, _sendMock } = createMockClient([
+    const { client: mockClient, sendMock: _sendMock } = createMockClient([
       {
         Contents: undefined,
         NextContinuationToken: undefined,
@@ -120,7 +120,7 @@ describe('listAllObjects', () => {
   });
 
   it('handles objects without Key property', async () => {
-    const { client: mockClient, _sendMock } = createMockClient([
+    const { client: mockClient, sendMock: _sendMock } = createMockClient([
       {
         Contents: [{ Key: 'folder/file1.txt' }, { Size: 100 }, { Key: 'folder/file2.txt' }],
         NextContinuationToken: undefined,
@@ -139,7 +139,7 @@ describe('listAllObjects', () => {
 
 describe('batchDeleteObjects', () => {
   it('deletes objects in a single batch', async () => {
-    const { client: mockClient, _sendMock } = createMockClient([{}]);
+    const { client: mockClient, sendMock: _sendMock } = createMockClient([{}]);
 
     await batchDeleteObjects({
       client: mockClient,
@@ -149,7 +149,7 @@ describe('batchDeleteObjects', () => {
   });
 
   it('splits large lists into multiple batches', async () => {
-    const { client: mockClient, _sendMock } = createMockClient([{}, {}, {}]);
+    const { client: mockClient, sendMock: _sendMock } = createMockClient([{}, {}, {}]);
 
     // Create more keys than DELETE_BATCH_SIZE
     const keys = Array.from({ length: DELETE_BATCH_SIZE + 500 }, (_, i) => `file${i}.txt`);
@@ -162,7 +162,7 @@ describe('batchDeleteObjects', () => {
   });
 
   it('calls progress callback with correct values', async () => {
-    const { client: mockClient, _sendMock } = createMockClient([{}, {}]);
+    const { client: mockClient, sendMock: _sendMock } = createMockClient([{}, {}]);
     const progressCalls: [number, number][] = [];
 
     const keys = Array.from({ length: DELETE_BATCH_SIZE + 100 }, (_, i) => `file${i}.txt`);
@@ -183,7 +183,7 @@ describe('batchDeleteObjects', () => {
   });
 
   it('handles empty keys array', async () => {
-    const { client: mockClient, _sendMock } = createMockClient([]);
+    const { client: mockClient, sendMock: _sendMock } = createMockClient([]);
 
     await batchDeleteObjects({
       client: mockClient,

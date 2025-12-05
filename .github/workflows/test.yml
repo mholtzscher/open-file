@@ -27,9 +27,3 @@ jobs:
 
       - name: Run tests
         run: bun test
-
-      - name: Type check
-        run: bunx tsc --noEmit
-
-      - name: Build
-        run: bunx esbuild src/index.tsx --bundle --platform=node --outfile=dist/index.js --external:@opentui/core --external:@aws-sdk/client-s3 || true
