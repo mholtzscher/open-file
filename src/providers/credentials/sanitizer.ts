@@ -219,7 +219,8 @@ export function maskSensitiveFields<T>(obj: T, options: MaskOptions = {}): T {
   }
 
   if (Array.isArray(obj)) {
-    return obj.map(item => maskSensitiveFields(item, options)) as T;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return obj.map(item => maskSensitiveFields(item, options)) as unknown as T;
   }
 
   const record = obj as Record<string, unknown>;

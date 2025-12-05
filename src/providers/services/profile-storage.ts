@@ -352,7 +352,7 @@ export function loadProfilesFromDisk(): LoadProfilesResult {
 
   // Parse JSONC (JSON with comments)
   const parseErrors: ParseError[] = [];
-  const parsed = parseJsonc(content, parseErrors, { allowTrailingComma: true });
+  const parsed = parseJsonc(content, parseErrors, { allowTrailingComma: true }) as unknown;
 
   if (parseErrors.length > 0) {
     const errorMessages = parseErrors

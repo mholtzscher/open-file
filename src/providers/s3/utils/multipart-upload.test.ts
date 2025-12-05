@@ -3,6 +3,8 @@
  */
 
 import { describe, it, expect, mock } from 'bun:test';
+import type { S3Client } from '@aws-sdk/client-s3';
+import type { ProgressEvent } from '../../../types/progress.js';
 import {
   shouldUseMultipartUpload,
   MULTIPART_THRESHOLD,
@@ -10,6 +12,12 @@ import {
   uploadLargeFile,
   abortMultipartUpload,
 } from './multipart-upload.js';
+
+// Type for command object in mock
+interface MockCommand {
+  constructor: { name: string };
+  input: { PartNumber?: number; Bucket?: string; Key?: string; UploadId?: string };
+}
 
 describe('S3 Multipart Upload', () => {
   describe('constants', () => {
@@ -51,7 +59,7 @@ describe('S3 Multipart Upload', () => {
 
       // Mock S3Client
       const mockClient = {
-        send: mock((command: any) => {
+        send: mock((command: MockCommand) => {
           const commandName = command.constructor.name;
           callOrder.push(commandName);
 
@@ -66,12 +74,12 @@ describe('S3 Multipart Upload', () => {
           }
           return Promise.resolve({});
         }),
-      };
+      } as unknown as S3Client;
 
       // Create a buffer just over threshold (6MB)
       const buffer = Buffer.alloc(6 * 1024 * 1024);
 
-      await uploadLargeFile(mockClient as any, 'test-bucket', 'test-key', buffer);
+      await uploadLargeFile(mockClient, 'test-bucket', 'test-key', buffer);
 
       // Verify call order
       expect(callOrder[0]).toBe('CreateMultipartUploadCommand');
@@ -80,10 +88,10 @@ describe('S3 Multipart Upload', () => {
     });
 
     it('should report progress during upload', async () => {
-      const progressEvents: any[] = [];
+      const progressEvents: ProgressEvent[] = [];
 
       const mockClient = {
-        send: mock((command: any) => {
+        send: mock((command: MockCommand) => {
           const commandName = command.constructor.name;
           if (commandName === 'CreateMultipartUploadCommand') {
             return Promise.resolve({ UploadId: 'test-upload-id' });
@@ -93,11 +101,11 @@ describe('S3 Multipart Upload', () => {
           }
           return Promise.resolve({});
         }),
-      };
+      } as unknown as S3Client;
 
       const buffer = Buffer.alloc(6 * 1024 * 1024);
 
-      await uploadLargeFile(mockClient as any, 'test-bucket', 'test-key', buffer, {
+      await uploadLargeFile(mockClient, 'test-bucket', 'test-key', buffer, {
         onProgress: event => progressEvents.push(event),
       });
 
@@ -115,7 +123,7 @@ describe('S3 Multipart Upload', () => {
       let abortCalled = false;
 
       const mockClient = {
-        send: mock((command: any) => {
+        send: mock((command: MockCommand) => {
           const commandName = command.constructor.name;
           if (commandName === 'CreateMultipartUploadCommand') {
             return Promise.resolve({ UploadId: 'test-upload-id' });
@@ -129,13 +137,16 @@ describe('S3 Multipart Upload', () => {
           }
           return Promise.resolve({});
         }),
-      };
+      } as unknown as S3Client;
 
       const buffer = Buffer.alloc(6 * 1024 * 1024);
 
-      await expect(
-        uploadLargeFile(mockClient as any, 'test-bucket', 'test-key', buffer)
-      ).rejects.toThrow('Upload failed');
+      try {
+        await uploadLargeFile(mockClient, 'test-bucket', 'test-key', buffer);
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect((error as Error).message).toContain('Upload failed');
+      }
 
       expect(abortCalled).toBe(true);
     });
@@ -143,36 +154,39 @@ describe('S3 Multipart Upload', () => {
     it('should throw if CreateMultipartUpload returns no UploadId', async () => {
       const mockClient = {
         send: mock(() => Promise.resolve({})), // No UploadId
-      };
+      } as unknown as S3Client;
 
       const buffer = Buffer.alloc(6 * 1024 * 1024);
 
-      await expect(
-        uploadLargeFile(mockClient as any, 'test-bucket', 'test-key', buffer)
-      ).rejects.toThrow('no UploadId');
+      try {
+        await uploadLargeFile(mockClient, 'test-bucket', 'test-key', buffer);
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect((error as Error).message).toContain('no UploadId');
+      }
     });
 
     it('should calculate correct number of parts', async () => {
       const partNumbers: number[] = [];
 
       const mockClient = {
-        send: mock((command: any) => {
+        send: mock((command: MockCommand) => {
           const commandName = command.constructor.name;
           if (commandName === 'CreateMultipartUploadCommand') {
             return Promise.resolve({ UploadId: 'test-upload-id' });
           }
           if (commandName === 'UploadPartCommand') {
-            partNumbers.push(command.input.PartNumber);
+            partNumbers.push(command.input.PartNumber as number);
             return Promise.resolve({ ETag: '"test-etag"' });
           }
           return Promise.resolve({});
         }),
-      };
+      } as unknown as S3Client;
 
       // 12MB = 3 parts (5MB + 5MB + 2MB)
       const buffer = Buffer.alloc(12 * 1024 * 1024);
 
-      await uploadLargeFile(mockClient as any, 'test-bucket', 'test-key', buffer);
+      await uploadLargeFile(mockClient, 'test-bucket', 'test-key', buffer);
 
       expect(partNumbers).toEqual([1, 2, 3]);
     });
@@ -180,32 +194,36 @@ describe('S3 Multipart Upload', () => {
 
   describe('abortMultipartUpload', () => {
     it('should send AbortMultipartUploadCommand', async () => {
-      let abortCommand: any = null;
+      let abortCommand: MockCommand | null = null;
 
       const mockClient = {
-        send: mock((command: any) => {
+        send: mock((command: MockCommand) => {
           abortCommand = command;
           return Promise.resolve({});
         }),
-      };
+      } as unknown as S3Client;
 
-      await abortMultipartUpload(mockClient as any, 'test-bucket', 'test-key', 'upload-123');
+      await abortMultipartUpload(mockClient, 'test-bucket', 'test-key', 'upload-123');
 
       expect(abortCommand).not.toBeNull();
-      expect(abortCommand.input.Bucket).toBe('test-bucket');
-      expect(abortCommand.input.Key).toBe('test-key');
-      expect(abortCommand.input.UploadId).toBe('upload-123');
+      expect(abortCommand!.input.Bucket).toBe('test-bucket');
+      expect(abortCommand!.input.Key).toBe('test-key');
+      expect(abortCommand!.input.UploadId).toBe('upload-123');
     });
 
     it('should not throw on abort failure', async () => {
       const mockClient = {
         send: mock(() => Promise.reject(new Error('Abort failed'))),
-      };
+      } as unknown as S3Client;
 
-      // Should not throw
-      await expect(
-        abortMultipartUpload(mockClient as any, 'test-bucket', 'test-key', 'upload-123')
-      ).resolves.toBeUndefined();
+      // Should not throw - if it throws, the test will fail
+      const result = await abortMultipartUpload(
+        mockClient,
+        'test-bucket',
+        'test-key',
+        'upload-123'
+      );
+      expect(result).toBeUndefined();
     });
   });
 });

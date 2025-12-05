@@ -3,44 +3,66 @@
  */
 
 import { describe, it, expect, mock } from 'bun:test';
+import type { S3Client } from '@aws-sdk/client-s3';
 import { readObject, ReadOperationsLogger } from './read-operations.js';
 import { ProgressEvent } from '../../../types/progress.js';
 
 // Mock S3Client - returns responses in order (HeadObject first, then GetObject)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function createMockClient(headResponse: any, getResponse: any) {
+function createMockClient(
+  headResponse: unknown,
+  getResponse: unknown
+): { client: S3Client; sendMock: ReturnType<typeof mock> } {
   let callIndex = 0;
   const responses = [headResponse, getResponse];
+  const sendMock = mock(() => {
+    const response = responses[callIndex] || responses[responses.length - 1];
+    callIndex++;
+    return Promise.resolve(response);
+  });
   return {
-    send: mock(() => {
-      const response = responses[callIndex] || responses[responses.length - 1];
-      callIndex++;
-      return Promise.resolve(response);
-    }),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any;
+    client: { send: sendMock } as unknown as S3Client,
+    sendMock,
+  };
+}
+
+// Type for mock reader
+interface MockReader {
+  read: () => Promise<{ done: boolean; value: Uint8Array | undefined }>;
+}
+
+// Type for mock readable stream
+interface MockReadableStream {
+  getReader: () => MockReader;
 }
 
 // Create a mock ReadableStream with getReader
-function createMockReadableStream(chunks: Uint8Array[]): any {
+function createMockReadableStream(chunks: Uint8Array[]): MockReadableStream {
   let index = 0;
   return {
     getReader: () => ({
-      read: async () => {
+      read: () => {
         if (index >= chunks.length) {
-          return { done: true, value: undefined };
+          return Promise.resolve({ done: true, value: undefined });
         }
-        return { done: false, value: chunks[index++] };
+        return Promise.resolve({ done: false, value: chunks[index++] });
       },
     }),
   };
 }
 
+// Type for stream event handler
+type StreamHandler = (data?: Uint8Array | Error) => void;
+
+// Type for mock Node.js stream
+interface MockNodeStream {
+  on: (event: string, handler: StreamHandler) => MockNodeStream;
+}
+
 // Create a mock Node.js stream
-function createMockNodeStream(chunks: Uint8Array[], error?: Error): any {
-  const handlers: Record<string, Function> = {};
-  return {
-    on: (event: string, handler: Function) => {
+function createMockNodeStream(chunks: Uint8Array[], error?: Error): MockNodeStream {
+  const handlers: Record<string, StreamHandler> = {};
+  const stream: MockNodeStream = {
+    on: (event: string, handler: StreamHandler) => {
       handlers[event] = handler;
       // Simulate async emission after registration
       if (event === 'end' && !error) {
@@ -54,16 +76,20 @@ function createMockNodeStream(chunks: Uint8Array[], error?: Error): any {
           handlers['error']?.(error);
         }, 0);
       }
-      return { on: (e: string, h: Function) => (handlers[e] = h) };
+      return stream;
     },
   };
+  return stream;
 }
 
 describe('readObject', () => {
   describe('with Buffer body', () => {
     it('returns the buffer directly', async () => {
       const content = Buffer.from('Hello, World!');
-      const client = createMockClient({ ContentLength: content.length }, { Body: content });
+      const { client, sendMock: _s } = createMockClient(
+        { ContentLength: content.length },
+        { Body: content }
+      );
 
       const result = await readObject({
         client,
@@ -77,7 +103,10 @@ describe('readObject', () => {
 
     it('reports progress for buffer body', async () => {
       const content = Buffer.from('Test content');
-      const client = createMockClient({ ContentLength: content.length }, { Body: content });
+      const { client, sendMock: _s } = createMockClient(
+        { ContentLength: content.length },
+        { Body: content }
+      );
 
       const events: ProgressEvent[] = [];
       const onProgress = mock((event: ProgressEvent) => {
@@ -106,7 +135,7 @@ describe('readObject', () => {
       const chunk3 = new Uint8Array([87, 111, 114, 108, 100]); // "World"
       const totalLength = chunk1.length + chunk2.length + chunk3.length;
 
-      const client = createMockClient(
+      const { client, sendMock: _s } = createMockClient(
         { ContentLength: totalLength },
         { Body: createMockReadableStream([chunk1, chunk2, chunk3]) }
       );
@@ -125,7 +154,7 @@ describe('readObject', () => {
       const chunk2 = new Uint8Array([6, 7, 8, 9, 10]);
       const totalLength = 10;
 
-      const client = createMockClient(
+      const { client, sendMock: _s } = createMockClient(
         { ContentLength: totalLength },
         { Body: createMockReadableStream([chunk1, chunk2]) }
       );
@@ -156,7 +185,7 @@ describe('readObject', () => {
       const chunk1 = new Uint8Array([84, 101, 115, 116]); // "Test"
       const totalLength = chunk1.length;
 
-      const client = createMockClient(
+      const { client, sendMock: _s } = createMockClient(
         { ContentLength: totalLength },
         { Body: createMockNodeStream([chunk1]) }
       );
@@ -174,7 +203,10 @@ describe('readObject', () => {
   describe('progress callback', () => {
     it('does not call progress when callback is undefined', async () => {
       const content = Buffer.from('Test');
-      const client = createMockClient({ ContentLength: content.length }, { Body: content });
+      const { client, sendMock: _s } = createMockClient(
+        { ContentLength: content.length },
+        { Body: content }
+      );
 
       // Should not throw
       const result = await readObject({
@@ -189,7 +221,10 @@ describe('readObject', () => {
 
     it('includes correct file key in progress events', async () => {
       const content = Buffer.from('Test');
-      const client = createMockClient({ ContentLength: content.length }, { Body: content });
+      const { client, sendMock: _s } = createMockClient(
+        { ContentLength: content.length },
+        { Body: content }
+      );
 
       let capturedKey: string | undefined = '';
       const onProgress = mock((event: ProgressEvent) => {
@@ -209,54 +244,73 @@ describe('readObject', () => {
 
   describe('error handling', () => {
     it('throws when body is missing', async () => {
-      const client = createMockClient({ ContentLength: 100 }, { Body: undefined });
+      const { client, sendMock: _s } = createMockClient(
+        { ContentLength: 100 },
+        { Body: undefined }
+      );
 
-      await expect(
-        readObject({
+      try {
+        await readObject({
           client,
           bucket: 'test-bucket',
           key: 'test-key.txt',
-        })
-      ).rejects.toThrow('No body in response');
+        });
+        expect.unreachable('Should have thrown');
+      } catch (error) {
+        expect((error as Error).message).toContain('No body in response');
+      }
     });
 
     it('logs errors when logger is provided', async () => {
-      const client = createMockClient({ ContentLength: 100 }, { Body: undefined });
+      const { client, sendMock: _s } = createMockClient(
+        { ContentLength: 100 },
+        { Body: undefined }
+      );
 
+      const errorMock = mock(() => {});
       const logger: ReadOperationsLogger = {
-        error: mock(() => {}),
+        error: errorMock,
       };
 
-      await expect(
-        readObject({
+      try {
+        await readObject({
           client,
           bucket: 'test-bucket',
           key: 'test-key.txt',
           logger,
-        })
-      ).rejects.toThrow();
+        });
+        expect.unreachable('Should have thrown');
+      } catch {
+        // Expected
+      }
 
-      expect(logger.error).toHaveBeenCalledWith('Failed to read file from S3', expect.any(Error));
+      expect(errorMock).toHaveBeenCalledWith('Failed to read file from S3', expect.any(Error));
     });
 
     it('does not log when logger is not provided', async () => {
-      const client = createMockClient({ ContentLength: 100 }, { Body: undefined });
+      const { client, sendMock: _s } = createMockClient(
+        { ContentLength: 100 },
+        { Body: undefined }
+      );
 
       // Should throw but not crash due to missing logger
-      await expect(
-        readObject({
+      try {
+        await readObject({
           client,
           bucket: 'test-bucket',
           key: 'test-key.txt',
-        })
-      ).rejects.toThrow();
+        });
+        expect.unreachable('Should have thrown');
+      } catch {
+        // Expected - test passes if it throws
+      }
     });
   });
 
   describe('percentage calculation edge cases', () => {
     it('handles zero content length', async () => {
       const content = Buffer.from('');
-      const client = createMockClient({ ContentLength: 0 }, { Body: content });
+      const { client, sendMock: _s } = createMockClient({ ContentLength: 0 }, { Body: content });
 
       const events: ProgressEvent[] = [];
       const onProgress = mock((event: ProgressEvent) => {
@@ -278,7 +332,10 @@ describe('readObject', () => {
 
     it('handles missing content length', async () => {
       const content = Buffer.from('Test');
-      const client = createMockClient({ ContentLength: undefined }, { Body: content });
+      const { client, sendMock: _s } = createMockClient(
+        { ContentLength: undefined },
+        { Body: content }
+      );
 
       const events: ProgressEvent[] = [];
       const onProgress = mock((event: ProgressEvent) => {
@@ -300,7 +357,10 @@ describe('readObject', () => {
   describe('S3 command calls', () => {
     it('makes two S3 calls (HeadObject then GetObject)', async () => {
       const content = Buffer.from('Test');
-      const client = createMockClient({ ContentLength: content.length }, { Body: content });
+      const { client, sendMock: _s } = createMockClient(
+        { ContentLength: content.length },
+        { Body: content }
+      );
 
       await readObject({
         client,
@@ -309,7 +369,7 @@ describe('readObject', () => {
       });
 
       // Should make exactly 2 calls: HeadObject for size, GetObject for content
-      expect(client.send).toHaveBeenCalledTimes(2);
+      expect(_s).toHaveBeenCalledTimes(2);
     });
   });
 });

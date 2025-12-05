@@ -14,7 +14,12 @@ import {
   DEFAULT_LOCAL_PROFILE,
   DEFAULT_LOCAL_PROFILE_ID,
 } from './profile-storage.js';
-import type { S3Profile, SFTPProfile } from '../types/profile.js';
+import type { S3Profile, SFTPProfile, Profile } from '../types/profile.js';
+
+// Type for parsed profile storage file
+interface ProfileStorageFile {
+  profiles: Profile[];
+}
 
 // ============================================================================
 // Test Fixtures
@@ -159,7 +164,7 @@ describe('Profile Storage - File Operations', () => {
 
       // Read it back manually to verify the file format
       const content = readFileSync(profilesPath, 'utf-8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as ProfileStorageFile;
 
       expect(parsed.profiles).toHaveLength(2);
       expect(parsed.profiles[0].id).toBe('test-1');
@@ -183,7 +188,7 @@ describe('Profile Storage - File Operations', () => {
 
       // Verify the file contains invalid JSON
       const content = readFileSync(profilesPath, 'utf-8');
-      expect(() => JSON.parse(content)).toThrow();
+      expect(() => JSON.parse(content) as unknown).toThrow();
     });
 
     it('should detect invalid schema - missing profiles array', () => {
@@ -191,7 +196,7 @@ describe('Profile Storage - File Operations', () => {
       writeFileSync(profilesPath, JSON.stringify({ wrongKey: [] }));
 
       const content = readFileSync(profilesPath, 'utf-8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as ProfileStorageFile;
       expect(parsed.profiles).toBeUndefined();
     });
 
@@ -200,7 +205,7 @@ describe('Profile Storage - File Operations', () => {
       writeFileSync(profilesPath, JSON.stringify({ profiles: 'not-an-array' }));
 
       const content = readFileSync(profilesPath, 'utf-8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as ProfileStorageFile;
       expect(Array.isArray(parsed.profiles)).toBe(false);
     });
 
@@ -214,7 +219,7 @@ describe('Profile Storage - File Operations', () => {
       );
 
       const content = readFileSync(profilesPath, 'utf-8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as ProfileStorageFile;
       expect(parsed.profiles[0].id).toBeUndefined();
     });
 
@@ -228,7 +233,7 @@ describe('Profile Storage - File Operations', () => {
       );
 
       const content = readFileSync(profilesPath, 'utf-8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as ProfileStorageFile;
       expect(parsed.profiles[0].provider).toBeUndefined();
     });
   });
@@ -259,7 +264,7 @@ describe('Profile Storage - File Operations', () => {
       expect(content).toMatch(/^\{\n/);
 
       // Should be valid JSON
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as ProfileStorageFile;
       expect(parsed.profiles).toHaveLength(1);
     });
 
@@ -278,7 +283,7 @@ describe('Profile Storage - File Operations', () => {
       );
 
       const content = readFileSync(profilesPath, 'utf-8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as ProfileStorageFile;
 
       expect(parsed.profiles).toHaveLength(2);
       expect(parsed.profiles[0].id).toBe('second');
@@ -300,7 +305,7 @@ describe('Profile Storage - File Operations', () => {
       writeFileSync(profilesPath, JSON.stringify({ profiles: [] }, null, 2));
 
       const content = readFileSync(profilesPath, 'utf-8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as ProfileStorageFile;
 
       expect(parsed.profiles).toEqual([]);
     });
@@ -322,7 +327,7 @@ describe('Profile Storage - File Operations', () => {
       writeFileSync(profilesPath, JSON.stringify({ profiles: [fullProfile] }, null, 2));
 
       const content = readFileSync(profilesPath, 'utf-8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as ProfileStorageFile;
       const savedProfile = parsed.profiles[0] as S3Profile;
 
       expect(savedProfile.id).toBe('full-profile');
@@ -371,7 +376,7 @@ describe('Profile Storage - Round-trip', () => {
 
     // Load
     const content = readFileSync(profilesPath, 'utf-8');
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(content) as ProfileStorageFile;
 
     // Compare
     expect(parsed.profiles).toHaveLength(2);
@@ -392,7 +397,7 @@ describe('Profile Storage - Round-trip', () => {
     writeFileSync(profilesPath, JSON.stringify({ profiles }, null, 2));
 
     const content = readFileSync(profilesPath, 'utf-8');
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(content) as ProfileStorageFile;
 
     expect(parsed.profiles[0].id).toBe('z-last');
     expect(parsed.profiles[1].id).toBe('a-first');
@@ -416,7 +421,7 @@ describe('Profile Storage - Round-trip', () => {
     writeFileSync(profilesPath, JSON.stringify({ profiles: [profileWithSpecialChars] }, null, 2));
 
     const content = readFileSync(profilesPath, 'utf-8');
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(content) as ProfileStorageFile;
     const loaded = parsed.profiles[0] as SFTPProfile;
 
     expect(loaded.displayName).toBe('Profile with "quotes" and \\ backslashes');
@@ -437,7 +442,7 @@ describe('Profile Storage - Round-trip', () => {
     writeFileSync(profilesPath, JSON.stringify({ profiles: [profileWithUnicode] }, null, 2));
 
     const content = readFileSync(profilesPath, 'utf-8');
-    const parsed = JSON.parse(content);
+    const parsed = JSON.parse(content) as ProfileStorageFile;
     const loaded = parsed.profiles[0] as S3Profile;
 
     expect(loaded.displayName).toBe('Profile with 日本語 and emoji 🚀');
@@ -661,7 +666,7 @@ describe('Profile Storage - Default Local Profile', () => {
 
       // Read back and verify default profile was filtered
       const content = readFileSync(profilesPath, 'utf-8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as ProfileStorageFile;
 
       expect(parsed.profiles).toHaveLength(1);
       expect(parsed.profiles[0].id).toBe('test-s3');
@@ -681,7 +686,7 @@ describe('Profile Storage - Default Local Profile', () => {
       writeFileSync(profilesPath, JSON.stringify({ profiles: profilesToSave }, null, 2));
 
       const content = readFileSync(profilesPath, 'utf-8');
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as ProfileStorageFile;
 
       expect(parsed.profiles).toHaveLength(0);
     });

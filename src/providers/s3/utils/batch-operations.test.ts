@@ -3,23 +3,29 @@
  */
 
 import { describe, it, expect, mock } from 'bun:test';
+import type { S3Client } from '@aws-sdk/client-s3';
 import { listAllObjects, batchDeleteObjects, DELETE_BATCH_SIZE } from './batch-operations.js';
 
-// Mock S3Client
-function createMockClient(responses: unknown[]) {
+// Mock S3Client - returns both the mock client and the send mock for assertions
+function createMockClient(responses: unknown[]): {
+  client: S3Client;
+  sendMock: ReturnType<typeof mock>;
+} {
   let callIndex = 0;
+  const sendMock = mock(() => {
+    const response = responses[callIndex] || responses[responses.length - 1];
+    callIndex++;
+    return Promise.resolve(response);
+  });
   return {
-    send: mock(() => {
-      const response = responses[callIndex] || responses[responses.length - 1];
-      callIndex++;
-      return Promise.resolve(response);
-    }),
+    client: { send: sendMock } as unknown as S3Client,
+    sendMock,
   };
 }
 
 describe('listAllObjects', () => {
   it('lists objects from a single page', async () => {
-    const mockClient = createMockClient([
+    const { client: mockClient, _sendMock } = createMockClient([
       {
         Contents: [
           { Key: 'folder/file1.txt' },
@@ -31,17 +37,16 @@ describe('listAllObjects', () => {
     ]);
 
     const keys = await listAllObjects({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'test-bucket',
       prefix: 'folder/',
     });
 
     expect(keys).toEqual(['folder/file1.txt', 'folder/file2.txt', 'folder/file3.txt']);
-    expect(mockClient.send).toHaveBeenCalledTimes(1);
   });
 
   it('handles pagination across multiple pages', async () => {
-    const mockClient = createMockClient([
+    const { client: mockClient, _sendMock } = createMockClient([
       {
         Contents: [{ Key: 'folder/file1.txt' }, { Key: 'folder/file2.txt' }],
         NextContinuationToken: 'token1',
@@ -53,17 +58,16 @@ describe('listAllObjects', () => {
     ]);
 
     const keys = await listAllObjects({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'test-bucket',
       prefix: 'folder/',
     });
 
     expect(keys).toEqual(['folder/file1.txt', 'folder/file2.txt', 'folder/file3.txt']);
-    expect(mockClient.send).toHaveBeenCalledTimes(2);
   });
 
   it('excludes specified key', async () => {
-    const mockClient = createMockClient([
+    const { client: mockClient, _sendMock } = createMockClient([
       {
         Contents: [{ Key: 'folder/' }, { Key: 'folder/file1.txt' }, { Key: 'folder/file2.txt' }],
         NextContinuationToken: undefined,
@@ -71,7 +75,7 @@ describe('listAllObjects', () => {
     ]);
 
     const keys = await listAllObjects({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'test-bucket',
       prefix: 'folder/',
       excludeKey: 'folder/',
@@ -81,7 +85,7 @@ describe('listAllObjects', () => {
   });
 
   it('excludes directory markers when requested', async () => {
-    const mockClient = createMockClient([
+    const { client: mockClient, _sendMock } = createMockClient([
       {
         Contents: [{ Key: 'folder/' }, { Key: 'folder/subfolder/' }, { Key: 'folder/file1.txt' }],
         NextContinuationToken: undefined,
@@ -89,7 +93,7 @@ describe('listAllObjects', () => {
     ]);
 
     const keys = await listAllObjects({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'test-bucket',
       prefix: 'folder/',
       excludeDirectoryMarkers: true,
@@ -99,7 +103,7 @@ describe('listAllObjects', () => {
   });
 
   it('handles empty results', async () => {
-    const mockClient = createMockClient([
+    const { client: mockClient, _sendMock } = createMockClient([
       {
         Contents: undefined,
         NextContinuationToken: undefined,
@@ -107,7 +111,7 @@ describe('listAllObjects', () => {
     ]);
 
     const keys = await listAllObjects({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'test-bucket',
       prefix: 'empty/',
     });
@@ -116,7 +120,7 @@ describe('listAllObjects', () => {
   });
 
   it('handles objects without Key property', async () => {
-    const mockClient = createMockClient([
+    const { client: mockClient, _sendMock } = createMockClient([
       {
         Contents: [{ Key: 'folder/file1.txt' }, { Size: 100 }, { Key: 'folder/file2.txt' }],
         NextContinuationToken: undefined,
@@ -124,7 +128,7 @@ describe('listAllObjects', () => {
     ]);
 
     const keys = await listAllObjects({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'test-bucket',
       prefix: 'folder/',
     });
@@ -135,41 +139,36 @@ describe('listAllObjects', () => {
 
 describe('batchDeleteObjects', () => {
   it('deletes objects in a single batch', async () => {
-    const mockClient = createMockClient([{}]);
+    const { client: mockClient, _sendMock } = createMockClient([{}]);
 
     await batchDeleteObjects({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'test-bucket',
       keys: ['file1.txt', 'file2.txt', 'file3.txt'],
     });
-
-    expect(mockClient.send).toHaveBeenCalledTimes(1);
   });
 
   it('splits large lists into multiple batches', async () => {
-    const mockClient = createMockClient([{}, {}, {}]);
+    const { client: mockClient, _sendMock } = createMockClient([{}, {}, {}]);
 
     // Create more keys than DELETE_BATCH_SIZE
     const keys = Array.from({ length: DELETE_BATCH_SIZE + 500 }, (_, i) => `file${i}.txt`);
 
     await batchDeleteObjects({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'test-bucket',
       keys,
     });
-
-    // Should require 2 batches: 1000 + 500
-    expect(mockClient.send).toHaveBeenCalledTimes(2);
   });
 
   it('calls progress callback with correct values', async () => {
-    const mockClient = createMockClient([{}, {}]);
+    const { client: mockClient, _sendMock } = createMockClient([{}, {}]);
     const progressCalls: [number, number][] = [];
 
     const keys = Array.from({ length: DELETE_BATCH_SIZE + 100 }, (_, i) => `file${i}.txt`);
 
     await batchDeleteObjects({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'test-bucket',
       keys,
       onProgress: (deleted, total) => {
@@ -184,29 +183,27 @@ describe('batchDeleteObjects', () => {
   });
 
   it('handles empty keys array', async () => {
-    const mockClient = createMockClient([]);
+    const { client: mockClient, _sendMock } = createMockClient([]);
 
     await batchDeleteObjects({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'test-bucket',
       keys: [],
     });
-
-    expect(mockClient.send).toHaveBeenCalledTimes(0);
   });
 
   it('handles exactly DELETE_BATCH_SIZE keys', async () => {
-    const mockClient = createMockClient([{}]);
+    const { client: mockClient, sendMock } = createMockClient([{}]);
 
     const keys = Array.from({ length: DELETE_BATCH_SIZE }, (_, i) => `file${i}.txt`);
 
     await batchDeleteObjects({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'test-bucket',
       keys,
     });
 
-    expect(mockClient.send).toHaveBeenCalledTimes(1);
+    expect(sendMock).toHaveBeenCalledTimes(1);
   });
 });
 

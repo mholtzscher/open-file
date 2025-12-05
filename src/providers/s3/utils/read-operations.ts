@@ -175,7 +175,7 @@ export async function readObject(options: ReadObjectOptions): Promise<Buffer> {
       bytesTransferred = result.bytesTransferred;
     } else {
       // Try to use as buffer-like object (fallback)
-      const bodyBuffer = Buffer.from(await (getResponse.Body as any));
+      const bodyBuffer = Buffer.from(getResponse.Body as unknown as ArrayBuffer);
       chunks.push(bodyBuffer);
       bytesTransferred = bodyBuffer.length;
     }

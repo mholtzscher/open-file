@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, mock, beforeEach, afterEach } from 'bun:test';
+import type { S3Client } from '@aws-sdk/client-s3';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -13,15 +14,20 @@ import {
   uploadDirectoryToS3,
 } from './transfer-operations.js';
 
-// Mock S3Client
-function createMockClient(responses: unknown[] = [{}]) {
+// Mock S3Client - returns both the mock client and the send mock for assertions
+function createMockClient(responses: unknown[] = [{}]): {
+  client: S3Client;
+  sendMock: ReturnType<typeof mock>;
+} {
   let callIndex = 0;
+  const sendMock = mock(() => {
+    const response = responses[callIndex] || responses[responses.length - 1];
+    callIndex++;
+    return Promise.resolve(response);
+  });
   return {
-    send: mock(() => {
-      const response = responses[callIndex] || responses[responses.length - 1];
-      callIndex++;
-      return Promise.resolve(response);
-    }),
+    client: { send: sendMock } as unknown as S3Client,
+    sendMock,
   };
 }
 
@@ -87,7 +93,7 @@ describe('downloadDirectoryToLocal', () => {
   });
 
   it('downloads all files in a directory', async () => {
-    const mockClient = createMockClient([
+    const { client: mockClient, sendMock: _sm } = createMockClient([
       {
         Contents: [{ Key: 'src/file1.txt' }, { Key: 'src/file2.txt' }],
         NextContinuationToken: undefined,
@@ -101,7 +107,7 @@ describe('downloadDirectoryToLocal', () => {
     });
 
     await downloadDirectoryToLocal({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'bucket',
       readFromS3: mockRead,
       s3Prefix: 'src/',
@@ -118,7 +124,7 @@ describe('downloadDirectoryToLocal', () => {
   });
 
   it('reports progress during download', async () => {
-    const mockClient = createMockClient([
+    const { client: mockClient, sendMock: _sm } = createMockClient([
       {
         Contents: [{ Key: 'dir/a.txt' }, { Key: 'dir/b.txt' }],
         NextContinuationToken: undefined,
@@ -129,7 +135,7 @@ describe('downloadDirectoryToLocal', () => {
     const progressCalls: [number, number, string][] = [];
 
     await downloadDirectoryToLocal({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'bucket',
       readFromS3: mockRead,
       s3Prefix: 'dir/',
@@ -146,7 +152,7 @@ describe('downloadDirectoryToLocal', () => {
   });
 
   it('handles empty directory', async () => {
-    const mockClient = createMockClient([
+    const { client: mockClient, sendMock: _sm } = createMockClient([
       {
         Contents: [],
         NextContinuationToken: undefined,
@@ -156,7 +162,7 @@ describe('downloadDirectoryToLocal', () => {
     const mockRead = createMockReadFn();
 
     await downloadDirectoryToLocal({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'bucket',
       readFromS3: mockRead,
       s3Prefix: 'empty/',
@@ -182,27 +188,27 @@ describe('uploadFileToS3', () => {
     const localPath = join(tempDir, 'upload.txt');
     await fs.writeFile(localPath, 'upload content');
 
-    const mockClient = createMockClient([{}]);
+    const { client: mockClient, sendMock: _sm } = createMockClient([{}]);
 
     await uploadFileToS3({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'bucket',
       localPath,
       s3Key: 'uploaded.txt',
     });
 
-    expect(mockClient.send).toHaveBeenCalledTimes(1);
+    expect(_sm).toHaveBeenCalledTimes(1);
   });
 
   it('reports progress during upload', async () => {
     const localPath = join(tempDir, 'file.txt');
     await fs.writeFile(localPath, 'test');
 
-    const mockClient = createMockClient([{}]);
+    const { client: mockClient, sendMock: _sm } = createMockClient([{}]);
     const progressCalls: string[] = [];
 
     await uploadFileToS3({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'bucket',
       localPath,
       s3Key: 'file.txt',
@@ -234,16 +240,16 @@ describe('uploadDirectoryToS3', () => {
     await fs.writeFile(join(tempDir, 'file1.txt'), 'content1');
     await fs.writeFile(join(tempDir, 'file2.txt'), 'content2');
 
-    const mockClient = createMockClient([{}, {}]);
+    const { client: mockClient, sendMock: _sm } = createMockClient([{}, {}]);
 
     await uploadDirectoryToS3({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'bucket',
       localPath: tempDir,
       s3Prefix: 'dest/',
     });
 
-    expect(mockClient.send).toHaveBeenCalledTimes(2);
+    expect(_sm).toHaveBeenCalledTimes(2);
   });
 
   it('handles nested directories', async () => {
@@ -252,27 +258,27 @@ describe('uploadDirectoryToS3', () => {
     await fs.writeFile(join(tempDir, 'root.txt'), 'root');
     await fs.writeFile(join(tempDir, 'subdir', 'nested.txt'), 'nested');
 
-    const mockClient = createMockClient([{}, {}]);
+    const { client: mockClient, sendMock: _sm } = createMockClient([{}, {}]);
 
     await uploadDirectoryToS3({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'bucket',
       localPath: tempDir,
       s3Prefix: 'upload/',
     });
 
-    expect(mockClient.send).toHaveBeenCalledTimes(2);
+    expect(_sm).toHaveBeenCalledTimes(2);
   });
 
   it('reports progress during upload', async () => {
     await fs.writeFile(join(tempDir, 'a.txt'), 'a');
     await fs.writeFile(join(tempDir, 'b.txt'), 'b');
 
-    const mockClient = createMockClient([{}, {}]);
+    const { client: mockClient, sendMock: _sm } = createMockClient([{}, {}]);
     const progressCalls: [number, number][] = [];
 
     await uploadDirectoryToS3({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'bucket',
       localPath: tempDir,
       s3Prefix: 'dest/',
@@ -286,15 +292,15 @@ describe('uploadDirectoryToS3', () => {
   });
 
   it('handles empty directory', async () => {
-    const mockClient = createMockClient([]);
+    const { client: mockClient, sendMock: _sm } = createMockClient([]);
 
     await uploadDirectoryToS3({
-      client: mockClient as any,
+      client: mockClient,
       bucket: 'bucket',
       localPath: tempDir,
       s3Prefix: 'empty/',
     });
 
-    expect(mockClient.send).toHaveBeenCalledTimes(0);
+    expect(_sm).toHaveBeenCalledTimes(0);
   });
 });

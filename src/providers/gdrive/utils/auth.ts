@@ -173,7 +173,7 @@ function createServiceAccountClient(
 
   let keyData: { client_email?: string; private_key?: string };
   try {
-    keyData = JSON.parse(keyFileContent);
+    keyData = JSON.parse(keyFileContent) as { client_email?: string; private_key?: string };
   } catch {
     return {
       success: false,

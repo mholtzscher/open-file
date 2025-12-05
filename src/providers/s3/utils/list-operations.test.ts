@@ -3,27 +3,33 @@
  */
 
 import { describe, it, expect, mock } from 'bun:test';
+import type { S3Client } from '@aws-sdk/client-s3';
 import { listObjects, listBuckets, ListOperationsLogger } from './list-operations.js';
 import { EntryType } from '../../../types/entry.js';
 
-// Mock S3Client - returns responses in order
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function createMockClient(responses: any[]) {
+// Mock S3Client - returns both the mock client and the send mock for assertions
+function createMockClient(responses: unknown[]): {
+  client: S3Client;
+  sendMock: ReturnType<typeof mock>;
+} {
   let callIndex = 0;
+  const sendMock = mock(() => {
+    const response = responses[callIndex] || responses[responses.length - 1];
+    callIndex++;
+    return Promise.resolve(response);
+  });
   return {
-    send: mock(() => {
-      const response = responses[callIndex] || responses[responses.length - 1];
-      callIndex++;
-      return Promise.resolve(response);
-    }),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any;
+    client: { send: sendMock } as unknown as S3Client,
+    sendMock,
+  };
 }
 
 describe('listObjects', () => {
   describe('basic listing', () => {
     it('returns empty entries for empty bucket', async () => {
-      const client = createMockClient([{ CommonPrefixes: [], Contents: [], IsTruncated: false }]);
+      const { client, sendMock: _s } = createMockClient([
+        { CommonPrefixes: [], Contents: [], IsTruncated: false },
+      ]);
 
       const result = await listObjects({
         client,
@@ -37,7 +43,7 @@ describe('listObjects', () => {
     });
 
     it('parses directories from CommonPrefixes', async () => {
-      const client = createMockClient([
+      const { client, sendMock: _s } = createMockClient([
         {
           CommonPrefixes: [{ Prefix: 'folder1/' }, { Prefix: 'folder2/' }],
           Contents: [],
@@ -59,7 +65,7 @@ describe('listObjects', () => {
     });
 
     it('parses files from Contents', async () => {
-      const client = createMockClient([
+      const { client, sendMock: _s } = createMockClient([
         {
           CommonPrefixes: [],
           Contents: [
@@ -85,7 +91,7 @@ describe('listObjects', () => {
     });
 
     it('returns directories before files (sorted)', async () => {
-      const client = createMockClient([
+      const { client, sendMock: _s } = createMockClient([
         {
           CommonPrefixes: [{ Prefix: 'zebra/' }],
           Contents: [{ Key: 'alpha.txt', Size: 100 }],
@@ -110,7 +116,7 @@ describe('listObjects', () => {
 
   describe('pagination', () => {
     it('returns hasMore=true when truncated', async () => {
-      const client = createMockClient([
+      const { client, sendMock: _s } = createMockClient([
         {
           CommonPrefixes: [],
           Contents: [{ Key: 'file.txt', Size: 100 }],
@@ -130,7 +136,7 @@ describe('listObjects', () => {
     });
 
     it('returns hasMore=false when not truncated', async () => {
-      const client = createMockClient([
+      const { client, sendMock: _s } = createMockClient([
         {
           CommonPrefixes: [],
           Contents: [{ Key: 'file.txt', Size: 100 }],
@@ -151,7 +157,7 @@ describe('listObjects', () => {
 
   describe('options', () => {
     it('uses default delimiter of /', async () => {
-      const client = createMockClient([{ CommonPrefixes: [], Contents: [] }]);
+      const { client, sendMock: _s } = createMockClient([{ CommonPrefixes: [], Contents: [] }]);
 
       await listObjects({
         client,
@@ -159,11 +165,11 @@ describe('listObjects', () => {
         prefix: 'folder/',
       });
 
-      expect(client.send).toHaveBeenCalled();
+      expect(_s).toHaveBeenCalled();
     });
 
     it('uses default maxKeys of 1000', async () => {
-      const client = createMockClient([{ CommonPrefixes: [], Contents: [] }]);
+      const { client, sendMock: _s } = createMockClient([{ CommonPrefixes: [], Contents: [] }]);
 
       await listObjects({
         client,
@@ -171,11 +177,11 @@ describe('listObjects', () => {
         prefix: '',
       });
 
-      expect(client.send).toHaveBeenCalled();
+      expect(_s).toHaveBeenCalled();
     });
 
     it('respects custom maxKeys', async () => {
-      const client = createMockClient([{ CommonPrefixes: [], Contents: [] }]);
+      const { client, sendMock: _s } = createMockClient([{ CommonPrefixes: [], Contents: [] }]);
 
       await listObjects({
         client,
@@ -184,13 +190,13 @@ describe('listObjects', () => {
         maxKeys: 50,
       });
 
-      expect(client.send).toHaveBeenCalled();
+      expect(_s).toHaveBeenCalled();
     });
   });
 
   describe('with prefix', () => {
     it('strips prefix from entry names', async () => {
-      const client = createMockClient([
+      const { client, sendMock: _s } = createMockClient([
         {
           CommonPrefixes: [{ Prefix: 'parent/child/' }],
           Contents: [{ Key: 'parent/file.txt', Size: 100 }],
@@ -212,9 +218,10 @@ describe('listObjects', () => {
 
   describe('logging', () => {
     it('calls logger.debug with context', async () => {
-      const client = createMockClient([{ CommonPrefixes: [], Contents: [] }]);
+      const { client, sendMock: _s } = createMockClient([{ CommonPrefixes: [], Contents: [] }]);
+      const debugMock = mock(() => {});
       const logger: ListOperationsLogger = {
-        debug: mock(() => {}),
+        debug: debugMock,
         error: mock(() => {}),
       };
 
@@ -225,11 +232,11 @@ describe('listObjects', () => {
         logger,
       });
 
-      expect(logger.debug).toHaveBeenCalled();
+      expect(debugMock).toHaveBeenCalled();
     });
 
     it('works without logger', async () => {
-      const client = createMockClient([{ CommonPrefixes: [], Contents: [] }]);
+      const { client, sendMock: _s } = createMockClient([{ CommonPrefixes: [], Contents: [] }]);
 
       // Should not throw
       const result = await listObjects({
@@ -246,7 +253,7 @@ describe('listObjects', () => {
 describe('listBuckets', () => {
   describe('basic listing', () => {
     it('returns empty array when no buckets', async () => {
-      const client = createMockClient([{ Buckets: [] }]);
+      const { client, sendMock: _s } = createMockClient([{ Buckets: [] }]);
 
       const result = await listBuckets({ client });
 
@@ -255,7 +262,7 @@ describe('listBuckets', () => {
 
     it('returns bucket info', async () => {
       const creationDate = new Date('2024-01-15');
-      const client = createMockClient([
+      const { client, sendMock: _s } = createMockClient([
         { Buckets: [{ Name: 'my-bucket', CreationDate: creationDate }] },
       ]);
 
@@ -269,7 +276,7 @@ describe('listBuckets', () => {
 
   describe('sorting', () => {
     it('sorts buckets by creation date (newest first)', async () => {
-      const client = createMockClient([
+      const { client, sendMock: _s } = createMockClient([
         {
           Buckets: [
             { Name: 'old-bucket', CreationDate: new Date('2023-01-01') },
@@ -290,7 +297,7 @@ describe('listBuckets', () => {
 
   describe('filtering', () => {
     it('skips buckets without names', async () => {
-      const client = createMockClient([
+      const { client, sendMock: _s } = createMockClient([
         {
           Buckets: [
             { Name: 'valid-bucket', CreationDate: new Date() },
@@ -309,15 +316,16 @@ describe('listBuckets', () => {
 
   describe('logging', () => {
     it('calls logger.debug', async () => {
-      const client = createMockClient([{ Buckets: [] }]);
+      const { client, sendMock: _s } = createMockClient([{ Buckets: [] }]);
+      const debugMock = mock(() => {});
       const logger: ListOperationsLogger = {
-        debug: mock(() => {}),
+        debug: debugMock,
         error: mock(() => {}),
       };
 
       await listBuckets({ client, logger });
 
-      expect(logger.debug).toHaveBeenCalled();
+      expect(debugMock).toHaveBeenCalled();
     });
   });
 });

@@ -37,21 +37,6 @@ export {
 // Built-in Providers
 export { EnvironmentCredentialProvider, InlineCredentialProvider } from './credential-chain.js';
 
-// Config Encryption
-export {
-  encryptConfig,
-  decryptConfig,
-  isEncrypted,
-  getEncryptionVersion,
-  validatePassword,
-  secureCompare,
-  DEFAULT_PASSWORD_REQUIREMENTS,
-  type EncryptionResult,
-  type EncryptionError,
-  type EncryptionErrorCode,
-  type PasswordRequirements,
-} from './config-encryption.js';
-
 // Sensitive Data Sanitizer
 export {
   isSensitiveFieldName,

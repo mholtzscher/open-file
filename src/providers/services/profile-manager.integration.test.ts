@@ -633,7 +633,7 @@ describe('ProfileManager Integration Tests', () => {
       const profile = {
         id: 'invalid-provider',
         displayName: 'Test',
-        provider: 'invalid-provider' as any,
+        provider: 'invalid-provider' as unknown as 's3',
         config: {},
       };
 
@@ -773,7 +773,7 @@ describe('ProfileManager Integration Tests', () => {
       const invalidProfile = {
         id: '',
         displayName: '',
-        provider: 'invalid' as any,
+        provider: 'invalid' as unknown as 's3',
         config: {},
       };
 
@@ -959,7 +959,7 @@ describe('createProviderFromProfile Integration', () => {
       expect(true).toBe(false); // Should not reach here
     } catch (err) {
       expect(err).toBeInstanceOf(ProfileManagerError);
-      expect((err as any).code).toBe('profile_not_found');
+      expect((err as { code: string }).code).toBe('profile_not_found');
     }
   });
 });

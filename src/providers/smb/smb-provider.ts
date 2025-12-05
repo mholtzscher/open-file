@@ -148,7 +148,6 @@ export class SMBProvider extends BaseStorageProvider {
   readonly name = 'smb';
   readonly displayName = 'SMB/CIFS';
 
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   private client: SMB2 | null = null;
   private connected = false;
   private readonly profile: SMBProfile;

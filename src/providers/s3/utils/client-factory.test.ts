@@ -14,7 +14,7 @@ function isS3Client(obj: unknown): boolean {
     obj !== null &&
     typeof obj === 'object' &&
     'send' in obj &&
-    typeof (obj as any).send === 'function'
+    typeof (obj as { send: unknown }).send === 'function'
   );
 }
 
