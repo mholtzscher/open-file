@@ -155,6 +155,8 @@ export class SFTPProvider extends BaseStorageProvider {
   private readonly logger: SFTPProviderLogger;
   private basePath: string;
   private readonly injectedClient?: Client;
+  /** Promise for in-flight connection attempt (prevents race conditions) */
+  private connectPromise: Promise<OperationResult> | null = null;
 
   constructor(profile: SFTPProfile, dependencies?: SFTPProviderDependencies) {
     super();
@@ -203,12 +205,41 @@ export class SFTPProvider extends BaseStorageProvider {
 
   /**
    * Establish connection to the SFTP server
+   *
+   * This method is safe to call concurrently - multiple callers will share
+   * the same connection attempt to avoid race conditions that can cause
+   * "Connection lost before handshake" errors.
    */
   async connect(): Promise<OperationResult> {
     if (this.connected) {
       return Result.success();
     }
 
+    // If a connection attempt is already in flight, return the existing promise
+    // This prevents race conditions where multiple callers create competing
+    // Client instances that interfere with each other's handshakes
+    if (this.connectPromise) {
+      this.logger.debug('Connection already in progress, waiting for existing attempt');
+      return this.connectPromise;
+    }
+
+    // Start a new connection attempt and store the promise
+    this.connectPromise = this.doConnect();
+
+    try {
+      return await this.connectPromise;
+    } finally {
+      // Clear the promise after completion (success or failure)
+      // so future calls can attempt a fresh connection
+      this.connectPromise = null;
+    }
+  }
+
+  /**
+   * Internal method that performs the actual connection.
+   * Called by connect() which handles deduplication.
+   */
+  private async doConnect(): Promise<OperationResult> {
     try {
       // Create a fresh client if not using an injected one
       // This handles the case where a previous connection failed or was closed
