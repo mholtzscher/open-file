@@ -81,8 +81,8 @@ export interface TransferOptions {
  * - Unimplemented (provider doesn't support this operation)
  * - Errors with context
  *
- * Providers explicitly declare their capabilities via getCapabilities().
- * The UI can introspect and adapt based on what operations are supported.
+ * Providers explicitly declare their capabilities and the UI can check them
+ * using hasCapability() to adapt based on what operations are supported.
  */
 export interface StorageProvider {
   /** Provider identifier (e.g., 's3', 'sftp', 'gcs') */
@@ -93,12 +93,6 @@ export interface StorageProvider {
   // ==========================================================================
   // Capability Introspection
   // ==========================================================================
-
-  /**
-   * Get all capabilities supported by this provider
-   * @returns Set of supported capabilities
-   */
-  getCapabilities(): Set<Capability>;
 
   /**
    * Check if a specific capability is supported

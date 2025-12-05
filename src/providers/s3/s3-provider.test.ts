@@ -139,20 +139,19 @@ describe('S3Provider', () => {
         logger,
       });
 
-      const caps = provider.getCapabilities();
-      expect(caps.has(Capability.List)).toBe(true);
-      expect(caps.has(Capability.Read)).toBe(true);
-      expect(caps.has(Capability.Write)).toBe(true);
-      expect(caps.has(Capability.Delete)).toBe(true);
-      expect(caps.has(Capability.Mkdir)).toBe(true);
-      expect(caps.has(Capability.Copy)).toBe(true);
-      expect(caps.has(Capability.Move)).toBe(true);
-      expect(caps.has(Capability.ServerSideCopy)).toBe(true);
-      expect(caps.has(Capability.Download)).toBe(true);
-      expect(caps.has(Capability.Upload)).toBe(true);
-      expect(caps.has(Capability.Metadata)).toBe(true);
-      expect(caps.has(Capability.Containers)).toBe(true);
-      expect(caps.has(Capability.BatchDelete)).toBe(true);
+      expect(provider.hasCapability(Capability.List)).toBe(true);
+      expect(provider.hasCapability(Capability.Read)).toBe(true);
+      expect(provider.hasCapability(Capability.Write)).toBe(true);
+      expect(provider.hasCapability(Capability.Delete)).toBe(true);
+      expect(provider.hasCapability(Capability.Mkdir)).toBe(true);
+      expect(provider.hasCapability(Capability.Copy)).toBe(true);
+      expect(provider.hasCapability(Capability.Move)).toBe(true);
+      expect(provider.hasCapability(Capability.ServerSideCopy)).toBe(true);
+      expect(provider.hasCapability(Capability.Download)).toBe(true);
+      expect(provider.hasCapability(Capability.Upload)).toBe(true);
+      expect(provider.hasCapability(Capability.Metadata)).toBe(true);
+      expect(provider.hasCapability(Capability.Containers)).toBe(true);
+      expect(provider.hasCapability(Capability.BatchDelete)).toBe(true);
     });
 
     it('should use injected logger', () => {

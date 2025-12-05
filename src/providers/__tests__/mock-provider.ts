@@ -114,10 +114,6 @@ export class MockStorageProvider {
   // Capability Management
   // ============================================================================
 
-  getCapabilities(): Set<Capability> {
-    return new Set(this.capabilities);
-  }
-
   hasCapability(cap: Capability): boolean {
     return this.capabilities.has(cap);
   }

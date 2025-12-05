@@ -55,7 +55,6 @@ function createMockStorageContext(capabilities: Set<Capability> = new Set()): St
     setContainer: () => Promise.resolve(),
     getContainer: () => undefined,
     hasCapability: (cap: Capability) => capabilities.has(cap),
-    getCapabilities: () => capabilities,
     switchProvider: () => Promise.resolve(),
     disconnect: () => Promise.resolve(),
     connect: () => Promise.resolve(),

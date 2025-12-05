@@ -407,14 +407,6 @@ describe('ProviderStorageAdapter', () => {
       expect(storageAdapter.hasCapability(Capability.Download)).toBe(false);
       expect(storageAdapter.hasCapability(Capability.Upload)).toBe(false);
     });
-
-    it('should return all capabilities', () => {
-      const capabilities = storageAdapter.getCapabilities();
-
-      expect(capabilities.has(Capability.List)).toBe(true);
-      expect(capabilities.has(Capability.Read)).toBe(true);
-      expect(capabilities.has(Capability.Write)).toBe(true);
-    });
   });
 
   describe('Provider management', () => {

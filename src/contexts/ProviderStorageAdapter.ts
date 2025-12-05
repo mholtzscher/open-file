@@ -577,13 +577,6 @@ export class ProviderStorageAdapter implements StorageContextValue {
     return this.provider.hasCapability(capability);
   }
 
-  /**
-   * Get all capabilities
-   */
-  getCapabilities(): Set<Capability> {
-    return this.provider.getCapabilities();
-  }
-
   // ==========================================================================
   // Provider Management
   // ==========================================================================

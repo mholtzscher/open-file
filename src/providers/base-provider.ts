@@ -27,7 +27,7 @@ import { ProviderType } from './types/profile.js';
  * Abstract base class for storage providers
  *
  * Provides:
- * - Capability management (getCapabilities, hasCapability, addCapability)
+ * - Capability management (hasCapability, addCapability)
  * - Default unimplemented responses for optional methods
  * - Fallback strategies (e.g., move = copy + delete)
  */
@@ -53,14 +53,6 @@ export abstract class BaseStorageProvider implements StorageProvider {
   // ==========================================================================
   // Capability Management
   // ==========================================================================
-
-  /**
-   * Get all capabilities supported by this provider
-   * @returns Copy of the capabilities set
-   */
-  getCapabilities(): Set<Capability> {
-    return new Set(this.capabilities);
-  }
 
   /**
    * Check if a specific capability is supported

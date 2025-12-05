@@ -314,12 +314,6 @@ export interface StorageContextValue {
    */
   hasCapability(capability: Capability): boolean;
 
-  /**
-   * Get all capabilities supported by the current provider
-   * @returns Set of supported capabilities
-   */
-  getCapabilities(): Set<Capability>;
-
   // ==========================================================================
   // Provider Management
   // ==========================================================================

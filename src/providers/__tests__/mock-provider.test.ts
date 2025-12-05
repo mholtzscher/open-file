@@ -32,16 +32,11 @@ describe('MockStorageProvider', () => {
   });
 
   describe('capabilities', () => {
-    test('should have default capabilities', () => {
-      const caps = provider.getCapabilities();
-      expect(caps.has(Capability.List)).toBe(true);
-      expect(caps.has(Capability.Read)).toBe(true);
-      expect(caps.has(Capability.Write)).toBe(true);
-      expect(caps.has(Capability.Delete)).toBe(true);
-    });
-
     test('should support capability checking', () => {
       expect(provider.hasCapability(Capability.List)).toBe(true);
+      expect(provider.hasCapability(Capability.Read)).toBe(true);
+      expect(provider.hasCapability(Capability.Write)).toBe(true);
+      expect(provider.hasCapability(Capability.Delete)).toBe(true);
       expect(provider.hasCapability(Capability.Versioning)).toBe(false);
     });
 

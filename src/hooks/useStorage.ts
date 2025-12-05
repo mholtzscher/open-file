@@ -282,10 +282,6 @@ export function useStorageCapabilities() {
     [storage]
   );
 
-  const getCapabilities = useCallback(() => {
-    return storage.getCapabilities();
-  }, [storage]);
-
   const canDownload = hasCapability(Capability.Download);
   const canUpload = hasCapability(Capability.Upload);
   const canCopy = hasCapability(Capability.Copy);
@@ -296,7 +292,6 @@ export function useStorageCapabilities() {
 
   return {
     hasCapability,
-    getCapabilities,
     canDownload,
     canUpload,
     canCopy,

@@ -24,12 +24,8 @@ class MockProvider implements StorageProvider {
   disconnectCalled = false;
   connectCalled = false;
 
-  getCapabilities(): Set<Capability> {
-    return new Set([Capability.Read, Capability.Write]);
-  }
-
   hasCapability(capability: Capability): boolean {
-    return this.getCapabilities().has(capability);
+    return capability === Capability.Read || capability === Capability.Write;
   }
 
   isConnected(): boolean {

@@ -8,7 +8,6 @@ import { describe, it, expect, beforeEach } from 'bun:test';
 import { testRender } from '@opentui/react/test-utils';
 import { ConnectionStatus, type ConnectionStatusProps } from './connection-status.js';
 import { StorageContext, StorageContextValue, StorageState } from '../contexts/StorageContext.js';
-import { Capability } from '../providers/types/capabilities.js';
 import { EntryType } from '../types/entry.js';
 import { ThemeRegistry } from './theme-registry.js';
 import { CatppuccinMochaTheme } from '../themes/catppuccin-mocha.js';
@@ -64,7 +63,6 @@ function createMockStorageContext(overrides: Partial<StorageState> = {}): Storag
     setContainer: () => Promise.resolve(),
     getContainer: () => undefined,
     hasCapability: () => false,
-    getCapabilities: () => new Set<Capability>(),
     switchProvider: () => Promise.resolve(),
     disconnect: () => Promise.resolve(),
     connect: () => Promise.resolve(),
