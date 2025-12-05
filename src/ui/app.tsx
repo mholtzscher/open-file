@@ -69,7 +69,7 @@ function AppContent({ onEditProfiles, profilesReloadKey }: AppContentProps) {
         visible={true}
         profileManager={profileManager}
         currentProfileId={profileId}
-        onProfileSelect={selectProfile}
+        onProfileSelect={profile => void selectProfile(profile)}
         onCancel={closeProfileSelector}
         onEditProfiles={onEditProfiles}
         profilesReloadKey={profilesReloadKey}

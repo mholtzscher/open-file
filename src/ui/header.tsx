@@ -14,7 +14,7 @@ import { useStorageState, useStorageCapabilities } from '../hooks/useStorage.js'
 import { ConnectionStatus } from './connection-status.js';
 import { Capability } from '../providers/types/capabilities.js';
 
-export interface HeaderProps {}
+// Header takes no props
 
 /**
  * Header React component

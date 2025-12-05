@@ -18,9 +18,7 @@ import { EntryType } from '../types/entry.js';
 /**
  * Create a mock StorageContextValue with configurable capabilities
  */
-function createMockStorageContext(
-  capabilities: Set<Capability | string> = new Set()
-): StorageContextValue {
+function createMockStorageContext(capabilities: Set<Capability> = new Set()): StorageContextValue {
   const defaultState: StorageState = {
     providerId: 'test',
     providerDisplayName: 'Test Provider',
@@ -32,37 +30,38 @@ function createMockStorageContext(
 
   return {
     state: defaultState,
-    navigate: async () => {},
-    navigateUp: async () => {},
-    refresh: async () => {},
-    list: async () => [],
-    read: async () => Buffer.from(''),
-    exists: async () => true,
-    getMetadata: async () => ({
-      id: 'test',
-      name: 'test',
-      type: EntryType.File,
-      path: '/test',
-      modified: new Date(),
-    }),
-    write: async () => {},
-    mkdir: async () => {},
-    delete: async () => {},
-    move: async () => {},
-    copy: async () => {},
-    download: async () => {},
-    upload: async () => {},
-    listContainers: async () => [],
-    setContainer: async () => {},
+    navigate: () => Promise.resolve(),
+    navigateUp: () => Promise.resolve(),
+    refresh: () => Promise.resolve(),
+    list: () => Promise.resolve([]),
+    read: () => Promise.resolve(Buffer.from('')),
+    exists: () => Promise.resolve(true),
+    getMetadata: () =>
+      Promise.resolve({
+        id: 'test',
+        name: 'test',
+        type: EntryType.File,
+        path: '/test',
+        modified: new Date(),
+      }),
+    write: () => Promise.resolve(),
+    mkdir: () => Promise.resolve(),
+    delete: () => Promise.resolve(),
+    move: () => Promise.resolve(),
+    copy: () => Promise.resolve(),
+    download: () => Promise.resolve(),
+    upload: () => Promise.resolve(),
+    listContainers: () => Promise.resolve([]),
+    setContainer: () => Promise.resolve(),
     getContainer: () => undefined,
-    hasCapability: (cap: Capability | string) => capabilities.has(cap),
-    getCapabilities: () => capabilities as Set<Capability>,
-    switchProvider: async () => {},
-    disconnect: async () => {},
-    connect: async () => {},
+    hasCapability: (cap: Capability) => capabilities.has(cap),
+    getCapabilities: () => capabilities,
+    switchProvider: () => Promise.resolve(),
+    disconnect: () => Promise.resolve(),
+    connect: () => Promise.resolve(),
     subscribe: () => () => {},
     getProfileManager: () => undefined,
-    switchProfile: async () => {},
+    switchProfile: () => Promise.resolve(),
   };
 }
 
@@ -74,7 +73,7 @@ function TestWrapper({
   capabilities,
 }: {
   children: React.ReactNode;
-  capabilities?: Set<Capability | string>;
+  capabilities?: Set<Capability>;
 }) {
   const mockContext = createMockStorageContext(capabilities);
   return <StorageContext.Provider value={mockContext}>{children}</StorageContext.Provider>;
@@ -85,7 +84,7 @@ function TestWrapper({
  */
 async function renderCapabilityGate(
   props: CapabilityGateProps,
-  capabilities: Set<Capability | string> = new Set()
+  capabilities: Set<Capability> = new Set()
 ) {
   const result = await testRender(
     <TestWrapper capabilities={capabilities}>
