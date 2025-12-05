@@ -63,7 +63,7 @@ export function ThemeProvider({ children, initialThemeId }: ThemeProviderProps) 
     return ThemeRegistry.getActive();
   });
 
-  const [availableThemes, setAvailableThemes] = useState<string[]>(() => ThemeRegistry.list());
+  const [availableThemes] = useState<string[]>(() => ThemeRegistry.list());
 
   // Subscribe to theme changes from the registry
   useEffect(() => {

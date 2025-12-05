@@ -592,8 +592,8 @@ export class ProviderStorageAdapter implements StorageContextValue {
    * Switch to a different storage provider
    * Not supported - use switchProfile instead
    */
-  async switchProvider(_providerId: string): Promise<void> {
-    throw await Promise.reject(
+  switchProvider(_providerId: string): Promise<void> {
+    return Promise.reject(
       new Error('Provider switching requires multi-provider context. Use switchProfile() instead.')
     );
   }

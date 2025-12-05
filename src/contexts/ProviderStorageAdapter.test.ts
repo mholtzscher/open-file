@@ -7,7 +7,7 @@ import { ProviderStorageAdapter } from './ProviderStorageAdapter.js';
 import { BaseStorageProvider } from '../providers/base-provider.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { Capability } from '../providers/types/capabilities.js';
-import { OperationResult, Result } from '../providers/types/result.js';
+import { OperationResult, OperationStatus, Result } from '../providers/types/result.js';
 import { ListOptions, ListResult } from '../providers/provider.js';
 
 /**
@@ -111,7 +111,7 @@ class MockProvider extends BaseStorageProvider {
 
     // Check if it's in entries
     const metadata = await this.getMetadata(path);
-    return await Promise.resolve(Result.success(metadata.status === 'success'));
+    return await Promise.resolve(Result.success(metadata.status === OperationStatus.Success));
   }
 
   async read(path: string): Promise<OperationResult<Buffer>> {
@@ -306,10 +306,9 @@ describe('ProviderStorageAdapter', () => {
       expect(metadata.path).toBe('test-dir/file1.txt');
     });
 
-    it('should throw on read error', async () => {
+    it('should throw on read error', () => {
       expect(async () => {
         await storageAdapter.read('nonexistent.txt');
-        return await Promise.resolve();
       }).toThrow();
     });
   });
@@ -419,10 +418,9 @@ describe('ProviderStorageAdapter', () => {
   });
 
   describe('Provider management', () => {
-    it('should throw error for switchProvider', async () => {
+    it('should throw error for switchProvider', () => {
       expect(async () => {
         await storageAdapter.switchProvider('s3');
-        return await Promise.resolve();
       }).toThrow();
     });
 
@@ -489,33 +487,29 @@ describe('ProviderStorageAdapter', () => {
   });
 
   describe('Transfer operations', () => {
-    it('should throw error for download if not supported', async () => {
+    it('should throw error for download if not supported', () => {
       expect(async () => {
         await storageAdapter.download('remote.txt', '/local.txt');
-        return await Promise.resolve();
       }).toThrow();
     });
 
-    it('should throw error for upload if not supported', async () => {
+    it('should throw error for upload if not supported', () => {
       expect(async () => {
         await storageAdapter.upload('/local.txt', 'remote.txt');
-        return await Promise.resolve();
       }).toThrow();
     });
   });
 
   describe('Container operations', () => {
-    it('should throw error for listContainers if not supported', async () => {
+    it('should throw error for listContainers if not supported', () => {
       expect(async () => {
         await storageAdapter.listContainers();
-        return await Promise.resolve();
       }).toThrow();
     });
 
-    it('should throw error for setContainer if not supported', async () => {
+    it('should throw error for setContainer if not supported', () => {
       expect(async () => {
         await storageAdapter.setContainer('my-container');
-        return await Promise.resolve();
       }).toThrow();
     });
 

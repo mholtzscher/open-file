@@ -250,8 +250,8 @@ describe('ProviderStorageAdapter - switchProfile', () => {
     // Create a provider that fails to connect
     const failingProvider = new MockProvider();
     failingProvider.name = 'failing-provider';
-    failingProvider.connect = async () => {
-      throw await Promise.reject(new Error('Connection failed'));
+    failingProvider.connect = () => {
+      throw new Error('Connection failed');
     };
 
     // Override the profile manager to return the failing provider
