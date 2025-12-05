@@ -13,7 +13,7 @@ import { useCallback } from 'react';
 import { useStorage } from '../contexts/StorageContextProvider.js';
 import { useOperationExecutor, ExecutorCallbacks } from './useOperationExecutor.js';
 import type { PendingOperation } from '../types/dialog.js';
-import type { Entry } from '../types/entry.js';
+import { EntryType, type Entry } from '../types/entry.js';
 
 // ============================================================================
 // Constants
@@ -161,7 +161,7 @@ export function useImmediateExecution(): UseImmediateExecutionReturn {
         type: 'delete' as const,
         path: entry.path,
         entry,
-        recursive: entry.type === 'directory',
+        recursive: entry.type === EntryType.Directory,
       }));
 
       // Check if we need progress dialog
@@ -181,7 +181,7 @@ export function useImmediateExecution(): UseImmediateExecutionReturn {
         // Execute directly without progress dialog
         try {
           for (const entry of entries) {
-            await storage.delete(entry.path, { recursive: entry.type === 'directory' });
+            await storage.delete(entry.path, { recursive: entry.type === EntryType.Directory });
           }
           callbacks?.onSuccess?.(`Deleted ${entries.length} item(s)`);
         } catch (error) {
@@ -259,7 +259,7 @@ export function useImmediateExecution(): UseImmediateExecutionReturn {
         source: sourcePaths[index],
         destination: `${destinationPath}${entry.name}`,
         entry,
-        recursive: entry.type === 'directory',
+        recursive: entry.type === EntryType.Directory,
       }));
 
       // Check if we need progress dialog

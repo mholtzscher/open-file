@@ -26,29 +26,33 @@ class TestProvider extends BaseStorageProvider {
     this.addCapability(Capability.List, Capability.Read, Capability.Write);
   }
 
-  async list(_path: string, _options?: ListOptions): Promise<OperationResult<ListResult>> {
-    return Result.success({
-      entries: [],
-      hasMore: false,
-    });
+  list(_path: string, _options?: ListOptions): Promise<OperationResult<ListResult>> {
+    return Promise.resolve(
+      Result.success({
+        entries: [],
+        hasMore: false,
+      })
+    );
   }
 
-  async getMetadata(_path: string): Promise<OperationResult<Entry>> {
-    return Result.success({
-      id: 'test',
-      name: 'test.txt',
-      type: EntryType.File,
-      path: 'test.txt',
-      modified: new Date(),
-    });
+  getMetadata(_path: string): Promise<OperationResult<Entry>> {
+    return Promise.resolve(
+      Result.success({
+        id: 'test',
+        name: 'test.txt',
+        type: EntryType.File,
+        path: 'test.txt',
+        modified: new Date(),
+      })
+    );
   }
 
-  async exists(_path: string): Promise<OperationResult<boolean>> {
-    return Result.success(true);
+  exists(_path: string): Promise<OperationResult<boolean>> {
+    return Promise.resolve(Result.success(true));
   }
 
-  async read(_path: string): Promise<OperationResult<Buffer>> {
-    return Result.success(Buffer.from('test content'));
+  read(_path: string): Promise<OperationResult<Buffer>> {
+    return Promise.resolve(Result.success(Buffer.from('test content')));
   }
 }
 

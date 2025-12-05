@@ -77,9 +77,9 @@ export function useNavigationHandlers(
   // Memoize config to prevent infinite re-renders
   const config: NavigationConfig = useMemo(() => {
     if (!isDependencies) {
-      return configOrDeps as NavigationConfig;
+      return configOrDeps;
     }
-    const deps = configOrDeps as NavigationDependencies;
+    const deps = configOrDeps;
     return {
       onLoadBuffer: async (path: string) => {
         try {
@@ -103,13 +103,7 @@ export function useNavigationHandlers(
       onNavigationComplete: deps.onNavigationComplete,
       onBucketSelected: deps.onBucketSelected,
     };
-  }, [
-    isDependencies,
-    configOrDeps,
-    bufferState.setEntries,
-    bufferState.setCurrentPath,
-    bufferState.cursorToTop,
-  ]);
+  }, [isDependencies, configOrDeps, bufferState]);
   // Navigate into selected directory or bucket
   const navigateInto = useCallback(async () => {
     const selected = bufferState.getSelectedEntry();
@@ -155,7 +149,7 @@ export function useNavigationHandlers(
         config.onErrorOccurred(`Failed to navigate: ${message}`);
       }
     }
-  }, [bufferState.getSelectedEntry, config]);
+  }, [bufferState, config]);
 
   // Navigate to parent directory
   const navigateUp = useCallback(() => {
@@ -203,7 +197,7 @@ export function useNavigationHandlers(
   // Get selected entry
   const getSelectedEntry = useCallback((): Entry | undefined => {
     return bufferState.getSelectedEntry();
-  }, [bufferState.getSelectedEntry]);
+  }, [bufferState]);
 
   // Check if can navigate up
   const canNavigateUp = useCallback((): boolean => {

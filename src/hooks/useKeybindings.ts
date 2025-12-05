@@ -43,8 +43,8 @@ export function useKeybindings(
   const keySequenceRef = useRef<string[]>([]);
   const sequenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Build key signature for matching
-  const getKeySignature = useCallback((key: KeyEvent): string => {
+  // Build key signature for matching (reserved for future use)
+  const _getKeySignature = useCallback((key: KeyEvent): string => {
     const parts: string[] = [];
     if (key.ctrl) parts.push('ctrl');
     if (key.shift) parts.push('shift');
@@ -99,8 +99,8 @@ export function useKeybindings(
     [matchesKeybinding]
   );
 
-  // Main keyboard handler
-  const handleKeyDown = useCallback(
+  // Main keyboard handler (reserved for future use)
+  const _handleKeyDown = useCallback(
     (key: KeyEvent) => {
       // Try sequence first
       if (handleKeySequence(key)) {

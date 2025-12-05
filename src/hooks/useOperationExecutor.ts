@@ -154,7 +154,7 @@ async function executeOperation(
       break;
 
     default:
-      throw new Error(`Unknown operation type: ${(op as PendingOperation).type}`);
+      throw new Error(`Unknown operation type: ${op.type}`);
   }
 }
 

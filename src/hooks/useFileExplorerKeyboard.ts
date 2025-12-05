@@ -85,7 +85,7 @@ export function useFileExplorerKeyboard({
       const executeAction = (action: KeyAction, event?: KeyboardKey): boolean => {
         const handler = actionHandlers[action];
         if (handler) {
-          handler(event);
+          void handler(event);
           return true;
         }
         return false;

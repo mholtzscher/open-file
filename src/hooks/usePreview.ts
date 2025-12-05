@@ -306,7 +306,7 @@ export function usePreview(
 
   // Load preview when dependencies change
   useEffect(() => {
-    loadPreview();
+    void loadPreview();
   }, [loadPreview]);
 
   return state;

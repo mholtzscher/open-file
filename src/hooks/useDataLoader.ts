@@ -161,7 +161,7 @@ export function useDataLoader(options: DataLoaderOptions): UseDataLoaderReturn {
       prevBucketRef.current = bucket;
     }
 
-    loadData();
+    void loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucket, storage]);
 

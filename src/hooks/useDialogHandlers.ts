@@ -113,16 +113,18 @@ export function useDialogHandlers({
   // ============================================
   const createConfirmHandler = useCallback(async () => {
     await executeOperationsWithProgress(pendingOperations, {
-      onSuccess: async (_result, message) => {
-        try {
-          // Refresh the listing after successful operations
-          await refreshListing();
-          setStatusMessage(message);
-          setStatusMessageColor(Theme.getSuccessColor());
-        } catch {
-          setStatusMessage('Operations completed but failed to reload buffer');
-          setStatusMessageColor(Theme.getWarningColor());
-        }
+      onSuccess: (_result, message) => {
+        void (async () => {
+          try {
+            // Refresh the listing after successful operations
+            await refreshListing();
+            setStatusMessage(message);
+            setStatusMessageColor(Theme.getSuccessColor());
+          } catch {
+            setStatusMessage('Operations completed but failed to reload buffer');
+            setStatusMessageColor(Theme.getWarningColor());
+          }
+        })();
       },
       onError: message => {
         setStatusMessage(message);
@@ -156,7 +158,9 @@ export function useDialogHandlers({
     confirm: {
       visible: showConfirmDialog,
       operations: pendingOperations,
-      onConfirm: createConfirmHandler,
+      onConfirm: () => {
+        void createConfirmHandler();
+      },
       onCancel: () => {
         closeAndClearOperations();
       },
@@ -253,33 +257,35 @@ export function useDialogHandlers({
       visible: showProfileSelectorDialog,
       profileManager: storage.getProfileManager(),
       currentProfileId: storage.state.profileId,
-      onProfileSelect: async profile => {
-        try {
-          setStatusMessage(`Switching to profile: ${profile.displayName}...`);
-          setStatusMessageColor(Theme.getInfoColor());
-          closeDialog();
+      onProfileSelect: profile => {
+        void (async () => {
+          try {
+            setStatusMessage(`Switching to profile: ${profile.displayName}...`);
+            setStatusMessageColor(Theme.getInfoColor());
+            closeDialog();
 
-          await storage.switchProfile(profile.id);
+            await storage.switchProfile(profile.id);
 
-          const newState = storage.state;
+            const newState = storage.state;
 
-          if (newState.currentContainer) {
-            setBucket(newState.currentContainer);
-          } else {
-            setBucket(undefined);
+            if (newState.currentContainer) {
+              setBucket(newState.currentContainer);
+            } else {
+              setBucket(undefined);
+            }
+
+            bufferState.setEntries([...newState.entries]);
+            bufferState.setCurrentPath(newState.currentPath);
+
+            setStatusMessage(`Switched to profile: ${profile.displayName}`);
+            setStatusMessageColor(Theme.getSuccessColor());
+          } catch (err) {
+            setStatusMessage(
+              `Failed to switch profile: ${err instanceof Error ? err.message : 'Unknown error'}`
+            );
+            setStatusMessageColor(Theme.getErrorColor());
           }
-
-          bufferState.setEntries([...newState.entries]);
-          bufferState.setCurrentPath(newState.currentPath);
-
-          setStatusMessage(`Switched to profile: ${profile.displayName}`);
-          setStatusMessageColor(Theme.getSuccessColor());
-        } catch (err) {
-          setStatusMessage(
-            `Failed to switch profile: ${err instanceof Error ? err.message : 'Unknown error'}`
-          );
-          setStatusMessageColor(Theme.getErrorColor());
-        }
+        })();
       },
       onCancel: () => closeDialog(),
       onEditProfiles,

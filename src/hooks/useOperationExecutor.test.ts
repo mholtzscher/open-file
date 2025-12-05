@@ -90,7 +90,7 @@ describe('useOperationExecutor types', () => {
     it('should define correct return shape', () => {
       const mockReturn: UseOperationExecutorReturn = {
         isRunning: false,
-        execute: async () => ({ successCount: 0, failureCount: 0, cancelled: false }),
+        execute: () => Promise.resolve({ successCount: 0, failureCount: 0, cancelled: false }),
         cancel: () => {},
         progress: {
           visible: false,
@@ -124,11 +124,11 @@ describe('useOperationExecutor types', () => {
       let executeCalled = false;
       const mockReturn: UseOperationExecutorReturn = {
         isRunning: false,
-        execute: async (ops, callbacks) => {
+        execute: (ops, callbacks) => {
           executeCalled = true;
           expect(ops).toEqual(operations);
           callbacks?.onComplete?.();
-          return { successCount: 1, failureCount: 0, cancelled: false };
+          return Promise.resolve({ successCount: 1, failureCount: 0, cancelled: false });
         },
         cancel: () => {},
         progress: {

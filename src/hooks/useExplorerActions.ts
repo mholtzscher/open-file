@@ -6,7 +6,7 @@
  * dialogs for destructive actions.
  */
 
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { spawnSync } from 'child_process';
 import { platform } from 'os';
 import { Theme } from '../ui/theme.js';
@@ -14,7 +14,7 @@ import { parseAwsError, formatErrorForDisplay } from '../utils/errors.js';
 import { calculateParentPath } from '../utils/path-utils.js';
 import { getLogger } from '../utils/logger.js';
 import { Capability } from '../providers/types/capabilities.js';
-import { Entry } from '../types/entry.js';
+import { Entry, EntryType } from '../types/entry.js';
 import { EditMode } from '../types/edit-mode.js';
 import { KeyAction, KeyboardKey } from '../types/keyboard.js';
 import type { PendingOperation } from '../types/dialog.js';
@@ -93,17 +93,22 @@ export function useExplorerActions({
   showThemeSelector,
   toggleHelp,
   toggleSort,
-  closeDialog,
   clipboard,
   immediateExecution,
   refreshListing,
 }: UseExplorerActionsProps) {
   // Use refs to always access latest values without requiring re-memoization
   const clipboardRef = useRef(clipboard);
-  clipboardRef.current = clipboard;
-
   const immediateExecutionRef = useRef(immediateExecution);
-  immediateExecutionRef.current = immediateExecution;
+
+  // Sync refs in useEffect to avoid updating during render
+  useEffect(() => {
+    clipboardRef.current = clipboard;
+  }, [clipboard]);
+
+  useEffect(() => {
+    immediateExecutionRef.current = immediateExecution;
+  }, [immediateExecution]);
 
   return useMemo(() => {
     const getActiveBuffer = () => bufferState;
@@ -135,7 +140,7 @@ export function useExplorerActions({
           if (!currentEntry) return;
 
           // Check if we're navigating into a bucket from root view
-          if (!bucket && currentEntry.type === 'bucket') {
+          if (!bucket && currentEntry.type === EntryType.Bucket) {
             const bucketName = currentEntry.name;
             // Use path for providers that need full path (SFTP), name for others (S3)
             const containerIdentifier = currentEntry.path || bucketName;
@@ -146,7 +151,7 @@ export function useExplorerActions({
           }
 
           // If it's a file, enable preview mode
-          if (currentEntry.type === 'file') {
+          if (currentEntry.type === EntryType.File) {
             if (!previewMode) {
               setPreviewMode(true);
               setStatusMessage('Preview enabled');
@@ -215,7 +220,7 @@ export function useExplorerActions({
             type: 'delete' as const,
             path: entry.path,
             entry,
-            recursive: entry.type === 'directory',
+            recursive: entry.type === EntryType.Directory,
           }));
 
           // Show confirmation dialog
@@ -275,17 +280,17 @@ export function useExplorerActions({
             onSuccess: msg => {
               setStatusMessage(msg);
               setStatusMessageColor(Theme.getSuccessColor());
-              refreshListing();
+              void refreshListing();
             },
             onError: msg => {
               setStatusMessage(msg);
               setStatusMessageColor(Theme.getErrorColor());
-              refreshListing(); // Still refresh to show actual state
+              void refreshListing(); // Still refresh to show actual state
             },
             onCancelled: msg => {
               setStatusMessage(msg);
               setStatusMessageColor(Theme.getWarningColor());
-              refreshListing();
+              void refreshListing();
             },
           });
         },
@@ -317,7 +322,7 @@ export function useExplorerActions({
             source: s3Path,
             destination: localPath,
             entry: currentEntry,
-            recursive: currentEntry.type === 'directory',
+            recursive: currentEntry.type === EntryType.Directory,
           };
 
           showConfirm([operation]);
@@ -655,7 +660,7 @@ export function useExplorerActions({
                 onSuccess: msg => {
                   setStatusMessage(msg);
                   setStatusMessageColor(Theme.getSuccessColor());
-                  refreshListing();
+                  void refreshListing();
                 },
                 onError: msg => {
                   setStatusMessage(msg);
@@ -695,12 +700,12 @@ export function useExplorerActions({
                 onSuccess: () => {
                   setStatusMessage(`Renamed to: ${cleanName}`);
                   setStatusMessageColor(Theme.getSuccessColor());
-                  refreshListing();
+                  void refreshListing();
                 },
                 onError: msg => {
                   setStatusMessage(msg);
                   setStatusMessageColor(Theme.getErrorColor());
-                  refreshListing(); // Refresh to show actual state
+                  void refreshListing(); // Refresh to show actual state
                 },
               });
             } else {
@@ -761,7 +766,6 @@ export function useExplorerActions({
     showThemeSelector,
     toggleHelp,
     toggleSort,
-    closeDialog,
     refreshListing,
   ]);
 }

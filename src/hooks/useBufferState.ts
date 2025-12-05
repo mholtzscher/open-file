@@ -226,7 +226,7 @@ export function useBufferState(
   const getSelectedEntry = useCallback((): Entry | undefined => {
     const entries = getFilteredEntries(state);
     return entries[state.selection.cursorIndex];
-  }, [state.entries, state.selection.cursorIndex, state.searchQuery]);
+  }, [state]);
 
   const getSelectedEntries = useCallback((): Entry[] => {
     const entries = getFilteredEntries(state);
@@ -245,7 +245,7 @@ export function useBufferState(
       state.selection.selectionEnd ?? state.selection.selectionStart
     );
     return entries.slice(start, end + 1);
-  }, [state.selection, state.entries, state.searchQuery]);
+  }, [state]);
 
   const getFilteredEntriesCallback = useCallback((): Entry[] => getFilteredEntries(state), [state]);
 
