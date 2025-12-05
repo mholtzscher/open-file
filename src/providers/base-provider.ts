@@ -21,6 +21,7 @@ import {
   DeleteOptions,
   TransferOptions,
 } from './provider.js';
+import { ProviderType } from './types/profile.js';
 
 /**
  * Abstract base class for storage providers
@@ -35,7 +36,7 @@ export abstract class BaseStorageProvider implements StorageProvider {
    * Provider identifier (e.g., 's3', 'sftp', 'gcs')
    * Must be overridden by concrete implementations
    */
-  abstract readonly name: string;
+  abstract readonly name: ProviderType;
 
   /**
    * Human-readable display name (e.g., 'Amazon S3', 'SSH File Transfer')

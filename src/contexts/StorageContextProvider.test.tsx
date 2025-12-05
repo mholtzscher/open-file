@@ -15,7 +15,7 @@ import { Entry, EntryType } from '../types/entry.js';
  * Simple mock provider for testing
  */
 class TestProvider extends BaseStorageProvider {
-  name = 'test-provider';
+  name = 'local' as const;
   displayName = 'Test Provider';
   disconnectCalled = false;
   connectCalled = false;
@@ -101,7 +101,7 @@ describe('StorageContextProvider', () => {
     it('should create storage adapter with correct properties', () => {
       const adapter = new ProviderStorageAdapter(testProvider, '/');
 
-      expect(adapter.state.providerId).toBe('test-provider');
+      expect(adapter.state.providerId).toBe('local');
       expect(adapter.state.providerDisplayName).toBe('Test Provider');
       expect(adapter.state.currentPath).toBe('/');
       expect(adapter.state.isConnected).toBe(true);

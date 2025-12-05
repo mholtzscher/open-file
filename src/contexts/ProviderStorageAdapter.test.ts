@@ -14,7 +14,7 @@ import { ListOptions, ListResult } from '../providers/provider.js';
  * Mock provider for testing
  */
 class MockProvider extends BaseStorageProvider {
-  name = 'mock-provider';
+  name = 'local' as const;
   displayName = 'Mock Provider';
 
   private entries = new Map<string, Entry[]>();
@@ -187,7 +187,7 @@ describe('ProviderStorageAdapter', () => {
     it('should initialize with correct default state', () => {
       const state = storageAdapter.state;
 
-      expect(state.providerId).toBe('mock-provider');
+      expect(state.providerId).toBe('local');
       expect(state.providerDisplayName).toBe('Mock Provider');
       expect(state.currentPath).toBe('/');
       expect(state.entries).toEqual([]);

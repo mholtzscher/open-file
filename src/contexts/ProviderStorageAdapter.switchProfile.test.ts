@@ -18,7 +18,7 @@ import { EntryType } from '../types/entry.js';
 // ============================================================================
 
 class MockProvider implements StorageProvider {
-  name = 'mock-provider';
+  name: 'local' | 's3' | 'gcs' | 'sftp' | 'ftp' | 'smb' | 'gdrive' = 'local';
   displayName = 'Mock Provider';
   isConnectedFlag = false;
   disconnectCalled = false;
@@ -129,11 +129,9 @@ class MockProfileManager implements ProfileManager {
 
     // Create mock providers for each profile
     const provider1 = new MockProvider();
-    provider1.name = 'profile-1';
     provider1.displayName = 'Profile 1';
 
     const provider2 = new MockProvider();
-    provider2.name = 'profile-2';
     provider2.displayName = 'Profile 2';
 
     this.providers.set('profile-1', provider1);
@@ -184,7 +182,6 @@ describe('ProviderStorageAdapter - switchProfile', () => {
 
   beforeEach(() => {
     initialProvider = new MockProvider();
-    initialProvider.name = 'initial-provider';
     initialProvider.displayName = 'Initial Provider';
 
     profileManager = new MockProfileManager();
@@ -221,14 +218,14 @@ describe('ProviderStorageAdapter - switchProfile', () => {
     expect(initialProvider.disconnectCalled).toBe(true);
 
     // Check that adapter now uses new provider
-    expect(adapter.state.providerId).toBe('profile-1');
+    expect(adapter.state.providerId).toBe('local');
     expect(adapter.state.providerDisplayName).toBe('Profile 1');
   });
 
   it('should update state after successful switch', async () => {
     await adapter.switchProfile('profile-1');
 
-    expect(adapter.state.providerId).toBe('profile-1');
+    expect(adapter.state.providerId).toBe('local');
     expect(adapter.state.providerDisplayName).toBe('Profile 1');
     expect(adapter.state.currentPath).toBe('/');
     expect(adapter.state.isLoading).toBe(false);
@@ -249,7 +246,7 @@ describe('ProviderStorageAdapter - switchProfile', () => {
   it('should rollback on connection failure', async () => {
     // Create a provider that fails to connect
     const failingProvider = new MockProvider();
-    failingProvider.name = 'failing-provider';
+    failingProvider.displayName = 'Failing Provider';
     failingProvider.connect = () => {
       throw new Error('Connection failed');
     };
