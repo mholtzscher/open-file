@@ -398,12 +398,12 @@ function saveRefreshTokenToProfile(options: AuthGDriveOptions, refreshToken: str
       };
     }
     // Preserve existing settings, update credentials
-    const existingGDrive = existing as GoogleDriveProfile;
+    // TypeScript narrows `existing` to GoogleDriveProfile after the provider check above
     gdriveProfile = {
       ...gdriveProfile,
-      displayName: existingGDrive.displayName,
+      displayName: existing.displayName,
       config: {
-        ...existingGDrive.config,
+        ...existing.config,
         clientId,
         clientSecret,
         refreshToken,
@@ -428,42 +428,6 @@ function saveRefreshTokenToProfile(options: AuthGDriveOptions, refreshToken: str
     success: true,
     message: 'Profile saved successfully',
   };
-}
-
-// ============================================================================
-// CLI Helpers
-// ============================================================================
-
-/**
- * Read a line from stdin
- */
-function readLine(prompt: string): Promise<string> {
-  return new Promise(resolve => {
-    process.stdout.write(prompt);
-
-    let input = '';
-
-    const onData = (data: Buffer) => {
-      const str = data.toString();
-      input += str;
-      if (str.includes('\n')) {
-        process.stdin.removeListener('data', onData);
-        process.stdin.pause();
-        // Restore terminal settings if needed
-        if (process.stdin.setRawMode) {
-          try {
-            process.stdin.setRawMode(false);
-          } catch {
-            // Ignore errors
-          }
-        }
-        resolve(input.trim());
-      }
-    };
-
-    process.stdin.resume();
-    process.stdin.on('data', onData);
-  });
 }
 
 // ============================================================================
