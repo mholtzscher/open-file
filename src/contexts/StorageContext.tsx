@@ -199,13 +199,6 @@ export interface StorageContextValue {
   read(path: string, options?: StorageReadOptions): Promise<Buffer>;
 
   /**
-   * Check if a path exists
-   * @param path - Path to check
-   * @returns true if the path exists
-   */
-  exists(path: string): Promise<boolean>;
-
-  /**
    * Get metadata for a specific entry
    * @param path - Path to the entry
    * @returns Entry with full metadata

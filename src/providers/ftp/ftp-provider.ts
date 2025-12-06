@@ -350,9 +350,9 @@ export class FTPProvider extends BaseStorageProvider {
   }
 
   /**
-   * Check if a path exists
+   * Check if a path exists (internal helper)
    */
-  async exists(path: string): Promise<OperationResult<boolean>> {
+  protected async exists(path: string): Promise<OperationResult<boolean>> {
     const connError = this.ensureConnected();
     if (connError) return connError;
 

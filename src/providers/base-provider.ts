@@ -100,12 +100,6 @@ export abstract class BaseStorageProvider implements StorageProvider {
   abstract getMetadata(path: string): Promise<OperationResult<Entry>>;
 
   /**
-   * Check if a path exists
-   * Must be implemented by all providers
-   */
-  abstract exists(path: string): Promise<OperationResult<boolean>>;
-
-  /**
    * Read file contents
    * Must be implemented by all providers
    */

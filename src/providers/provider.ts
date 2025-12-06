@@ -144,13 +144,6 @@ export interface StorageProvider {
   getMetadata(path: string): Promise<OperationResult<Entry>>;
 
   /**
-   * Check if a path exists
-   * @param path - Path to check
-   * @returns true if the path exists
-   */
-  exists(path: string): Promise<OperationResult<boolean>>;
-
-  /**
    * Read file contents
    * @param path - Path to the file
    * @param options - Read options (offset, length, progress)

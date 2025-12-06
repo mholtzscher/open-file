@@ -130,8 +130,9 @@ describe('MockStorageProvider', () => {
       const result = await provider.delete('/test-bucket/readme.txt');
       expectSuccess(result);
 
-      const existsResult = await provider.exists('/test-bucket/readme.txt');
-      expect(expectSuccessWithData(existsResult)).toBe(false);
+      // Verify file is gone by trying to read it
+      const readResult = await provider.read('/test-bucket/readme.txt');
+      expectNotFound(readResult);
     });
 
     test('should return not found for missing files', async () => {
@@ -145,8 +146,9 @@ describe('MockStorageProvider', () => {
       const result = await provider.mkdir('/test-bucket/new-dir/');
       expectSuccess(result);
 
-      const existsResult = await provider.exists('/test-bucket/new-dir/');
-      expect(expectSuccessWithData(existsResult)).toBe(true);
+      // Verify directory was created by listing it
+      const listResult = await provider.list('/test-bucket/new-dir/');
+      expectSuccess(listResult);
     });
   });
 
@@ -155,13 +157,11 @@ describe('MockStorageProvider', () => {
       const result = await provider.copy('/test-bucket/readme.txt', '/test-bucket/readme-copy.txt');
       expectSuccess(result);
 
-      // Original should still exist
-      const originalExists = await provider.exists('/test-bucket/readme.txt');
-      expect(expectSuccessWithData(originalExists)).toBe(true);
-
-      // Copy should exist
-      const copyExists = await provider.exists('/test-bucket/readme-copy.txt');
-      expect(expectSuccessWithData(copyExists)).toBe(true);
+      // Verify both files exist by reading them
+      const originalRead = await provider.read('/test-bucket/readme.txt');
+      expectSuccess(originalRead);
+      const copyRead = await provider.read('/test-bucket/readme-copy.txt');
+      expectSuccess(copyRead);
     });
   });
 
@@ -174,12 +174,12 @@ describe('MockStorageProvider', () => {
       expectSuccess(result);
 
       // Original should not exist
-      const originalExists = await provider.exists('/test-bucket/readme.txt');
-      expect(expectSuccessWithData(originalExists)).toBe(false);
+      const originalRead = await provider.read('/test-bucket/readme.txt');
+      expectNotFound(originalRead);
 
       // New location should exist
-      const newExists = await provider.exists('/test-bucket/readme-moved.txt');
-      expect(expectSuccessWithData(newExists)).toBe(true);
+      const newRead = await provider.read('/test-bucket/readme-moved.txt');
+      expectSuccess(newRead);
     });
   });
 
@@ -237,12 +237,12 @@ describe('MockStorageProvider', () => {
       // Reset
       provider.reset();
 
-      // Verify original state restored
-      const readmeExists = await provider.exists('/test-bucket/readme.txt');
-      expect(expectSuccessWithData(readmeExists)).toBe(true);
+      // Verify original state restored by reading files
+      const readmeRead = await provider.read('/test-bucket/readme.txt');
+      expectSuccess(readmeRead);
 
-      const newFileExists = await provider.exists('/test-bucket/new-file.txt');
-      expect(expectSuccessWithData(newFileExists)).toBe(false);
+      const newFileRead = await provider.read('/test-bucket/new-file.txt');
+      expectNotFound(newFileRead);
     });
   });
 });

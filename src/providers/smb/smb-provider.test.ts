@@ -100,15 +100,10 @@ describe('SMBProvider', () => {
       const profile = createTestProfile();
       const provider = new SMBProvider(profile);
 
-      // These should all fail with connection error, but the path processing happens first
-      // The fact that we get ConnectionFailed (not some path error) tells us paths are OK
-      const result1 = await provider.exists('some/path');
-      const result2 = await provider.exists('/some/path');
-      const result3 = await provider.exists('some\\path');
-
-      expect(result1.status).toBe(OperationStatus.ConnectionFailed);
-      expect(result2.status).toBe(OperationStatus.ConnectionFailed);
-      expect(result3.status).toBe(OperationStatus.ConnectionFailed);
+      // Test that operations fail with connection error when not connected
+      // Use read operation to test connection requirement
+      const result = await provider.read('some/path');
+      expect(result.status).toBe(OperationStatus.ConnectionFailed);
     });
   });
 });
@@ -198,19 +193,17 @@ describe.skip('SMBProvider Integration', () => {
       const mkdirResult = await provider.mkdir(dirPath);
       expect(mkdirResult.status).toBe(OperationStatus.Success);
 
-      // Verify exists
-      const existsResult = await provider.exists(dirPath);
-      expect(existsResult.status).toBe(OperationStatus.Success);
-      expect(existsResult.data).toBe(true);
+      // Verify exists by getting metadata
+      const metaResult = await provider.getMetadata(dirPath);
+      expect(metaResult.status).toBe(OperationStatus.Success);
 
       // Delete
       const deleteResult = await provider.delete(dirPath);
       expect(deleteResult.status).toBe(OperationStatus.Success);
 
-      // Verify gone
-      const goneResult = await provider.exists(dirPath);
-      expect(goneResult.status).toBe(OperationStatus.Success);
-      expect(goneResult.data).toBe(false);
+      // Verify gone by trying to get metadata
+      const goneResult = await provider.getMetadata(dirPath);
+      expect(goneResult.status).toBe(OperationStatus.NotFound);
     });
   });
 
@@ -229,12 +222,13 @@ describe.skip('SMBProvider Integration', () => {
       const moveResult = await provider.move(srcPath, destPath);
       expect(moveResult.status).toBe(OperationStatus.Success);
 
-      // Verify source gone
-      const srcExists = await provider.exists(srcPath);
-      expect(srcExists.data).toBe(false);
+      // Verify source gone by trying to read
+      const srcRead = await provider.read(srcPath);
+      expect(srcRead.status).toBe(OperationStatus.NotFound);
 
       // Verify dest exists with content
       const readResult = await provider.read(destPath);
+      expect(readResult.status).toBe(OperationStatus.Success);
       expect(readResult.data?.toString()).toBe(content);
 
       // Clean up

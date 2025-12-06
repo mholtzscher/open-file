@@ -7,7 +7,7 @@ import { ProviderStorageAdapter } from './ProviderStorageAdapter.js';
 import { BaseStorageProvider } from '../providers/base-provider.js';
 import { Entry, EntryType } from '../types/entry.js';
 import { Capability } from '../providers/types/capabilities.js';
-import { OperationResult, OperationStatus, Result } from '../providers/types/result.js';
+import { OperationResult, Result } from '../providers/types/result.js';
 import { ListOptions, ListResult } from '../providers/provider.js';
 
 /**
@@ -98,22 +98,6 @@ class MockProvider extends BaseStorageProvider {
     return await Promise.resolve(notFoundResult);
   }
 
-  async exists(path: string): Promise<OperationResult<boolean>> {
-    // Check if it's a file
-    if (this.files.has(path)) {
-      return await Promise.resolve(Result.success(true));
-    }
-
-    // Check if it's a directory
-    if (this.entries.has(path)) {
-      return await Promise.resolve(Result.success(true));
-    }
-
-    // Check if it's in entries
-    const metadata = await this.getMetadata(path);
-    return await Promise.resolve(Result.success(metadata.status === OperationStatus.Success));
-  }
-
   async read(path: string): Promise<OperationResult<Buffer>> {
     const content = this.files.get(path);
     if (content) {
@@ -132,7 +116,22 @@ class MockProvider extends BaseStorageProvider {
   }
 
   async mkdir(path: string): Promise<OperationResult> {
+    // Create empty entries for this directory
     this.entries.set(path, []);
+
+    // Add entry to parent directory
+    const parentPath = path.substring(0, path.lastIndexOf('/', path.length - 2) + 1);
+    const dirName = path.substring(parentPath.length).replace(/\/$/, '');
+    const parentEntries = this.entries.get(parentPath) || [];
+    parentEntries.push({
+      id: `dir-${path}`,
+      name: dirName,
+      type: EntryType.Directory,
+      path: path,
+      modified: new Date(),
+    });
+    this.entries.set(parentPath, parentEntries);
+
     return await Promise.resolve(Result.success());
   }
 
@@ -290,14 +289,6 @@ describe('ProviderStorageAdapter', () => {
       expect(content.toString()).toBe('Hello, World!');
     });
 
-    it('should check if path exists', async () => {
-      const exists = await storageAdapter.exists('test-dir/file1.txt');
-      expect(exists).toBe(true);
-
-      const notExists = await storageAdapter.exists('nonexistent.txt');
-      expect(notExists).toBe(false);
-    });
-
     it('should get metadata for entry', async () => {
       const metadata = await storageAdapter.getMetadata('test-dir/file1.txt');
 
@@ -324,17 +315,19 @@ describe('ProviderStorageAdapter', () => {
     it('should create directory', async () => {
       await storageAdapter.mkdir('test-dir/new-folder/');
 
-      // Verify it exists
-      const exists = await storageAdapter.exists('test-dir/new-folder/');
-      expect(exists).toBe(true);
+      // Verify it exists by listing parent
+      const entries = await storageAdapter.list('test-dir/');
+      const folderEntry = entries.find(e => e.name === 'new-folder');
+      expect(folderEntry).toBeDefined();
+      expect(folderEntry?.type).toBe(EntryType.Directory);
     });
 
     it('should delete file', async () => {
       await storageAdapter.write('test-dir/to-delete.txt', 'Delete me');
       await storageAdapter.delete('test-dir/to-delete.txt');
 
-      const exists = await storageAdapter.exists('test-dir/to-delete.txt');
-      expect(exists).toBe(false);
+      // Verify it's gone by trying to read it
+      expect(storageAdapter.read('test-dir/to-delete.txt')).rejects.toThrow();
     });
   });
 
@@ -343,22 +336,21 @@ describe('ProviderStorageAdapter', () => {
       await storageAdapter.write('test-dir/source.txt', 'Content');
       await storageAdapter.move('test-dir/source.txt', 'test-dir/dest.txt');
 
-      const sourceExists = await storageAdapter.exists('test-dir/source.txt');
-      const destExists = await storageAdapter.exists('test-dir/dest.txt');
-
-      expect(sourceExists).toBe(false);
-      expect(destExists).toBe(true);
+      // Verify source is gone and dest exists by reading
+      expect(storageAdapter.read('test-dir/source.txt')).rejects.toThrow();
+      const destContent = await storageAdapter.read('test-dir/dest.txt');
+      expect(destContent.toString()).toBe('Content');
     });
 
     it('should copy file', async () => {
       await storageAdapter.write('test-dir/original.txt', 'Content');
       await storageAdapter.copy('test-dir/original.txt', 'test-dir/copy.txt');
 
-      const originalExists = await storageAdapter.exists('test-dir/original.txt');
-      const copyExists = await storageAdapter.exists('test-dir/copy.txt');
-
-      expect(originalExists).toBe(true);
-      expect(copyExists).toBe(true);
+      // Verify both files exist by reading them
+      const originalContent = await storageAdapter.read('test-dir/original.txt');
+      const copyContent = await storageAdapter.read('test-dir/copy.txt');
+      expect(originalContent.toString()).toBe('Content');
+      expect(copyContent.toString()).toBe('Content');
     });
   });
 

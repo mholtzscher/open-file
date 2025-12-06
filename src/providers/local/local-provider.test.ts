@@ -244,33 +244,6 @@ describe('LocalProvider', () => {
     });
   });
 
-  describe('exists', () => {
-    it('should return true for existing file', async () => {
-      writeFileSync(join(tempDir, 'exists.txt'), 'content');
-
-      const result = await provider.exists('/exists.txt');
-
-      expect(result.status).toBe(OperationStatus.Success);
-      expect(result.data).toBe(true);
-    });
-
-    it('should return true for existing directory', async () => {
-      mkdirSync(join(tempDir, 'exists-dir'));
-
-      const result = await provider.exists('/exists-dir');
-
-      expect(result.status).toBe(OperationStatus.Success);
-      expect(result.data).toBe(true);
-    });
-
-    it('should return false for non-existent path', async () => {
-      const result = await provider.exists('/nonexistent');
-
-      expect(result.status).toBe(OperationStatus.Success);
-      expect(result.data).toBe(false);
-    });
-  });
-
   describe('getMetadata', () => {
     it('should return metadata for file', async () => {
       writeFileSync(join(tempDir, 'file.txt'), 'content');

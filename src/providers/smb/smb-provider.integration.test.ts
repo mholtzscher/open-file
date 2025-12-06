@@ -180,38 +180,6 @@ describe('SMBProvider Integration', () => {
     });
   });
 
-  describe('exists', () => {
-    it('should return true for existing file', async () => {
-      const connectResult = await provider.connect();
-      if (connectResult.status !== OperationStatus.Success) return;
-
-      const result = await provider.exists('/hello.txt');
-
-      expect(result.status).toBe(OperationStatus.Success);
-      expect(result.data).toBe(true);
-    });
-
-    it('should return true for existing directory', async () => {
-      const connectResult = await provider.connect();
-      if (connectResult.status !== OperationStatus.Success) return;
-
-      const result = await provider.exists('/documents');
-
-      expect(result.status).toBe(OperationStatus.Success);
-      expect(result.data).toBe(true);
-    });
-
-    it('should return false for non-existent path', async () => {
-      const connectResult = await provider.connect();
-      if (connectResult.status !== OperationStatus.Success) return;
-
-      const result = await provider.exists('/nonexistent-path-12345');
-
-      expect(result.status).toBe(OperationStatus.Success);
-      expect(result.data).toBe(false);
-    });
-  });
-
   describe('getMetadata', () => {
     it('should get metadata for file', async () => {
       const connectResult = await provider.connect();
@@ -252,11 +220,7 @@ describe('SMBProvider Integration', () => {
       const writeResult = await provider.write(testPath, content);
       expect(writeResult.status).toBe(OperationStatus.Success);
 
-      // Verify it exists
-      const existsResult = await provider.exists(testPath);
-      expect(existsResult.data).toBe(true);
-
-      // Read back
+      // Read back to verify it exists
       const readResult = await provider.read(testPath);
       expect(readResult.status).toBe(OperationStatus.Success);
       expect(readResult.data!.toString()).toBe(content);
@@ -265,9 +229,9 @@ describe('SMBProvider Integration', () => {
       const deleteResult = await provider.delete(testPath);
       expect(deleteResult.status).toBe(OperationStatus.Success);
 
-      // Verify it's gone
-      const goneResult = await provider.exists(testPath);
-      expect(goneResult.data).toBe(false);
+      // Verify it's gone by trying to read
+      const goneResult = await provider.read(testPath);
+      expect(goneResult.status).toBe(OperationStatus.NotFound);
     });
 
     it('should write file with nested path and auto-create parent dirs', async () => {
@@ -303,11 +267,9 @@ describe('SMBProvider Integration', () => {
       const mkdirResult = await provider.mkdir(testDir);
       expect(mkdirResult.status).toBe(OperationStatus.Success);
 
-      // Verify
-      const existsResult = await provider.exists(testDir);
-      expect(existsResult.data).toBe(true);
-
+      // Verify by getting metadata
       const metaResult = await provider.getMetadata(testDir);
+      expect(metaResult.status).toBe(OperationStatus.Success);
       expect(metaResult.data!.type).toBe(EntryType.Directory);
 
       // Clean up
@@ -331,12 +293,13 @@ describe('SMBProvider Integration', () => {
       const moveResult = await provider.move(srcPath, destPath);
       expect(moveResult.status).toBe(OperationStatus.Success);
 
-      // Verify source is gone
-      const srcExists = await provider.exists(srcPath);
-      expect(srcExists.data).toBe(false);
+      // Verify source is gone by trying to read
+      const srcRead = await provider.read(srcPath);
+      expect(srcRead.status).toBe(OperationStatus.NotFound);
 
       // Verify dest exists with correct content
       const readResult = await provider.read(destPath);
+      expect(readResult.status).toBe(OperationStatus.Success);
       expect(readResult.data!.toString()).toBe(content);
 
       // Clean up

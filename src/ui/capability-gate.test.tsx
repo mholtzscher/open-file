@@ -35,7 +35,6 @@ function createMockStorageContext(capabilities: Set<Capability> = new Set()): St
     refresh: () => Promise.resolve(),
     list: () => Promise.resolve([]),
     read: () => Promise.resolve(Buffer.from('')),
-    exists: () => Promise.resolve(true),
     getMetadata: () =>
       Promise.resolve({
         id: 'test',

@@ -217,7 +217,7 @@ export class MockStorageProvider {
     });
   }
 
-  async exists(path: string): Promise<OperationResult<boolean>> {
+  protected async exists(path: string): Promise<OperationResult<boolean>> {
     await this.simulateLatency();
 
     if (this.shouldFail('exists')) {

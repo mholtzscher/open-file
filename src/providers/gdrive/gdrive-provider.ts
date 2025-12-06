@@ -497,9 +497,9 @@ export class GoogleDriveProvider extends BaseStorageProvider {
   }
 
   /**
-   * Check if a file or folder exists
+   * Check if a file or folder exists (internal helper)
    */
-  async exists(path: string): Promise<OperationResult<boolean>> {
+  protected async exists(path: string): Promise<OperationResult<boolean>> {
     this.logger.debug('exists called', { path });
 
     const resolveResult = await this.pathResolver.resolvePathToId(path);

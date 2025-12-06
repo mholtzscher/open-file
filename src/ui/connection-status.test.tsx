@@ -43,7 +43,6 @@ function createMockStorageContext(overrides: Partial<StorageState> = {}): Storag
     refresh: () => Promise.resolve(),
     list: () => Promise.resolve([]),
     read: () => Promise.resolve(Buffer.from('')),
-    exists: () => Promise.resolve(true),
     getMetadata: () =>
       Promise.resolve({
         id: 'test',

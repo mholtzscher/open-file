@@ -270,36 +270,14 @@ describe.if(await isLocalStackAvailable())('S3Provider LocalStack Integration', 
     });
   });
 
-  describe('exists operation', () => {
-    it('should return true for existing file', async () => {
-      await provider.write('exists.txt', 'content');
-
-      const result = await provider.exists('exists.txt');
-      expect(isSuccess(result)).toBe(true);
-      if (isSuccess(result)) {
-        expect(result.data).toBe(true);
-      }
-    });
-
-    it('should return false for non-existing file', async () => {
-      const result = await provider.exists('nonexistent.txt');
-      expect(isSuccess(result)).toBe(true);
-      if (isSuccess(result)) {
-        expect(result.data).toBe(false);
-      }
-    });
-  });
-
   describe('mkdir operation', () => {
     it('should create directory marker', async () => {
       const result = await provider.mkdir('new-folder/');
       expect(isSuccess(result)).toBe(true);
 
-      const existsResult = await provider.exists('new-folder/');
-      expect(isSuccess(existsResult)).toBe(true);
-      if (isSuccess(existsResult)) {
-        expect(existsResult.data).toBe(true);
-      }
+      // Verify by getting metadata
+      const metaResult = await provider.getMetadata('new-folder/');
+      expect(isSuccess(metaResult)).toBe(true);
     });
   });
 
@@ -310,10 +288,9 @@ describe.if(await isLocalStackAvailable())('S3Provider LocalStack Integration', 
       const deleteResult = await provider.delete('to-delete.txt');
       expect(isSuccess(deleteResult)).toBe(true);
 
-      const existsResult = await provider.exists('to-delete.txt');
-      if (isSuccess(existsResult)) {
-        expect(existsResult.data).toBe(false);
-      }
+      // Verify file is gone by trying to read it
+      const readResult = await provider.read('to-delete.txt');
+      expect(readResult.status).toBe(OperationStatus.NotFound);
     });
 
     it('should delete directory recursively', async () => {
@@ -324,11 +301,12 @@ describe.if(await isLocalStackAvailable())('S3Provider LocalStack Integration', 
       const deleteResult = await provider.delete('folder/', { recursive: true });
       expect(isSuccess(deleteResult)).toBe(true);
 
-      const exists1 = await provider.exists('folder/file1.txt');
-      const exists2 = await provider.exists('folder/subfolder/file3.txt');
+      // Verify files are gone by trying to read them
+      const read1 = await provider.read('folder/file1.txt');
+      const read2 = await provider.read('folder/subfolder/file3.txt');
 
-      if (isSuccess(exists1)) expect(exists1.data).toBe(false);
-      if (isSuccess(exists2)) expect(exists2.data).toBe(false);
+      expect(read1.status).toBe(OperationStatus.NotFound);
+      expect(read2.status).toBe(OperationStatus.NotFound);
     });
   });
 
@@ -367,15 +345,12 @@ describe.if(await isLocalStackAvailable())('S3Provider LocalStack Integration', 
       const copyResult = await provider.copy('source.txt', 'destination.txt');
       expect(isSuccess(copyResult)).toBe(true);
 
-      // Both files should exist
-      const sourceExists = await provider.exists('source.txt');
-      const destExists = await provider.exists('destination.txt');
+      // Verify both files exist by reading them
+      const sourceContent = await provider.read('source.txt');
+      expect(isSuccess(sourceContent)).toBe(true);
 
-      if (isSuccess(sourceExists)) expect(sourceExists.data).toBe(true);
-      if (isSuccess(destExists)) expect(destExists.data).toBe(true);
-
-      // Content should be same
       const destContent = await provider.read('destination.txt');
+      expect(isSuccess(destContent)).toBe(true);
       if (isSuccess(destContent)) {
         expect(destContent.data.toString()).toBe(content);
       }
@@ -390,12 +365,13 @@ describe.if(await isLocalStackAvailable())('S3Provider LocalStack Integration', 
       const moveResult = await provider.move('move-source.txt', 'move-dest.txt');
       expect(isSuccess(moveResult)).toBe(true);
 
-      // Source should not exist
-      const sourceExists = await provider.exists('move-source.txt');
-      if (isSuccess(sourceExists)) expect(sourceExists.data).toBe(false);
+      // Source should not exist - verify by trying to read
+      const sourceRead = await provider.read('move-source.txt');
+      expect(sourceRead.status).toBe(OperationStatus.NotFound);
 
       // Destination should exist with same content
       const destContent = await provider.read('move-dest.txt');
+      expect(isSuccess(destContent)).toBe(true);
       if (isSuccess(destContent)) {
         expect(destContent.data.toString()).toBe(content);
       }

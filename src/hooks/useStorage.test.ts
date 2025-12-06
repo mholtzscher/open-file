@@ -47,10 +47,6 @@ class TestProvider extends BaseStorageProvider {
     );
   }
 
-  exists(_path: string): Promise<OperationResult<boolean>> {
-    return Promise.resolve(Result.success(true));
-  }
-
   read(_path: string): Promise<OperationResult<Buffer>> {
     return Promise.resolve(Result.success(Buffer.from('test content')));
   }

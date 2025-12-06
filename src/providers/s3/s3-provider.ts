@@ -396,9 +396,9 @@ export class S3Provider extends BaseStorageProvider {
   }
 
   /**
-   * Check if a path exists
+   * Check if a path exists (internal helper)
    */
-  async exists(path: string): Promise<OperationResult<boolean>> {
+  protected async exists(path: string): Promise<OperationResult<boolean>> {
     const bucketError = this.ensureBucket();
     if (bucketError) return bucketError;
 

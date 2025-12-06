@@ -255,9 +255,9 @@ export class LocalProvider extends BaseStorageProvider {
   }
 
   /**
-   * Check if a path exists
+   * Check if a path exists (internal helper)
    */
-  exists(path: string): Promise<OperationResult<boolean>> {
+  protected exists(path: string): Promise<OperationResult<boolean>> {
     const fullPath = this.resolvePath(path);
 
     try {

@@ -350,18 +350,6 @@ export class ProviderStorageAdapter implements StorageContextValue {
   }
 
   /**
-   * Check if a path exists
-   */
-  async exists(path: string): Promise<boolean> {
-    return await this.executeOperation(
-      async () => {
-        return await this.provider.exists(path);
-      },
-      { skipLoadingState: true }
-    );
-  }
-
-  /**
    * Get metadata for a specific entry
    */
   async getMetadata(path: string): Promise<Entry> {

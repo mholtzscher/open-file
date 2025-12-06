@@ -390,51 +390,6 @@ describe('S3Provider', () => {
     });
   });
 
-  describe('exists', () => {
-    it('should return true when object exists', async () => {
-      const { client } = createMockS3Client({
-        headObject: { ContentLength: 100 },
-      });
-      const { factory } = createMockClientFactory(client);
-      const { logger } = createMockLogger();
-
-      const provider = new S3Provider(createTestProfile(), {
-        clientFactory: factory,
-        logger,
-      });
-      provider.setContainer('test-bucket');
-
-      const result = await provider.exists('existing-file.txt');
-
-      expect(isSuccess(result)).toBe(true);
-      if (isSuccess(result)) {
-        expect(result.data).toBe(true);
-      }
-    });
-
-    it('should return false when object does not exist', async () => {
-      const error = new Error('Not Found');
-      error.name = 'NotFound';
-
-      const { client } = createMockS3Client({ error });
-      const { factory } = createMockClientFactory(client);
-      const { logger } = createMockLogger();
-
-      const provider = new S3Provider(createTestProfile(), {
-        clientFactory: factory,
-        logger,
-      });
-      provider.setContainer('test-bucket');
-
-      const result = await provider.exists('nonexistent-file.txt');
-
-      expect(isSuccess(result)).toBe(true);
-      if (isSuccess(result)) {
-        expect(result.data).toBe(false);
-      }
-    });
-  });
-
   describe('hasCapability', () => {
     it('should return true for supported capabilities', () => {
       const { client } = createMockS3Client();
