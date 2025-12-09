@@ -51,7 +51,7 @@
     "@opentui/react": "^0.1.59",
     "@types/react": "^19.2.7",
     "basic-ftp": "^5.0.5",
-    "googleapis": "^166.0.0",
+    "googleapis": "^167.0.0",
     "jsonc-parser": "^3.3.1",
     "react": "^19.2.1",
     "ssh2-sftp-client": "^12.0.1"
