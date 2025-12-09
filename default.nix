@@ -1,7 +1,12 @@
-{ bun2nix, stdenv, ... }:
-bun2nix.writeBunApplication {
+{
+  bun2nix,
+  pkgs,
+  stdenv,
+}:
+bun2nix.mkDerivation {
   pname = "open-file";
   version = "1.0.0";
+
   src = ./.;
 
   bunDeps = bun2nix.fetchBunDeps {
@@ -20,11 +25,35 @@ bun2nix.writeBunApplication {
         "--linker=hoisted"
       ];
 
-  # Skip bun build phase - this app runs directly via bun run
-  dontUseBunBuild = true;
-  dontUseBunCheck = true;
+  nativeBuildInputs = with pkgs; [
+    makeWrapper
+    bun
+  ];
 
-  startScript = ''
-    bun run src/index.tsx "$@"
+  env.OPEN_FILE_VERSION = "1.0.0";
+
+  buildPhase = ''
+    runHook preBuild
+    bun run ./bundle.ts
+    runHook postBuild
   '';
+
+  installPhase = ''
+    runHook preInstall
+    mkdir -p $out/lib/open-file $out/bin
+
+    cp -r dist node_modules $out/lib/open-file
+
+    makeWrapper ${pkgs.bun}/bin/bun $out/bin/open-file \
+      --add-flags "run" \
+      --add-flags "$out/lib/open-file/dist/index.js" \
+      --argv0 open-file
+
+    runHook postInstall
+  '';
+
+  meta = {
+    description = "Terminal UI for S3 bucket exploration";
+    mainProgram = "open-file";
+  };
 }
