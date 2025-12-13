@@ -1,17 +1,16 @@
 {
-  description = "open-file - Terminal UI for S3 bucket exploration";
+  description = "Terminal UI for S3 bucket exploration";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     systems.url = "github:nix-systems/default";
     bun2nix = {
-      url = "github:nix-community/bun2nix?tag=2.0.5";
+      url = "github:nix-community/bun2nix?tag=2.0.6";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.systems.follows = "systems";
     };
   };
 
-  # Use the cached version of bun2nix from the nix-community cli
   nixConfig = {
     extra-substituters = [
       "https://cache.nixos.org"
@@ -26,38 +25,84 @@
   outputs =
     inputs:
     let
-      # Read each system from the nix-systems input
       eachSystem = inputs.nixpkgs.lib.genAttrs (import inputs.systems);
 
-      # Access the package set for a given system
       pkgsFor = eachSystem (
         system:
         import inputs.nixpkgs {
           inherit system;
-          # Use the bun2nix overlay, which puts `bun2nix` in pkgs
-          # You can, of course, still access
-          # inputs.bun2nix.packages.${system}.default instead
-          # and use that to build your package instead
           overlays = [ inputs.bun2nix.overlays.default ];
         }
       );
     in
     {
-      packages = eachSystem (system: {
-        # Produce a package for this template with bun2nix in
-        # the overlay
-        default = pkgsFor.${system}.callPackage ./default.nix { };
-      });
+      packages = eachSystem (
+        system:
+        let
+          pkgs = pkgsFor.${system};
+        in
+        {
+          default = pkgs.bun2nix.mkDerivation rec {
+            inherit (pkgs) stdenv;
+            pname = "open-file";
+            version = "1.0.0";
+
+            src = ./.;
+
+            bunDeps = pkgs.bun2nix.fetchBunDeps {
+              bunNix = ./bun.nix;
+            };
+
+            bunInstallFlags =
+              if stdenv.hostPlatform.isDarwin then
+                [
+                  "--linker=hoisted"
+                  "--backend=copyfile"
+                ]
+              else
+                [
+                  "--linker=hoisted"
+                ];
+
+            nativeBuildInputs = with pkgs; [
+              makeWrapper
+              bun
+            ];
+
+            env.OPEN_FILE_VERSION = "1.0.0";
+
+            buildPhase = ''
+              runHook preBuild
+              bun run ./bundle.ts
+              runHook postBuild
+            '';
+
+            installPhase = ''
+              runHook preInstall
+              mkdir -p $out/lib/open-file $out/bin
+
+              cp -r dist node_modules $out/lib/open-file
+
+              makeWrapper ${pkgs.bun}/bin/bun $out/bin/open-file \
+                --add-flags "run" \
+                --add-flags "$out/lib/open-file/dist/index.js" \
+                --argv0 open-file
+
+              runHook postInstall
+            '';
+
+            meta = {
+              description = "Terminal UI for S3 bucket exploration";
+              mainProgram = "open-file";
+            };
+          };
+        }
+      );
 
       devShells = eachSystem (system: {
         default = pkgsFor.${system}.mkShell {
           packages = with pkgsFor.${system}; [
             bun
-            eslint
-            just
-
-            # Add the bun2nix binary to our devshell
-            # Optional now that we have a binary on npm
             bun2nix
           ];
 
