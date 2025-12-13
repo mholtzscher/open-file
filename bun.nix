@@ -1713,9 +1713,9 @@
     url = "https://registry.npmjs.org/googleapis-common/-/googleapis-common-8.0.1.tgz";
     hash = "sha512-eCzNACUXPb1PW5l0ULTzMHaL/ltPRADoPgjBlT8jWsTbxkCp6siv+qKJ/1ldaybCthGwsYFYallF7u9AkU4L+A==";
   };
-  "googleapis@167.0.0" = fetchurl {
-    url = "https://registry.npmjs.org/googleapis/-/googleapis-167.0.0.tgz";
-    hash = "sha512-8Xqeki6K9u9jh6rGRA/OywRMXg8yXuv4ZLwSSuMBB3Ze1pErbR/iv00UmVtcrP2LcSW2Fqi+LUJ7WgFMDoxd7Q==";
+  "googleapis@168.0.0" = fetchurl {
+    url = "https://registry.npmjs.org/googleapis/-/googleapis-168.0.0.tgz";
+    hash = "sha512-A1gQtli8/UXjuGnBAwvObwcsIs2xheV82OnmnrrqSOzgzU0gsu18VbOBLh6G8DiMsZze5hJmOJJM7qsVuqAe6g==";
   };
   "gopd@1.2.0" = fetchurl {
     url = "https://registry.npmjs.org/gopd/-/gopd-1.2.0.tgz";
