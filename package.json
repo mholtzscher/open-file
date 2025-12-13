@@ -32,7 +32,7 @@
     "@types/ssh2-sftp-client": "^9.0.6",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
-    "eslint": "^9.39.1",
+    "eslint": "^9.39.2",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-airbnb-typescript": "^18.0.0",
     "eslint-config-prettier": "^10.1.8",
@@ -44,16 +44,19 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.947.0",
-    "@aws-sdk/s3-request-presigner": "^3.947.0",
+    "@aws-sdk/client-s3": "^3.948.0",
+    "@aws-sdk/credential-provider-ini": "^3.948.0",
+    "@aws-sdk/s3-request-presigner": "^3.948.0",
     "@google-cloud/storage": "^7.18.0",
     "@marsaud/smb2": "^0.18.0",
-    "@opentui/react": "^0.1.59",
+    "@opentui/react": "^0.1.60",
     "@types/react": "^19.2.7",
     "basic-ftp": "^5.0.5",
+    "google-auth-library": "^9.15.1",
     "googleapis": "^167.0.0",
     "jsonc-parser": "^3.3.1",
-    "react": "^19.2.1",
+    "latest": "^0.2.0",
+    "react": "^19.2.3",
     "ssh2-sftp-client": "^12.0.1"
   }
 }

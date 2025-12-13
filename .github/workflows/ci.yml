@@ -1,0 +1,16 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: mholtzscher/github-actions/.github/workflows/bun-ci.yml@main
+    with:
+      run-lint: true
+      run-typecheck: true
+      run-build: true
+      run-test: true
