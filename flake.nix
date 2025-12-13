@@ -42,7 +42,8 @@
           pkgs = pkgsFor.${system};
         in
         {
-          default = pkgs.bun2nix.mkDerivation {
+          default = pkgs.bun2nix.mkDerivation rec {
+            inherit (pkgs) stdenv;
             pname = "open-file";
             version = "1.0.0";
 
@@ -51,6 +52,17 @@
             bunDeps = pkgs.bun2nix.fetchBunDeps {
               bunNix = ./bun.nix;
             };
+
+            bunInstallFlags =
+              if stdenv.hostPlatform.isDarwin then
+                [
+                  "--linker=hoisted"
+                  "--backend=copyfile"
+                ]
+              else
+                [
+                  "--linker=hoisted"
+                ];
 
             nativeBuildInputs = with pkgs; [
               makeWrapper
