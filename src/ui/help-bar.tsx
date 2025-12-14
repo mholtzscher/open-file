@@ -54,17 +54,3 @@ export function HelpBar({ items }: HelpBarProps) {
     </box>
   );
 }
-
-/**
- * formatHelpText - Returns help bar as plain text
- *
- * Use when you need help text as part of a larger text element
- * or when the parent container doesn't support flex children.
- *
- * Note: This returns plain text without rich styling since
- * terminal text elements can't have inline style changes.
- * For styled output, use HelpBar component instead.
- */
-export function formatHelpText(items: HelpItem[]): string {
-  return items.map(item => `${item.key} ${item.description}`).join('  ');
-}
